@@ -65,6 +65,12 @@ export default function OddManOut() {
     }
     
     const question = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+    
+    // Ensure difficulty has a default value if null/undefined
+    if (!question.difficulty) {
+      question.difficulty = 'unknown';
+    }
+    
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
     
@@ -237,9 +243,13 @@ export default function OddManOut() {
             <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
               currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
               currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-              'bg-red-500/20 text-red-300 border-red-400'
+              currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
+              'bg-gray-500/20 text-gray-300 border-gray-400'
             }`}>
-              {currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1)}
+              {currentQuestion.difficulty ? 
+                currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) : 
+                'Unknown'
+              }
             </span>
           </div>
         </div>
