@@ -124,8 +124,7 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     { id: 6, name: 'Split Decision', slug: 'split-decision', description: 'Rapid categorization' },
     { id: 7, name: 'Word Rescue', slug: 'word-rescue', description: 'Make words from falling letters' },
     { id: 8, name: 'Shape Sequence', slug: 'shape-sequence', description: 'Remember the pattern' },
-    { id: 9, name: 'Polysphere', slug: 'polysphere', description: 'Rotate to reveal the image' },
-    { id: 10, name: 'Advanced Runner', slug: 'advanced-runner', description: 'Physics-based adventure' }
+    { id: 9, name: 'Polysphere', slug: 'polysphere', description: 'Rotate to reveal the image' }
   ];
 
   const gameIcons = {
@@ -137,8 +136,7 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     'split-decision': '⚡',
     'word-rescue': '📝',
     'shape-sequence': '🔷',
-    'polysphere': '🌐',
-    'advanced-runner': '🏃'
+    'polysphere': '🌐'
   };
 
   return (

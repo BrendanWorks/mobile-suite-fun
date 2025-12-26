@@ -10,9 +10,7 @@ import SplitDecision from './components/SplitDecision';
 import WordRescue from './components/WordRescue';
 import ShapeSequence from './components/ShapeSequence';
 import PolysphereGame from './components/PolysphereGame';
-import AdvancedRunner from './components/AdvancedRunner';
-
-export type GameId = 'emoji-master' | 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | 'polysphere' | 'advanced-runner' | null;
+export type GameId = 'emoji-master' | 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | 'polysphere' | null;
 
 function App() {
   const [currentGame, setCurrentGame] = useState<GameId>(null);
@@ -99,7 +97,6 @@ function App() {
                   {currentGame === 'word-rescue' && <WordRescue />}
                   {currentGame === 'shape-sequence' && <ShapeSequence />}
                   {currentGame === 'polysphere' && <PolysphereGame />}
-                  {currentGame === 'advanced-runner' && <AdvancedRunner />}
                   {/* Future games will be added here */}
                 </div>
               </div>
