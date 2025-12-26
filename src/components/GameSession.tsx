@@ -9,7 +9,6 @@ import DalmatianPuzzle from './DalmatianPuzzle';
 import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
-import PolysphereGame from './PolysphereGame';
 import RoundResults from './RoundResults';
 
 interface GameConfig {
@@ -28,7 +27,6 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, maxScore: 100 },
   { id: 'word-rescue', name: 'Word Rescue', component: WordRescue, maxScore: 100 },
   { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, maxScore: 100 },
-  { id: 'polysphere', name: 'Polysphere', component: PolysphereGame, maxScore: 100 },
 ];
 
 interface GameSessionProps {

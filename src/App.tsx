@@ -10,9 +10,8 @@ import DalmatianPuzzle from './components/DalmatianPuzzle';
 import SplitDecision from './components/SplitDecision';
 import WordRescue from './components/WordRescue';
 import ShapeSequence from './components/ShapeSequence';
-import PolysphereGame from './components/PolysphereGame';
 
-export type GameId = 'emoji-master' | 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | 'polysphere' | null;
+export type GameId = 'emoji-master' | 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | null;
 
 type AppMode = 'main-menu' | 'game-session' | 'practice-mode' | 'single-game';
 
@@ -142,7 +141,6 @@ function App() {
                 {currentGame === 'split-decision' && <SplitDecision />}
                 {currentGame === 'word-rescue' && <WordRescue />}
                 {currentGame === 'shape-sequence' && <ShapeSequence />}
-                {currentGame === 'polysphere' && <PolysphereGame />}
               </div>
             </div>
           )}
