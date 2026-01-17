@@ -14,20 +14,26 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [gameComplete, setGameComplete] = useState(false);
 
   const timerRef = useRef(null);
   const revealTimerRef = useRef(null);
+  const resultTimerRef = useRef(null);
 
   const maxTime = 15;
   const maxPoints = 1000;
+  const maxImages = 3;
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: totalQuestions > 0 ? totalQuestions * maxPoints : maxPoints
+      maxScore: maxImages * maxPoints
     }),
     onGameEnd: () => {
-      console.log(`PhotoMystery ended with score: ${score}/${totalQuestions > 0 ? totalQuestions * maxPoints : maxPoints}`);
+      console.log(`PhotoMystery ended with score: ${score}/${maxImages * maxPoints}`);
+      clearInterval(timerRef.current);
+      clearInterval(revealTimerRef.current);
+      clearTimeout(resultTimerRef.current);
     }
   }));
 
@@ -125,7 +131,17 @@ const PhotoMystery = forwardRef((props, ref) => {
   const handleTimeUp = () => {
     setGameState('result');
     setIsCorrect(false);
-    setTotalQuestions(prev => prev + 1);
+    const newTotal = totalQuestions + 1;
+    setTotalQuestions(newTotal);
+
+    if (newTotal >= maxImages) {
+      setGameComplete(true);
+    } else {
+      // Auto-advance to next image after 2 seconds
+      resultTimerRef.current = setTimeout(() => {
+        generateNewQuestion();
+      }, 2000);
+    }
   };
 
   const handleAnswerSelect = (answer) => {
@@ -137,16 +153,27 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
-    setTotalQuestions(prev => prev + 1);
+    const newTotal = totalQuestions + 1;
+    setTotalQuestions(newTotal);
 
     if (correct) {
       setScore(prev => prev + Math.round(points));
     }
 
     setGameState('result');
+
+    if (newTotal >= maxImages) {
+      setGameComplete(true);
+    } else {
+      // Auto-advance to next image after 2 seconds
+      resultTimerRef.current = setTimeout(() => {
+        generateNewQuestion();
+      }, 2000);
+    }
   };
 
   const nextQuestion = () => {
+    clearTimeout(resultTimerRef.current);
     generateNewQuestion();
   };
 
@@ -247,12 +274,11 @@ const PhotoMystery = forwardRef((props, ref) => {
 
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-purple-300">
-            Score: {score}
-            {totalQuestions > 0 && ` (${totalQuestions} answered)`}
+            Score: <strong className="text-yellow-400">{score}</strong> / {maxImages * maxPoints}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-purple-400">
-              {questions.length} questions loaded
+            <span className="text-sm font-bold text-cyan-400">
+              Image {Math.min(totalQuestions + 1, maxImages)}/{maxImages}
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
               currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
@@ -428,12 +454,25 @@ const PhotoMystery = forwardRef((props, ref) => {
             />
           </div>
 
-          <button
-            onClick={nextQuestion}
-            className="w-full py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-semibold border-2 border-purple-400 hover:shadow-lg hover:shadow-purple-500/25 transition-all"
-          >
-            📷 Next Photo →
-          </button>
+          <div className="p-4 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl">
+            <div className="text-lg font-bold text-white mb-2">
+              {gameComplete ? '🎊 Round Complete!' : `Image ${totalQuestions}/${maxImages}`}
+            </div>
+            <div className="text-sm text-blue-300">
+              {gameComplete
+                ? `Final Score: ${score}/${maxImages * maxPoints} - Click "Quit Round" above to continue`
+                : 'Next image loading automatically...'}
+            </div>
+          </div>
+
+          {!gameComplete && (
+            <button
+              onClick={nextQuestion}
+              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500/50 to-pink-600/50 text-white rounded-xl font-medium border border-purple-400/50 hover:bg-purple-500/70 transition-all text-sm"
+            >
+              Skip to Next Photo →
+            </button>
+          )}
         </div>
       )}
     </div>
