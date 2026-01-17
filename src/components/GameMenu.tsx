@@ -10,7 +10,7 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
   const games = [
     { id: 2, name: 'Odd Man Out', slug: 'odd-man-out', description: 'Find what doesn\'t belong' },
     { id: 3, name: 'Zooma', slug: 'photo-mystery', description: 'Guess the hidden image' },
-    { id: 4, name: 'Rank & Roll', slug: 'rank-and-roll', description: 'Sort by superlatives' },
+    { id: 4, name: 'Ranky', slug: 'rank-and-roll', description: 'Sort by superlatives' },
     { id: 5, name: 'Dalmatian Puzzle', slug: 'dalmatian-puzzle', description: 'Complete the jigsaw' },
     { id: 6, name: 'Split Decision', slug: 'split-decision', description: 'Rapid categorization' },
     { id: 7, name: 'Word Rescue', slug: 'word-rescue', description: 'Make words from falling letters' },
