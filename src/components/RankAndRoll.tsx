@@ -78,11 +78,17 @@ const RankAndRoll = forwardRef((props, ref) => {
     }),
     onGameEnd: () => {
       console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted > 0 ? puzzlesCompleted * 600 : 600}`);
+      if (resultTimeout) {
+        clearTimeout(resultTimeout);
+      }
     }
   }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(25);
+  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const maxTimePerPuzzle = 25;
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
@@ -182,13 +188,19 @@ const RankAndRoll = forwardRef((props, ref) => {
 
   const shufflePuzzle = () => {
     if (!currentPuzzle) return;
-    
+
+    // Clear any pending result timeout
+    if (resultTimeout) {
+      clearTimeout(resultTimeout);
+      setResultTimeout(null);
+    }
+
     // Shuffle the items for the player to sort
     const shuffled = [...currentPuzzle.items].sort(() => Math.random() - 0.5);
     setPlayerOrder(shuffled);
     setGameState('playing');
     setMoves(0);
-    setTimeLeft(30);
+    setTimeLeft(maxTimePerPuzzle);
     setShowValues(false);
     setHintMessage('');
     setHintsUsed(0);
@@ -331,28 +343,34 @@ const RankAndRoll = forwardRef((props, ref) => {
 
   const submitFinalAnswer = () => {
     if (!currentPuzzle) return;
-    
+
     // Check if puzzle is complete
-    const correctOrder = currentPuzzle.sortOrder === 'desc' 
+    const correctOrder = currentPuzzle.sortOrder === 'desc'
       ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
       : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
-    
-    const isCorrect = playerOrder.every((item, index) => 
+
+    const isCorrect = playerOrder.every((item, index) =>
       item.id === correctOrder[index].id
     );
-    
+
     setGameState('completed');
-    
+
     if (isCorrect) {
-      const timeBonus = Math.max(0, 200 - (30 - timeLeft) * 2);
+      const timeBonus = Math.max(0, 200 - (maxTimePerPuzzle - timeLeft) * 2);
       const moveBonus = Math.max(0, 100 - moves * 10);
-      const hintPenalty = hintsUsed * 25; // 25 points deducted per hint
+      const hintPenalty = hintsUsed * 25;
       const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
                               currentPuzzle.difficulty === 'medium' ? 50 : 0;
       const finalScore = Math.max(50, 200 + timeBonus + moveBonus + difficultyBonus - hintPenalty);
       setScore(prev => prev + finalScore);
       setPuzzlesCompleted(prev => prev + 1);
     }
+
+    // Auto-advance to next puzzle after 3 seconds
+    const timeout = setTimeout(() => {
+      nextPuzzle();
+    }, 3000);
+    setResultTimeout(timeout);
   };
 
   // Check if puzzle is complete
@@ -425,11 +443,11 @@ const RankAndRoll = forwardRef((props, ref) => {
               ⏰ {timeLeft}s
             </div>
             <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full rounded-full transition-all duration-100 ${
                   timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
                 }`}
-                style={{ width: `${(timeLeft / 30) * 100}%` }}
+                style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%` }}
               />
             </div>
           </div>
@@ -599,7 +617,7 @@ const RankAndRoll = forwardRef((props, ref) => {
                   <div className="text-4xl mb-2">🎉</div>
                   <div className="text-2xl font-bold text-green-300 mb-2">Perfect Ranking!</div>
                   <div className="text-green-200 text-sm mb-2">
-                    Completed with {30 - timeLeft} seconds remaining and {moves} moves
+                    Completed with {maxTimePerPuzzle - timeLeft} seconds elapsed and {moves} moves
                     {hintsUsed > 0 && ` and ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}`}
                   </div>
                   <div className="text-lg font-bold text-white">
@@ -638,16 +656,43 @@ const RankAndRoll = forwardRef((props, ref) => {
       )}
 
       {/* Next Puzzle Button */}
-      <div className="text-center">
-        <button
-          onClick={nextPuzzle}
-          disabled={puzzles.length <= 1}
-          className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all border-2 border-green-400 flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Star size={20} />
-          {puzzles.length > 1 ? 'Next Challenge' : 'Only Puzzle'}
-        </button>
-      </div>
+      {gameState === 'completed' && (
+        <div className="text-center space-y-3">
+          <div className="p-3 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl">
+            <div className="text-sm text-blue-300">
+              {puzzles.length > 1 ? 'Next puzzle loading automatically...' : 'You can continue playing!'}
+            </div>
+          </div>
+          {puzzles.length > 1 && (
+            <button
+              onClick={() => {
+                if (resultTimeout) {
+                  clearTimeout(resultTimeout);
+                  setResultTimeout(null);
+                }
+                nextPuzzle();
+              }}
+              className="px-6 py-2 bg-gradient-to-r from-green-500/50 to-teal-600/50 rounded-xl font-medium hover:bg-green-500/70 transition-all border border-green-400/50 flex items-center gap-2 mx-auto text-sm"
+            >
+              <Star size={16} />
+              Skip to Next Puzzle →
+            </button>
+          )}
+        </div>
+      )}
+
+      {gameState !== 'completed' && (
+        <div className="text-center">
+          <button
+            onClick={nextPuzzle}
+            disabled={puzzles.length <= 1}
+            className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all border-2 border-green-400 flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Star size={20} />
+            {puzzles.length > 1 ? 'Next Challenge' : 'Only Puzzle'}
+          </button>
+        </div>
+      )}
 
       {/* Instructions */}
       <div className="text-center text-xs text-purple-300 bg-white/5 p-3 rounded-xl mt-4">
