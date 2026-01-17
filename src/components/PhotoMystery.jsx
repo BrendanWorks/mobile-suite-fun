@@ -239,7 +239,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-          📷 Photo Mystery
+          📷 Zooma
         </h2>
         <p className="text-purple-300 text-sm mb-4">
           Guess what's in the photo before time runs out!
