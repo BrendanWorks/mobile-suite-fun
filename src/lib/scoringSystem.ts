@@ -1,59 +1,149 @@
-export interface ScoreCalculation {
-  baseScore: number;
-  timeBonus: number;
-  accuracyBonus: number;
-  streakBonus: number;
+export interface GameScore {
+  gameId: string;
+  gameName: string;
+  rawScore: number;
+  normalizedScore: number;
+  grade: 'S' | 'A' | 'B' | 'C' | 'D';
+  breakdown: string;
+}
+
+const calculateGrade = (score: number): 'S' | 'A' | 'B' | 'C' | 'D' => {
+  if (score >= 95) return 'S';
+  if (score >= 85) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 50) return 'C';
+  return 'D';
+};
+
+export const scoringSystem = {
+  oddManOut: (correct: number, total: number): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    const normalizedScore = Math.round(accuracy);
+    return {
+      gameId: 'odd-man-out',
+      gameName: 'Odd Man Out',
+      rawScore: correct,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
+    };
+  },
+
+  rankAndRoll: (rawScore: number): GameScore => {
+    const normalizedScore = Math.min(100, Math.max(0, rawScore));
+    return {
+      gameId: 'rank-and-roll',
+      gameName: 'Ranky',
+      rawScore,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `Score: ${Math.round(rawScore)}`
+    };
+  },
+
+  shapeSequence: (rawScore: number): GameScore => {
+    const normalizedScore = Math.min(100, Math.max(0, rawScore));
+    return {
+      gameId: 'shape-sequence',
+      gameName: 'Shape Sequence',
+      rawScore,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `Score: ${Math.round(rawScore)}`
+    };
+  },
+
+  splitDecision: (correct: number, wrong: number): GameScore => {
+    const total = correct + wrong;
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    const normalizedScore = Math.round(accuracy);
+    return {
+      gameId: 'split-decision',
+      gameName: 'Split Decision',
+      rawScore: correct,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
+    };
+  },
+
+  pop: (rawScore: number): GameScore => {
+    const normalizedScore = Math.min(100, Math.max(0, rawScore));
+    return {
+      gameId: 'word-rescue',
+      gameName: 'Pop',
+      rawScore,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `Score: ${Math.round(rawScore)}`
+    };
+  },
+
+  zooma: (rawScore: number): GameScore => {
+    const normalizedScore = Math.min(100, Math.max(0, rawScore));
+    return {
+      gameId: 'photo-mystery',
+      gameName: 'Zooma',
+      rawScore,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `Score: ${Math.round(rawScore)}`
+    };
+  },
+
+  dalmatian: (completed: boolean, timeSpent: number, maxTime: number): GameScore => {
+    let normalizedScore = 0;
+    if (completed) {
+      const timeRatio = Math.max(0, 1 - (timeSpent / maxTime));
+      normalizedScore = Math.round(50 + (timeRatio * 50));
+    }
+    return {
+      gameId: 'dalmatian-puzzle',
+      gameName: 'Dalmatian Puzzle',
+      rawScore: completed ? 1 : 0,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: completed
+        ? `Completed in ${Math.round(timeSpent)}s`
+        : 'Puzzle not completed'
+    };
+  },
+
+  emojiMaster: (correct: number, total: number): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    const normalizedScore = Math.round(accuracy);
+    return {
+      gameId: 'emoji-master',
+      gameName: 'Emoji Master',
+      rawScore: correct,
+      normalizedScore,
+      grade: calculateGrade(normalizedScore),
+      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
+    };
+  }
+};
+
+export interface SessionScore {
   totalScore: number;
+  maxPossible: number;
+  percentage: number;
+  averageScore: number;
 }
 
-export interface ScoreParams {
-  correctAnswers: number;
-  totalQuestions: number;
-  timeElapsed: number;
-  maxTime: number;
-  streak?: number;
-}
-
-export const calculateScore = (params: ScoreParams): ScoreCalculation => {
-  const { correctAnswers, totalQuestions, timeElapsed, maxTime, streak = 0 } = params;
-
-  // Base score: 100 points per correct answer
-  const baseScore = correctAnswers * 100;
-
-  // Time bonus: Up to 50 points per question based on speed
-  const timeRatio = Math.max(0, 1 - (timeElapsed / maxTime));
-  const timeBonus = Math.floor(timeRatio * 50 * correctAnswers);
-
-  // Accuracy bonus: Up to 100 points based on percentage correct
-  const accuracy = totalQuestions > 0 ? correctAnswers / totalQuestions : 0;
-  const accuracyBonus = Math.floor(accuracy * 100);
-
-  // Streak bonus: 25 points per consecutive correct answer
-  const streakBonus = streak * 25;
-
-  // Total score
-  const totalScore = baseScore + timeBonus + accuracyBonus + streakBonus;
+export const calculateSessionScore = (scores: GameScore[]): SessionScore => {
+  const totalScore = scores.reduce((sum, score) => sum + score.normalizedScore, 0);
+  const maxPossible = scores.length * 100;
+  const percentage = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
+  const averageScore = scores.length > 0 ? Math.round(totalScore / scores.length) : 0;
 
   return {
-    baseScore,
-    timeBonus,
-    accuracyBonus,
-    streakBonus,
-    totalScore
+    totalScore: Math.round(totalScore),
+    maxPossible,
+    percentage,
+    averageScore
   };
 };
 
-export const calculateStars = (score: number, thresholds: { onestar: number; twostar: number; threestar: number }): number => {
-  if (score >= thresholds.threestar) return 3;
-  if (score >= thresholds.twostar) return 2;
-  if (score >= thresholds.onestar) return 1;
-  return 0;
-};
-
-export const calculateRank = (score: number): string => {
-  if (score >= 2000) return 'S';
-  if (score >= 1500) return 'A';
-  if (score >= 1000) return 'B';
-  if (score >= 500) return 'C';
-  return 'D';
+export const getSessionGrade = (percentage: number): 'S' | 'A' | 'B' | 'C' | 'D' => {
+  return calculateGrade(percentage);
 };
