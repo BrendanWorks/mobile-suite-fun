@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 
-const DalmatianPuzzle = () => {
+const DalmatianPuzzle = forwardRef((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -10,6 +10,16 @@ const DalmatianPuzzle = () => {
   const [puzzles, setPuzzles] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: gameState === 'won' ? 100 : Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100),
+      maxScore: 100
+    }),
+    onGameEnd: () => {
+      console.log(`DalmatianPuzzle ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
+    }
+  }));
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -757,6 +767,8 @@ const DalmatianPuzzle = () => {
       )}
     </div>
   );
-};
+});
+
+DalmatianPuzzle.displayName = 'DalmatianPuzzle';
 
 export default DalmatianPuzzle;

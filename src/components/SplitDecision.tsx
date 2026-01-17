@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 
-export default function SplitDecision() {
+const SplitDecision = forwardRef((props, ref) => {
   // Game data state
   const [gameData, setGameData] = useState(null);
   const [allPuzzles, setAllPuzzles] = useState([]);
@@ -19,6 +19,22 @@ export default function SplitDecision() {
     feedback: null,
     results: []
   });
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => {
+      const correctCount = gameState.results.filter(r => r.correct).length;
+      const totalItems = gameData?.items?.length || gameState.results.length || 1;
+      return {
+        score: correctCount,
+        maxScore: totalItems
+      };
+    },
+    onGameEnd: () => {
+      const correctCount = gameState.results.filter(r => r.correct).length;
+      const totalItems = gameData?.items?.length || gameState.results.length || 1;
+      console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct`);
+    }
+  }));
 
   // Fetch game data from Supabase
   const fetchGameData = async () => {
@@ -517,4 +533,8 @@ export default function SplitDecision() {
   }
 
   return null;
-}
+});
+
+SplitDecision.displayName = 'SplitDecision';
+
+export default SplitDecision;

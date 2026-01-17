@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Trophy, Clock, Shuffle, ArrowUp, ArrowDown, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-const RankAndRoll = () => {
+const RankAndRoll = forwardRef((props, ref) => {
 
   // Fallback data in case Supabase is unavailable
   const fallbackPuzzles = [
@@ -64,11 +64,22 @@ const RankAndRoll = () => {
   const [gameState, setGameState] = useState('playing'); // playing, completed, loading
   const [score, setScore] = useState(0);
   const [moves, setMoves] = useState(0);
+  const [puzzlesCompleted, setPuzzlesCompleted] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [showValues, setShowValues] = useState(false);
   const [hintMessage, setHintMessage] = useState('');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [touchStartY, setTouchStartY] = useState(null);
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: score,
+      maxScore: puzzlesCompleted * 600
+    }),
+    onGameEnd: () => {
+      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted * 600}`);
+    }
+  }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -336,10 +347,11 @@ const RankAndRoll = () => {
       const timeBonus = Math.max(0, 200 - (30 - timeLeft) * 2);
       const moveBonus = Math.max(0, 100 - moves * 10);
       const hintPenalty = hintsUsed * 25; // 25 points deducted per hint
-      const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 : 
+      const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
                               currentPuzzle.difficulty === 'medium' ? 50 : 0;
       const finalScore = Math.max(50, 200 + timeBonus + moveBonus + difficultyBonus - hintPenalty);
       setScore(prev => prev + finalScore);
+      setPuzzlesCompleted(prev => prev + 1);
     }
   };
 
@@ -647,6 +659,8 @@ const RankAndRoll = () => {
       </div>
     </div>
   );
-};
+});
+
+RankAndRoll.displayName = 'RankAndRoll';
 
 export default RankAndRoll;

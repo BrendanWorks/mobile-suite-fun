@@ -1,12 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 
-const ShapeSequenceGame = () => {
+const ShapeSequenceGame = forwardRef((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'waiting' | 'showing' | 'playing' | 'correct' | 'wrong' | 'gameover'>('waiting');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [showingIndex, setShowingIndex] = useState(0);
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: level,
+      maxScore: 10
+    }),
+    onGameEnd: () => {
+      console.log(`ShapeSequence ended at level: ${level}, score: ${score}`);
+    }
+  }));
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -515,6 +525,8 @@ const ShapeSequenceGame = () => {
       </div>
     </div>
   );
-};
+});
+
+ShapeSequenceGame.displayName = 'ShapeSequenceGame';
 
 export default ShapeSequenceGame;

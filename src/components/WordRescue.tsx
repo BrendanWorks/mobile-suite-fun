@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const WordRescue = () => {
+const WordRescue = forwardRef((props, ref) => {
   // Word list for validation
   const fallbackWords = new Set([
     'cat', 'dog', 'run', 'fun', 'sun', 'car', 'art', 'bat', 'hat', 'rat',
@@ -127,6 +127,16 @@ const WordRescue = () => {
   const audioContext = useRef(null); // Audio context for Web Audio API
   const audioBuffers = useRef(new Map()); // Store loaded audio buffers
   const audioInitialized = useRef(false); // Track if audio is ready
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: score,
+      maxScore: 1000
+    }),
+    onGameEnd: () => {
+      console.log(`WordRescue ended with score: ${score} (${wordsFound.length} words)`);
+    }
+  }));
 
   // Common letters with frequency weights
   const letterPool = 'AAAAAEEEEEIIIIIOOOOOUUUUBBBCCCDDDFFFFFGGGHHHHJKKLLLMMMNNNNPPQRRRRSSSSTTTTVWWXYYZ';
@@ -746,6 +756,8 @@ const WordRescue = () => {
       </div>
     </div>
   );
-};
+});
+
+WordRescue.displayName = 'WordRescue';
 
 export default WordRescue;
