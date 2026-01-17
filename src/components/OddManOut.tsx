@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { GameHandle } from '../lib/gameTypes';
 
-export default function OddManOut() {
+const OddManOut = forwardRef<GameHandle>((props, ref) => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [gameState, setGameState] = useState('loading'); // loading, playing, result, error
+  const [gameState, setGameState] = useState('loading');
   const [isCorrect, setIsCorrect] = useState(false);
   const [message, setMessage] = useState('');
   const [score, setScore] = useState(0);
@@ -20,6 +21,16 @@ export default function OddManOut() {
     "Outstanding! You've got a keen eye!",
     "Fantastic! Well reasoned!"
   ];
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: score,
+      maxScore: totalQuestions > 0 ? totalQuestions : 1
+    }),
+    onGameEnd: () => {
+      console.log(`OddManOut ended with score: ${score}/${totalQuestions}`);
+    }
+  }));
 
   // Fetch questions from Supabase
   const fetchQuestions = async () => {
@@ -53,37 +64,32 @@ export default function OddManOut() {
     }
   };
 
-  // Generate new question
   const generateNewQuestion = () => {
     if (questions.length === 0) return;
-    
-    // Get questions not yet used, or reset if all used
+
     let availableQuestions = questions.filter(q => !usedQuestions.includes(q.id));
     if (availableQuestions.length === 0) {
       availableQuestions = questions;
       setUsedQuestions([]);
     }
-    
+
     const question = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-    
-    // Ensure difficulty has a default value if null/undefined
+
     if (!question.difficulty) {
       question.difficulty = 'unknown';
     }
-    
+
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
-    
-    // Shuffle items once when question is generated
+
     const items = question.prompt.split(';').map(item => item.trim());
     setShuffledItems(shuffleArray(items));
-    
+
     setSelectedItems([]);
     setGameState('playing');
     setMessage('');
   };
 
-  // Shuffle array function
   const shuffleArray = (array) => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -93,61 +99,34 @@ export default function OddManOut() {
     return shuffled;
   };
 
-  // Handle item selection
   const handleItemClick = (item) => {
-    console.log('Item clicked:', item, 'Game state:', gameState);
     if (gameState !== 'playing') return;
-    
+
     if (selectedItems.includes(item)) {
       setSelectedItems(prev => prev.filter(selected => selected !== item));
-      console.log('Item deselected, new selection:', selectedItems.filter(s => s !== item));
     } else if (selectedItems.length < 2) {
       setSelectedItems(prev => [...prev, item]);
-      console.log('Item selected, new selection:', [...selectedItems, item]);
     }
   };
 
-  // Check answer
   const checkAnswer = () => {
-    console.log('🔥 CHECK ANSWER FUNCTION CALLED!');
-    console.log('Selected items:', selectedItems);
-    console.log('Selected items length:', selectedItems.length);
-    
-    if (selectedItems.length !== 2) {
-      console.log('❌ Not exactly 2 items selected, returning early');
-      return;
-    }
-    
-    console.log('✅ We have 2 items, continuing...');
-    console.log('Current question:', currentQuestion);
-    
-    if (!currentQuestion) {
-      console.log('❌ No current question, returning early');
-      return;
-    }
-    
-    console.log('✅ Have current question, checking answer...');
-    
+    if (selectedItems.length !== 2 || !currentQuestion) return;
+
     const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
-    console.log('Correct answer:', correctAnswer);
-    
     const isAnswerCorrect = selectedItems.length === correctAnswer.length &&
       selectedItems.every(item => correctAnswer.includes(item));
-    
-    console.log('Is answer correct?', isAnswerCorrect);
-    
+
     setIsCorrect(isAnswerCorrect);
     setTotalQuestions(prev => prev + 1);
-    
+
     if (isAnswerCorrect) {
       setScore(prev => prev + 1);
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
     } else {
       setMessage("Not quite right, but here's the logic:");
     }
-    
+
     setGameState('result');
-    console.log('✅ Function completed, setting state to result');
   };
 
   // Initialize game
@@ -198,30 +177,23 @@ export default function OddManOut() {
   }
 
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
-  
 
-  // Get logic from metadata
   let logic = 'Think about what makes them different!';
-  
   if (currentQuestion.metadata) {
-    // If metadata is a string, try to parse it
     if (typeof currentQuestion.metadata === 'string') {
       try {
         const parsed = JSON.parse(currentQuestion.metadata);
         logic = parsed.logic || logic;
       } catch (e) {
-        console.error('Failed to parse metadata string:', e);
+        console.error('Failed to parse metadata:', e);
       }
-    } 
-    // If metadata is already an object
-    else if (typeof currentQuestion.metadata === 'object') {
+    } else if (typeof currentQuestion.metadata === 'object') {
       logic = currentQuestion.metadata.logic || logic;
     }
   }
 
   return (
     <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
           🎯 Odd Man Out
@@ -229,8 +201,7 @@ export default function OddManOut() {
         <p className="text-purple-300 text-sm mb-4">
           Pick the TWO items that don't belong with the others!
         </p>
-        
-        {/* Score */}
+
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-purple-300">
             Score: {score}/{totalQuestions}
@@ -246,24 +217,18 @@ export default function OddManOut() {
               currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
               'bg-gray-500/20 text-gray-300 border-gray-400'
             }`}>
-              {currentQuestion.difficulty ? 
-                currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) : 
-                'Unknown'
-              }
+              {currentQuestion.difficulty?.charAt(0).toUpperCase() + currentQuestion.difficulty?.slice(1) || 'Unknown'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Instructions */}
       <div className="mb-6 p-4 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl">
         <p className="text-blue-300 text-sm">
           Select exactly <strong>2 items</strong> that don't belong with the other 3.
-          Think about categories, themes, or what makes them different!
         </p>
       </div>
 
-      {/* Items Grid */}
       <div className="mb-6">
         <div className="grid grid-cols-1 gap-3">
           {shuffledItems.map((item, index) => {
@@ -300,7 +265,6 @@ export default function OddManOut() {
         </div>
       </div>
 
-      {/* Selected Items Display */}
       <div className="mb-6">
         <h4 className="text-sm font-medium text-purple-300 mb-2">Your Selection:</h4>
         <div className="min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-3">
@@ -319,7 +283,6 @@ export default function OddManOut() {
         </div>
       </div>
 
-      {/* Action Button */}
       {gameState === 'playing' ? (
         <button
           onClick={checkAnswer}
@@ -336,11 +299,10 @@ export default function OddManOut() {
         </button>
       ) : (
         <div>
-          {/* Result */}
           <div className={`
             mb-4 p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
-            ${isCorrect 
-              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25' 
+            ${isCorrect
+              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
               : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
             }
           `}>
@@ -350,13 +312,11 @@ export default function OddManOut() {
             <div className="text-sm mb-3">
               <strong>Correct answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
             </div>
-            {/* Always show the explanation */}
             <div className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
               <strong className="text-white">Explanation:</strong> <span className="text-gray-200">{logic}</span>
             </div>
           </div>
 
-          {/* Next Question Button */}
           <button
             onClick={generateNewQuestion}
             className="w-full py-4 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-500 to-pink-600 border-2 border-purple-400 hover:shadow-lg hover:shadow-purple-500/25 active:scale-98 transition-all"
@@ -367,4 +327,8 @@ export default function OddManOut() {
       )}
     </div>
   );
-}
+});
+
+OddManOut.displayName = 'OddManOut';
+
+export default OddManOut;
