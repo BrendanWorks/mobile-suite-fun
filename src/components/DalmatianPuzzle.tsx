@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 const DalmatianPuzzle = forwardRef((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
-  const [timeLeft, setTimeLeft] = useState(60);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [puzzles, setPuzzles] = useState([]);
@@ -26,7 +25,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     PUZZLE_ROWS: 3,
     PUZZLE_COLS: 3,
     NUM_DRAGGABLE_PIECES: 6,
-    TIMER_DURATION: 60,
     IMAGE_URL: '',
     img: new Image(),
     puzzlePieces: [],
@@ -39,8 +37,7 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     completedSlots: 0,
     canvasWidth: 0,
     canvasHeight: 0,
-    pieceSize: 0,
-    timerInterval: null as NodeJS.Timeout | null
+    pieceSize: 0
   });
 
   // Fetch puzzles from Supabase
@@ -276,7 +273,7 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   };
 
   const handleStart = (e: any) => {
-    if (!isImageLoaded || timeLeft <= 0 || gameState !== 'playing') return;
+    if (!isImageLoaded || gameState !== 'playing') return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -422,9 +419,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
         
         // Check if puzzle is complete
         if (gameStateRef.current.completedSlots === gameStateRef.current.NUM_DRAGGABLE_PIECES) {
-          if (gameStateRef.current.timerInterval) {
-            clearInterval(gameStateRef.current.timerInterval);
-          }
           setGameState('won');
         }
       } else {
@@ -471,24 +465,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     gameStateRef.current.isDragging = false;
     setGameState('playing');
 
-    // Reset and start timer
-    if (gameStateRef.current.timerInterval) {
-      clearInterval(gameStateRef.current.timerInterval);
-    }
-    setTimeLeft(60);
-    gameStateRef.current.timerInterval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          if (gameStateRef.current.timerInterval) {
-            clearInterval(gameStateRef.current.timerInterval);
-          }
-          setGameState('lost');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
     const allPieces = [];
     for (let row = 0; row < gameStateRef.current.PUZZLE_ROWS; row++) {
       for (let col = 0; col < gameStateRef.current.PUZZLE_COLS; col++) {
@@ -563,9 +539,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
 
     return () => {
       window.removeEventListener('resize', handleResizeEvent);
-      if (gameStateRef.current.timerInterval) {
-        clearInterval(gameStateRef.current.timerInterval);
-      }
     };
   }, [isImageLoaded]);
 
@@ -626,7 +599,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     };
   }, [isImageLoaded]);
 
-  const timerPercentage = (timeLeft / 60) * 100;
   const currentPuzzle = getCurrentPuzzle();
 
   // Loading state
@@ -662,7 +634,7 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
         Dalmatian Puzzle
       </h1>
 
-      {/* Timer bar and info */}
+      {/* Info bar */}
       <div className="flex justify-center items-center gap-6 mb-6">
         <div className="text-sm text-purple-300">
           Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
@@ -675,19 +647,6 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
               {currentPuzzle.difficulty.charAt(0).toUpperCase() + currentPuzzle.difficulty.slice(1)}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={`text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
-            ⏰ {timeLeft}s
-          </div>
-          <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-100 ${
-                timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
-              }`}
-              style={{ width: `${(timeLeft / 60) * 100}%` }}
-            />
-          </div>
         </div>
         <div className="text-sm text-purple-300">
           Drag pieces to complete the puzzle!
