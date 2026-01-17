@@ -497,20 +497,18 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
 
       {/* Game Over Screen */}
       {gameState === 'gameover' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-700 p-8 rounded-lg shadow-2xl">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Game Over! 💀
-              </h3>
-              <div className="text-lg text-gray-700 dark:text-gray-300 text-center">
-                <div>Final Score: <strong>{score}</strong></div>
-                <div>Level Reached: <strong>{level}</strong></div>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
-                Click "Quit Round" above to continue
-              </p>
+        <div className="mt-6 p-6 bg-red-500/20 border-2 border-red-400 rounded-xl">
+          <div className="text-center">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Game Over! 💀
+            </h3>
+            <div className="text-lg text-gray-200 mb-4">
+              <div>Final Score: <strong className="text-yellow-400">{score}</strong></div>
+              <div>Level Reached: <strong className="text-cyan-400">{level}</strong></div>
             </div>
+            <p className="text-sm text-purple-300">
+              Click "Quit Round" above to continue to the next game
+            </p>
           </div>
         </div>
       )}
