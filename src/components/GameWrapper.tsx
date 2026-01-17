@@ -7,13 +7,15 @@ interface GameWrapperProps {
   duration?: number;
   onComplete: (score: number, maxScore: number) => void;
   gameName: string;
+  showTimer?: boolean;
 }
 
 export default function GameWrapper({
   children,
   duration = 60,
   onComplete,
-  gameName
+  gameName,
+  showTimer = true
 }: GameWrapperProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
@@ -69,16 +71,18 @@ export default function GameWrapper({
   return (
     <div className="relative">
       <div className="flex justify-between items-center mb-4 bg-gray-100 p-3 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Clock className={`w-5 h-5 ${timeLeft < 10 ? 'text-red-600 animate-pulse' : 'text-gray-600'}`} />
-          <span className={`font-bold text-lg ${timeLeft < 10 ? 'text-red-600' : 'text-gray-700'}`}>
-            {formatTime(timeLeft)}
-          </span>
-        </div>
+        {showTimer && (
+          <div className="flex items-center gap-2">
+            <Clock className={`w-5 h-5 ${timeLeft < 10 ? 'text-red-600 animate-pulse' : 'text-gray-600'}`} />
+            <span className={`font-bold text-lg ${timeLeft < 10 ? 'text-red-600' : 'text-gray-700'}`}>
+              {formatTime(timeLeft)}
+            </span>
+          </div>
+        )}
         <button
           onClick={handleQuitClick}
           disabled={hasEnded}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+          className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors ${!showTimer ? 'ml-auto' : ''}`}
         >
           {hasEnded ? 'Round Complete' : 'Quit Round'}
         </button>

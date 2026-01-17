@@ -25,7 +25,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', component: DalmatianPuzzle, duration: 60 },
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60 },
   { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 90 },
-  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 60 },
+  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 999 },
 ];
 
 interface RoundData {
@@ -280,6 +280,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             duration={currentGame.duration}
             onComplete={handleGameComplete}
             gameName={currentGame.name}
+            showTimer={currentGame.id !== 'shape-sequence'}
           >
             <GameComponent />
           </GameWrapper>

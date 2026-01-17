@@ -477,16 +477,16 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
       {/* Controls */}
       <div className="flex justify-center gap-4">
         {gameState === 'waiting' && (
-          <button 
+          <button
             onClick={startGame}
             className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105 text-lg"
           >
             🎮 Start Game
           </button>
         )}
-        
-        {(gameState === 'playing' || gameState === 'showing' || gameState === 'correct' || gameState === 'wrong') && (
-          <button 
+
+        {(gameState === 'playing' || gameState === 'showing' || gameState === 'correct' || gameState === 'wrong') && gameState !== 'gameover' && (
+          <button
             onClick={resetGame}
             className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
           >
@@ -507,12 +507,9 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
                 <div>Final Score: <strong>{score}</strong></div>
                 <div>Level Reached: <strong>{level}</strong></div>
               </div>
-              <button 
-                onClick={startGame}
-                className="px-8 py-4 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
-              >
-                Play Again
-              </button>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
+                Click "Quit Round" above to continue
+              </p>
             </div>
           </div>
         </div>
