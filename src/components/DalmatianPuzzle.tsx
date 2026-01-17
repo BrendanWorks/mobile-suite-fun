@@ -9,6 +9,10 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   const [puzzles, setPuzzles] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const maxTimePerPuzzle = 60;
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -17,6 +21,9 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     }),
     onGameEnd: () => {
       console.log(`DalmatianPuzzle ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
+      if (resultTimeout) {
+        clearTimeout(resultTimeout);
+      }
     }
   }));
 
@@ -456,14 +463,21 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   const resetGame = () => {
     const currentPuzzle = getCurrentPuzzle();
     if (!currentPuzzle) return;
-    
+
+    // Clear any pending result timeout
+    if (resultTimeout) {
+      clearTimeout(resultTimeout);
+      setResultTimeout(null);
+    }
+
     // Update the image URL for the current puzzle
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
-    
+
     gameStateRef.current.completedSlots = 0;
     gameStateRef.current.draggingPiece = null;
     gameStateRef.current.isDragging = false;
     setGameState('playing');
+    setTimeLeft(maxTimePerPuzzle);
 
     const allPieces = [];
     for (let row = 0; row < gameStateRef.current.PUZZLE_ROWS; row++) {
@@ -502,6 +516,33 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     drawDraggablePieces();
     drawGame();
   };
+
+  // Timer effect
+  useEffect(() => {
+    if (gameState === 'playing' && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setGameState('lost');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [gameState, timeLeft]);
+
+  // Handle puzzle completion
+  useEffect(() => {
+    if (gameState === 'won' && puzzles.length > 1) {
+      // Auto-advance to next puzzle after 3 seconds
+      const timeout = setTimeout(() => {
+        nextPuzzle();
+      }, 3000);
+      setResultTimeout(timeout);
+    }
+  }, [gameState, puzzles.length]);
 
   // Initialize puzzles
   useEffect(() => {
@@ -648,8 +689,21 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
             </span>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <div className={`text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
+            ⏰ {timeLeft}s
+          </div>
+          <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-100 ${
+                timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
+              }`}
+              style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%` }}
+            />
+          </div>
+        </div>
         <div className="text-sm text-purple-300">
-          Drag pieces to complete the puzzle!
+          {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
         </div>
       </div>
 
@@ -697,26 +751,42 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
           <div className="bg-white dark:bg-gray-700 p-8 rounded-lg shadow-2xl">
             <div className="flex flex-col items-center justify-center space-y-4">
               <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {gameState === 'won' ? 'Puzzle Solved!' : "Time's Up! Try Again."}
+                {gameState === 'won' ? 'Puzzle Solved!' : "Time's Up!"}
               </h3>
+              {gameState === 'won' && (
+                <div className="text-lg text-green-600 dark:text-green-400 text-center">
+                  Completed in {maxTimePerPuzzle - timeLeft} seconds! 🎉
+                </div>
+              )}
               {currentPuzzle.correct_answer && (
                 <div className="text-lg text-gray-700 dark:text-gray-300 text-center">
                   Answer: <strong>{currentPuzzle.correct_answer}</strong>
                 </div>
               )}
+              {puzzles.length > 1 && gameState === 'won' && (
+                <div className="text-sm text-blue-600 dark:text-blue-400 text-center">
+                  Next puzzle loading automatically...
+                </div>
+              )}
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={resetGame}
                   className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
                 >
                   Try Again
                 </button>
                 {puzzles.length > 1 && (
-                  <button 
-                    onClick={nextPuzzle}
+                  <button
+                    onClick={() => {
+                      if (resultTimeout) {
+                        clearTimeout(resultTimeout);
+                        setResultTimeout(null);
+                      }
+                      nextPuzzle();
+                    }}
                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
                   >
-                    Next Puzzle
+                    {gameState === 'won' ? 'Skip to Next →' : 'Next Puzzle'}
                   </button>
                 )}
               </div>
