@@ -1,136 +1,170 @@
+/**
+ * Unified Scoring System for Game Box
+ * Copy this entire file into your lib/ folder as: lib/scoringSystem.ts
+ */
+
 export interface GameScore {
   gameId: string;
   gameName: string;
   rawScore: number;
   normalizedScore: number;
-  grade: 'S' | 'A' | 'B' | 'C' | 'D';
+  grade: string;
   breakdown: string;
 }
-
-const calculateGrade = (score: number): 'S' | 'A' | 'B' | 'C' | 'D' => {
-  if (score >= 95) return 'S';
-  if (score >= 85) return 'A';
-  if (score >= 70) return 'B';
-  if (score >= 50) return 'C';
-  return 'D';
-};
-
-export const scoringSystem = {
-  oddManOut: (correct: number, total: number): GameScore => {
-    const accuracy = total > 0 ? (correct / total) * 100 : 0;
-    const normalizedScore = Math.round(accuracy);
-    return {
-      gameId: 'odd-man-out',
-      gameName: 'Odd Man Out',
-      rawScore: correct,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
-    };
-  },
-
-  rankAndRoll: (rawScore: number): GameScore => {
-    const normalizedScore = Math.min(100, Math.max(0, rawScore));
-    return {
-      gameId: 'rank-and-roll',
-      gameName: 'Ranky',
-      rawScore,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `Score: ${Math.round(rawScore)}`
-    };
-  },
-
-  shapeSequence: (rawScore: number): GameScore => {
-    const normalizedScore = Math.min(100, Math.max(0, rawScore));
-    return {
-      gameId: 'shape-sequence',
-      gameName: 'Shape Sequence',
-      rawScore,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `Score: ${Math.round(rawScore)}`
-    };
-  },
-
-  splitDecision: (correct: number, wrong: number): GameScore => {
-    const total = correct + wrong;
-    const accuracy = total > 0 ? (correct / total) * 100 : 0;
-    const normalizedScore = Math.round(accuracy);
-    return {
-      gameId: 'split-decision',
-      gameName: 'Split Decision',
-      rawScore: correct,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
-    };
-  },
-
-  pop: (rawScore: number): GameScore => {
-    const normalizedScore = Math.min(100, Math.max(0, rawScore));
-    return {
-      gameId: 'word-rescue',
-      gameName: 'Pop',
-      rawScore,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `Score: ${Math.round(rawScore)}`
-    };
-  },
-
-  zooma: (rawScore: number): GameScore => {
-    const normalizedScore = Math.min(100, Math.max(0, rawScore));
-    return {
-      gameId: 'photo-mystery',
-      gameName: 'Zooma',
-      rawScore,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `Score: ${Math.round(rawScore)}`
-    };
-  },
-
-  dalmatian: (completed: boolean, timeSpent: number, maxTime: number): GameScore => {
-    let normalizedScore = 0;
-    if (completed) {
-      const timeRatio = Math.max(0, 1 - (timeSpent / maxTime));
-      normalizedScore = Math.round(50 + (timeRatio * 50));
-    }
-    return {
-      gameId: 'dalmatian-puzzle',
-      gameName: 'Dalmatian Puzzle',
-      rawScore: completed ? 1 : 0,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: completed
-        ? `Completed in ${Math.round(timeSpent)}s`
-        : 'Puzzle not completed'
-    };
-  }
-};
 
 export interface SessionScore {
   totalScore: number;
   maxPossible: number;
   percentage: number;
-  averageScore: number;
 }
 
-export const calculateSessionScore = (scores: GameScore[]): SessionScore => {
-  const totalScore = scores.reduce((sum, score) => sum + score.normalizedScore, 0);
-  const maxPossible = scores.length * 100;
-  const percentage = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
-  const averageScore = scores.length > 0 ? Math.round(totalScore / scores.length) : 0;
+function getGrade(score: number): string {
+  if (score >= 90) return 'S';
+  if (score >= 75) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 40) return 'C';
+  return 'D';
+}
+
+export const scoringSystem = {
+  // OddManOut: Accuracy-based
+  oddManOut: (correct: number, total: number): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    return {
+      gameId: 'odd-man-out',
+      gameName: 'Odd Man Out',
+      rawScore: correct,
+      normalizedScore: accuracy,
+      grade: getGrade(accuracy),
+      breakdown: `${correct}/${total} correct (${Math.round(accuracy)}%)`
+    };
+  },
+
+  // RankAndRoll: Component-based
+  rankAndRoll: (baseScore: number): GameScore => {
+    const normalized = Math.min(100, (baseScore / 500) * 100);
+    return {
+      gameId: 'rank-and-roll',
+      gameName: 'Ranky',
+      rawScore: baseScore,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${Math.round(baseScore)} base points`
+    };
+  },
+
+  // ShapeSequence: Level-based
+  shapeSequence: (levelReached: number): GameScore => {
+    const normalized = Math.min(100, (levelReached / 10) * 100);
+    return {
+      gameId: 'shape-sequence',
+      gameName: 'Shape Sequence',
+      rawScore: levelReached,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `Reached level ${levelReached}`
+    };
+  },
+
+  // SplitDecision: Binary scoring
+  splitDecision: (correct: number, wrong: number): GameScore => {
+    const total = correct + wrong;
+    if (total === 0) {
+      return {
+        gameId: 'split-decision',
+        gameName: 'Split Decision',
+        rawScore: 0,
+        normalizedScore: 0,
+        grade: 'D',
+        breakdown: 'No items answered'
+      };
+    }
+    const percentage = (correct / total) * 100;
+    return {
+      gameId: 'split-decision',
+      gameName: 'Split Decision',
+      rawScore: correct - wrong,
+      normalizedScore: percentage,
+      grade: getGrade(percentage),
+      breakdown: `${correct}/${total} correct (${Math.round(percentage)}%)`
+    };
+  },
+
+  // Pop (WordRescue): Length-squared
+  pop: (wordScore: number): GameScore => {
+    const normalized = Math.min(100, (wordScore / 1500) * 100);
+    return {
+      gameId: 'word-rescue',
+      gameName: 'Pop',
+      rawScore: wordScore,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${wordScore} points`
+    };
+  },
+
+  // Zooma (PhotoMystery): Time-based
+  zooma: (score: number): GameScore => {
+    const normalized = Math.min(100, (score / 1000) * 100);
+    return {
+      gameId: 'photo-mystery',
+      gameName: 'Zooma',
+      rawScore: score,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${score} points`
+    };
+  },
+
+  // Dalmatian: Time-based completion
+  dalmatian: (completed: boolean, timeRemaining: number, totalTime: number = 60): GameScore => {
+    let normalized = 0;
+    let breakdown = '';
+
+    if (completed) {
+      normalized = 50 + ((timeRemaining / totalTime) * 50);
+      breakdown = `Completed with ${timeRemaining}s remaining`;
+    } else {
+      normalized = (((totalTime - timeRemaining) / totalTime) * 50);
+      breakdown = `Incomplete after ${totalTime - timeRemaining}s`;
+    }
+
+    return {
+      gameId: 'dalmatian-puzzle',
+      gameName: 'Dalmatian Puzzle',
+      rawScore: completed ? 100 : Math.round(normalized),
+      normalizedScore: Math.min(100, normalized),
+      grade: getGrade(Math.min(100, normalized)),
+      breakdown
+    };
+  },
+
+  // EmojiMaster: Placeholder (adjust based on actual game)
+  emojiMaster: (correct: number, total: number): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    return {
+      gameId: 'emoji-master',
+      gameName: 'Emoji Master',
+      rawScore: correct,
+      normalizedScore: accuracy,
+      grade: getGrade(accuracy),
+      breakdown: `${correct}/${total} correct (${Math.round(accuracy)}%)`
+    };
+  }
+};
+
+export const calculateSessionScore = (gameScores: GameScore[]): SessionScore => {
+  const total = gameScores.reduce((sum, g) => sum + g.normalizedScore, 0);
+  const maxPossible = gameScores.length * 100;
+  const percentage = (total / maxPossible) * 100;
 
   return {
-    totalScore: Math.round(totalScore),
+    totalScore: Math.round(total),
     maxPossible,
-    percentage,
-    averageScore
+    percentage: Math.round(percentage)
   };
 };
 
-export const getSessionGrade = (percentage: number): 'S' | 'A' | 'B' | 'C' | 'D' => {
-  return calculateGrade(percentage);
+export const getSessionGrade = (percentage: number): string => {
+  return getGrade(percentage);
 };
