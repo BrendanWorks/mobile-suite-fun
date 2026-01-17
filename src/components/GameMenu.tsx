@@ -8,7 +8,6 @@ interface GameMenuProps {
 export default function GameMenu({ onGameSelect }: GameMenuProps) {
   // Hardcoded games that exist in your components directory
   const games = [
-    { id: 1, name: 'Emoji Master', slug: 'emoji-master', description: 'Decode emoji puzzles' },
     { id: 2, name: 'Odd Man Out', slug: 'odd-man-out', description: 'Find what doesn\'t belong' },
     { id: 3, name: 'Photo Mystery', slug: 'photo-mystery', description: 'Guess the hidden image' },
     { id: 4, name: 'Rank & Roll', slug: 'rank-and-roll', description: 'Sort by superlatives' },
@@ -19,7 +18,6 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
   ];
 
   const gameIcons = {
-    'emoji-master': '🎯',
     'odd-man-out': '🔍',
     'photo-mystery': '📷',
     'rank-and-roll': '📊',
