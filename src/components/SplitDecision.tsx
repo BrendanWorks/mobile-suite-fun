@@ -23,7 +23,7 @@ const SplitDecision = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => {
       const correctCount = gameState.results.filter(r => r.correct).length;
-      const totalItems = gameData?.items?.length || gameState.results.length || 1;
+      const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
       return {
         score: correctCount,
         maxScore: totalItems
@@ -31,7 +31,7 @@ const SplitDecision = forwardRef((props, ref) => {
     },
     onGameEnd: () => {
       const correctCount = gameState.results.filter(r => r.correct).length;
-      const totalItems = gameData?.items?.length || gameState.results.length || 1;
+      const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
       console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct`);
     }
   }));

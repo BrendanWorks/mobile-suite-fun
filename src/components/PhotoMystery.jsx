@@ -24,10 +24,10 @@ const PhotoMystery = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: totalQuestions * maxPoints
+      maxScore: totalQuestions > 0 ? totalQuestions * maxPoints : maxPoints
     }),
     onGameEnd: () => {
-      console.log(`PhotoMystery ended with score: ${score}/${totalQuestions * maxPoints}`);
+      console.log(`PhotoMystery ended with score: ${score}/${totalQuestions > 0 ? totalQuestions * maxPoints : maxPoints}`);
     }
   }));
 

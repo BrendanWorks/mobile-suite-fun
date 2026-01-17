@@ -74,10 +74,10 @@ const RankAndRoll = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: puzzlesCompleted * 600
+      maxScore: puzzlesCompleted > 0 ? puzzlesCompleted * 600 : 600
     }),
     onGameEnd: () => {
-      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted * 600}`);
+      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted > 0 ? puzzlesCompleted * 600 : 600}`);
     }
   }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
