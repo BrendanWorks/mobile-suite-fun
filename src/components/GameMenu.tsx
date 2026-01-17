@@ -13,7 +13,7 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     { id: 4, name: 'Ranky', slug: 'rank-and-roll', description: 'Sort by superlatives' },
     { id: 5, name: 'Dalmatian Puzzle', slug: 'dalmatian-puzzle', description: 'Complete the jigsaw' },
     { id: 6, name: 'Split Decision', slug: 'split-decision', description: 'Rapid categorization' },
-    { id: 7, name: 'Word Rescue', slug: 'word-rescue', description: 'Make words from falling letters' },
+    { id: 7, name: 'Pop', slug: 'word-rescue', description: 'Make words from falling letters' },
     { id: 8, name: 'Shape Sequence', slug: 'shape-sequence', description: 'Remember the pattern' }
   ];
 
