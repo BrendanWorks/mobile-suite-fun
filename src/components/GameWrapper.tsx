@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock } from 'lucide-react';
+import { GameHandle } from '../lib/gameTypes';
 
 interface GameWrapperProps {
-  children: React.ReactNode;
+  children: React.ReactElement;
   duration?: number;
-  onComplete: (score: number) => void;
+  onComplete: (score: number, maxScore: number) => void;
   gameName: string;
 }
 
@@ -15,13 +16,12 @@ export default function GameWrapper({
   gameName
 }: GameWrapperProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
-  const [hasCompleted, setHasCompleted] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
+  const gameRef = useRef<GameHandle>(null);
 
   useEffect(() => {
-    if (timeLeft <= 0 && !hasCompleted) {
-      setHasCompleted(true);
-      const score = Math.floor(50 + Math.random() * 50);
-      onComplete(score);
+    if (timeLeft <= 0 && !hasEnded) {
+      endGame('timeout');
       return;
     }
 
@@ -30,14 +30,34 @@ export default function GameWrapper({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, hasCompleted, onComplete]);
+  }, [timeLeft, hasEnded]);
 
-  const handleManualComplete = () => {
-    if (!hasCompleted) {
-      setHasCompleted(true);
-      const score = Math.floor(70 + Math.random() * 30);
-      onComplete(score);
+  const endGame = (reason: 'timeout' | 'quit') => {
+    if (hasEnded) return;
+
+    setHasEnded(true);
+
+    gameRef.current?.onGameEnd?.();
+
+    const result = gameRef.current?.getGameScore?.();
+    if (result) {
+      const { score, maxScore } = result;
+
+      if (reason === 'quit') {
+        console.log(`${gameName}: Player quit with ${score}/${maxScore} points`);
+      } else {
+        console.log(`${gameName}: Time up with ${score}/${maxScore} points`);
+      }
+
+      onComplete(score, maxScore);
+    } else {
+      console.warn(`${gameName}: Game did not return score. Using 0/100.`);
+      onComplete(0, 100);
     }
+  };
+
+  const handleQuitClick = () => {
+    endGame('quit');
   };
 
   const formatTime = (seconds: number) => {
@@ -51,26 +71,27 @@ export default function GameWrapper({
       <div className="flex justify-between items-center mb-4 bg-gray-100 p-3 rounded-lg">
         <div className="flex items-center gap-2">
           <Clock className={`w-5 h-5 ${timeLeft < 10 ? 'text-red-600 animate-pulse' : 'text-gray-600'}`} />
-          <span className={`font-bold ${timeLeft < 10 ? 'text-red-600' : 'text-gray-700'}`}>
+          <span className={`font-bold text-lg ${timeLeft < 10 ? 'text-red-600' : 'text-gray-700'}`}>
             {formatTime(timeLeft)}
           </span>
         </div>
         <button
-          onClick={handleManualComplete}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+          onClick={handleQuitClick}
+          disabled={hasEnded}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
         >
-          Finish Round
+          {hasEnded ? 'Round Complete' : 'Quit Round'}
         </button>
       </div>
 
-      <div className={hasCompleted ? 'pointer-events-none opacity-50' : ''}>
-        {children}
+      <div className={hasEnded ? 'pointer-events-none opacity-50' : ''}>
+        {React.cloneElement(children, { ref: gameRef })}
       </div>
 
-      {hasCompleted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-          <div className="bg-white p-6 rounded-lg text-center">
-            <p className="text-xl font-bold text-gray-800 mb-2">Round Complete!</p>
+      {hasEnded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg z-50">
+          <div className="bg-white p-8 rounded-lg text-center shadow-2xl">
+            <p className="text-2xl font-bold text-gray-800 mb-2">Round Complete!</p>
             <p className="text-gray-600">Calculating score...</p>
           </div>
         </div>
