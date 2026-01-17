@@ -107,19 +107,6 @@ export const scoringSystem = {
         ? `Completed in ${Math.round(timeSpent)}s`
         : 'Puzzle not completed'
     };
-  },
-
-  emojiMaster: (correct: number, total: number): GameScore => {
-    const accuracy = total > 0 ? (correct / total) * 100 : 0;
-    const normalizedScore = Math.round(accuracy);
-    return {
-      gameId: 'emoji-master',
-      gameName: 'Emoji Master',
-      rawScore: correct,
-      normalizedScore,
-      grade: calculateGrade(normalizedScore),
-      breakdown: `${correct}/${total} correct (${normalizedScore}% accuracy)`
-    };
   }
 };
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star } from 'lucide-react';
 import GameWrapper from './GameWrapper';
-import EmojiMaster from './EmojiMaster';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery';
 import RankAndRoll from './RankAndRoll';
@@ -19,7 +18,6 @@ interface GameConfig {
 }
 
 const AVAILABLE_GAMES: GameConfig[] = [
-  { id: 'emoji-master', name: 'Emoji Master', component: EmojiMaster },
   { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut },
   { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery },
   { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll },
@@ -98,9 +96,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
       case 'dalmatian-puzzle':
         // For now, treat as incomplete if score < 50
         gameScore = scoringSystem.dalmatian(rawScore >= 50, 30, 60);
-        break;
-      case 'emoji-master':
-        gameScore = scoringSystem.emojiMaster(Math.round(rawScore), 100);
         break;
       default:
         gameScore = { gameId: '', gameName: '', rawScore: 0, normalizedScore: 0, grade: 'D', breakdown: '' };

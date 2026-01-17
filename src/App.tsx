@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ArrowLeft, Play, Gamepad2 } from 'lucide-react';
 import GameMenu from './components/GameMenu';
 import GameSession from './components/GameSession';
-import EmojiMaster from './components/EmojiMaster';
 import OddManOut from './components/OddManOut';
 import PhotoMystery from './components/PhotoMystery';
 import RankAndRoll from './components/RankAndRoll';
@@ -11,7 +10,7 @@ import SplitDecision from './components/SplitDecision';
 import WordRescue from './components/WordRescue';
 import ShapeSequence from './components/ShapeSequence';
 
-export type GameId = 'emoji-master' | 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | null;
+export type GameId = 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | null;
 
 type AppMode = 'main-menu' | 'game-session' | 'practice-mode' | 'single-game';
 
@@ -133,7 +132,6 @@ function App() {
               </div>
 
               <div className="p-6">
-                {currentGame === 'emoji-master' && <EmojiMaster />}
                 {currentGame === 'odd-man-out' && <OddManOut />}
                 {currentGame === 'photo-mystery' && <PhotoMystery />}
                 {currentGame === 'rank-and-roll' && <RankAndRoll />}
