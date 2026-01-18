@@ -1,169 +1,94 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+/**
+ * COMPLETE OAUTH AUTH FRAMEWORK
+ * All providers configured, only Google enabled to start
+ * Paste this into bolt.new as components/AuthPage.tsx
+ */
 
-interface AuthPageProps {
-  onAuthSuccess?: () => void;
-}
+import React from 'react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '../lib/supabase';
 
-export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  const { signUp, signIn } = useAuth();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        setSuccess('Account created successfully! You can now sign in.');
-        setIsSignUp(false);
-      } else {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        setSuccess('Signed in successfully!');
-        setTimeout(() => {
-          if (onAuthSuccess) onAuthSuccess();
-        }, 1000);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function AuthPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9nPjwvc3ZnPg==')] opacity-30"></div>
-
-      <div className="w-full max-w-md relative">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-2xl mb-4 shadow-lg">
-                <Sparkles size={32} className="text-white" />
-              </div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                {isSignUp ? 'Create Account' : 'Welcome Back'}
-              </h1>
-              <p className="text-blue-200">
-                {isSignUp
-                  ? 'Sign up to start your journey'
-                  : 'Sign in to continue your progress'
-                }
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-blue-100 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-300" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full pl-12 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all backdrop-blur-sm"
-                    placeholder="your@email.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-blue-100 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-300" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="w-full pl-12 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all backdrop-blur-sm"
-                    placeholder="••••••••"
-                  />
-                </div>
-                {isSignUp && (
-                  <p className="text-xs text-blue-200 mt-2">
-                    Password must be at least 6 characters long
-                  </p>
-                )}
-              </div>
-
-              {error && (
-                <div className="p-4 bg-red-500/20 border border-red-400/50 rounded-xl backdrop-blur-sm">
-                  <p className="text-sm text-red-100">{error}</p>
-                </div>
-              )}
-
-              {success && (
-                <div className="p-4 bg-green-500/20 border border-green-400/50 rounded-xl backdrop-blur-sm">
-                  <p className="text-sm text-green-100">{success}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 px-6 bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-semibold rounded-xl hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-3">
-                    <User size={20} />
-                    <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                )}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError(null);
-                  setSuccess(null);
-                }}
-                className="text-sm text-cyan-300 hover:text-cyan-200 transition-colors font-medium"
-              >
-                {isSignUp
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up"
-                }
-              </button>
-            </div>
-          </div>
-
-          <div className="h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400"></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold text-white mb-3">🎮 Game Box</h1>
+          <p className="text-xl text-gray-300 mb-1">Play. Score. Compete.</p>
+          <p className="text-sm text-gray-400">
+            Sign in to save your progress and compete with others
+          </p>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-blue-200">
-            Secure authentication powered by Supabase
+        {/* Auth Card */}
+        <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 shadow-2xl">
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#3b82f6',
+                    brandAccent: '#1e40af',
+                    brandButtonText: 'white',
+                    defaultButtonBackground: '#1f2937',
+                    defaultButtonBorder: '#4b5563',
+                    defaultButtonText: '#ffffff',
+                    dividerBackground: '#4b5563',
+                    focusedInputBorder: '#3b82f6',
+                    inputBackground: '#374151',
+                    inputBorder: '#4b5563',
+                    inputBorderFocus: '#3b82f6',
+                    inputText: '#ffffff',
+                    inputPlaceholder: '#9ca3af',
+                    anchorTextColor: '#60a5fa',
+                    anchorTextHoverColor: '#93c5fd',
+                  },
+                  borderWidths: {
+                    buttonBorderWidth: '1px',
+                    inputBorderWidth: '1px',
+                  },
+                  radii: {
+                    borderRadiusButton: '0.75rem',
+                    buttonBorderRadius: '0.75rem',
+                    inputBorderRadius: '0.5rem',
+                  },
+                },
+              },
+            }}
+            // START HERE: Only Google enabled
+            // To add more, just add them to this array:
+            // providers={['google', 'discord', 'twitch', 'spotify', 'facebook', 'apple']}
+            providers={['google']}
+            // Set to true if you want ONLY OAuth (no email/password fallback)
+            onlyThirdPartyProviders={false}
+            // Show sign-in view by default
+            view="sign_in"
+            // Redirect after login
+            redirectTo={`${window.location.origin}/`}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <div className="inline-block bg-blue-500/20 border border-blue-500/30 rounded-lg px-4 py-3">
+            <p className="text-sm text-blue-200">
+              🔒 Secure login powered by Supabase
+            </p>
+            <p className="text-xs text-blue-300 mt-1">
+              No passwords. No extra accounts.
+            </p>
+          </div>
+        </div>
+
+        {/* Provider Info - Remove after you understand how it works */}
+        <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <p className="text-xs text-amber-300 font-mono">
+            💡 More providers available:<br/>
+            discord • twitch • spotify • facebook • apple
           </p>
         </div>
       </div>
