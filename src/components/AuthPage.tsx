@@ -68,7 +68,7 @@ export default function AuthPage() {
             // Show sign-in view by default
             view="sign_in"
             // Redirect after login
-            redirectTo={`${window.location.origin}/`}
+           redirectTo="https://frolicking-cheesecake-e94d31.netlify.app/"
           />
         </div>
 
