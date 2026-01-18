@@ -7,7 +7,6 @@
 import React, { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
-import { createUserProfile } from './lib/supabaseHelpers';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 
@@ -20,9 +19,6 @@ export default function App() {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        ensureUserProfile(session.user.id, session.user.email || '');
-      }
       setLoading(false);
     });
 
@@ -31,10 +27,8 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
-      
+
       if (event === 'SIGNED_IN' && session?.user) {
-        // Auto-create user profile on first login
-        await ensureUserProfile(session.user.id, session.user.email || '');
         console.log('User logged in:', session.user.email);
       }
 
@@ -48,23 +42,6 @@ export default function App() {
 
     return () => subscription?.unsubscribe();
   }, []);
-
-  // Ensure user profile exists in database
-  const ensureUserProfile = async (userId: string, email: string) => {
-    try {
-      const { success } = await createUserProfile(
-        userId,
-        email,
-        email.split('@')[0] // Use email prefix as username
-      );
-      
-      if (success) {
-        console.log('User profile created/verified');
-      }
-    } catch (error) {
-      console.error('Error creating user profile:', error);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
