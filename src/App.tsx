@@ -1,151 +1,183 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Play, Gamepad2 } from 'lucide-react';
-import GameMenu from './components/GameMenu';
+/**
+ * APP.TSX - Main app with auth state management
+ * Paste into bolt.new as App.tsx
+ * Handles login/logout and routing
+ */
+
+import React, { useEffect, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
+import { createUserProfile } from './lib/supabaseHelpers';
+import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
-import OddManOut from './components/OddManOut';
-import PhotoMystery from './components/PhotoMystery';
-import RankAndRoll from './components/RankAndRoll';
-import DalmatianPuzzle from './components/DalmatianPuzzle';
-import SplitDecision from './components/SplitDecision';
-import WordRescue from './components/WordRescue';
-import ShapeSequence from './components/ShapeSequence';
 
-export type GameId = 'micro-heist' | 'ai-doodle-duel' | 'commuter-city-builder' | 'odd-man-out' | 'photo-mystery' | 'rank-and-roll' | 'dalmatian-puzzle' | 'split-decision' | 'word-rescue' | 'shape-sequence' | null;
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showGames, setShowGames] = useState(false);
 
-type AppMode = 'main-menu' | 'game-session' | 'practice-mode' | 'single-game';
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        ensureUserProfile(session.user.id, session.user.email || '');
+      }
+      setLoading(false);
+    });
 
-function App() {
-  const [mode, setMode] = useState<AppMode>('main-menu');
-  const [currentGame, setCurrentGame] = useState<GameId>(null);
+    // Listen for auth changes (login/logout)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Auto-create user profile on first login
+        await ensureUserProfile(session.user.id, session.user.email || '');
+        console.log('User logged in:', session.user.email);
+      }
 
-  const handleGameSelect = (gameId: GameId) => {
-    setCurrentGame(gameId);
-    setMode('single-game');
+      if (event === 'SIGNED_OUT') {
+        console.log('User logged out');
+        setShowGames(false);
+      }
+
+      setLoading(false);
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  // Ensure user profile exists in database
+  const ensureUserProfile = async (userId: string, email: string) => {
+    try {
+      const { success } = await createUserProfile(
+        userId,
+        email,
+        email.split('@')[0] // Use email prefix as username
+      );
+      
+      if (success) {
+        console.log('User profile created/verified');
+      }
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+    }
   };
 
-  const handleBackToMenu = () => {
-    setCurrentGame(null);
-    setMode('main-menu');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
-  const handleBackToPractice = () => {
-    setCurrentGame(null);
-    setMode('practice-mode');
-  };
-
-  const startGameSession = () => {
-    setMode('game-session');
-  };
-
-  const startPracticeMode = () => {
-    setMode('practice-mode');
-  };
-
-  if (mode === 'game-session') {
-    return <GameSession onExit={handleBackToMenu} />;
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-400 mb-4 mx-auto"></div>
+          <p className="text-white text-lg">Loading Game Box...</p>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-16 left-8 text-yellow-400 text-2xl animate-pulse">✦</div>
-        <div className="absolute top-32 right-12 text-blue-400 text-lg animate-pulse delay-300">✦</div>
-        <div className="absolute top-64 left-16 text-yellow-300 text-xl animate-pulse delay-700">✦</div>
-        <div className="absolute bottom-32 right-8 text-cyan-400 text-2xl animate-pulse delay-500">✦</div>
-        <div className="absolute bottom-48 left-12 text-red-400 text-lg animate-pulse delay-1000">✦</div>
-        <div className="absolute top-48 right-20 text-green-400 text-xl animate-pulse delay-200">✦</div>
-      </div>
+  // Not logged in - show auth page
+  if (!session) {
+    return <AuthPage />;
+  }
 
-      <div className="container mx-auto px-4 py-6 max-w-md relative z-10">
-        <div className="text-center mb-12">
-          <div className="mb-6 flex justify-center">
-            <div className="relative">
-              <div className="w-16 h-12 bg-blue-600 rounded-2xl border-4 border-blue-500 shadow-lg">
-                <div className="absolute top-2 left-3 w-2 h-2 bg-blue-400 rounded-full"></div>
-                <div className="absolute top-2 right-3 w-2 h-2 bg-red-500 rounded-full"></div>
-                <div className="absolute bottom-2 left-2 w-3 h-1 bg-blue-400 rounded"></div>
-                <div className="absolute bottom-2 right-2 w-3 h-1 bg-blue-400 rounded"></div>
-              </div>
+  // Logged in - show game menu or game session
+  if (showGames) {
+    return (
+      <GameSession
+        onExit={() => setShowGames(false)}
+        totalRounds={5}
+      />
+    );
+  }
+
+  // Main menu after login
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header with user info and logout */}
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-5xl font-bold text-white mb-2">🎮 Game Box</h1>
+            <p className="text-gray-300">
+              Welcome, {session.user?.email?.split('@')[0] || 'Player'}!
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+
+        {/* Main content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Start Game Card */}
+          <div
+            onClick={() => setShowGames(true)}
+            className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 hover:border-blue-400/50 cursor-pointer transition-all hover:shadow-2xl hover:shadow-blue-500/20 transform hover:scale-105"
+          >
+            <div className="text-5xl mb-4">🚀</div>
+            <h2 className="text-3xl font-bold text-white mb-3">Play Games</h2>
+            <p className="text-gray-300 mb-6">
+              Challenge yourself with 5 different mini-games. Test your skills, earn points, and climb the leaderboard!
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400">5 rounds • ~15 minutes</span>
+              <span className="text-2xl">→</span>
             </div>
           </div>
 
-          <h1 className="text-5xl font-bold text-white mb-4 tracking-wide">
-            <span className="bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent drop-shadow-2xl">
-              Game Box
-            </span>
-          </h1>
-          <p className="text-yellow-300 text-lg font-medium tracking-wider">
-            Tap into mischief
-          </p>
+          {/* Stats Card (placeholder for future) */}
+          <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20">
+            <div className="text-5xl mb-4">📊</div>
+            <h2 className="text-3xl font-bold text-white mb-3">Your Stats</h2>
+            <div className="space-y-3 text-gray-300">
+              <div className="flex justify-between">
+                <span>Total Games Played:</span>
+                <span className="font-bold text-blue-400">0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Best Score:</span>
+                <span className="font-bold text-green-400">--</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Average Grade:</span>
+                <span className="font-bold text-yellow-400">--</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mt-6">
+              Stats will appear here after your first game!
+            </p>
+          </div>
         </div>
 
-        <div className="relative">
-          {mode === 'main-menu' && (
-            <div className="space-y-4">
-              <button
-                onClick={startGameSession}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-6 px-6 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 border-2 border-green-400/50"
-              >
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <Play size={32} fill="white" />
-                  <span className="text-3xl">Play Game</span>
-                </div>
-                <p className="text-sm text-green-100">5 rounds of random minigames</p>
-              </button>
-
-              <button
-                onClick={startPracticeMode}
-                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-6 px-6 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 border-2 border-white/30"
-              >
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <Gamepad2 size={28} />
-                  <span className="text-2xl">Practice Mode</span>
-                </div>
-                <p className="text-sm text-gray-300">Try individual games</p>
-              </button>
-            </div>
-          )}
-
-          {mode === 'practice-mode' && (
-            <div>
-              <button
-                onClick={handleBackToMenu}
-                className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors mb-4"
-              >
-                <ArrowLeft size={20} />
-                <span className="font-medium">Back</span>
-              </button>
-              <GameMenu onGameSelect={handleGameSelect} />
-            </div>
-          )}
-
-          {mode === 'single-game' && currentGame && (
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden min-h-96">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                <button
-                  onClick={handleBackToPractice}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  <ArrowLeft size={20} />
-                  <span className="font-medium">Back to Practice</span>
-                </button>
-              </div>
-
-              <div className="p-6">
-                {currentGame === 'odd-man-out' && <OddManOut />}
-                {currentGame === 'photo-mystery' && <PhotoMystery />}
-                {currentGame === 'rank-and-roll' && <RankAndRoll />}
-                {currentGame === 'dalmatian-puzzle' && <DalmatianPuzzle />}
-                {currentGame === 'split-decision' && <SplitDecision />}
-                {currentGame === 'word-rescue' && <WordRescue />}
-                {currentGame === 'shape-sequence' && <ShapeSequence />}
-              </div>
-            </div>
-          )}
+        {/* Info section */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+            <p className="text-sm text-blue-200">
+              <span className="font-bold">💡 Tip:</span> Each game tests different skills. Play all 5 to get your session score!
+            </p>
+          </div>
+          <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+            <p className="text-sm text-green-200">
+              <span className="font-bold">✨ Feature:</span> Your scores are saved automatically. Track your progress over time.
+            </p>
+          </div>
+          <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
+            <p className="text-sm text-purple-200">
+              <span className="font-bold">🏆 Goal:</span> Earn grades from D to S. Can you hit all S's?
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-export default App;
