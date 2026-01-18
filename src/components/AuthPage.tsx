@@ -59,16 +59,10 @@ export default function AuthPage() {
                 },
               },
             }}
-            // START HERE: Only Google enabled
-            // To add more, just add them to this array:
-            // providers={['google', 'discord', 'twitch', 'spotify', 'facebook', 'apple']}
             providers={['google']}
-            // Set to true if you want ONLY OAuth (no email/password fallback)
             onlyThirdPartyProviders={false}
-            // Show sign-in view by default
             view="sign_in"
-            // Redirect after login
-           redirectTo="https://frolicking-cheesecake-e94d31.netlify.app/"
+            redirectTo={window.location.origin}
           />
         </div>
 
