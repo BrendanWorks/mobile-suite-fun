@@ -66,6 +66,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionSaved, setSessionSaved] = useState(false);
   const sessionStartTimeRef = useRef<number | null>(null);
+  const [currentGameScore, setCurrentGameScore] = useState<{ score: number; maxScore: number }>({ score: 0, maxScore: 0 });
 
   // Get current user on mount
   useEffect(() => {
@@ -173,7 +174,12 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
   const startRound = () => {
     selectRandomGame();
+    setCurrentGameScore({ score: 0, maxScore: 0 });
     setGameState('playing');
+  };
+
+  const handleScoreUpdate = (score: number, maxScore: number) => {
+    setCurrentGameScore({ score, maxScore });
   };
 
   const handleGameComplete = (rawScore: number, maxScore: number) => {
@@ -372,7 +378,16 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   // Playing state
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const previousRoundsScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+
+    let currentGameNormalizedScore = 0;
+    if (currentGameScore.maxScore > 0) {
+      const percentage = (currentGameScore.score / currentGameScore.maxScore) * 100;
+      currentGameNormalizedScore = percentage;
+    }
+
+    const totalSessionScore = previousRoundsScore + currentGameNormalizedScore;
+    const maxPossibleScore = currentRound * 100;
 
     return (
       <div className="min-h-screen bg-gray-900">
@@ -385,9 +400,14 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             <div className="text-right text-white">
               <p className="text-sm text-gray-400">Session Score</p>
               <p className="text-2xl font-bold text-yellow-400">
-                {Math.round(currentSessionScore)}/
-                <span className="text-gray-400">{currentRound * 100}</span>
+                {Math.round(totalSessionScore)}/
+                <span className="text-gray-400">{maxPossibleScore}</span>
               </p>
+              {currentGameNormalizedScore > 0 && (
+                <p className="text-xs text-cyan-400">
+                  +{Math.round(currentGameNormalizedScore)} this round
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -396,6 +416,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             duration={currentGame.duration}
             onComplete={handleGameComplete}
             gameName={currentGame.name}
+            onScoreUpdate={handleScoreUpdate}
           >
             <GameComponent />
           </GameWrapper>

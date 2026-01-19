@@ -17,6 +17,7 @@ interface GameWrapperProps {
   gameName: string;
   showTimer?: boolean;
   showCompletionModal?: boolean;
+  onScoreUpdate?: (score: number, maxScore: number) => void;
 }
 
 export default function GameWrapper({
@@ -25,7 +26,8 @@ export default function GameWrapper({
   onComplete,
   gameName,
   showTimer = true,
-  showCompletionModal = true
+  showCompletionModal = true,
+  onScoreUpdate
 }: GameWrapperProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
@@ -46,6 +48,13 @@ export default function GameWrapper({
 
     return () => clearInterval(checkInterval);
   }, []);
+
+  // Register score update callback with game
+  useEffect(() => {
+    if (gameRef.current?.onScoreUpdate && onScoreUpdate) {
+      gameRef.current.onScoreUpdate(onScoreUpdate);
+    }
+  }, [onScoreUpdate]);
 
   // Timer countdown
   useEffect(() => {

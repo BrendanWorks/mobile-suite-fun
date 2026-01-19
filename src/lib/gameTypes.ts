@@ -38,6 +38,12 @@ export interface GameHandle {
    * Defaults to true if skipQuestion is implemented
    */
   canSkipQuestion?: boolean;
+
+  /**
+   * Optional callback for real-time score updates
+   * Called whenever the score changes during gameplay
+   */
+  onScoreUpdate?: (callback: (score: number, maxScore: number) => void) => void;
 }
 
 /**

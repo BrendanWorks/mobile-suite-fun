@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import SplitDecisionLoadScreen from './SplitDecisionLoadScreen';
 
@@ -19,6 +19,8 @@ const SplitDecision = forwardRef((props, ref) => {
     feedback: null,
     results: []
   });
+
+  const scoreUpdateCallbackRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => {
@@ -56,8 +58,19 @@ const SplitDecision = forwardRef((props, ref) => {
         }
       }
     },
-    canSkipQuestion: true
+    canSkipQuestion: true,
+    onScoreUpdate: (callback) => {
+      scoreUpdateCallbackRef.current = callback;
+    }
   }));
+
+  useEffect(() => {
+    if (scoreUpdateCallbackRef.current && gameData) {
+      const totalItems = gameData.items.length;
+      const maxScore = totalItems * 143;
+      scoreUpdateCallbackRef.current(Math.max(0, gameState.score), maxScore);
+    }
+  }, [gameState.score, gameData]);
 
   // Fetch game data from Supabase
   const fetchGameData = async () => {
