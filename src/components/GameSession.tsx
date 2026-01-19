@@ -24,6 +24,7 @@ import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import RoundResults from './RoundResults';
+import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore } from '../lib/scoringSystem';
 
 interface GameConfig {
@@ -67,6 +68,8 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const [sessionSaved, setSessionSaved] = useState(false);
   const sessionStartTimeRef = useRef<number | null>(null);
   const [currentGameScore, setCurrentGameScore] = useState<{ score: number; maxScore: number }>({ score: 0, maxScore: 0 });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingSessionData, setPendingSessionData] = useState<any>(null);
 
   // Get current user on mount
   useEffect(() => {
@@ -74,12 +77,49 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
       setUser(session?.user);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const newUser = session?.user;
+      setUser(newUser);
+
+      if (newUser && pendingSessionData && !sessionSaved) {
+        try {
+          const { success, data } = await createGameSession(newUser.id);
+          if (success && data) {
+            const newSessionId = data.id;
+            console.log('✅ Game session created for new user:', newSessionId);
+
+            const completeResult = await completeGameSession(
+              newSessionId,
+              pendingSessionData.session.totalScore,
+              pendingSessionData.session.maxPossible,
+              pendingSessionData.session.percentage,
+              pendingSessionData.grade,
+              pendingSessionData.results.length,
+              pendingSessionData.playtimeSeconds
+            );
+
+            if (completeResult.success) {
+              console.log('✅ Session saved after login');
+            }
+
+            const resultsSuccess = await saveAllRoundResults(newSessionId, newUser.id, pendingSessionData.results);
+            if (resultsSuccess.success) {
+              console.log('✅ Round results saved after login');
+            }
+
+            setSessionId(newSessionId);
+            setSessionSaved(true);
+            setPendingSessionData(null);
+            setShowAuthModal(false);
+          }
+        } catch (error) {
+          console.error('Error saving pending session:', error);
+        }
+      }
     });
 
     return () => subscription?.unsubscribe();
-  }, []);
+  }, [pendingSessionData, sessionSaved]);
 
   // Create game session when starting
   useEffect(() => {
@@ -103,60 +143,69 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
   // Save complete session when finished
   useEffect(() => {
-    if (gameState === 'complete' && user?.id && sessionId && !sessionSaved) {
-      const saveToSupabase = async () => {
-        try {
-          const gameScores = roundScores.map(r => r.normalizedScore);
-          const session = calculateSessionScore(gameScores);
-          const grade = getSessionGrade(session.percentage);
-          const playtimeSeconds = sessionStartTimeRef.current 
-            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
-            : 0;
+    if (gameState === 'complete' && !sessionSaved) {
+      const gameScores = roundScores.map(r => r.normalizedScore);
+      const session = calculateSessionScore(gameScores);
+      const grade = getSessionGrade(session.percentage);
+      const playtimeSeconds = sessionStartTimeRef.current
+        ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+        : 0;
 
-          // 1. Complete the session record
-          const completeResult = await completeGameSession(
-            sessionId,
-            session.totalScore,
-            session.maxPossible,
-            session.percentage,
-            grade,
-            roundScores.length,
-            playtimeSeconds
-          );
-
-          if (completeResult.success) {
-            console.log('✅ Session completed:', {
-              sessionId,
-              totalScore: session.totalScore,
-              percentage: session.percentage,
-              grade,
-              playtimeSeconds
-            });
-          }
-
-          // 2. Save all round results
-          const results = roundScores.map((r, idx) => ({
-            gameId: getGameId(r.gameId),
-            puzzleId: 0,
-            roundNumber: idx + 1,
-            rawScore: r.rawScore,
-            maxScore: r.maxScore,
-            normalizedScore: Math.round(r.normalizedScore.normalizedScore),
-            grade: r.normalizedScore.grade
-          }));
-
-          const resultsSuccess = await saveAllRoundResults(sessionId, user.id, results);
-          if (resultsSuccess.success) {
-            console.log('✅ Round results saved:', results.length, 'rounds');
-          }
-
-          setSessionSaved(true);
-        } catch (error) {
-          console.error('Error saving session:', error);
-        }
+      const sessionData = {
+        gameScores,
+        session,
+        grade,
+        playtimeSeconds,
+        results: roundScores.map((r, idx) => ({
+          gameId: getGameId(r.gameId),
+          puzzleId: 0,
+          roundNumber: idx + 1,
+          rawScore: r.rawScore,
+          maxScore: r.maxScore,
+          normalizedScore: Math.round(r.normalizedScore.normalizedScore),
+          grade: r.normalizedScore.grade
+        }))
       };
 
-      saveToSupabase();
+      if (!user?.id) {
+        setPendingSessionData(sessionData);
+        setShowAuthModal(true);
+      } else if (sessionId) {
+        const saveToSupabase = async () => {
+          try {
+            const completeResult = await completeGameSession(
+              sessionId,
+              sessionData.session.totalScore,
+              sessionData.session.maxPossible,
+              sessionData.session.percentage,
+              sessionData.grade,
+              roundScores.length,
+              sessionData.playtimeSeconds
+            );
+
+            if (completeResult.success) {
+              console.log('✅ Session completed:', {
+                sessionId,
+                totalScore: sessionData.session.totalScore,
+                percentage: sessionData.session.percentage,
+                grade: sessionData.grade,
+                playtimeSeconds: sessionData.playtimeSeconds
+              });
+            }
+
+            const resultsSuccess = await saveAllRoundResults(sessionId, user.id, sessionData.results);
+            if (resultsSuccess.success) {
+              console.log('✅ Round results saved:', sessionData.results.length, 'rounds');
+            }
+
+            setSessionSaved(true);
+          } catch (error) {
+            console.error('Error saving session:', error);
+          }
+        };
+
+        saveToSupabase();
+      }
     }
   }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
 
@@ -360,17 +409,37 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
             {sessionSaved && (
               <div className="mt-4 p-2 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-200">
-                ✅ Score saved to Supabase
+                ✅ Score saved to database
+              </div>
+            )}
+
+            {!user && !sessionSaved && (
+              <div className="mt-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded text-sm text-blue-200">
+                Sign in to save your score and track your progress over time!
               </div>
             )}
           </div>
-          <button
-            onClick={onExit}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
-          >
-            Back to Menu
-          </button>
+          <div className="flex gap-4">
+            {!user && !sessionSaved && (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="flex-1 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
+              >
+                Sign In to Save
+              </button>
+            )}
+            <button
+              onClick={onExit}
+              className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
+            >
+              {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
+            </button>
+          </div>
         </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
       </div>
     );
   }

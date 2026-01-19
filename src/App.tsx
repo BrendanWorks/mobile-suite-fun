@@ -103,11 +103,21 @@ export default function App() {
     );
   }
 
-  // Not logged in - show auth page with test mode option
+  // Show game session if playing
+  if (showGames) {
+    return (
+      <GameSession
+        onExit={() => setShowGames(false)}
+        totalRounds={5}
+      />
+    );
+  }
+
+  // Not logged in - show welcome page
   if (!session) {
     return (
       <>
-        <AuthPage />
+        <AuthPage onPlayAsGuest={() => setShowGames(true)} />
         {/* Test Mode Button - Fixed Position */}
         <button
           onClick={() => setTestMode(true)}
@@ -163,16 +173,6 @@ export default function App() {
           </div>
         )}
       </>
-    );
-  }
-
-  // Logged in - show game menu or game session
-  if (showGames) {
-    return (
-      <GameSession
-        onExit={() => setShowGames(false)}
-        totalRounds={5}
-      />
     );
   }
 
