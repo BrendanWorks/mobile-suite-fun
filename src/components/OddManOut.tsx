@@ -25,10 +25,10 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-  maxScore: totalQuestions > 0 ? totalQuestions * 250 : 250
+      maxScore: totalQuestions > 0 ? totalQuestions * 250 : 250
     }),
     onGameEnd: () => {
-      console.log(`OddManOut ended with score: ${score}/${totalQuestions}`);
+      console.log(`OddManOut ended with score: ${score}/${totalQuestions * 250}`);
     }
   }));
 
@@ -200,32 +200,6 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
         </h2>
         <p className="text-purple-300 text-sm mb-4">
           Pick the TWO items that don't belong with the others!
-        </p>
-
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-sm text-purple-300">
-            Score: {score}/{totalQuestions}
-            {totalQuestions > 0 && ` (${Math.round((score/totalQuestions) * 100)}%)`}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-purple-400">
-              {questions.length} questions loaded
-            </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
-              currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-              currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-              currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
-              'bg-gray-500/20 text-gray-300 border-gray-400'
-            }`}>
-              {currentQuestion.difficulty?.charAt(0).toUpperCase() + currentQuestion.difficulty?.slice(1) || 'Unknown'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 p-4 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl">
-        <p className="text-blue-300 text-sm">
-          Select exactly <strong>2 items</strong> that don't belong with the other 3.
         </p>
       </div>
 
