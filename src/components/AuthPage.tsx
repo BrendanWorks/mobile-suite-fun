@@ -80,7 +80,7 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
                 },
               },
             }}
-            providers={['google']}
+            providers={['google', 'discord', 'facebook', 'twitch', 'github']}
             onlyThirdPartyProviders={false}
             view="sign_in"
             redirectTo={window.location.origin}
@@ -106,11 +106,11 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
           </div>
         </div>
 
-        {/* Provider Info - Remove after you understand how it works */}
-        <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-          <p className="text-xs text-amber-300 font-mono">
-            💡 More providers available:<br/>
-            discord • twitch • spotify • facebook • apple
+        {/* Provider Info */}
+        <div className="mt-6 p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+          <p className="text-xs text-gray-300 text-center">
+            Sign in with Google, Discord, Facebook, Twitch, or GitHub.<br/>
+            Or create an account with email.
           </p>
         </div>
       </div>
