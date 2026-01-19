@@ -25,7 +25,7 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: totalQuestions > 0 ? totalQuestions : 1
+  maxScore: totalQuestions > 0 ? totalQuestions * 250 : 250
     }),
     onGameEnd: () => {
       console.log(`OddManOut ended with score: ${score}/${totalQuestions}`);
@@ -120,7 +120,7 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
     setTotalQuestions(prev => prev + 1);
 
     if (isAnswerCorrect) {
-      setScore(prev => prev + 1);
+      setScore(prev => prev + 250);
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
     } else {
       setMessage("Wrong");
