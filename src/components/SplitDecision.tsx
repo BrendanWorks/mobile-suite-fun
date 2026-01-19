@@ -439,13 +439,6 @@ const SplitDecision = forwardRef((props, ref) => {
         <div className="mb-6 p-6 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl">
           <div className="text-4xl font-bold text-green-400">{gameState.score}</div>
         </div>
-
-        <button
-          onClick={startGame}
-          className="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 border-2 border-green-400 hover:shadow-lg hover:shadow-green-500/25 active:scale-98 transition-all"
-        >
-          🎲 Play Again
-        </button>
       </div>
     );
   }
