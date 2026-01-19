@@ -14,7 +14,6 @@ const SplitDecision = forwardRef((props, ref) => {
     phase: 'menu', // 'menu', 'intro', 'item', 'feedback', 'complete'
     currentItem: 0,
     score: 0,
-    timeLeft: 0,
     selectedAnswer: null,
     feedback: null,
     results: []
@@ -127,33 +126,21 @@ const SplitDecision = forwardRef((props, ref) => {
     fetchGameData();
   }, []);
 
-  // Timer effect
+  // Auto-advance from intro to game
   useEffect(() => {
     if (!gameData) return;
-    
+
     let timeoutId;
-    
+
     if (gameState.phase === 'intro') {
       timeoutId = setTimeout(() => {
-        setGameState(prev => ({ 
-          ...prev, 
-          phase: 'item', 
-          timeLeft: gameData.timing.itemDurationMs 
+        setGameState(prev => ({
+          ...prev,
+          phase: 'item'
         }));
       }, gameData.timing.introMs);
     }
-    
-    else if (gameState.phase === 'item' && gameState.timeLeft > 0 && gameState.selectedAnswer === null) {
-      timeoutId = setTimeout(() => {
-        setGameState(prev => ({ ...prev, timeLeft: Math.max(0, prev.timeLeft - 100) }));
-      }, 100);
-    }
-    
-    else if (gameState.phase === 'item' && gameState.timeLeft <= 0 && gameState.selectedAnswer === null) {
-      // Timeout
-      handleTimeout();
-    }
-    
+
     else if (gameState.phase === 'feedback') {
       timeoutId = setTimeout(() => {
         const nextItem = gameState.currentItem + 1;
@@ -164,38 +151,17 @@ const SplitDecision = forwardRef((props, ref) => {
             ...prev,
             phase: 'item',
             currentItem: nextItem,
-            timeLeft: gameData.timing.itemDurationMs,
             selectedAnswer: null,
             feedback: null
           }));
         }
       }, 1000);
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [gameState.phase, gameState.timeLeft, gameState.selectedAnswer, gameState.currentItem, gameData]);
-
-  const handleTimeout = useCallback(() => {
-    if (!gameData) return;
-    
-    const currentItemData = gameData.items[gameState.currentItem];
-    if (!currentItemData) return;
-    
-    setGameState(prev => ({
-      ...prev,
-      selectedAnswer: 'timeout',
-      feedback: { type: 'timeout', text: 'No Answer' },
-      phase: 'feedback',
-      results: [...prev.results, {
-        item: currentItemData.item_text,
-        correct: false,
-        timeout: true,
-        points: gameData.scoring.timeout
-      }]
-    }));
-  }, [gameState.currentItem, gameData]);
+  }, [gameState.phase, gameState.currentItem, gameData]);
 
   const handleAnswer = useCallback((answer) => {
     if (!gameData || gameState.selectedAnswer !== null || gameState.phase !== 'item') return;
@@ -327,7 +293,7 @@ const SplitDecision = forwardRef((props, ref) => {
           </div>
           <div className="text-lg text-white mb-4">Ready for lightning-fast decisions?</div>
           <div className="text-sm text-purple-300 mb-2">
-            {gameData.items.length} items • 3 seconds each • +300/-300 scoring
+            {gameData.items.length} items • +300/-300 scoring
           </div>
           <div className="text-xs text-purple-400">
             Mobile-optimized • 60fps animations
@@ -370,7 +336,7 @@ const SplitDecision = forwardRef((props, ref) => {
         )}
         
         <div className="text-purple-300 text-lg animate-pulse">
-          {gameData.items.length} rapid items • 3 seconds each
+          {gameData.items.length} rapid items
         </div>
       </div>
     );
@@ -380,32 +346,18 @@ const SplitDecision = forwardRef((props, ref) => {
   if (gameState.phase === 'item' || gameState.phase === 'feedback') {
     const item = gameData.items[gameState.currentItem];
     if (!item) return null;
-    
-    const progressPercent = ((gameState.timeLeft / gameData.timing.itemDurationMs) * 100);
-    
+
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white min-h-96">
         {/* Header */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-4">
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
             <div className="text-sm text-purple-300">
               Item {gameState.currentItem + 1} of {gameData.items.length}
             </div>
             <div className="text-lg font-bold text-cyan-400">
               Score: {gameState.score}
             </div>
-          </div>
-        </div>
-        
-        {/* Timer */}
-        <div className="mb-6">
-          <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-100 ${
-                progressPercent <= 33 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
-              }`}
-              style={{ width: `${progressPercent}%` }}
-            />
           </div>
         </div>
 
