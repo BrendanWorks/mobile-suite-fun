@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { ArrowUp, ArrowDown, Star } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const RankAndRoll = forwardRef((props, ref) => {
@@ -63,10 +63,8 @@ const RankAndRoll = forwardRef((props, ref) => {
   const [playerOrder, setPlayerOrder] = useState([]);
   const [gameState, setGameState] = useState('playing'); // playing, completed, loading
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(0);
   const [puzzlesCompleted, setPuzzlesCompleted] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [showValues, setShowValues] = useState(false);
   const [hintMessage, setHintMessage] = useState('');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [touchStartY, setTouchStartY] = useState(null);

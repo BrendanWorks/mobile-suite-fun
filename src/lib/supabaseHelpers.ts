@@ -7,12 +7,17 @@ const GAME_SLUG_TO_ID: Record<string, number> = {
   'rank-and-roll': 5,
   'dalmatian-puzzle': 6,
   'split-decision': 9,
-  'word-rescue': 1,
-  'shape-sequence': 1,
+  'word-rescue': 10,
+  'shape-sequence': 11,
 };
 
 export function getGameId(slug: string): number {
-  return GAME_SLUG_TO_ID[slug] || 1;
+  const gameId = GAME_SLUG_TO_ID[slug];
+  if (!gameId) {
+    console.warn(`Unknown game slug: ${slug}, defaulting to ID 1`);
+    return 1;
+  }
+  return gameId;
 }
 
 interface CreateSessionResult {

@@ -12,7 +12,6 @@ import {
   createGameSession,
   completeGameSession,
   saveAllRoundResults,
-  createUserProfile,
   getGameId
 } from '../lib/supabaseHelpers';
 import GameWrapper from './GameWrapper';
