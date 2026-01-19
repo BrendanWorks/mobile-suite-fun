@@ -231,9 +231,16 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   };
 
   const handleGameComplete = (rawScore: number, maxScore: number) => {
-    if (!currentGame || maxScore === 0) {
-      console.error('Invalid game completion data', { currentGame, rawScore, maxScore });
+    if (!currentGame) {
+      console.error('Invalid game completion: no currentGame, skipping to next round');
+      handleNextRound();
       return;
+    }
+
+    if (maxScore === 0 || !isFinite(maxScore)) {
+      console.warn('Game completed with invalid maxScore, using default values', { maxScore, rawScore });
+      maxScore = 100;
+      rawScore = 0;
     }
 
     let normalizedScore: GameScore;
@@ -336,7 +343,13 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   }
 
   // Results screen
-  if (gameState === 'results' && roundScores.length > 0) {
+  if (gameState === 'results') {
+    if (roundScores.length === 0) {
+      console.error('Results screen with no scores, advancing to next round');
+      handleNextRound();
+      return null;
+    }
+
     const lastRound = roundScores[roundScores.length - 1];
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
 
@@ -356,6 +369,12 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
   // Complete screen
   if (gameState === 'complete') {
+    if (roundScores.length === 0) {
+      console.error('Complete screen with no scores, returning to menu');
+      onExit();
+      return null;
+    }
+
     const gameScores = roundScores.map(r => r.normalizedScore);
     const sessionTotal = calculateSessionScore(gameScores);
     const sessionGrade = getSessionGrade(sessionTotal.percentage);

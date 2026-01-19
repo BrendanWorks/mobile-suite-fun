@@ -75,19 +75,39 @@ export default function GameWrapper({
     if (hasEnded) return;
     setHasEnded(true);
 
-    gameRef.current?.onGameEnd?.();
+    try {
+      gameRef.current?.onGameEnd?.();
+    } catch (error) {
+      console.error(`Error calling onGameEnd for ${gameName}:`, error);
+    }
 
-    const result = gameRef.current?.getGameScore?.();
-    if (result) {
-      const { score, maxScore } = result;
-      if (reason === 'quit') {
-        console.log(`${gameName}: Player quit with ${score}/${maxScore} points`);
+    try {
+      const result = gameRef.current?.getGameScore?.();
+      if (result) {
+        let { score, maxScore } = result;
+
+        if (!isFinite(score) || score < 0) {
+          console.warn(`${gameName}: Invalid score ${score}, using 0`);
+          score = 0;
+        }
+
+        if (!isFinite(maxScore) || maxScore <= 0) {
+          console.warn(`${gameName}: Invalid maxScore ${maxScore}, using 100`);
+          maxScore = 100;
+        }
+
+        if (reason === 'quit') {
+          console.log(`${gameName}: Player quit with ${score}/${maxScore} points`);
+        } else {
+          console.log(`${gameName}: Time up with ${score}/${maxScore} points`);
+        }
+        onComplete(score, maxScore);
       } else {
-        console.log(`${gameName}: Time up with ${score}/${maxScore} points`);
+        console.warn(`${gameName}: Game did not return score. Using 0/100.`);
+        onComplete(0, 100);
       }
-      onComplete(score, maxScore);
-    } else {
-      console.warn(`${gameName}: Game did not return score. Using 0/100.`);
+    } catch (error) {
+      console.error(`Error getting game score for ${gameName}:`, error);
       onComplete(0, 100);
     }
   };
