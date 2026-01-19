@@ -641,10 +641,7 @@ const WordRescue = forwardRef((props, ref) => {
       <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-30 text-white p-3 z-10">
         <div className="flex justify-between items-center text-sm">
           <span>Score: {score}</span>
-          <span className="text-lg font-bold text-yellow-300">
-            ⏰ {!timerStarted ? '90s' : `${timeLeft}s`}
-          </span>
-          <button 
+          <button
             onClick={resetGame}
             className="bg-red-500 px-2 py-1 rounded text-xs"
           >
