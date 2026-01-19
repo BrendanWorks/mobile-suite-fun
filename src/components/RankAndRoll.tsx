@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Trophy, ArrowUp, ArrowDown, Star } from 'lucide-react';
+import { ArrowUp, ArrowDown, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const RankAndRoll = forwardRef((props, ref) => {
@@ -409,12 +409,10 @@ const RankAndRoll = forwardRef((props, ref) => {
     <div className="max-w-md mx-auto p-4 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white min-h-screen">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">📊 Ranky</h2>
-        <p className="text-purple-300 text-sm">Sort by superlatives!</p>
-        
+
         {/* Stats */}
         <div className="flex justify-center gap-3 mt-4 text-xs flex-wrap">
           <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
-            <Trophy size={14} className="text-yellow-400" />
             <span>{score}</span>
           </div>
         </div>
