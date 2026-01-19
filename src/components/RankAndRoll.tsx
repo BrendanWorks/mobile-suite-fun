@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Trophy, Clock, Shuffle, ArrowUp, ArrowDown, Star } from 'lucide-react';
+import { Trophy, ArrowUp, ArrowDown, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const RankAndRoll = forwardRef((props, ref) => {
@@ -413,22 +413,9 @@ const RankAndRoll = forwardRef((props, ref) => {
         
         {/* Stats */}
         <div className="flex justify-center gap-3 mt-4 text-xs flex-wrap">
-          <div className="text-xs text-purple-400">
-            Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
-          </div>
           <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
             <Trophy size={14} className="text-yellow-400" />
             <span>{score}</span>
-          </div>
-          <div className="bg-white/10 px-2 py-1 rounded-full">
-            Moves: {moves}
-          </div>
-          <div className={`px-2 py-1 rounded-full border ${
-            currentPuzzle.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-            currentPuzzle.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-            'bg-red-500/20 text-red-300 border-red-400'
-          }`}>
-            {currentPuzzle.difficulty}
           </div>
         </div>
       </div>
@@ -450,13 +437,6 @@ const RankAndRoll = forwardRef((props, ref) => {
             className="text-xs px-3 py-1 bg-blue-500/30 border border-blue-400 rounded-lg hover:bg-blue-500/50 transition-all disabled:opacity-50"
           >
             💡 Hint ({hintsUsed})
-          </button>
-          <button
-            onClick={shufflePuzzle}
-            className="text-xs px-3 py-1 bg-purple-500/30 border border-purple-400 rounded-lg hover:bg-purple-500/50 transition-all flex items-center gap-1"
-          >
-            <Shuffle size={12} />
-            Shuffle
           </button>
         </div>
       </div>
@@ -518,10 +498,9 @@ const RankAndRoll = forwardRef((props, ref) => {
                   moveItem(index, 'up');
                 }}
                 disabled={index === 0}
-                className="p-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed active:bg-white/40 transition-all"
-                style={{ minWidth: '32px', minHeight: '32px' }}
+                className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
               >
-                <ArrowUp size={16} />
+                <ArrowUp size={20} />
               </button>
               <button
                 onClick={(e) => {
@@ -529,10 +508,9 @@ const RankAndRoll = forwardRef((props, ref) => {
                   moveItem(index, 'down');
                 }}
                 disabled={index === playerOrder.length - 1}
-                className="p-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed active:bg-white/40 transition-all"
-                style={{ minWidth: '32px', minHeight: '32px' }}
+                className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
               >
-                <ArrowDown size={16} />
+                <ArrowDown size={20} />
               </button>
             </div>
           </div>
