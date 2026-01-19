@@ -24,14 +24,14 @@ const SplitDecision = forwardRef((props, ref) => {
       const correctCount = gameState.results.filter(r => r.correct).length;
       const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
       return {
-        score: correctCount,
-        maxScore: totalItems
+        score: gameState.score,
+        maxScore: totalItems * 143
       };
     },
     onGameEnd: () => {
       const correctCount = gameState.results.filter(r => r.correct).length;
       const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
-      console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct`);
+      console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct, score: ${gameState.score}`);
     }
   }));
 
@@ -108,7 +108,7 @@ const SplitDecision = forwardRef((props, ref) => {
         allowBoth: true, // Allow "both" category
         items: itemsData,
         timing: { itemDurationMs: 3000, introMs: 1000, recapMs: 1200 },
-        scoring: { correct: 300, wrong: -300, timeout: 0 }
+        scoring: { correct: 143, wrong: -143, timeout: 0 }
       };
       
       console.log(`Loaded Split Decision game with ${itemsData.length} items from Supabase`);
@@ -176,7 +176,7 @@ const SplitDecision = forwardRef((props, ref) => {
     setGameState(prev => ({
       ...prev,
       selectedAnswer: answer,
-      score: prev.score + points,
+      score: Math.max(0, prev.score + points),
       feedback: {
         type: isCorrect ? 'correct' : 'wrong',
         text: isCorrect ? `+${points}` : `${points}`
@@ -293,7 +293,7 @@ const SplitDecision = forwardRef((props, ref) => {
           </div>
           <div className="text-lg text-white mb-4">Ready for lightning-fast decisions?</div>
           <div className="text-sm text-purple-300 mb-2">
-            {gameData.items.length} items • +300/-300 scoring
+            {gameData.items.length} items • +143/-143 scoring
           </div>
           <div className="text-xs text-purple-400">
             Mobile-optimized • 60fps animations
