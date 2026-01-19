@@ -29,7 +29,23 @@ export default function GameWrapper({
 }: GameWrapperProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
+  const [canSkipQuestion, setCanSkipQuestion] = useState(false);
   const gameRef = useRef<GameHandle>(null);
+
+  // Sync canSkipQuestion from game ref
+  useEffect(() => {
+    const checkCanSkip = () => {
+      if (gameRef.current) {
+        const gameCanSkip = gameRef.current.canSkipQuestion !== false;
+        setCanSkipQuestion(gameCanSkip);
+      }
+    };
+
+    checkCanSkip();
+    const checkInterval = setInterval(checkCanSkip, 50);
+
+    return () => clearInterval(checkInterval);
+  }, []);
 
   // Timer countdown
   useEffect(() => {
@@ -74,8 +90,6 @@ export default function GameWrapper({
   const handleNextRound = () => {
     endGame('quit');
   };
-
-  const canSkipQuestion = gameRef.current?.canSkipQuestion !== false;
 
   return (
     <div className="relative flex flex-col h-full bg-gray-900">
