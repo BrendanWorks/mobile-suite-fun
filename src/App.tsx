@@ -9,11 +9,21 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
+import GameWrapper from './components/GameWrapper';
+import OddManOut from './components/OddManOut';
+import PhotoMystery from './components/PhotoMystery.jsx';
+import RankAndRoll from './components/RankAndRoll';
+import DalmatianPuzzle from './components/DalmatianPuzzle';
+import SplitDecision from './components/SplitDecision';
+import WordRescue from './components/WordRescue';
+import ShapeSequence from './components/ShapeSequence';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGames, setShowGames] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [testGameId, setTestGameId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -59,9 +69,101 @@ export default function App() {
     );
   }
 
-  // Not logged in - show auth page
+  // Test mode - show test game UI
+  if (testMode && testGameId) {
+    return (
+      <div className="min-h-screen bg-gray-900">
+        <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
+          <div className="flex justify-between items-center max-w-6xl mx-auto">
+            <div className="text-white">
+              <p className="text-sm text-gray-400">🧪 Test Mode</p>
+              <p className="text-lg font-bold">Testing Game</p>
+            </div>
+            <button
+              onClick={() => {
+                setTestMode(false);
+                setTestGameId(null);
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Exit Test
+            </button>
+          </div>
+        </div>
+        <div className="p-6 max-w-4xl mx-auto">
+          {testGameId === 'odd-man-out' && <GameWrapper duration={60} onComplete={() => {}} gameName="Odd Man Out"><OddManOut /></GameWrapper>}
+          {testGameId === 'photo-mystery' && <GameWrapper duration={15} onComplete={() => {}} gameName="Zooma"><PhotoMystery /></GameWrapper>}
+          {testGameId === 'rank-and-roll' && <GameWrapper duration={30} onComplete={() => {}} gameName="Ranky"><RankAndRoll /></GameWrapper>}
+          {testGameId === 'dalmatian-puzzle' && <GameWrapper duration={60} onComplete={() => {}} gameName="Dalmatian Puzzle"><DalmatianPuzzle /></GameWrapper>}
+          {testGameId === 'split-decision' && <GameWrapper duration={60} onComplete={() => {}} gameName="Split Decision"><SplitDecision /></GameWrapper>}
+          {testGameId === 'word-rescue' && <GameWrapper duration={90} onComplete={() => {}} gameName="Pop"><WordRescue /></GameWrapper>}
+          {testGameId === 'shape-sequence' && <GameWrapper duration={60} onComplete={() => {}} gameName="Shape Sequence"><ShapeSequence /></GameWrapper>}
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in - show auth page with test mode option
   if (!session) {
-    return <AuthPage />;
+    return (
+      <>
+        <AuthPage />
+        {/* Test Mode Button - Fixed Position */}
+        <button
+          onClick={() => setTestMode(true)}
+          className="fixed bottom-6 right-6 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg shadow-lg transition-all hover:scale-105 z-50"
+        >
+          🧪 Test Mode
+        </button>
+
+        {/* Test Mode Modal */}
+        {testMode && !testGameId && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 max-w-2xl w-full border border-yellow-500/30">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-white">🧪 Test Mode</h2>
+                <button
+                  onClick={() => setTestMode(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Select a game to test directly without logging in:
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'odd-man-out', name: 'Odd Man Out', icon: '🔍' },
+                  { id: 'photo-mystery', name: 'Zooma', icon: '📷' },
+                  { id: 'rank-and-roll', name: 'Ranky', icon: '📊' },
+                  { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', icon: '🧩' },
+                  { id: 'split-decision', name: 'Split Decision', icon: '⚡' },
+                  { id: 'word-rescue', name: 'Pop', icon: '📝' },
+                  { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷' },
+                ].map((game) => (
+                  <button
+                    key={game.id}
+                    onClick={() => setTestGameId(game.id)}
+                    className="bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-6 px-4 rounded-xl shadow-lg transition-all hover:scale-105 border-2 border-blue-400/50"
+                  >
+                    <div className="text-3xl mb-2">{game.icon}</div>
+                    <div className="text-sm">{game.name}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                <p className="text-sm text-yellow-200">
+                  ⚠️ Note: Test mode bypasses authentication and does not save scores.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   // Logged in - show game menu or game session
