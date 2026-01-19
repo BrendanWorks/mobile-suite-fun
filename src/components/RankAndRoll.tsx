@@ -81,6 +81,9 @@ const RankAndRoll = forwardRef((props, ref) => {
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
+    },
+    skipQuestion: () => {
+      nextPuzzle();
     }
   }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
@@ -573,42 +576,14 @@ const RankAndRoll = forwardRef((props, ref) => {
         </div>
       )}
 
-      {/* Next Puzzle Button */}
+      {/* Completion Message */}
       {gameState === 'completed' && (
-        <div className="text-center space-y-3">
+        <div className="text-center">
           <div className="p-3 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-xl">
             <div className="text-sm text-blue-300">
-              {puzzles.length > 1 ? 'Next puzzle loading automatically...' : 'You can continue playing!'}
+              {puzzles.length > 1 ? 'Next puzzle loading automatically...' : 'Great job!'}
             </div>
           </div>
-          {puzzles.length > 1 && (
-            <button
-              onClick={() => {
-                if (resultTimeout) {
-                  clearTimeout(resultTimeout);
-                  setResultTimeout(null);
-                }
-                nextPuzzle();
-              }}
-              className="px-6 py-2 bg-gradient-to-r from-green-500/50 to-teal-600/50 rounded-xl font-medium hover:bg-green-500/70 transition-all border border-green-400/50 flex items-center gap-2 mx-auto text-sm"
-            >
-              <Star size={16} />
-              Skip to Next Puzzle →
-            </button>
-          )}
-        </div>
-      )}
-
-      {gameState !== 'completed' && (
-        <div className="text-center">
-          <button
-            onClick={nextPuzzle}
-            disabled={puzzles.length <= 1}
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all border-2 border-green-400 flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Star size={20} />
-            {puzzles.length > 1 ? 'Next Challenge' : 'Only Puzzle'}
-          </button>
         </div>
       )}
 

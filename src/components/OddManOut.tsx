@@ -29,6 +29,9 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
     }),
     onGameEnd: () => {
       console.log(`OddManOut ended with score: ${score}/${totalQuestions * 250}`);
+    },
+    skipQuestion: () => {
+      generateNewQuestion();
     }
   }));
 
@@ -272,30 +275,22 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
           {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
         </button>
       ) : (
-        <div>
-          <div className={`
-            mb-4 p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
-            ${isCorrect
-              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
-              : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
-            }
-          `}>
-            <div className="text-lg font-bold mb-2">
-              {message}
-            </div>
-            <div className="text-sm mb-3">
-              <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
-            </div>
-            <div className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
-              <span className="text-gray-200">{logic}</span>
-            </div>
+        <div className={`
+          p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+          ${isCorrect
+            ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
+            : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
+          }
+        `}>
+          <div className="text-lg font-bold mb-2">
+            {message}
           </div>
-          <button
-            onClick={generateNewQuestion}
-            className="w-full py-4 px-6 rounded-xl font-semibold text-white transition-all border-2 bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98"
-          >
-            Next Question ➜
-          </button>
+          <div className="text-sm mb-3">
+            <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+          </div>
+          <div className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+            <span className="text-gray-200">{logic}</span>
+          </div>
         </div>
       )}
     </div>

@@ -15,6 +15,22 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
     }),
     onGameEnd: () => {
       console.log(`ShapeSequence ended at level: ${level}, score: ${score}`);
+    },
+    skipQuestion: () => {
+      if (gameState === 'showing') {
+        setGameState('playing');
+      } else if (gameState === 'playing') {
+        setGameState('wrong');
+        setLives(prev => {
+          const newLives = prev - 1;
+          if (newLives <= 0) {
+            setTimeout(() => setGameState('gameover'), 1000);
+          } else {
+            setTimeout(() => showSequence(), 1000);
+          }
+          return newLives;
+        });
+      }
     }
   }));
 

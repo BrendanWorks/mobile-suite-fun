@@ -34,6 +34,9 @@ const PhotoMystery = forwardRef((props, ref) => {
       clearInterval(timerRef.current);
       clearInterval(revealTimerRef.current);
       clearTimeout(resultTimerRef.current);
+    },
+    skipQuestion: () => {
+      nextQuestion();
     }
   }));
 
@@ -460,19 +463,10 @@ const PhotoMystery = forwardRef((props, ref) => {
             </div>
             <div className="text-sm text-blue-300">
               {gameComplete
-                ? `Final Score: ${score}/${maxImages * maxPoints} - Click "Quit Round" above to continue`
+                ? `Final Score: ${score}/${maxImages * maxPoints} - Click "Next Round" above to continue`
                 : 'Next image loading automatically...'}
             </div>
           </div>
-
-          {!gameComplete && (
-            <button
-              onClick={nextQuestion}
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500/50 to-pink-600/50 text-white rounded-xl font-medium border border-purple-400/50 hover:bg-purple-500/70 transition-all text-sm"
-            >
-              Skip to Next Photo →
-            </button>
-          )}
         </div>
       )}
     </div>

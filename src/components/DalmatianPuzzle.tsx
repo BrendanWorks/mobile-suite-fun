@@ -24,6 +24,9 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
+    },
+    skipQuestion: () => {
+      nextPuzzle();
     }
   }));
 
@@ -726,22 +729,12 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
 
         {/* Controls */}
         <div className="w-full flex justify-center">
-          <div className="flex gap-4">
-            <button 
-              onClick={resetGame}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
-            >
-              Reset Puzzle
-            </button>
-            {puzzles.length > 1 && (
-              <button 
-                onClick={nextPuzzle}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
-              >
-                Next Puzzle
-              </button>
-            )}
-          </div>
+          <button
+            onClick={resetGame}
+            className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+          >
+            Reset Puzzle
+          </button>
         </div>
       </div>
 
@@ -768,28 +761,12 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
                   Next puzzle loading automatically...
                 </div>
               )}
-              <div className="flex gap-4">
-                <button
-                  onClick={resetGame}
-                  className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
-                >
-                  Try Again
-                </button>
-                {puzzles.length > 1 && (
-                  <button
-                    onClick={() => {
-                      if (resultTimeout) {
-                        clearTimeout(resultTimeout);
-                        setResultTimeout(null);
-                      }
-                      nextPuzzle();
-                    }}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
-                  >
-                    {gameState === 'won' ? 'Skip to Next →' : 'Next Puzzle'}
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={resetGame}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         </div>

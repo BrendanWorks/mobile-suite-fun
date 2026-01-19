@@ -32,6 +32,28 @@ const SplitDecision = forwardRef((props, ref) => {
       const correctCount = gameState.results.filter(r => r.correct).length;
       const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
       console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct, score: ${gameState.score}`);
+    },
+    skipQuestion: () => {
+      if (gameState.phase === 'item') {
+        const nextItem = gameState.currentItem + 1;
+        if (nextItem >= gameData.items.length) {
+          setGameState(prev => ({ ...prev, phase: 'complete' }));
+        } else {
+          setGameState(prev => ({
+            ...prev,
+            phase: 'item',
+            currentItem: nextItem,
+            selectedAnswer: null,
+            feedback: null,
+            results: [...prev.results, {
+              item: gameData.items[gameState.currentItem].item_text,
+              correct: false,
+              timeout: true,
+              points: 0
+            }]
+          }));
+        }
+      }
     }
   }));
 
@@ -268,28 +290,8 @@ const SplitDecision = forwardRef((props, ref) => {
         </div>
         
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-sm text-purple-300">
-              Puzzle {currentPuzzleIndex + 1} of {allPuzzles.length}
-            </div>
-            <div className="flex gap-2">
-              {allPuzzles.length > 1 && (
-                <>
-                  <button
-                    onClick={previousPuzzle}
-                    className="px-3 py-1 bg-purple-500/20 border border-purple-400 rounded-lg text-purple-200 hover:bg-purple-500/30 transition-all text-sm"
-                  >
-                    ← Prev
-                  </button>
-                  <button
-                    onClick={nextPuzzle}
-                    className="px-3 py-1 bg-purple-500/20 border border-purple-400 rounded-lg text-purple-200 hover:bg-purple-500/30 transition-all text-sm"
-                  >
-                    Next →
-                  </button>
-                </>
-              )}
-            </div>
+          <div className="text-sm text-purple-300 mb-4 text-center">
+            Puzzle {currentPuzzleIndex + 1} of {allPuzzles.length}
           </div>
           <div className="text-lg text-white mb-4">Ready for lightning-fast decisions?</div>
           <div className="text-sm text-purple-300 mb-2">
@@ -459,27 +461,12 @@ const SplitDecision = forwardRef((props, ref) => {
           </div>
         </div>
         
-        <div className="space-y-3">
-          <button
-            onClick={startGame}
-            className="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 border-2 border-green-400 hover:shadow-lg hover:shadow-green-500/25 active:scale-98 transition-all"
-          >
-            🎲 Play Again
-          </button>
-          <button
-            onClick={nextPuzzle}
-            disabled={allPuzzles.length <= 1}
-            className="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 border-2 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            🎯 Next Puzzle ({currentPuzzleIndex + 1}/{allPuzzles.length})
-          </button>
-          <button
-            onClick={backToMenu}
-            className="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-gray-500 to-gray-600 border-2 border-gray-400 hover:shadow-lg hover:shadow-gray-500/25 active:scale-98 transition-all"
-          >
-            ← Back to Menu
-          </button>
-        </div>
+        <button
+          onClick={startGame}
+          className="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 border-2 border-green-400 hover:shadow-lg hover:shadow-green-500/25 active:scale-98 transition-all"
+        >
+          🎲 Play Again
+        </button>
       </div>
     );
   }
