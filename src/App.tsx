@@ -91,13 +91,13 @@ export default function App() {
           </div>
         </div>
         <div className="p-6 max-w-4xl mx-auto">
-          {testGameId === 'odd-man-out' && <GameWrapper duration={60} onComplete={() => {}} gameName="Odd Man Out"><OddManOut /></GameWrapper>}
-          {testGameId === 'photo-mystery' && <GameWrapper duration={15} onComplete={() => {}} gameName="Zooma"><PhotoMystery /></GameWrapper>}
-          {testGameId === 'rank-and-roll' && <GameWrapper duration={30} onComplete={() => {}} gameName="Ranky"><RankAndRoll /></GameWrapper>}
-          {testGameId === 'dalmatian-puzzle' && <GameWrapper duration={60} onComplete={() => {}} gameName="Dalmatian Puzzle"><DalmatianPuzzle /></GameWrapper>}
-          {testGameId === 'split-decision' && <GameWrapper duration={60} onComplete={() => {}} gameName="Split Decision"><SplitDecision /></GameWrapper>}
-          {testGameId === 'word-rescue' && <GameWrapper duration={90} onComplete={() => {}} gameName="Pop"><WordRescue /></GameWrapper>}
-          {testGameId === 'shape-sequence' && <GameWrapper duration={60} onComplete={() => {}} gameName="Shape Sequence"><ShapeSequence /></GameWrapper>}
+          {testGameId === 'odd-man-out' && <GameWrapper duration={60} onComplete={() => {}} gameName="Odd Man Out" showCompletionModal={false}><OddManOut /></GameWrapper>}
+          {testGameId === 'photo-mystery' && <GameWrapper duration={15} onComplete={() => {}} gameName="Zooma" showCompletionModal={false}><PhotoMystery /></GameWrapper>}
+          {testGameId === 'rank-and-roll' && <GameWrapper duration={30} onComplete={() => {}} gameName="Ranky" showCompletionModal={false}><RankAndRoll /></GameWrapper>}
+          {testGameId === 'dalmatian-puzzle' && <GameWrapper duration={60} onComplete={() => {}} gameName="Dalmatian Puzzle" showCompletionModal={false}><DalmatianPuzzle /></GameWrapper>}
+          {testGameId === 'split-decision' && <GameWrapper duration={60} onComplete={() => {}} gameName="Split Decision" showCompletionModal={false}><SplitDecision /></GameWrapper>}
+          {testGameId === 'word-rescue' && <GameWrapper duration={90} onComplete={() => {}} gameName="Pop" showCompletionModal={false}><WordRescue /></GameWrapper>}
+          {testGameId === 'shape-sequence' && <GameWrapper duration={60} onComplete={() => {}} gameName="Shape Sequence" showCompletionModal={false}><ShapeSequence /></GameWrapper>}
         </div>
       </div>
     );

@@ -17,6 +17,7 @@ interface GameWrapperProps {
   onComplete: (score: number, maxScore: number) => void;
   gameName: string;
   showTimer?: boolean;
+  showCompletionModal?: boolean;
 }
 
 export default function GameWrapper({
@@ -24,7 +25,8 @@ export default function GameWrapper({
   duration = 60,
   onComplete,
   gameName,
-  showTimer = true
+  showTimer = true,
+  showCompletionModal = true
 }: GameWrapperProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
@@ -99,7 +101,7 @@ export default function GameWrapper({
       </div>
 
       {/* Game Complete Overlay */}
-      {hasEnded && (
+      {hasEnded && showCompletionModal && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 rounded-lg">
           <div className="bg-white p-12 rounded-xl text-center shadow-2xl">
             <div className="mb-4">
