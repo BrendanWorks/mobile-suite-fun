@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * GameSession.tsx - INTEGRATED WITH SUPABASE
+ * 
+ * Paste this into bolt.new to replace your current GameSession.tsx
+ * Automatically saves game sessions and scores to Supabase
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Star } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { 
+  createGameSession, 
+  completeGameSession, 
+  saveAllRoundResults,
+  createUserProfile 
+} from '../lib/supabaseHelpers';
 import GameWrapper from './GameWrapper';
+import EmojiMaster from './EmojiMaster';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery';
 import RankAndRoll from './RankAndRoll';
@@ -19,13 +34,14 @@ interface GameConfig {
 }
 
 const AVAILABLE_GAMES: GameConfig[] = [
+  { id: 'emoji-master', name: 'Emoji Master', component: EmojiMaster, duration: 60 },
   { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60 },
-  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 999 },
-  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 999 },
-  { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', component: DalmatianPuzzle, duration: 999 },
+  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 15 },
+  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 30 },
+  { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', component: DalmatianPuzzle, duration: 60 },
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60 },
   { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 90 },
-  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 999 },
+  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 60 },
 ];
 
 interface RoundData {
@@ -42,11 +58,107 @@ interface GameSessionProps {
 }
 
 export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProps) {
+  const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
   const [currentGame, setCurrentGame] = useState<GameConfig | null>(null);
   const [roundScores, setRoundScores] = useState<RoundData[]>([]);
   const [playedGames, setPlayedGames] = useState<string[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionSaved, setSessionSaved] = useState(false);
+  const sessionStartTimeRef = useRef<number | null>(null);
+
+  // Get current user on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user);
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  // Create game session when starting
+  useEffect(() => {
+    if (user?.id && gameState === 'intro' && currentRound === 1 && !sessionId) {
+      const initSession = async () => {
+        try {
+          const { success, data } = await createGameSession(user.id);
+          if (success && data) {
+            setSessionId(data.id);
+            sessionStartTimeRef.current = Date.now();
+            console.log('✅ Game session created:', data.id);
+          }
+        } catch (error) {
+          console.error('Error creating game session:', error);
+        }
+      };
+
+      initSession();
+    }
+  }, [user?.id, gameState, currentRound, sessionId]);
+
+  // Save complete session when finished
+  useEffect(() => {
+    if (gameState === 'complete' && user?.id && sessionId && !sessionSaved) {
+      const saveToSupabase = async () => {
+        try {
+          const gameScores = roundScores.map(r => r.normalizedScore);
+          const session = calculateSessionScore(gameScores);
+          const grade = getSessionGrade(session.percentage);
+          const playtimeSeconds = sessionStartTimeRef.current 
+            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+            : 0;
+
+          // 1. Complete the session record
+          const completeResult = await completeGameSession(
+            sessionId,
+            session.totalScore,
+            session.maxPossible,
+            session.percentage,
+            grade,
+            roundScores.length,
+            playtimeSeconds
+          );
+
+          if (completeResult.success) {
+            console.log('✅ Session completed:', {
+              sessionId,
+              totalScore: session.totalScore,
+              percentage: session.percentage,
+              grade,
+              playtimeSeconds
+            });
+          }
+
+          // 2. Save all round results
+          const results = roundScores.map((r, idx) => ({
+            gameId: parseInt(r.gameId),
+            puzzleId: 0,
+            roundNumber: idx + 1,
+            rawScore: r.rawScore,
+            maxScore: r.maxScore,
+            normalizedScore: Math.round(r.normalizedScore.normalizedScore),
+            grade: r.normalizedScore.grade
+          }));
+
+          const resultsSuccess = await saveAllRoundResults(sessionId, user.id, results);
+          if (resultsSuccess.success) {
+            console.log('✅ Round results saved:', results.length, 'rounds');
+          }
+
+          setSessionSaved(true);
+        } catch (error) {
+          console.error('Error saving session:', error);
+        }
+      };
+
+      saveToSupabase();
+    }
+  }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
 
   const selectRandomGame = () => {
     const availableGames = AVAILABLE_GAMES.filter(
@@ -103,6 +215,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         normalizedScore = scoringSystem.dalmatian(rawScore >= 50, maxScore - rawScore, maxScore);
         break;
 
+      case 'emoji-master':
+        normalizedScore = scoringSystem.emojiMaster(rawScore, maxScore);
+        break;
+
       default:
         normalizedScore = {
           gameId: '',
@@ -114,13 +230,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         };
     }
 
-    console.log(`Round ${currentRound} - ${currentGame.name}:`, {
-      rawScore,
-      maxScore,
-      percentage: Math.round(percentage),
-      normalized: Math.round(normalizedScore.normalizedScore),
-      grade: normalizedScore.grade
-    });
+    console.log(`Round ${currentRound} - ${currentGame.name}: ${Math.round(normalizedScore.normalizedScore)}/100 (${normalizedScore.grade})`);
 
     setRoundScores(prev => [...prev, {
       gameId: currentGame.id,
@@ -149,6 +259,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     }
   }, [gameState, currentRound]);
 
+  // Intro screen
   if (gameState === 'intro') {
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
 
@@ -175,6 +286,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     );
   }
 
+  // Results screen
   if (gameState === 'results' && roundScores.length > 0) {
     const lastRound = roundScores[roundScores.length - 1];
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
@@ -193,6 +305,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     );
   }
 
+  // Complete screen
   if (gameState === 'complete') {
     const gameScores = roundScores.map(r => r.normalizedScore);
     const sessionTotal = calculateSessionScore(gameScores);
@@ -217,6 +330,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
               </div>
             </div>
 
+            {/* Game Breakdown */}
             <div className="mt-6 pt-6 border-t border-white/20 text-left">
               <p className="text-lg text-gray-300 mb-3 font-bold">Game Breakdown:</p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -242,6 +356,12 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
                 ))}
               </div>
             </div>
+
+            {sessionSaved && (
+              <div className="mt-4 p-2 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-200">
+                ✅ Score saved to Supabase
+              </div>
+            )}
           </div>
           <button
             onClick={onExit}
@@ -254,6 +374,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     );
   }
 
+  // Playing state
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
@@ -280,7 +401,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             duration={currentGame.duration}
             onComplete={handleGameComplete}
             gameName={currentGame.name}
-            showTimer={currentGame.id !== 'shape-sequence' && currentGame.id !== 'photo-mystery' && currentGame.id !== 'rank-and-roll' && currentGame.id !== 'dalmatian-puzzle'}
           >
             <GameComponent />
           </GameWrapper>
