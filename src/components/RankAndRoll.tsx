@@ -515,7 +515,7 @@ const RankAndRoll = forwardRef((props, ref) => {
             onClick={submitFinalAnswer}
             className="px-8 py-4 rounded-xl font-bold text-lg transition-all border-2 bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
           >
-            🎯 Submit Answer
+            🎯 Final Answer
           </button>
         </div>
       )}
