@@ -74,10 +74,10 @@ const RankAndRoll = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: puzzlesCompleted > 0 ? puzzlesCompleted * 600 : 600
+      maxScore: puzzlesCompleted > 0 ? puzzlesCompleted * 333 : 333
     }),
     onGameEnd: () => {
-      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted > 0 ? puzzlesCompleted * 600 : 600}`);
+      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted > 0 ? puzzlesCompleted * 333 : 333}`);
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
@@ -335,11 +335,8 @@ const RankAndRoll = forwardRef((props, ref) => {
     setGameState('completed');
 
     if (isCorrect) {
-      const moveBonus = Math.max(0, 200 - moves * 10);
-      const hintPenalty = hintsUsed * 25;
-      const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
-                              currentPuzzle.difficulty === 'medium' ? 50 : 0;
-      const finalScore = Math.max(50, 300 + moveBonus + difficultyBonus - hintPenalty);
+      const hintPenalty = hintsUsed * 50;
+      const finalScore = Math.max(0, 333 - hintPenalty);
       setScore(prev => prev + finalScore);
       setPuzzlesCompleted(prev => prev + 1);
     }
@@ -530,19 +527,16 @@ const RankAndRoll = forwardRef((props, ref) => {
             const isCorrect = playerOrder.every((item, index) => item.id === correctOrder[index].id);
             
             if (isCorrect) {
-              const moveBonus = Math.max(0, 200 - moves * 10);
-              const hintPenalty = hintsUsed * 25;
-              const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
-                                      currentPuzzle.difficulty === 'medium' ? 50 : 0;
-              const finalScore = Math.max(50, 300 + moveBonus + difficultyBonus - hintPenalty);
+              const hintPenalty = hintsUsed * 50;
+              const finalScore = Math.max(0, 333 - hintPenalty);
 
               return (
                 <>
                   <div className="text-4xl mb-2">🎉</div>
                   <div className="text-2xl font-bold text-green-300 mb-2">Perfect Ranking!</div>
                   <div className="text-green-200 text-sm mb-2">
-                    Completed with {moves} moves
-                    {hintsUsed > 0 && ` and ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}`}
+                    Solved it!
+                    {hintsUsed > 0 && ` Used ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}`}
                   </div>
                   <div className="text-lg font-bold text-white">
                     +{finalScore} points!
@@ -624,7 +618,7 @@ const RankAndRoll = forwardRef((props, ref) => {
         <span className="hidden sm:inline"> Drag the left side of items to reorder, or use</span>
         <span className="sm:hidden"> Touch & drag the left side of items, or use</span>
         {" "}arrow buttons to move items up/down. 
-        Use hints if you get stuck!
+        Use hints if you get stuck! (Each hint costs 50 points)
       </div>
     </div>
   );
