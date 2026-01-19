@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
+import SplitDecisionLoadScreen from './SplitDecisionLoadScreen';
 
 const SplitDecision = forwardRef((props, ref) => {
   // Game data state
@@ -279,38 +280,7 @@ const SplitDecision = forwardRef((props, ref) => {
 
   // Menu
   if (gameState.phase === 'menu') {
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-            ⚡ Split Decision
-          </h2>
-          <p className="text-purple-300 text-sm mb-4">
-            Rapid categorization challenge!
-          </p>
-        </div>
-        
-        <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl">
-          <div className="text-sm text-purple-300 mb-4 text-center">
-            Puzzle {currentPuzzleIndex + 1} of {allPuzzles.length}
-          </div>
-          <div className="text-lg text-white mb-4">Ready for lightning-fast decisions?</div>
-          <div className="text-sm text-purple-300 mb-2">
-            {gameData.items.length} items • +143/-143 scoring
-          </div>
-          <div className="text-xs text-purple-400">
-            Mobile-optimized • 60fps animations
-          </div>
-        </div>
-        
-        <button
-          onClick={startGame}
-          className="w-full py-4 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 border-2 border-green-400 hover:shadow-lg hover:shadow-green-500/25 active:scale-98 transition-all"
-        >
-          🚀 Start Game
-        </button>
-      </div>
-    );
+    return <SplitDecisionLoadScreen onStart={startGame} />;
   }
 
   // Intro
