@@ -123,7 +123,7 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
       setScore(prev => prev + 1);
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
     } else {
-      setMessage("Not quite right, but here's the logic:");
+      setMessage("Wrong");
     }
 
     setGameState('result');
@@ -310,10 +310,10 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
               {message}
             </div>
             <div className="text-sm mb-3">
-              <strong>Correct answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+              <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
             </div>
             <div className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
-              <strong className="text-white">Explanation:</strong> <span className="text-gray-200">{logic}</span>
+              <span className="text-gray-200">{logic}</span>
             </div>
           </div>
           <button
