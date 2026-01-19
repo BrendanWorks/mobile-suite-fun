@@ -432,35 +432,16 @@ const SplitDecision = forwardRef((props, ref) => {
 
   // Complete
   if (gameState.phase === 'complete') {
-    const correctCount = gameState.results.filter(r => r.correct).length;
-    const accuracy = Math.round((correctCount / gameData.items.length) * 100);
-    
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
         <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-lg">⚡ Game Complete!</h2>
         
         <div className="mb-6 p-6 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl">
-          <div className="text-4xl font-bold text-green-400 mb-2">{gameState.score}</div>
-          <div className="text-lg text-white">{correctCount} of {gameData.items.length} correct</div>
-          <div className="text-md text-purple-300">{accuracy}% accuracy</div>
+          <div className="text-4xl font-bold text-green-400">{gameState.score}</div>
         </div>
-        
-        {/* Results breakdown */}
-        <div className="mb-6 text-left bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-4">
-          <div className="text-sm font-bold text-purple-300 mb-3">Results:</div>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {gameState.results.map((result, index) => (
-              <div key={index} className="flex justify-between items-center py-1">
-                <span className="text-sm text-white truncate flex-1">{result.item}</span>
-                <span className={`text-sm font-bold ml-2 ${
-                  result.correct ? 'text-green-400' : result.timeout ? 'text-gray-400' : 'text-red-400'
-                }`}>
-                  {result.timeout ? 'timeout' : result.correct ? '✓' : '✗'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      </div>
+    );
+  }
         
         <button
           onClick={startGame}
