@@ -316,6 +316,12 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
               <strong className="text-white">Explanation:</strong> <span className="text-gray-200">{logic}</span>
             </div>
           </div>
+          <button
+            onClick={generateNewQuestion}
+            className="w-full py-4 px-6 rounded-xl font-semibold text-white transition-all border-2 bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98"
+          >
+            Next Question ➜
+          </button>
         </div>
       )}
     </div>
