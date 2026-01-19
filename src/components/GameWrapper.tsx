@@ -1,10 +1,9 @@
 /**
- * GameWrapper.tsx - UPDATED WITH VISUAL TIMER BAR
+ * GameWrapper.tsx - UPDATED WITH SKIP CONTROLS
  * 
- * Replaced clock-based timer with visual progress bar
- * Blue → Yellow → Red as time depletes
- * 
- * Paste this into bolt.new to replace GameWrapper.tsx
+ * Replaced "Quit Round" with "Skip Question" and "Next Round"
+ * Skip Question = next puzzle/question in current game (no points)
+ * Next Round = skip to next game type (forfeit current game)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -68,7 +67,11 @@ export default function GameWrapper({
     }
   };
 
-  const handleQuitClick = () => {
+  const handleSkipQuestion = () => {
+    gameRef.current?.skipQuestion?.();
+  };
+
+  const handleNextRound = () => {
     endGame('quit');
   };
 
@@ -84,15 +87,24 @@ export default function GameWrapper({
         </div>
       )}
 
-      {/* Header with Quit button */}
+      {/* Header with Skip controls */}
       <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700">
-        <button
-          onClick={handleQuitClick}
-          disabled={hasEnded}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-colors"
-        >
-          {hasEnded ? 'Round Complete' : 'Quit Round'}
-        </button>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={handleSkipQuestion}
+            disabled={hasEnded}
+            className="px-6 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:opacity-50 text-gray-800 disabled:text-white rounded-lg font-semibold text-sm transition-colors"
+          >
+            Skip Question
+          </button>
+          <button
+            onClick={handleNextRound}
+            disabled={hasEnded}
+            className="px-6 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:opacity-50 text-gray-800 disabled:text-white rounded-lg font-semibold text-sm transition-colors"
+          >
+            Next Round
+          </button>
+        </div>
       </div>
 
       {/* Game Content */}
@@ -117,44 +129,3 @@ export default function GameWrapper({
     </div>
   );
 }
-
-/**
- * WHAT CHANGED:
- * 
- * BEFORE:
- * - Clock icon + MM:SS time display
- * - Quit button on the same line
- * - Simple gray background
- * 
- * AFTER:
- * - VisualTimerBar at top (full width, visual progress)
- * - No clock icon or numbers
- * - Quit button in separate header below
- * - Game content takes up more space
- * - Cleaner, less cluttered
- * 
- * LAYOUT:
- * 
- * ┌────────────────────────────────────────┐
- * │  [Visual Timer Bar - Blue/Yellow/Red]  │  ← VisualTimerBar
- * ├────────────────────────────────────────┤
- * │              [Quit Round]              │  ← Header with button
- * ├────────────────────────────────────────┤
- * │                                        │
- * │           GAME CONTENT AREA            │  ← Game fills space
- * │                                        │
- * │                                        │
- * └────────────────────────────────────────┘
- */
-
-/**
- * KEY IMPROVEMENTS:
- * 
- * ✅ Visual timer is the focus (not text/numbers)
- * ✅ Full width bar shows urgency clearly
- * ✅ No mental math required
- * ✅ Color transition is intuitive
- * ✅ More screen space for games
- * ✅ Cleaner, more modern UI
- * ✅ Game logic unchanged - just UI swap
- */
