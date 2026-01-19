@@ -8,16 +8,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { 
-  createGameSession, 
-  completeGameSession, 
+import {
+  createGameSession,
+  completeGameSession,
   saveAllRoundResults,
-  createUserProfile 
+  createUserProfile,
+  getGameId
 } from '../lib/supabaseHelpers';
 import GameWrapper from './GameWrapper';
-import EmojiMaster from './EmojiMaster';
 import OddManOut from './OddManOut';
-import PhotoMystery from './PhotoMystery';
+import PhotoMystery from './PhotoMystery.jsx';
 import RankAndRoll from './RankAndRoll';
 import DalmatianPuzzle from './DalmatianPuzzle';
 import SplitDecision from './SplitDecision';
@@ -34,7 +34,6 @@ interface GameConfig {
 }
 
 const AVAILABLE_GAMES: GameConfig[] = [
-  { id: 'emoji-master', name: 'Emoji Master', component: EmojiMaster, duration: 60 },
   { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60 },
   { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 15 },
   { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 30 },
@@ -136,7 +135,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
           // 2. Save all round results
           const results = roundScores.map((r, idx) => ({
-            gameId: parseInt(r.gameId),
+            gameId: getGameId(r.gameId),
             puzzleId: 0,
             roundNumber: idx + 1,
             rawScore: r.rawScore,
@@ -213,10 +212,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
       case 'dalmatian-puzzle':
         normalizedScore = scoringSystem.dalmatian(rawScore >= 50, maxScore - rawScore, maxScore);
-        break;
-
-      case 'emoji-master':
-        normalizedScore = scoringSystem.emojiMaster(rawScore, maxScore);
         break;
 
       default:
