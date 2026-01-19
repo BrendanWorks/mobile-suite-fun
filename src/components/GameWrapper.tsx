@@ -75,6 +75,8 @@ export default function GameWrapper({
     endGame('quit');
   };
 
+  const canSkipQuestion = gameRef.current?.canSkipQuestion !== false;
+
   return (
     <div className="relative flex flex-col h-full bg-gray-900">
       {/* Visual Timer Bar - Always visible at top */}
@@ -90,13 +92,15 @@ export default function GameWrapper({
       {/* Header with Skip controls */}
       <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700">
         <div className="flex gap-3 justify-center">
-          <button
-            onClick={handleSkipQuestion}
-            disabled={hasEnded}
-            className="px-6 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:opacity-50 text-gray-800 disabled:text-white rounded-lg font-semibold text-sm transition-colors"
-          >
-            Skip Question
-          </button>
+          {canSkipQuestion && (
+            <button
+              onClick={handleSkipQuestion}
+              disabled={hasEnded}
+              className="px-6 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:opacity-50 text-gray-800 disabled:text-white rounded-lg font-semibold text-sm transition-colors"
+            >
+              Skip Question
+            </button>
+          )}
           <button
             onClick={handleNextRound}
             disabled={hasEnded}

@@ -54,7 +54,8 @@ const SplitDecision = forwardRef((props, ref) => {
           }));
         }
       }
-    }
+    },
+    canSkipQuestion: true
   }));
 
   // Fetch game data from Supabase

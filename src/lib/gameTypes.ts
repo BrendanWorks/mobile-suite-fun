@@ -26,6 +26,18 @@ export interface GameHandle {
    * Use this to stop animations, clear intervals, etc.
    */
   onGameEnd?: () => void;
+
+  /**
+   * Optional method to skip the current question
+   * Called when player clicks "Skip Question" button
+   */
+  skipQuestion?: () => void;
+
+  /**
+   * Optional flag to show/hide Skip Question button
+   * Defaults to true if skipQuestion is implemented
+   */
+  canSkipQuestion?: boolean;
 }
 
 /**

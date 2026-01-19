@@ -37,7 +37,8 @@ const PhotoMystery = forwardRef((props, ref) => {
     },
     skipQuestion: () => {
       nextQuestion();
-    }
+    },
+    canSkipQuestion: true
   }));
 
   const fetchQuestions = async () => {

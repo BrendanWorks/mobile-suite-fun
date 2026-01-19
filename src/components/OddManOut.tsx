@@ -32,7 +32,8 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
     },
     skipQuestion: () => {
       generateNewQuestion();
-    }
+    },
+    canSkipQuestion: true
   }));
 
   // Fetch questions from Supabase

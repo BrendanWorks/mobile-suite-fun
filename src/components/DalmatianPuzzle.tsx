@@ -27,7 +27,8 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
     },
     skipQuestion: () => {
       nextPuzzle();
-    }
+    },
+    canSkipQuestion: true
   }));
 
   // Game state variables (using refs to maintain state across renders)

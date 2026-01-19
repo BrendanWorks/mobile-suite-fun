@@ -84,7 +84,8 @@ const RankAndRoll = forwardRef((props, ref) => {
     },
     skipQuestion: () => {
       nextPuzzle();
-    }
+    },
+    canSkipQuestion: true
   }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);

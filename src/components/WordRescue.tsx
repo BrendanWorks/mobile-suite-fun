@@ -136,9 +136,7 @@ const WordRescue = forwardRef((props, ref) => {
     onGameEnd: () => {
       console.log(`WordRescue ended with score: ${score} (${wordsFound.length} words)`);
     },
-    skipQuestion: () => {
-      clearSelection();
-    }
+    canSkipQuestion: false
   }));
 
   // Common letters with frequency weights
