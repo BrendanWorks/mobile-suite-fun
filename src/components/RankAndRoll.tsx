@@ -85,10 +85,7 @@ const RankAndRoll = forwardRef((props, ref) => {
   }));
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25);
   const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  const maxTimePerPuzzle = 25;
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
@@ -162,23 +159,6 @@ const RankAndRoll = forwardRef((props, ref) => {
     fetchPuzzles();
   }, []);
 
-  // Timer
-  useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0 && currentPuzzle) {
-      const timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            // Time's up - auto submit
-            submitFinalAnswer();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [gameState, timeLeft, currentPuzzle]);
-
   // Initialize puzzle
   useEffect(() => {
     if (currentPuzzle) {
@@ -200,7 +180,6 @@ const RankAndRoll = forwardRef((props, ref) => {
     setPlayerOrder(shuffled);
     setGameState('playing');
     setMoves(0);
-    setTimeLeft(maxTimePerPuzzle);
     setShowValues(false);
     setHintMessage('');
     setHintsUsed(0);
@@ -356,12 +335,11 @@ const RankAndRoll = forwardRef((props, ref) => {
     setGameState('completed');
 
     if (isCorrect) {
-      const timeBonus = Math.max(0, 200 - (maxTimePerPuzzle - timeLeft) * 2);
-      const moveBonus = Math.max(0, 100 - moves * 10);
+      const moveBonus = Math.max(0, 200 - moves * 10);
       const hintPenalty = hintsUsed * 25;
       const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
                               currentPuzzle.difficulty === 'medium' ? 50 : 0;
-      const finalScore = Math.max(50, 200 + timeBonus + moveBonus + difficultyBonus - hintPenalty);
+      const finalScore = Math.max(50, 300 + moveBonus + difficultyBonus - hintPenalty);
       setScore(prev => prev + finalScore);
       setPuzzlesCompleted(prev => prev + 1);
     }
@@ -434,22 +412,9 @@ const RankAndRoll = forwardRef((props, ref) => {
         <p className="text-purple-300 text-sm">Sort by superlatives!</p>
         
         {/* Stats */}
-        <div className="flex justify-center gap-3 mt-4 text-xs">
+        <div className="flex justify-center gap-3 mt-4 text-xs flex-wrap">
           <div className="text-xs text-purple-400">
             Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
-              ⏰ {timeLeft}s
-            </div>
-            <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-100 ${
-                  timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
-                }`}
-                style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%` }}
-              />
-            </div>
           </div>
           <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
             <Trophy size={14} className="text-yellow-400" />
@@ -577,20 +542,11 @@ const RankAndRoll = forwardRef((props, ref) => {
       {/* Final Answer Button */}
       {gameState === 'playing' && (
         <div className="text-center mb-6">
-          <div className="mb-4 p-3 bg-orange-500/20 border border-orange-400 rounded-xl text-center text-orange-200">
-            <div className="text-sm">
-              ⚡ Time pressure! Submit your answer before time runs out!
-            </div>
-          </div>
           <button
             onClick={submitFinalAnswer}
-            className={`px-8 py-4 rounded-xl font-bold text-lg transition-all border-2 ${
-              timeLeft <= 10 
-                ? 'bg-gradient-to-r from-red-500 to-red-700 border-red-400 hover:shadow-lg hover:shadow-red-500/25 animate-pulse' 
-                : 'bg-gradient-to-r from-orange-500 to-red-600 border-orange-400 hover:shadow-lg hover:shadow-orange-500/25'
-            }`}
+            className="px-8 py-4 rounded-xl font-bold text-lg transition-all border-2 bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
           >
-            🎯 Final Answer {timeLeft <= 10 && `(${timeLeft}s!)`}
+            🎯 Submit Answer
           </button>
         </div>
       )}
@@ -605,19 +561,18 @@ const RankAndRoll = forwardRef((props, ref) => {
             const isCorrect = playerOrder.every((item, index) => item.id === correctOrder[index].id);
             
             if (isCorrect) {
-              const timeBonus = Math.max(0, 200 - timeElapsed * 2);
-              const moveBonus = Math.max(0, 100 - moves * 10);
+              const moveBonus = Math.max(0, 200 - moves * 10);
               const hintPenalty = hintsUsed * 25;
-              const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 : 
+              const difficultyBonus = currentPuzzle.difficulty === 'hard' ? 100 :
                                       currentPuzzle.difficulty === 'medium' ? 50 : 0;
-              const finalScore = Math.max(50, 200 + timeBonus + moveBonus + difficultyBonus - hintPenalty);
-              
+              const finalScore = Math.max(50, 300 + moveBonus + difficultyBonus - hintPenalty);
+
               return (
                 <>
                   <div className="text-4xl mb-2">🎉</div>
                   <div className="text-2xl font-bold text-green-300 mb-2">Perfect Ranking!</div>
                   <div className="text-green-200 text-sm mb-2">
-                    Completed with {maxTimePerPuzzle - timeLeft} seconds elapsed and {moves} moves
+                    Completed with {moves} moves
                     {hintsUsed > 0 && ` and ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}`}
                   </div>
                   <div className="text-lg font-bold text-white">
