@@ -538,18 +538,20 @@ const WordRescue = forwardRef((props, ref) => {
     setScoreNotifications([]);
     submissionInProgress.current = false;
 
-    // Pre-populate top 20% of screen with letters (approximately 0-120px from top)
+    // Pre-populate top 20% of screen with letters for continuous flow
     const initialLetters = [];
     const screenHeight = 600;
-    const topZoneHeight = screenHeight * 0.2; // Top 20%
-    const numInitialLetters = 12; // Number of letters to start with
+    const topZoneHeight = screenHeight * 0.2; // Top 20% (120px)
+    const numInitialLetters = 15; // Number of letters to start with
 
+    // Spread letters from above screen (-70px) down to 20% mark (120px)
+    // This creates a continuous flow from the start
     for (let i = 0; i < numInitialLetters; i++) {
       initialLetters.push({
         id: i,
         letter: getRandomLetter(),
         x: Math.random() * 270 + 5, // Random horizontal position
-        y: Math.random() * topZoneHeight + 16, // Random position in top 20%, below header
+        y: Math.random() * (topZoneHeight + 70) - 70, // Range from -70 to +120px
         selected: false
       });
     }
