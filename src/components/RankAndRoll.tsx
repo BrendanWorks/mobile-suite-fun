@@ -68,6 +68,8 @@ const RankAndRoll = forwardRef((props, ref) => {
   const [hintMessage, setHintMessage] = useState('');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [touchStartY, setTouchStartY] = useState(null);
+  const [moves, setMoves] = useState(0);
+  const [showValues, setShowValues] = useState(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
