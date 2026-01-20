@@ -65,28 +65,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     fetchPuzzles();
   }, [roundNumber]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-400">Loading puzzles...</div>
-      </div>
-    );
-  }
-
-  if (puzzles.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-400">No puzzles available for this round.</div>
-      </div>
-    );
-  }
-
-  const currentPuzzle = puzzles[currentItemIndex];
-
   // Handle answer selection
   const handleAnswer = (category: string) => {
-    if (isAnswered) return; // Prevent changing answer
+    if (isAnswered || !puzzles[currentItemIndex]) return;
 
+    const currentPuzzle = puzzles[currentItemIndex];
     setSelectedAnswer(category);
     setIsAnswered(true);
 
@@ -131,6 +114,25 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       }
     }
   }));
+
+  // Early returns AFTER all hooks
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-400">Loading puzzles...</div>
+      </div>
+    );
+  }
+
+  if (puzzles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-400">No puzzles available for this round.</div>
+      </div>
+    );
+  }
+
+  const currentPuzzle = puzzles[currentItemIndex];
 
   // Determine button styling based on feedback
   const getButtonStyle = (category: string) => {
