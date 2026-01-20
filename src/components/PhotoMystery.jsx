@@ -15,6 +15,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
+  const [puzzleIds, setPuzzleIds] = useState([]);
+  const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
 
   const timerRef = useRef(null);
   const revealTimerRef = useRef(null);
@@ -42,6 +44,13 @@ const PhotoMystery = forwardRef((props, ref) => {
     canSkipQuestion: true,
     onEarlyComplete: (callback) => {
       earlyCompleteCallbackRef.current = callback;
+    },
+    loadNextPuzzle: () => {
+      const nextIndex = currentPuzzleIndex + 1;
+      if (nextIndex < puzzleIds.length) {
+        setCurrentPuzzleIndex(nextIndex);
+        loadQuestionById(puzzleIds[nextIndex]);
+      }
     }
   }));
 
@@ -68,12 +77,33 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       console.log(`Loaded ${data.length} photo questions from Supabase`);
       setQuestions(data);
+      
+      // Extract and store puzzle IDs
+      const ids = data.map(q => q.id);
+      setPuzzleIds(ids);
+      
       setGameState('ready');
 
     } catch (error) {
       console.error('Error fetching questions:', error);
       setGameState('error');
     }
+  };
+
+  // Load a specific question by ID
+  const loadQuestionById = (questionId) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    if (!question.difficulty) {
+      question.difficulty = 'unknown';
+    }
+
+    setCurrentQuestion(question);
+    setUsedQuestions(prev => [...prev, question.id]);
+    setSelectedAnswer(null);
+    setRevealLevel(0);
+    setGameState('ready');
   };
 
   const generateNewQuestion = () => {
