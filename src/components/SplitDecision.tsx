@@ -61,7 +61,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         .from('puzzles')
         .select('id, prompt, category_1, category_2')
         .eq('game_id', 7) // Split Decision game_id
-        .eq('sequence_round', roundNumber)
+        .eq('sequence_round', 1) // Always use sequence_round 1 (all puzzles are here)
         .order('sequence_order', { ascending: true })
         .offset(puzzleIndex)
         .limit(1)
