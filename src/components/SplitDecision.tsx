@@ -1,10 +1,10 @@
 /**
- * SplitDecision.tsx - WITH LOAD NEXT PUZZLE
+ * SplitDecision.tsx - FIXED WITH UPFRONT ID LOADING
  *
  * Location: components/SplitDecision.tsx
  *
  * Features:
- * - Fetches real puzzles and puzzle items from Supabase
+ * - Fetches puzzle IDs upfront, then loads by ID (avoids offset issues)
  * - Three categories: A, B, and BOTH
  * - Immediate visual feedback on answer
  * - Green highlight for correct
@@ -47,24 +47,49 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [isAnswered, setIsAnswered] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentSequenceOrder, setCurrentSequenceOrder] = useState(0);
+  const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
   const earlyCompleteCallback = useRef<(() => void) | null>(null);
 
-  // Fetch puzzle and its items from Supabase
-  const fetchPuzzleByIndex = async (puzzleIndex: number) => {
+  // Load all puzzle IDs on mount
+  useEffect(() => {
+    const loadPuzzleIds = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('id')
+          .eq('game_id', 7)
+          .eq('sequence_round', 1)
+          .order('id', { ascending: true });
+
+        if (error) throw error;
+        const ids = (data || []).map(p => p.id);
+        setPuzzleIds(ids);
+        if (ids.length > 0) {
+          fetchPuzzleById(ids[0]);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading puzzle IDs:', error);
+        setLoading(false);
+      }
+    };
+
+    loadPuzzleIds();
+  }, []);
+
+  // Fetch puzzle and its items by ID
+  const fetchPuzzleById = async (puzzleId: number) => {
     try {
       setLoading(true);
 
-      // First, get the puzzle using offset
+      // Get the puzzle
       const { data: puzzleData, error: puzzleError } = await supabase
         .from('puzzles')
         .select('id, prompt, category_1, category_2')
-        .eq('game_id', 7) // Split Decision game_id
-        .eq('sequence_round', 1) // Always use sequence_round 1 (all puzzles are here)
-        .order('id', { ascending: true })
-        .offset(puzzleIndex)
-        .limit(1)
+        .eq('id', puzzleId)
         .maybeSingle();
 
       if (puzzleError) throw puzzleError;
@@ -73,7 +98,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         return;
       }
 
-      // Then, get all items for this puzzle
+      // Get all items for this puzzle
       const { data: itemsData, error: itemsError } = await supabase
         .from('puzzle_items')
         .select('id, item_text, correct_category, item_order')
@@ -86,7 +111,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         ...puzzleData,
         items: itemsData || []
       });
-      setCurrentSequenceOrder(puzzleIndex);
       setCurrentItemIndex(0);
       setSelectedAnswer(null);
       setIsAnswered(false);
@@ -97,11 +121,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setLoading(false);
     }
   };
-
-  // Initial puzzle load
-  useEffect(() => {
-    fetchPuzzleByIndex(0);
-  }, [roundNumber]);
 
   // Handle answer selection
   const handleAnswer = (category: string) => {
@@ -174,7 +193,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       earlyCompleteCallback.current = callback;
     },
     loadNextPuzzle: () => {
-      fetchPuzzleByIndex(currentSequenceOrder + 1);
+      const nextIndex = currentPuzzleIndex + 1;
+      if (nextIndex < puzzleIds.length) {
+        setCurrentPuzzleIndex(nextIndex);
+        fetchPuzzleById(puzzleIds[nextIndex]);
+      }
     }
   }));
 
