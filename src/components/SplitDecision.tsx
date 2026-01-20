@@ -1,5 +1,5 @@
 /**
- * SplitDecision.tsx - COMPLETE WITH SUPABASE DATA + BOTH CATEGORY
+ * SplitDecision.tsx - WITH LOAD NEXT PUZZLE
  *
  * Location: components/SplitDecision.tsx
  *
@@ -11,6 +11,7 @@
  * - Red/Green for wrong (shows correct answer)
  * - Auto-advances after 1.5 seconds
  * - Tracks score
+ * - loadNextPuzzle() to load next puzzle in sequence
  * - Implements GameHandle for scoring
  */
 
@@ -30,6 +31,7 @@ interface Puzzle {
   prompt: string;
   category_1: string;
   category_2: string;
+  sequence_order: number;
   items: PuzzleItem[];
 }
 
@@ -46,50 +48,58 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [isAnswered, setIsAnswered] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentSequenceOrder, setCurrentSequenceOrder] = useState(0);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
   const earlyCompleteCallback = useRef<(() => void) | null>(null);
 
   // Fetch puzzle and its items from Supabase
-  useEffect(() => {
-    const fetchPuzzleData = async () => {
-      try {
-        // First, get the puzzle
-        const { data: puzzleData, error: puzzleError } = await supabase
-          .from('puzzles')
-          .select('id, prompt, category_1, category_2')
-          .eq('game_id', 7) // Split Decision game_id
-          .eq('sequence_round', roundNumber)
-          .order('sequence_order', { ascending: true })
-          .limit(1)
-          .maybeSingle();
+  const fetchPuzzleBySequenceOrder = async (sequenceOrder: number) => {
+    try {
+      setLoading(true);
 
-        if (puzzleError) throw puzzleError;
-        if (!puzzleData) {
-          setLoading(false);
-          return;
-        }
+      // First, get the puzzle
+      const { data: puzzleData, error: puzzleError } = await supabase
+        .from('puzzles')
+        .select('id, prompt, category_1, category_2, sequence_order')
+        .eq('game_id', 7) // Split Decision game_id
+        .eq('sequence_round', roundNumber)
+        .eq('sequence_order', sequenceOrder)
+        .maybeSingle();
 
-        // Then, get all items for this puzzle
-        const { data: itemsData, error: itemsError } = await supabase
-          .from('puzzle_items')
-          .select('id, item_text, correct_category, item_order')
-          .eq('puzzle_id', puzzleData.id)
-          .order('item_order', { ascending: true });
-
-        if (itemsError) throw itemsError;
-
-        setPuzzle({
-          ...puzzleData,
-          items: itemsData || []
-        });
+      if (puzzleError) throw puzzleError;
+      if (!puzzleData) {
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching puzzle data:', error);
-        setLoading(false);
+        return;
       }
-    };
 
-    fetchPuzzleData();
+      // Then, get all items for this puzzle
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('puzzle_items')
+        .select('id, item_text, correct_category, item_order')
+        .eq('puzzle_id', puzzleData.id)
+        .order('item_order', { ascending: true });
+
+      if (itemsError) throw itemsError;
+
+      setPuzzle({
+        ...puzzleData,
+        items: itemsData || []
+      });
+      setCurrentSequenceOrder(sequenceOrder);
+      setCurrentItemIndex(0);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setFeedback(null);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching puzzle data:', error);
+      setLoading(false);
+    }
+  };
+
+  // Initial puzzle load
+  useEffect(() => {
+    fetchPuzzleBySequenceOrder(0);
   }, [roundNumber]);
 
   // Handle answer selection
@@ -145,7 +155,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     };
   }, []);
 
-  // Expose score via GameHandle
+  // Expose score and loadNextPuzzle via GameHandle
   useImperativeHandle(ref, () => ({
     getGameScore: () => {
       const maxPossibleScore = puzzle ? puzzle.items.length * 143 : 1001;
@@ -161,6 +171,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     },
     onEarlyComplete: (callback: () => void) => {
       earlyCompleteCallback.current = callback;
+    },
+    loadNextPuzzle: () => {
+      fetchPuzzleBySequenceOrder(currentSequenceOrder + 1);
     }
   }));
 
