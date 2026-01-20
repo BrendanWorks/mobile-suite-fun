@@ -9,15 +9,15 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
   const [showingIndex, setShowingIndex] = useState(0);
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: level,
-      maxScore: 10
-    }),
-    onGameEnd: () => {
-      console.log(`ShapeSequence ended at level: ${level}, score: ${score}`);
-    },
-    canSkipQuestion: false
-  }));
+  getGameScore: () => ({
+    score: Math.round((score / 500) * 100), // Normalize score to 0-100
+    maxScore: 100
+  }),
+  onGameEnd: () => {
+    console.log(`ShapeSequence ended at level: ${level}, score: ${score}`);
+  },
+  canSkipQuestion: false
+}));
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
