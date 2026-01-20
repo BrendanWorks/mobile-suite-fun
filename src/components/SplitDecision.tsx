@@ -31,7 +31,6 @@ interface Puzzle {
   prompt: string;
   category_1: string;
   category_2: string;
-  sequence_order: number;
   items: PuzzleItem[];
 }
 
@@ -53,17 +52,19 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const earlyCompleteCallback = useRef<(() => void) | null>(null);
 
   // Fetch puzzle and its items from Supabase
-  const fetchPuzzleBySequenceOrder = async (sequenceOrder: number) => {
+  const fetchPuzzleByIndex = async (puzzleIndex: number) => {
     try {
       setLoading(true);
 
-      // First, get the puzzle
+      // First, get the puzzle using offset
       const { data: puzzleData, error: puzzleError } = await supabase
         .from('puzzles')
-        .select('id, prompt, category_1, category_2, sequence_order')
+        .select('id, prompt, category_1, category_2')
         .eq('game_id', 7) // Split Decision game_id
         .eq('sequence_round', roundNumber)
-        .eq('sequence_order', sequenceOrder)
+        .order('sequence_order', { ascending: true })
+        .offset(puzzleIndex)
+        .limit(1)
         .maybeSingle();
 
       if (puzzleError) throw puzzleError;
@@ -85,7 +86,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         ...puzzleData,
         items: itemsData || []
       });
-      setCurrentSequenceOrder(sequenceOrder);
+      setCurrentSequenceOrder(puzzleIndex);
       setCurrentItemIndex(0);
       setSelectedAnswer(null);
       setIsAnswered(false);
@@ -99,7 +100,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
   // Initial puzzle load
   useEffect(() => {
-    fetchPuzzleBySequenceOrder(0);
+    fetchPuzzleByIndex(0);
   }, [roundNumber]);
 
   // Handle answer selection
@@ -173,7 +174,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       earlyCompleteCallback.current = callback;
     },
     loadNextPuzzle: () => {
-      fetchPuzzleBySequenceOrder(currentSequenceOrder + 1);
+      fetchPuzzleByIndex(currentSequenceOrder + 1);
     }
   }));
 
