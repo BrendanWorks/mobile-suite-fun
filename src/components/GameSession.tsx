@@ -36,7 +36,7 @@ interface GameConfig {
 const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60 },
   { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 15 },
-  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 30 },
+  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 90 },
   { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', component: DalmatianPuzzle, duration: 60 },
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60 },
   { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 90 },

@@ -47,6 +47,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [loading, setLoading] = useState(true);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
+  const earlyCompleteCallback = useRef<(() => void) | null>(null);
 
   // Fetch puzzle and its items from Supabase
   useEffect(() => {
@@ -116,6 +117,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setScore(prev => Math.max(0, prev - 143)); // -143 for wrong, min 0
     }
 
+    // Check if this is the last item
+    const isLastItem = currentItemIndex === puzzle.items.length - 1;
+
+    // If this is the last item, trigger early completion
+    if (isLastItem && earlyCompleteCallback.current) {
+      earlyCompleteCallback.current();
+    }
+
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
       if (currentItemIndex < puzzle.items.length - 1) {
@@ -149,6 +158,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
       }
+    },
+    onEarlyComplete: (callback: () => void) => {
+      earlyCompleteCallback.current = callback;
     }
   }));
 
