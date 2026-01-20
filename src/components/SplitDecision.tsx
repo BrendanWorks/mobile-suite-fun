@@ -1,11 +1,12 @@
 /**
- * SplitDecision.tsx - COMPLETE WITH FEEDBACK & AUTO-ADVANCE
+ * SplitDecision.tsx - COMPLETE WITH SUPABASE DATA + BOTH CATEGORY
  * 
  * Location: components/SplitDecision.tsx
  * 
  * Features:
- * - Shows items one at a time
- * - Validates answers immediately
+ * - Fetches real puzzles from Supabase
+ * - Three categories: A, B, and BOTH
+ * - Immediate visual feedback on answer
  * - Green highlight for correct
  * - Red/Green for wrong (shows correct answer)
  * - Auto-advances after 1.5 seconds
@@ -14,6 +15,7 @@
  */
 
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 
 interface Puzzle {
@@ -24,70 +26,62 @@ interface Puzzle {
   correct_answer: string;
 }
 
-interface SplitDecisionProps {}
+interface SplitDecisionProps {
+  userId?: string;
+  roundNumber?: number;
+}
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) => {
-  // Mock puzzles - replace with actual data fetch
-  const mockPuzzles: Puzzle[] = [
-    {
-      id: 1,
-      prompt: 'Caligula',
-      category_1: 'Boy Band Member',
-      category_2: 'Roman Emperor',
-      correct_answer: 'Roman Emperor'
-    },
-    {
-      id: 2,
-      prompt: 'Microwave',
-      category_1: 'Kitchen Appliance',
-      category_2: 'Medieval Weapon',
-      correct_answer: 'Kitchen Appliance'
-    },
-    {
-      id: 3,
-      prompt: 'Expelliarmus',
-      category_1: 'Harry Potter Spell',
-      category_2: 'IKEA Furniture',
-      correct_answer: 'Harry Potter Spell'
-    },
-    {
-      id: 4,
-      prompt: 'Jigglypuff',
-      category_1: 'Pokemon',
-      category_2: 'Prescription Medication',
-      correct_answer: 'Pokemon'
-    },
-    {
-      id: 5,
-      prompt: 'Downward Dog',
-      category_1: 'Yoga Pose',
-      category_2: 'Sex Position',
-      correct_answer: 'Yoga Pose'
-    },
-    {
-      id: 6,
-      prompt: 'Vicodin',
-      category_1: 'Prescription Medication',
-      category_2: 'Breaking Bad Character',
-      correct_answer: 'Prescription Medication'
-    },
-    {
-      id: 7,
-      prompt: 'Billy Joel',
-      category_1: 'Famous Piano Player',
-      category_2: 'Medieval Torture Device',
-      correct_answer: 'Famous Piano Player'
-    }
-  ];
-
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1 }, ref) => {
+  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [loading, setLoading] = useState(true);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const currentPuzzle = mockPuzzles[currentItemIndex];
+  // Fetch puzzles from Supabase
+  useEffect(() => {
+    const fetchPuzzles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('*')
+          .eq('game_id', 7) // Split Decision game_id
+          .eq('sequence_round', roundNumber)
+          .order('sequence_order', { ascending: true });
+
+        if (error) throw error;
+
+        setPuzzles(data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching puzzles:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchPuzzles();
+  }, [roundNumber]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-400">Loading puzzles...</div>
+      </div>
+    );
+  }
+
+  if (puzzles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-400">No puzzles available for this round.</div>
+      </div>
+    );
+  }
+
+  const currentPuzzle = puzzles[currentItemIndex];
 
   // Handle answer selection
   const handleAnswer = (category: string) => {
@@ -107,7 +101,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) =
 
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
-      if (currentItemIndex < mockPuzzles.length - 1) {
+      if (currentItemIndex < puzzles.length - 1) {
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
@@ -164,7 +158,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) =
     <div className="flex flex-col h-full p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <span className="text-gray-400">Item {currentItemIndex + 1} of {mockPuzzles.length}</span>
+        <span className="text-gray-400">Item {currentItemIndex + 1} of {puzzles.length}</span>
         <span className="text-2xl font-bold text-cyan-400">Score: {score}</span>
       </div>
 
@@ -221,6 +215,29 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) =
           )}
         </button>
 
+        {/* BOTH Category */}
+        <button
+          onClick={() => handleAnswer('BOTH')}
+          disabled={isAnswered}
+          className={`
+            w-full p-6 rounded-xl text-xl font-bold transition-all
+            text-yellow-300 uppercase tracking-wide
+            border-2 border-yellow-500
+            ${getButtonStyle('BOTH')}
+            ${!isAnswered && 'cursor-pointer hover:border-yellow-400 hover:bg-yellow-900/30'}
+            ${isAnswered && 'cursor-default'}
+          `}
+        >
+          <div className="text-sm opacity-75 mb-2">Special Category</div>
+          BOTH
+          {feedback === 'correct' && selectedAnswer === 'BOTH' && (
+            <span className="ml-2">✓</span>
+          )}
+          {feedback === 'wrong' && selectedAnswer === 'BOTH' && (
+            <span className="ml-2">✗</span>
+          )}
+        </button>
+
         {/* Feedback message */}
         {isAnswered && (
           <div className={`
@@ -241,7 +258,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) =
       </div>
 
       {/* Progress indicator */}
-      {currentItemIndex === mockPuzzles.length - 1 && isAnswered && (
+      {currentItemIndex === puzzles.length - 1 && isAnswered && (
         <div className="text-center text-gray-400 text-sm">
           Advancing to results...
         </div>
@@ -257,8 +274,8 @@ export default SplitDecision;
 /**
  * FEATURES:
  * 
- * ✅ Shows item (prompt) to categorize
- * ✅ Two category buttons (A and B)
+ * ✅ Fetches real puzzles from Supabase (game_id 7)
+ * ✅ Three category buttons: Category A, Category B, BOTH
  * ✅ Immediate visual feedback
  * ✅ Correct answer: green highlight + checkmark
  * ✅ Wrong answer: red highlight on choice, green on correct answer
@@ -269,7 +286,6 @@ export default SplitDecision;
  * ✅ Prevents changing answer after selection
  * 
  * NEXT STEPS:
- * - Replace mockPuzzles with actual data fetch from Supabase
  * - Adjust +143/-143 scoring if needed
  * - Adjust auto-advance delay (currently 1500ms)
  */
