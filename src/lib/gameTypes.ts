@@ -51,6 +51,12 @@ export interface GameHandle {
    * This will rapidly end the timer and transition to results
    */
   onEarlyComplete?: (callback: () => void) => void;
+
+  /**
+   * Optional method to load the next puzzle in the sequence
+   * Called when player clicks "Next Question" button in GameWrapper
+   */
+  loadNextPuzzle?: () => void;
 }
 
 /**
