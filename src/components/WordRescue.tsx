@@ -633,21 +633,6 @@ const WordRescue = forwardRef((props, ref) => {
             </div>
           )}
         </div>
-        
-        <div className="space-y-4">
-          <button 
-            onClick={startGame}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg transform transition hover:scale-105 block w-full"
-          >
-            Play Again
-          </button>
-          <button 
-            onClick={resetGame}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg transform transition hover:scale-105 block w-full"
-          >
-            Main Menu
-          </button>
-        </div>
       </div>
     );
   }
