@@ -227,14 +227,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer(puzzle.category_1)}
           disabled={isAnswered}
           className={`
-            w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-white uppercase tracking-wide break-words
+            w-full p-4 rounded-xl text-base font-bold transition-all
+            text-white uppercase tracking-normal
             ${getButtonStyle(puzzle.category_1)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
-          <span className="block truncate">{puzzle.category_1}</span>
+          <span className="block break-words hyphens-auto leading-tight">{puzzle.category_1}</span>
           {feedback === 'correct' && selectedAnswer === puzzle.category_1 && (
             <span className="ml-2">✓</span>
           )}
@@ -248,14 +248,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer(puzzle.category_2)}
           disabled={isAnswered}
           className={`
-            w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-white uppercase tracking-wide break-words
+            w-full p-4 rounded-xl text-base font-bold transition-all
+            text-white uppercase tracking-normal
             ${getButtonStyle(puzzle.category_2)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
-          <span className="block truncate">{puzzle.category_2}</span>
+          <span className="block break-words hyphens-auto leading-tight">{puzzle.category_2}</span>
           {feedback === 'correct' && selectedAnswer === puzzle.category_2 && (
             <span className="ml-2">✓</span>
           )}
@@ -269,8 +269,8 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer('BOTH')}
           disabled={isAnswered}
           className={`
-            w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-yellow-300 uppercase tracking-wide break-words
+            w-full p-4 rounded-xl text-base font-bold transition-all
+            text-yellow-300 uppercase tracking-normal
             border-2 border-yellow-500
             ${getButtonStyle('BOTH')}
             ${!isAnswered && 'cursor-pointer hover:border-yellow-400 hover:bg-yellow-900/30'}
