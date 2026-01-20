@@ -13,6 +13,8 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [shuffledItems, setShuffledItems] = useState([]);
+  const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
+  const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
 
   const successMessages = [
     "Excellent! You found the odd ones out!",
@@ -33,7 +35,14 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
     skipQuestion: () => {
       generateNewQuestion();
     },
-    canSkipQuestion: true
+    canSkipQuestion: true,
+    loadNextPuzzle: () => {
+      const nextIndex = currentPuzzleIndex + 1;
+      if (nextIndex < puzzleIds.length) {
+        setCurrentPuzzleIndex(nextIndex);
+        loadQuestionById(puzzleIds[nextIndex]);
+      }
+    }
   }));
 
   // Fetch questions from Supabase
@@ -60,12 +69,37 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
       
       console.log(`Loaded ${data.length} questions from Supabase`);
       setQuestions(data);
+      
+      // Extract and store puzzle IDs
+      const ids = data.map(q => q.id);
+      setPuzzleIds(ids);
+      
       setGameState('playing');
       
     } catch (error) {
       console.error('Error fetching questions:', error);
       setGameState('error');
     }
+  };
+
+  // Load a specific question by ID
+  const loadQuestionById = (questionId: number) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    if (!question.difficulty) {
+      question.difficulty = 'unknown';
+    }
+
+    setCurrentQuestion(question);
+    setUsedQuestions(prev => [...prev, question.id]);
+
+    const items = question.prompt.split(';').map(item => item.trim());
+    setShuffledItems(shuffleArray(items));
+
+    setSelectedItems([]);
+    setGameState('playing');
+    setMessage('');
   };
 
   const generateNewQuestion = () => {
