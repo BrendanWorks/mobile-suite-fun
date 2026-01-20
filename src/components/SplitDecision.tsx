@@ -1,434 +1,275 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import SplitDecisionLoadScreen from './SplitDecisionLoadScreen';
+/**
+ * SplitDecision.tsx - COMPLETE WITH FEEDBACK & AUTO-ADVANCE
+ * 
+ * Location: components/SplitDecision.tsx
+ * 
+ * Features:
+ * - Shows items one at a time
+ * - Validates answers immediately
+ * - Green highlight for correct
+ * - Red/Green for wrong (shows correct answer)
+ * - Auto-advances after 1.5 seconds
+ * - Tracks score
+ * - Implements GameHandle for scoring
+ */
 
-const SplitDecision = forwardRef((props, ref) => {
-  // Game data state
-  const [gameData, setGameData] = useState(null);
-  const [allPuzzles, setAllPuzzles] = useState([]);
-  const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { GameHandle } from '../lib/gameTypes';
 
-  // Game state
-  const [gameState, setGameState] = useState({
-    phase: 'menu', // 'menu', 'intro', 'item', 'feedback', 'complete'
-    currentItem: 0,
-    score: 0,
-    selectedAnswer: null,
-    feedback: null,
-    results: []
-  });
+interface Puzzle {
+  id: number;
+  prompt: string;
+  category_1: string;
+  category_2: string;
+  correct_answer: string;
+}
 
-  const scoreUpdateCallbackRef = useRef(null);
+interface SplitDecisionProps {}
 
-  useImperativeHandle(ref, () => ({
-    getGameScore: () => {
-      const correctCount = gameState.results.filter(r => r.correct).length;
-      const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
-      return {
-        score: gameState.score,
-        maxScore: totalItems * 143
-      };
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>((_props, ref) => {
+  // Mock puzzles - replace with actual data fetch
+  const mockPuzzles: Puzzle[] = [
+    {
+      id: 1,
+      prompt: 'Caligula',
+      category_1: 'Boy Band Member',
+      category_2: 'Roman Emperor',
+      correct_answer: 'Roman Emperor'
     },
-    onGameEnd: () => {
-      const correctCount = gameState.results.filter(r => r.correct).length;
-      const totalItems = Math.max(1, gameData?.items?.length || gameState.results.length || 1);
-      console.log(`SplitDecision ended: ${correctCount}/${totalItems} correct, score: ${gameState.score}`);
+    {
+      id: 2,
+      prompt: 'Microwave',
+      category_1: 'Kitchen Appliance',
+      category_2: 'Medieval Weapon',
+      correct_answer: 'Kitchen Appliance'
     },
-    skipQuestion: () => {
-      if (gameState.phase === 'item') {
-        const nextItem = gameState.currentItem + 1;
-        if (nextItem >= gameData.items.length) {
-          setGameState(prev => ({ ...prev, phase: 'complete' }));
-        } else {
-          setGameState(prev => ({
-            ...prev,
-            phase: 'item',
-            currentItem: nextItem,
-            selectedAnswer: null,
-            feedback: null,
-            results: [...prev.results, {
-              item: gameData.items[gameState.currentItem].item_text,
-              correct: false,
-              timeout: true,
-              points: 0
-            }]
-          }));
-        }
+    {
+      id: 3,
+      prompt: 'Expelliarmus',
+      category_1: 'Harry Potter Spell',
+      category_2: 'IKEA Furniture',
+      correct_answer: 'Harry Potter Spell'
+    },
+    {
+      id: 4,
+      prompt: 'Jigglypuff',
+      category_1: 'Pokemon',
+      category_2: 'Prescription Medication',
+      correct_answer: 'Pokemon'
+    },
+    {
+      id: 5,
+      prompt: 'Downward Dog',
+      category_1: 'Yoga Pose',
+      category_2: 'Sex Position',
+      correct_answer: 'Yoga Pose'
+    },
+    {
+      id: 6,
+      prompt: 'Vicodin',
+      category_1: 'Prescription Medication',
+      category_2: 'Breaking Bad Character',
+      correct_answer: 'Prescription Medication'
+    },
+    {
+      id: 7,
+      prompt: 'Billy Joel',
+      category_1: 'Famous Piano Player',
+      category_2: 'Medieval Torture Device',
+      correct_answer: 'Famous Piano Player'
+    }
+  ];
+
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const currentPuzzle = mockPuzzles[currentItemIndex];
+
+  // Handle answer selection
+  const handleAnswer = (category: string) => {
+    if (isAnswered) return; // Prevent changing answer
+
+    setSelectedAnswer(category);
+    setIsAnswered(true);
+
+    const isCorrect = category === currentPuzzle.correct_answer;
+    setFeedback(isCorrect ? 'correct' : 'wrong');
+
+    if (isCorrect) {
+      setScore(prev => prev + 143); // +143 for correct
+    } else {
+      setScore(prev => Math.max(0, prev - 143)); // -143 for wrong, min 0
+    }
+
+    // Auto-advance after 1.5 seconds
+    autoAdvanceTimer.current = setTimeout(() => {
+      if (currentItemIndex < mockPuzzles.length - 1) {
+        setCurrentItemIndex(prev => prev + 1);
+        setSelectedAnswer(null);
+        setIsAnswered(false);
+        setFeedback(null);
       }
-    },
-    canSkipQuestion: true,
-    onScoreUpdate: (callback) => {
-      scoreUpdateCallbackRef.current = callback;
+    }, 1500);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+      }
+    };
+  }, []);
+
+  // Expose score via GameHandle
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: Math.round((score / 1001) * 100), // Normalize to 0-100
+      maxScore: 100
+    }),
+    onGameEnd: () => {
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+      }
     }
   }));
 
-  useEffect(() => {
-    if (scoreUpdateCallbackRef.current && gameData) {
-      const totalItems = gameData.items.length;
-      const maxScore = totalItems * 143;
-      scoreUpdateCallbackRef.current(Math.max(0, gameState.score), maxScore);
-    }
-  }, [gameState.score, gameData]);
-
-  // Fetch game data from Supabase
-  const fetchGameData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Get all Split Decision puzzles from puzzles table
-      const { data: puzzlesData, error: puzzleError } = await supabase
-        .from('puzzles')
-        .select('*')
-        .eq('game_id', 7); // Split Decision game ID
-      
-      if (puzzleError) {
-        console.error('Supabase error:', puzzleError);
-        setError('Failed to load game data');
-        setLoading(false);
-        return;
-      }
-      
-      if (!puzzlesData || puzzlesData.length === 0) {
-        console.log('No Split Decision data found');
-        setError('No game data available');
-        setLoading(false);
-        return;
-      }
-      
-      setAllPuzzles(puzzlesData);
-      console.log(`Loaded ${puzzlesData.length} Split Decision puzzles from Supabase`);
-      
-      // Load the current puzzle
-      await loadPuzzle(puzzlesData[currentPuzzleIndex]);
-      
-    } catch (error) {
-      console.error('Error fetching Split Decision data:', error);
-      setError('Failed to load game data');
-      setLoading(false);
-    }
-  };
-
-  // Load a specific puzzle with its items
-  const loadPuzzle = async (puzzleData) => {
-    try {
-      // Get the puzzle items for this puzzle
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('puzzle_items')
-        .select('*')
-        .eq('puzzle_id', puzzleData.id)
-        .order('item_order', { ascending: true });
-      
-      if (itemsError) {
-        console.error('Items error:', itemsError);
-        setError(`Failed to load puzzle items: ${itemsError.message}`);
-        setLoading(false);
-        return;
-      }
-      
-      if (!itemsData || itemsData.length === 0) {
-        console.log('No items found for puzzle');
-        setError(`No puzzle items available for puzzle ${puzzleData.id}`);
-        setLoading(false);
-        return;
-      }
-      
-      // Transform database data to game format
-      const transformedGame = {
-        type: "splitdecision",
-        id: `splitdecision_${puzzleData.id}`,
-        title: puzzleData.prompt || "Category Classification",
-        categoryA: puzzleData.category_1 || "Category A",
-        categoryB: puzzleData.category_2 || "Category B",
-        allowBoth: true, // Allow "both" category
-        items: itemsData,
-        timing: { itemDurationMs: 3000, introMs: 1000, recapMs: 1200 },
-        scoring: { correct: 143, wrong: -143, timeout: 0 }
-      };
-      
-      console.log(`Loaded Split Decision game with ${itemsData.length} items from Supabase`);
-      setGameData(transformedGame);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading puzzle:', error);
-      setError('Failed to load puzzle');
-      setLoading(false);
-    }
-  };
-
-  // Initialize game data
-  useEffect(() => {
-    fetchGameData();
-  }, []);
-
-  // Auto-advance from intro to game
-  useEffect(() => {
-    if (!gameData) return;
-
-    let timeoutId;
-
-    if (gameState.phase === 'intro') {
-      timeoutId = setTimeout(() => {
-        setGameState(prev => ({
-          ...prev,
-          phase: 'item'
-        }));
-      }, gameData.timing.introMs);
+  // Determine button styling based on feedback
+  const getButtonStyle = (category: string) => {
+    if (!isAnswered) {
+      return 'border-2 border-blue-400 hover:border-blue-300 bg-blue-900/30 hover:bg-blue-900/50';
     }
 
-    else if (gameState.phase === 'feedback') {
-      timeoutId = setTimeout(() => {
-        const nextItem = gameState.currentItem + 1;
-        if (nextItem >= gameData.items.length) {
-          setGameState(prev => ({ ...prev, phase: 'complete' }));
-        } else {
-          setGameState(prev => ({
-            ...prev,
-            phase: 'item',
-            currentItem: nextItem,
-            selectedAnswer: null,
-            feedback: null
-          }));
-        }
-      }, 1000);
+    // If answered, highlight accordingly
+    if (feedback === 'correct' && category === selectedAnswer) {
+      return 'border-2 border-green-400 bg-green-900/50';
     }
 
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [gameState.phase, gameState.currentItem, gameData]);
+    if (feedback === 'wrong' && category === selectedAnswer) {
+      return 'border-2 border-red-400 bg-red-900/50';
+    }
 
-  const handleAnswer = useCallback((answer) => {
-    if (!gameData || gameState.selectedAnswer !== null || gameState.phase !== 'item') return;
-    
-    const currentItemData = gameData.items[gameState.currentItem];
-    if (!currentItemData) return;
-    
-    const isCorrect = answer === (currentItemData.correct_category === 'category_1' ? 'A' : 
-                                  currentItemData.correct_category === 'category_2' ? 'B' : 'BOTH');
-    const points = isCorrect ? gameData.scoring.correct : gameData.scoring.wrong;
-    
-    setGameState(prev => ({
-      ...prev,
-      selectedAnswer: answer,
-      score: Math.max(0, prev.score + points),
-      feedback: {
-        type: isCorrect ? 'correct' : 'wrong',
-        text: isCorrect ? `+${points}` : `${points}`
-      },
-      phase: 'feedback',
-      results: [...prev.results, {
-        item: currentItemData.item_text,
-        correct: isCorrect,
-        timeout: false,
-        points: points
-      }]
-    }));
-  }, [gameState.selectedAnswer, gameState.phase, gameState.currentItem, gameData]);
+    if (feedback === 'wrong' && category === currentPuzzle.correct_answer) {
+      return 'border-2 border-green-400 bg-green-900/50';
+    }
 
-  const startGame = () => {
-    setGameState({
-      phase: 'intro',
-      currentItem: 0,
-      score: 0,
-      timeLeft: 0,
-      selectedAnswer: null,
-      feedback: null,
-      results: []
-    });
+    return 'border-2 border-gray-600 opacity-50';
   };
 
-  const backToMenu = () => {
-    setGameState(prev => ({ ...prev, phase: 'menu' }));
-  };
-
-  const nextPuzzle = async () => {
-    if (allPuzzles.length <= 1) return;
-    
-    const nextIndex = (currentPuzzleIndex + 1) % allPuzzles.length;
-    setCurrentPuzzleIndex(nextIndex);
-    setLoading(true);
-    await loadPuzzle(allPuzzles[nextIndex]);
-    setGameState(prev => ({ ...prev, phase: 'menu' }));
-  };
-
-  const previousPuzzle = async () => {
-    if (allPuzzles.length <= 1) return;
-    
-    const prevIndex = currentPuzzleIndex === 0 ? allPuzzles.length - 1 : currentPuzzleIndex - 1;
-    setCurrentPuzzleIndex(prevIndex);
-    setLoading(true);
-    await loadPuzzle(allPuzzles[prevIndex]);
-    setGameState(prev => ({ ...prev, phase: 'menu' }));
-  };
-  // Loading state
-  if (loading) {
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">⚡ Loading Split Decision...</div>
-        <div className="text-sm text-purple-300 mt-2">Preparing rapid-fire questions</div>
+  return (
+    <div className="flex flex-col h-full p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <span className="text-gray-400">Item {currentItemIndex + 1} of {mockPuzzles.length}</span>
+        <span className="text-2xl font-bold text-cyan-400">Score: {score}</span>
       </div>
-    );
-  }
 
-  // Error state
-  if (error && !gameData) {
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg text-red-400">❌ Error loading game</div>
-        <div className="text-sm text-purple-300 mt-2">{error}</div>
+      {/* Item to categorize */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-12 text-center">
+          <h2 className="text-5xl font-bold text-white">{currentPuzzle.prompt}</h2>
+        </div>
+      </div>
+
+      {/* Category buttons */}
+      <div className="space-y-4">
+        {/* Category A */}
         <button
-          onClick={fetchGameData}
-          className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+          onClick={() => handleAnswer(currentPuzzle.category_1)}
+          disabled={isAnswered}
+          className={`
+            w-full p-6 rounded-xl text-xl font-bold transition-all
+            text-white uppercase tracking-wide
+            ${getButtonStyle(currentPuzzle.category_1)}
+            ${!isAnswered && 'cursor-pointer'}
+            ${isAnswered && 'cursor-default'}
+          `}
         >
-          Try Again
+          <div className="text-sm opacity-75 mb-2">Category A</div>
+          {currentPuzzle.category_1}
+          {feedback === 'correct' && selectedAnswer === currentPuzzle.category_1 && (
+            <span className="ml-2">✓</span>
+          )}
+          {feedback === 'wrong' && selectedAnswer === currentPuzzle.category_1 && (
+            <span className="ml-2">✗</span>
+          )}
         </button>
-      </div>
-    );
-  }
 
-  if (!gameData) return null;
+        {/* Category B */}
+        <button
+          onClick={() => handleAnswer(currentPuzzle.category_2)}
+          disabled={isAnswered}
+          className={`
+            w-full p-6 rounded-xl text-xl font-bold transition-all
+            text-white uppercase tracking-wide
+            ${getButtonStyle(currentPuzzle.category_2)}
+            ${!isAnswered && 'cursor-pointer'}
+            ${isAnswered && 'cursor-default'}
+          `}
+        >
+          <div className="text-sm opacity-75 mb-2">Category B</div>
+          {currentPuzzle.category_2}
+          {feedback === 'correct' && selectedAnswer === currentPuzzle.category_2 && (
+            <span className="ml-2">✓</span>
+          )}
+          {feedback === 'wrong' && selectedAnswer === currentPuzzle.category_2 && (
+            <span className="ml-2">✗</span>
+          )}
+        </button>
 
-  // Menu
-  if (gameState.phase === 'menu') {
-    return <SplitDecisionLoadScreen onStart={startGame} />;
-  }
-
-  // Intro
-  if (gameState.phase === 'intro') {
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">{gameData.title}</h2>
-        
-        <div className="flex justify-between items-center mb-6 gap-4">
-          <div className="bg-blue-500/20 border border-blue-400 px-4 py-3 rounded-xl flex-1">
-            <div className="text-sm text-blue-300">Category A</div>
-            <div className="font-bold text-blue-200">{gameData.categoryA}</div>
-          </div>
-          <div className="text-2xl font-bold text-purple-300">VS</div>
-          <div className="bg-red-500/20 border border-red-400 px-4 py-3 rounded-xl flex-1">
-            <div className="text-sm text-red-300">Category B</div>
-            <div className="font-bold text-red-200">{gameData.categoryB}</div>
-          </div>
-        </div>
-        
-        {gameData.allowBoth && (
-          <div className="mb-4 bg-yellow-500/20 border border-yellow-400 px-4 py-3 rounded-xl">
-            <div className="text-sm text-yellow-300">Special Category</div>
-            <div className="font-bold text-yellow-200">BOTH Categories</div>
-          </div>
-        )}
-        
-        <div className="text-purple-300 text-lg animate-pulse">
-          {gameData.items.length} rapid items
-        </div>
-      </div>
-    );
-  }
-
-  // Playing
-  if (gameState.phase === 'item' || gameState.phase === 'feedback') {
-    const item = gameData.items[gameState.currentItem];
-    if (!item) return null;
-
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white min-h-96">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-purple-300">
-              Item {gameState.currentItem + 1} of {gameData.items.length}
-            </div>
-            <div className="text-lg font-bold text-cyan-400">
-              Score: {gameState.score}
-            </div>
-          </div>
-        </div>
-
-        {/* Item */}
-        <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-8 shadow-lg">
-            <div className="text-3xl font-bold text-white mb-4 drop-shadow-lg">
-              {item?.item_text || 'No item text available'}
-            </div>
-            
-            {gameState.feedback && (
-              <div className={`text-2xl font-bold animate-pulse ${
-                gameState.feedback.type === 'correct' ? 'text-green-400' : 
-                gameState.feedback.type === 'wrong' ? 'text-red-400' : 'text-gray-400'
-              }`}>
-                {gameState.feedback.text}
+        {/* Feedback message */}
+        {isAnswered && (
+          <div className={`
+            text-center py-4 rounded-lg font-bold text-lg transition-all
+            ${feedback === 'correct' 
+              ? 'bg-green-900/50 text-green-300' 
+              : 'bg-red-900/50 text-red-300'
+            }
+          `}>
+            {feedback === 'correct' ? '✓ Correct!' : '✗ Wrong'}
+            {feedback === 'wrong' && (
+              <div className="text-sm mt-1">
+                Answer: <span className="text-green-300">{currentPuzzle.correct_answer}</span>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Controls */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <button
-            onClick={() => handleAnswer('A')}
-            disabled={gameState.selectedAnswer !== null}
-            className={`py-6 px-4 rounded-xl font-semibold transition-all border-2 ${
-              gameState.selectedAnswer !== null 
-                ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50' 
-                : 'bg-blue-500/20 border-blue-400 text-blue-200 hover:bg-blue-500/30 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98'
-            }`}
-          >
-            <div className="text-sm opacity-90">Category A</div>
-            <div className="text-lg font-semibold">{gameData.categoryA}</div>
-          </button>
-          
-          <button
-            onClick={() => handleAnswer('B')}
-            disabled={gameState.selectedAnswer !== null}
-            className={`py-6 px-4 rounded-xl font-semibold transition-all border-2 ${
-              gameState.selectedAnswer !== null 
-                ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50' 
-                : 'bg-red-500/20 border-red-400 text-red-200 hover:bg-red-500/30 hover:shadow-lg hover:shadow-red-500/25 active:scale-98'
-            }`}
-          >
-            <div className="text-sm opacity-90">Category B</div>
-            <div className="text-lg font-semibold">{gameData.categoryB}</div>
-          </button>
-        </div>
-        
-        {/* Both button if allowed */}
-        {gameData.allowBoth && (
-          <button
-            onClick={() => handleAnswer('BOTH')}
-            disabled={gameState.selectedAnswer !== null}
-            className={`w-full py-4 px-4 rounded-xl font-semibold transition-all border-2 ${
-              gameState.selectedAnswer !== null 
-                ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50' 
-                : 'bg-yellow-500/20 border-yellow-400 text-yellow-200 hover:bg-yellow-500/30 hover:shadow-lg hover:shadow-yellow-500/25 active:scale-98'
-            }`}
-          >
-            <div className="text-sm opacity-90">Special Category</div>
-            <div className="text-lg font-semibold">BOTH</div>
-          </button>
         )}
       </div>
-    );
-  }
 
-  // Complete
-  if (gameState.phase === 'complete') {
-    return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-lg">⚡ Game Complete!</h2>
-
-        <div className="mb-6 p-6 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl">
-          <div className="text-4xl font-bold text-green-400">{gameState.score}</div>
+      {/* Progress indicator */}
+      {currentItemIndex === mockPuzzles.length - 1 && isAnswered && (
+        <div className="text-center text-gray-400 text-sm">
+          Advancing to results...
         </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 });
 
 SplitDecision.displayName = 'SplitDecision';
 
 export default SplitDecision;
+
+/**
+ * FEATURES:
+ * 
+ * ✅ Shows item (prompt) to categorize
+ * ✅ Two category buttons (A and B)
+ * ✅ Immediate visual feedback
+ * ✅ Correct answer: green highlight + checkmark
+ * ✅ Wrong answer: red highlight on choice, green on correct answer
+ * ✅ Shows text feedback ("Correct!" or "Wrong: [answer]")
+ * ✅ Auto-advances after 1.5 seconds
+ * ✅ Tracks score (+143 correct, -143 wrong)
+ * ✅ Implements GameHandle for integration with GameSession
+ * ✅ Prevents changing answer after selection
+ * 
+ * NEXT STEPS:
+ * - Replace mockPuzzles with actual data fetch from Supabase
+ * - Adjust +143/-143 scoring if needed
+ * - Adjust auto-advance delay (currently 1500ms)
+ */
