@@ -19,6 +19,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const timerRef = useRef(null);
   const revealTimerRef = useRef(null);
   const resultTimerRef = useRef(null);
+  const earlyCompleteCallbackRef = useRef(null);
 
   const maxTime = 15;
   const maxPoints = 1000;
@@ -38,7 +39,10 @@ const PhotoMystery = forwardRef((props, ref) => {
     skipQuestion: () => {
       nextQuestion();
     },
-    canSkipQuestion: true
+    canSkipQuestion: true,
+    onEarlyComplete: (callback) => {
+      earlyCompleteCallbackRef.current = callback;
+    }
   }));
 
   const fetchQuestions = async () => {
@@ -190,6 +194,13 @@ const PhotoMystery = forwardRef((props, ref) => {
       generateNewQuestion();
     }
   }, [questions, currentQuestion, gameState]);
+
+  useEffect(() => {
+    if (gameComplete && earlyCompleteCallbackRef.current) {
+      console.log('PhotoMystery: All images complete, signaling early completion');
+      earlyCompleteCallbackRef.current();
+    }
+  }, [gameComplete]);
 
   const getImageStyle = () => {
     const scales = [3, 2.2, 1.6, 1.2, 1];

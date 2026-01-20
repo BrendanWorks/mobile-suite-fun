@@ -44,6 +44,13 @@ export interface GameHandle {
    * Called whenever the score changes during gameplay
    */
   onScoreUpdate?: (callback: (score: number, maxScore: number) => void) => void;
+
+  /**
+   * Optional callback to signal early completion
+   * Games can call this when they're naturally complete (all questions answered, etc.)
+   * This will rapidly end the timer and transition to results
+   */
+  onEarlyComplete?: (callback: () => void) => void;
 }
 
 /**

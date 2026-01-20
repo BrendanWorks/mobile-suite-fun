@@ -32,6 +32,7 @@ export default function GameWrapper({
   const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
   const [canSkipQuestion, setCanSkipQuestion] = useState(false);
+  const [rapidCompletion, setRapidCompletion] = useState(false);
   const gameRef = useRef<GameHandle>(null);
 
   // Sync canSkipQuestion from game ref
@@ -56,6 +57,16 @@ export default function GameWrapper({
     }
   }, [onScoreUpdate]);
 
+  // Register early complete callback with game
+  useEffect(() => {
+    if (gameRef.current?.onEarlyComplete) {
+      gameRef.current.onEarlyComplete(() => {
+        console.log(`${gameName}: Game signaled early completion, rapidly ending...`);
+        setRapidCompletion(true);
+      });
+    }
+  }, [gameName]);
+
   // Timer countdown
   useEffect(() => {
     if (timeLeft <= 0 && !hasEnded) {
@@ -63,12 +74,15 @@ export default function GameWrapper({
       return;
     }
 
+    const tickInterval = rapidCompletion ? 50 : 1000;
+    const tickDecrement = rapidCompletion ? 1 : 1;
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1));
-    }, 1000);
+      setTimeLeft(prev => Math.max(0, prev - tickDecrement));
+    }, tickInterval);
 
     return () => clearInterval(timer);
-  }, [timeLeft, hasEnded]);
+  }, [timeLeft, hasEnded, rapidCompletion]);
 
   // End game and get score
   const endGame = (reason: 'timeout' | 'quit') => {
