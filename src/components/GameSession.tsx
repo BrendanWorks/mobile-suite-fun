@@ -69,6 +69,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const [currentGameScore, setCurrentGameScore] = useState<{ score: number; maxScore: number }>({ score: 0, maxScore: 0 });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingSessionData, setPendingSessionData] = useState<any>(null);
+  const [sevenSecondsElapsed, setSevenSecondsElapsed] = useState(false);
 
   // Get current user on mount
   useEffect(() => {
@@ -140,6 +141,20 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     }
   }, [user?.id, gameState, currentRound, sessionId]);
 
+  // Start 7-second timer when game completes
+  useEffect(() => {
+    if (gameState === 'complete') {
+      setSevenSecondsElapsed(false);
+      const timer = setTimeout(() => {
+        setSevenSecondsElapsed(true);
+        if (!user?.id && !sessionSaved && pendingSessionData) {
+          setShowAuthModal(true);
+        }
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState]);
+
   // Save complete session when finished
   useEffect(() => {
     if (gameState === 'complete' && !sessionSaved) {
@@ -168,7 +183,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
       if (!user?.id) {
         setPendingSessionData(sessionData);
-        setShowAuthModal(true);
       } else if (sessionId) {
         const saveToSupabase = async () => {
           try {
@@ -457,6 +471,9 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
+          onContinueAsGuest={() => {
+            setPendingSessionData(null);
+          }}
         />
       </div>
     );

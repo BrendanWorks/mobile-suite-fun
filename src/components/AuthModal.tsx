@@ -7,9 +7,10 @@ import { supabase } from '../lib/supabase';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onContinueAsGuest?: () => void;
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onContinueAsGuest }: AuthModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -63,7 +64,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 },
               },
             }}
-            providers={['google', 'discord', 'facebook', 'twitch', 'github']}
+            providers={[]}
             onlyThirdPartyProviders={false}
             view="sign_in"
             redirectTo={window.location.origin}
@@ -74,6 +75,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               Your game session will be saved immediately after sign in!
             </p>
           </div>
+
+          {onContinueAsGuest && (
+            <button
+              onClick={() => {
+                onContinueAsGuest();
+                onClose();
+              }}
+              className="mt-4 w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+            >
+              Continue Playing as Guest
+            </button>
+          )}
         </div>
       </div>
     </div>
