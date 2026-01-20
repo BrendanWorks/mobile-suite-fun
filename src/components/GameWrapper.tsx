@@ -187,24 +187,25 @@ export default function GameWrapper({
 
       {/* Header with Controls */}
       <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700 flex justify-between items-center gap-4">
-        <div className="flex gap-2">
-          <button
-            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
-          >
-            Next Question
-          </button>
-          <button
-            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
-          >
-            Next Round
-          </button>
-        </div>
+        {/* Center: Next Question button (only shows if game supports it) */}
+        {gameRef.current?.loadNextPuzzle && (
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => gameRef.current?.loadNextPuzzle?.()}
+              className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-semibold text-sm transition-colors"
+            >
+              Next Question
+            </button>
+          </div>
+        )}
+        
+        {/* Right: Next Round button (ends game) */}
         <button
           onClick={handleQuitClick}
           disabled={hasEnded}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-colors"
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-colors whitespace-nowrap"
         >
-          {hasEnded ? 'Round Complete' : 'Quit Round'}
+          {hasEnded ? 'Round Complete' : 'Next Round'}
         </button>
       </div>
 
