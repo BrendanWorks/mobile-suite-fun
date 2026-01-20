@@ -1,10 +1,10 @@
 /**
  * SplitDecision.tsx - COMPLETE WITH SUPABASE DATA + BOTH CATEGORY
- * 
+ *
  * Location: components/SplitDecision.tsx
- * 
+ *
  * Features:
- * - Fetches real puzzles from Supabase
+ * - Fetches real puzzles and puzzle items from Supabase
  * - Three categories: A, B, and BOTH
  * - Immediate visual feedback on answer
  * - Green highlight for correct
@@ -18,12 +18,19 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 
+interface PuzzleItem {
+  id: number;
+  item_text: string;
+  correct_category: string;
+  item_order: number;
+}
+
 interface Puzzle {
   id: number;
   prompt: string;
   category_1: string;
   category_2: string;
-  correct_answer: string;
+  items: PuzzleItem[];
 }
 
 interface SplitDecisionProps {
@@ -32,7 +39,7 @@ interface SplitDecisionProps {
 }
 
 const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1 }, ref) => {
-  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -41,39 +48,66 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [loading, setLoading] = useState(true);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch puzzles from Supabase
+  // Fetch puzzle and its items from Supabase
   useEffect(() => {
-    const fetchPuzzles = async () => {
+    const fetchPuzzleData = async () => {
       try {
-        const { data, error } = await supabase
+        // First, get the puzzle
+        const { data: puzzleData, error: puzzleError } = await supabase
           .from('puzzles')
-          .select('*')
+          .select('id, prompt, category_1, category_2')
           .eq('game_id', 7) // Split Decision game_id
           .eq('sequence_round', roundNumber)
-          .order('sequence_order', { ascending: true });
+          .order('sequence_order', { ascending: true })
+          .limit(1)
+          .maybeSingle();
 
-        if (error) throw error;
+        if (puzzleError) throw puzzleError;
+        if (!puzzleData) {
+          setLoading(false);
+          return;
+        }
 
-        setPuzzles(data || []);
+        // Then, get all items for this puzzle
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('puzzle_items')
+          .select('id, item_text, correct_category, item_order')
+          .eq('puzzle_id', puzzleData.id)
+          .order('item_order', { ascending: true });
+
+        if (itemsError) throw itemsError;
+
+        setPuzzle({
+          ...puzzleData,
+          items: itemsData || []
+        });
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching puzzles:', error);
+        console.error('Error fetching puzzle data:', error);
         setLoading(false);
       }
     };
 
-    fetchPuzzles();
+    fetchPuzzleData();
   }, [roundNumber]);
 
   // Handle answer selection
   const handleAnswer = (category: string) => {
-    if (isAnswered || !puzzles[currentItemIndex]) return;
+    if (isAnswered || !puzzle || !puzzle.items[currentItemIndex]) return;
 
-    const currentPuzzle = puzzles[currentItemIndex];
+    const currentItem = puzzle.items[currentItemIndex];
     setSelectedAnswer(category);
     setIsAnswered(true);
 
-    const isCorrect = category === currentPuzzle.correct_answer;
+    // Map category buttons to correct_category values
+    const categoryMap: { [key: string]: string } = {
+      [puzzle.category_1]: 'category_1',
+      [puzzle.category_2]: 'category_2',
+      'BOTH': 'both'
+    };
+
+    const selectedCategory = categoryMap[category];
+    const isCorrect = selectedCategory === currentItem.correct_category;
     setFeedback(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
@@ -84,7 +118,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
-      if (currentItemIndex < puzzles.length - 1) {
+      if (currentItemIndex < puzzle.items.length - 1) {
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
@@ -104,10 +138,13 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
   // Expose score via GameHandle
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: Math.round((score / 1001) * 100), // Normalize to 0-100
-      maxScore: 100
-    }),
+    getGameScore: () => {
+      const maxPossibleScore = puzzle ? puzzle.items.length * 143 : 1001;
+      return {
+        score: Math.round((score / maxPossibleScore) * 100), // Normalize to 0-100
+        maxScore: 100
+      };
+    },
     onGameEnd: () => {
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
@@ -119,26 +156,35 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-400">Loading puzzles...</div>
+        <div className="text-gray-400">Loading puzzle...</div>
       </div>
     );
   }
 
-  if (puzzles.length === 0) {
+  if (!puzzle || puzzle.items.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-400">No puzzles available for this round.</div>
+        <div className="text-gray-400">No puzzle available for this round.</div>
       </div>
     );
   }
 
-  const currentPuzzle = puzzles[currentItemIndex];
+  const currentItem = puzzle.items[currentItemIndex];
+
+  // Get the correct answer text for display
+  const getCorrectAnswerText = () => {
+    if (currentItem.correct_category === 'category_1') return puzzle.category_1;
+    if (currentItem.correct_category === 'category_2') return puzzle.category_2;
+    return 'BOTH';
+  };
 
   // Determine button styling based on feedback
   const getButtonStyle = (category: string) => {
     if (!isAnswered) {
       return 'border-2 border-blue-400 hover:border-blue-300 bg-blue-900/30 hover:bg-blue-900/50';
     }
+
+    const correctAnswerText = getCorrectAnswerText();
 
     // If answered, highlight accordingly
     if (feedback === 'correct' && category === selectedAnswer) {
@@ -149,7 +195,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       return 'border-2 border-red-400 bg-red-900/50';
     }
 
-    if (feedback === 'wrong' && category === currentPuzzle.correct_answer) {
+    if (feedback === 'wrong' && category === correctAnswerText) {
       return 'border-2 border-green-400 bg-green-900/50';
     }
 
@@ -158,16 +204,19 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
   return (
     <div className="flex flex-col h-full p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <span className="text-gray-400">Item {currentItemIndex + 1} of {puzzles.length}</span>
-        <span className="text-2xl font-bold text-cyan-400">Score: {score}</span>
+      {/* Puzzle Question Header */}
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-white mb-2">{puzzle.prompt}</h3>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Item {currentItemIndex + 1} of {puzzle.items.length}</span>
+          <span className="text-xl font-bold text-cyan-400">Score: {score}</span>
+        </div>
       </div>
 
       {/* Item to categorize */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="w-full bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-12 text-center">
-          <h2 className="text-5xl font-bold text-white">{currentPuzzle.prompt}</h2>
+        <div className="w-full bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-cyan-500/30 rounded-2xl p-12 text-center">
+          <h2 className="text-6xl font-bold text-white">{currentItem.item_text}</h2>
         </div>
       </div>
 
@@ -175,44 +224,44 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       <div className="space-y-4">
         {/* Category A */}
         <button
-          onClick={() => handleAnswer(currentPuzzle.category_1)}
+          onClick={() => handleAnswer(puzzle.category_1)}
           disabled={isAnswered}
           className={`
             w-full p-6 rounded-xl text-xl font-bold transition-all
             text-white uppercase tracking-wide
-            ${getButtonStyle(currentPuzzle.category_1)}
+            ${getButtonStyle(puzzle.category_1)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
           <div className="text-sm opacity-75 mb-2">Category A</div>
-          {currentPuzzle.category_1}
-          {feedback === 'correct' && selectedAnswer === currentPuzzle.category_1 && (
+          {puzzle.category_1}
+          {feedback === 'correct' && selectedAnswer === puzzle.category_1 && (
             <span className="ml-2">✓</span>
           )}
-          {feedback === 'wrong' && selectedAnswer === currentPuzzle.category_1 && (
+          {feedback === 'wrong' && selectedAnswer === puzzle.category_1 && (
             <span className="ml-2">✗</span>
           )}
         </button>
 
         {/* Category B */}
         <button
-          onClick={() => handleAnswer(currentPuzzle.category_2)}
+          onClick={() => handleAnswer(puzzle.category_2)}
           disabled={isAnswered}
           className={`
             w-full p-6 rounded-xl text-xl font-bold transition-all
             text-white uppercase tracking-wide
-            ${getButtonStyle(currentPuzzle.category_2)}
+            ${getButtonStyle(puzzle.category_2)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
           <div className="text-sm opacity-75 mb-2">Category B</div>
-          {currentPuzzle.category_2}
-          {feedback === 'correct' && selectedAnswer === currentPuzzle.category_2 && (
+          {puzzle.category_2}
+          {feedback === 'correct' && selectedAnswer === puzzle.category_2 && (
             <span className="ml-2">✓</span>
           )}
-          {feedback === 'wrong' && selectedAnswer === currentPuzzle.category_2 && (
+          {feedback === 'wrong' && selectedAnswer === puzzle.category_2 && (
             <span className="ml-2">✗</span>
           )}
         </button>
@@ -244,15 +293,15 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         {isAnswered && (
           <div className={`
             text-center py-4 rounded-lg font-bold text-lg transition-all
-            ${feedback === 'correct' 
-              ? 'bg-green-900/50 text-green-300' 
+            ${feedback === 'correct'
+              ? 'bg-green-900/50 text-green-300'
               : 'bg-red-900/50 text-red-300'
             }
           `}>
             {feedback === 'correct' ? '✓ Correct!' : '✗ Wrong'}
             {feedback === 'wrong' && (
               <div className="text-sm mt-1">
-                Answer: <span className="text-green-300">{currentPuzzle.correct_answer}</span>
+                Answer: <span className="text-green-300">{getCorrectAnswerText()}</span>
               </div>
             )}
           </div>
@@ -260,9 +309,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       </div>
 
       {/* Progress indicator */}
-      {currentItemIndex === puzzles.length - 1 && isAnswered && (
+      {currentItemIndex === puzzle.items.length - 1 && isAnswered && (
         <div className="text-center text-gray-400 text-sm">
-          Advancing to results...
+          Round complete!
         </div>
       )}
     </div>
@@ -272,22 +321,3 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 SplitDecision.displayName = 'SplitDecision';
 
 export default SplitDecision;
-
-/**
- * FEATURES:
- * 
- * ✅ Fetches real puzzles from Supabase (game_id 7)
- * ✅ Three category buttons: Category A, Category B, BOTH
- * ✅ Immediate visual feedback
- * ✅ Correct answer: green highlight + checkmark
- * ✅ Wrong answer: red highlight on choice, green on correct answer
- * ✅ Shows text feedback ("Correct!" or "Wrong: [answer]")
- * ✅ Auto-advances after 1.5 seconds
- * ✅ Tracks score (+143 correct, -143 wrong)
- * ✅ Implements GameHandle for integration with GameSession
- * ✅ Prevents changing answer after selection
- * 
- * NEXT STEPS:
- * - Adjust +143/-143 scoring if needed
- * - Adjust auto-advance delay (currently 1500ms)
- */
