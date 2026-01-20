@@ -1,8 +1,8 @@
 /**
  * GameWrapper.tsx - UPDATED WITH SKIP CONTROLS
- * 
- * Replaced "Quit Round" with "Skip Question" and "Next Round"
- * Skip Question = next puzzle/question in current game (no points)
+ *
+ * Replaced "Quit Round" with "Next Question" and "Next Round"
+ * Next Question = next puzzle/question in current game (no points)
  * Next Round = skip to next game type (forfeit current game)
  */
 
@@ -155,7 +155,7 @@ export default function GameWrapper({
               disabled={hasEnded}
               className="px-6 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-600 disabled:opacity-50 text-gray-800 disabled:text-white rounded-lg font-semibold text-sm transition-colors"
             >
-              Skip Question
+              Next Question
             </button>
           )}
           <button
