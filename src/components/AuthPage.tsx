@@ -15,26 +15,23 @@ interface AuthPageProps {
 
 export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-6">
+    <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md text-center">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold text-white mb-3">🎮 Game Box</h1>
-          <p className="text-xl text-gray-300">Play. Score. Compete.</p>
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 sm:mb-3">🎮 Game Box</h1>
+          <p className="text-lg sm:text-xl text-gray-300">Play. Score. Compete.</p>
         </div>
 
-        {/* Play as Guest Button */}
         {onPlayAsGuest && (
           <button
             onClick={onPlayAsGuest}
-            className="w-full mb-6 py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-105 text-lg"
+            className="w-full mb-4 sm:mb-6 py-3.5 sm:py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 active:from-green-600 active:to-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] text-base sm:text-lg touch-manipulation"
           >
             Play as Guest
           </button>
         )}
 
-        {/* Google Sign In */}
-        <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20 shadow-2xl">
           <Auth
             supabaseClient={supabase}
             appearance={{
@@ -75,8 +72,7 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
           />
         </div>
 
-        {/* Footer Text */}
-        <p className="mt-8 text-gray-400 text-sm">
+        <p className="mt-6 sm:mt-8 text-gray-400 text-xs sm:text-sm">
           Sign in to save your progress
         </p>
       </div>

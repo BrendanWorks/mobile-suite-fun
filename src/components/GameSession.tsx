@@ -334,20 +334,20 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-6">
-        <div className="text-center max-w-2xl">
-          <div className="mb-8">
-            <Star className="w-24 h-24 mx-auto text-yellow-400 animate-pulse" />
+      <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
+        <div className="text-center max-w-2xl w-full">
+          <div className="mb-6 sm:mb-8">
+            <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-yellow-400 animate-pulse" />
           </div>
-          <h1 className="text-6xl font-bold text-white mb-4">Round {currentRound}</h1>
-          <p className="text-2xl text-gray-300 mb-8">Get ready for the next challenge!</p>
-          <div className="bg-white/10 rounded-lg p-6 backdrop-blur mb-8">
-            <p className="text-lg text-gray-200 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{currentRound * 100}</span></p>
-            <p className="text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
+          <h1 className="text-4xl sm:text-6xl font-bold text-white mb-3 sm:mb-4">Round {currentRound}</h1>
+          <p className="text-lg sm:text-2xl text-gray-300 mb-6 sm:mb-8">Get ready for the next challenge!</p>
+          <div className="bg-white/10 rounded-lg p-4 sm:p-6 backdrop-blur mb-6 sm:mb-8">
+            <p className="text-base sm:text-lg text-gray-200 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{currentRound * 100}</span></p>
+            <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
           </div>
           <button
             onClick={startRound}
-            className="mt-8 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
+            className="mt-6 sm:mt-8 px-8 py-4 bg-green-600 active:bg-green-700 text-white font-bold rounded-lg text-lg sm:text-xl transition-all active:scale-[0.98] touch-manipulation"
           >
             Start Round
           </button>
@@ -394,78 +394,79 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const sessionGrade = getSessionGrade(sessionTotal.percentage);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 flex items-center justify-center p-6">
-        <div className="text-center max-w-2xl">
-          <div className="mb-8">
-            <Trophy className="w-32 h-32 mx-auto text-yellow-400 animate-bounce" />
-          </div>
-          <h1 className="text-6xl font-bold text-white mb-4">Game Complete!</h1>
-          <div className="bg-white/10 rounded-lg p-8 backdrop-blur mb-8">
-            <div className="mb-4">
-              <p className="text-4xl font-bold text-yellow-400 mb-2">{sessionTotal.totalScore}</p>
-              <p className="text-xl text-gray-200">out of {sessionTotal.maxPossible} possible points</p>
+      <div className="h-screen w-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+          <div className="text-center max-w-2xl w-full py-4">
+            <div className="mb-6 sm:mb-8">
+              <Trophy className="w-20 h-20 sm:w-32 sm:h-32 mx-auto text-yellow-400 animate-bounce" />
             </div>
-            <div className="mt-6 pt-6 border-t border-white/20">
-              <p className="text-lg text-gray-300 mb-2">Overall Performance</p>
-              <div className="text-3xl font-bold text-white mb-4">
-                {sessionTotal.percentage}% - Grade: <span className="text-yellow-400">{sessionGrade}</span>
+            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-3 sm:mb-4">Game Complete!</h1>
+            <div className="bg-white/10 rounded-lg p-4 sm:p-8 backdrop-blur mb-4 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <p className="text-3xl sm:text-4xl font-bold text-yellow-400 mb-2">{sessionTotal.totalScore}</p>
+                <p className="text-base sm:text-xl text-gray-200">out of {sessionTotal.maxPossible} possible points</p>
               </div>
-            </div>
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/20">
+                <p className="text-base sm:text-lg text-gray-300 mb-2">Overall Performance</p>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">
+                  {sessionTotal.percentage}% - Grade: <span className="text-yellow-400">{sessionGrade}</span>
+                </div>
+              </div>
 
-            {/* Game Breakdown */}
-            <div className="mt-6 pt-6 border-t border-white/20 text-left">
-              <p className="text-lg text-gray-300 mb-3 font-bold">Game Breakdown:</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {roundScores.map((round, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white/10 p-3 rounded">
-                    <div className="flex-1">
-                      <span className="text-white font-medium">{idx + 1}. {round.gameName}</span>
-                      <div className="text-xs text-gray-400">{round.rawScore}/{round.maxScore} points</div>
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/20 text-left">
+                <p className="text-base sm:text-lg text-gray-300 mb-2 sm:mb-3 font-bold">Game Breakdown:</p>
+                <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
+                  {roundScores.map((round, idx) => (
+                    <div key={idx} className="flex justify-between items-center bg-white/10 p-2.5 sm:p-3 rounded text-sm sm:text-base">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <span className="text-white font-medium truncate block">{idx + 1}. {round.gameName}</span>
+                        <div className="text-xs text-gray-400">{round.rawScore}/{round.maxScore} points</div>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <span className="text-cyan-400 font-bold text-sm sm:text-base">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
+                        <span className={`font-bold w-7 sm:w-8 text-center rounded px-1.5 sm:px-2 py-1 text-xs sm:text-sm ${
+                          round.normalizedScore.grade === 'S' ? 'bg-yellow-400/30 text-yellow-400' :
+                          round.normalizedScore.grade === 'A' ? 'bg-green-400/30 text-green-400' :
+                          round.normalizedScore.grade === 'B' ? 'bg-blue-400/30 text-blue-400' :
+                          round.normalizedScore.grade === 'C' ? 'bg-orange-400/30 text-orange-400' :
+                          'bg-red-400/30 text-red-400'
+                        }`}>
+                          {round.normalizedScore.grade}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-cyan-400 font-bold">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
-                      <span className={`font-bold w-8 text-center rounded px-2 py-1 ${
-                        round.normalizedScore.grade === 'S' ? 'bg-yellow-400/30 text-yellow-400' :
-                        round.normalizedScore.grade === 'A' ? 'bg-green-400/30 text-green-400' :
-                        round.normalizedScore.grade === 'B' ? 'bg-blue-400/30 text-blue-400' :
-                        round.normalizedScore.grade === 'C' ? 'bg-orange-400/30 text-orange-400' :
-                        'bg-red-400/30 text-red-400'
-                      }`}>
-                        {round.normalizedScore.grade}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+
+              {sessionSaved && (
+                <div className="mt-3 sm:mt-4 p-2 bg-green-500/20 border border-green-500/30 rounded text-xs sm:text-sm text-green-200">
+                  ✅ Score saved to database
+                </div>
+              )}
+
+              {!user && !sessionSaved && (
+                <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-blue-500/20 border border-blue-500/30 rounded text-xs sm:text-sm text-blue-200">
+                  Sign in to save your score and track your progress over time!
+                </div>
+              )}
             </div>
-
-            {sessionSaved && (
-              <div className="mt-4 p-2 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-200">
-                ✅ Score saved to database
-              </div>
-            )}
-
-            {!user && !sessionSaved && (
-              <div className="mt-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded text-sm text-blue-200">
-                Sign in to save your score and track your progress over time!
-              </div>
-            )}
-          </div>
-          <div className="flex gap-4">
-            {!user && !sessionSaved && (
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              {!user && !sessionSaved && (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-green-600 active:bg-green-700 text-white font-bold rounded-lg text-base sm:text-xl transition-all active:scale-[0.98] touch-manipulation"
+                >
+                  Sign In to Save
+                </button>
+              )}
               <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex-1 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
+                onClick={onExit}
+                className="flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 active:bg-blue-700 text-white font-bold rounded-lg text-base sm:text-xl transition-all active:scale-[0.98] touch-manipulation"
               >
-                Sign In to Save
+                {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
               </button>
-            )}
-            <button
-              onClick={onExit}
-              className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xl transition-all transform hover:scale-105"
-            >
-              {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
-            </button>
+            </div>
           </div>
         </div>
         <AuthModal
@@ -494,16 +495,16 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const maxPossibleScore = currentRound * 100;
 
     return (
-      <div className="min-h-screen bg-gray-900">
-        <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto">
-            <div className="text-white">
-              <p className="text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
-              <p className="text-lg font-bold">{currentGame.name}</p>
+      <div className="h-screen w-screen bg-gray-900 flex flex-col">
+        <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
+            <div className="text-white min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
+              <p className="text-base sm:text-lg font-bold truncate">{currentGame.name}</p>
             </div>
-            <div className="text-right text-white">
-              <p className="text-sm text-gray-400">Session Score</p>
-              <p className="text-2xl font-bold text-yellow-400">
+            <div className="text-right text-white flex-shrink-0">
+              <p className="text-xs sm:text-sm text-gray-400">Session Score</p>
+              <p className="text-lg sm:text-2xl font-bold text-yellow-400">
                 {Math.round(totalSessionScore)}/
                 <span className="text-gray-400">{maxPossibleScore}</span>
               </p>
@@ -515,7 +516,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             </div>
           </div>
         </div>
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="flex-1 overflow-hidden">
           <GameWrapper
             duration={currentGame.duration}
             onComplete={handleGameComplete}

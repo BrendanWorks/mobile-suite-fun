@@ -32,22 +32,22 @@ export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestM
     const GameComponent = game.component;
 
     return (
-      <div className="min-h-screen bg-gray-900">
-        <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto">
-            <div className="text-white">
-              <p className="text-sm text-gray-400">🧪 Test Mode</p>
-              <p className="text-lg font-bold">Testing {game.name}</p>
+      <div className="h-screen w-screen bg-gray-900 flex flex-col">
+        <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
+            <div className="text-white min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-400">🧪 Test Mode</p>
+              <p className="text-base sm:text-lg font-bold truncate">Testing {game.name}</p>
             </div>
             <button
               onClick={onExit}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="flex-shrink-0 px-3 sm:px-4 py-2 bg-red-600 active:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
             >
               Exit Test
             </button>
           </div>
         </div>
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="flex-1 overflow-hidden">
           <GameWrapper
             duration={game.duration}
             onComplete={() => {}}
@@ -62,36 +62,36 @@ export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestM
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 max-w-2xl w-full border border-yellow-500/30">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-white">🧪 Test Mode</h2>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-6 sm:p-8 max-w-2xl w-full border border-yellow-500/30 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">🧪 Test Mode</h2>
           <button
             onClick={onExit}
-            className="text-gray-400 hover:text-white text-2xl"
+            className="text-gray-400 active:text-white text-2xl touch-manipulation"
           >
             ×
           </button>
         </div>
-        <p className="text-gray-300 mb-6">
+        <p className="text-sm sm:text-base text-gray-300 mb-4 sm:mb-6">
           Select a game to test directly without logging in:
         </p>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {TEST_GAMES.map((game) => (
             <button
               key={game.id}
               onClick={() => onSelectGame(game.id)}
-              className="bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-6 px-4 rounded-xl shadow-lg transition-all hover:scale-105 border-2 border-blue-400/50"
+              className="bg-gradient-to-br from-blue-600 to-orange-600 active:from-blue-500 active:to-orange-500 text-white font-bold py-5 sm:py-6 px-3 sm:px-4 rounded-xl shadow-lg transition-all active:scale-[0.98] border-2 border-blue-400/50 touch-manipulation"
             >
-              <div className="text-3xl mb-2">{game.icon}</div>
-              <div className="text-sm">{game.name}</div>
+              <div className="text-2xl sm:text-3xl mb-2">{game.icon}</div>
+              <div className="text-xs sm:text-sm">{game.name}</div>
             </button>
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-          <p className="text-sm text-yellow-200">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+          <p className="text-xs sm:text-sm text-yellow-200">
             ⚠️ Note: Test mode bypasses authentication and does not save scores.
           </p>
         </div>

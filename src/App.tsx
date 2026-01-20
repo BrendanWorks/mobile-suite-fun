@@ -47,10 +47,10 @@ export default function App() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-400 mb-4 mx-auto"></div>
-          <p className="text-white text-lg">Loading Game Box...</p>
+      <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-400 mb-4 mx-auto"></div>
+          <p className="text-white text-base">Loading Game Box...</p>
         </div>
       </div>
     );
@@ -85,7 +85,7 @@ export default function App() {
         <AuthPage onPlayAsGuest={() => setShowGames(true)} />
         <button
           onClick={() => setTestMode(true)}
-          className="fixed bottom-6 right-6 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg shadow-lg transition-all hover:scale-105 z-50"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-yellow-600 active:bg-yellow-700 text-white font-semibold rounded-lg shadow-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
         >
           🧪 Test Mode
         </button>
@@ -95,82 +95,84 @@ export default function App() {
 
   // Main menu after login
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header with user info and logout */}
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-5xl font-bold text-white mb-2">🎮 Game Box</h1>
-            <p className="text-gray-300">
-              Welcome, {session.user?.email?.split('@')[0] || 'Player'}!
-            </p>
+    <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 overflow-y-auto">
+      <div className="min-h-full p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with user info and logout */}
+          <div className="flex justify-between items-start gap-3 mb-6 sm:mb-8">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-1 truncate">🎮 Game Box</h1>
+              <p className="text-sm sm:text-base text-gray-300 truncate">
+                Welcome, {session.user?.email?.split('@')[0] || 'Player'}!
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 active:bg-red-700 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
+            >
+              Sign Out
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
 
-        {/* Main content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Start Game Card */}
-          <div
-            onClick={() => setShowGames(true)}
-            className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 hover:border-blue-400/50 cursor-pointer transition-all hover:shadow-2xl hover:shadow-blue-500/20 transform hover:scale-105"
-          >
-            <div className="text-5xl mb-4">🚀</div>
-            <h2 className="text-3xl font-bold text-white mb-3">Play Games</h2>
-            <p className="text-gray-300 mb-6">
-              Challenge yourself with 5 different mini-games. Test your skills, earn points, and climb the leaderboard!
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">5 rounds • ~15 minutes</span>
-              <span className="text-2xl">→</span>
+          {/* Main content */}
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6">
+            {/* Start Game Card */}
+            <div
+              onClick={() => setShowGames(true)}
+              className="bg-white/10 backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20 active:border-blue-400/50 cursor-pointer transition-all active:scale-[0.98] touch-manipulation"
+            >
+              <div className="text-4xl sm:text-5xl mb-3">🚀</div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Play Games</h2>
+              <p className="text-sm sm:text-base text-gray-300 mb-4">
+                Challenge yourself with 5 different mini-games. Test your skills, earn points, and climb the leaderboard!
+              </p>
+              <div className="flex items-center justify-between text-sm sm:text-base">
+                <span className="text-gray-400">5 rounds • ~15 minutes</span>
+                <span className="text-xl sm:text-2xl">→</span>
+              </div>
+            </div>
+
+            {/* Stats Card (placeholder for future) */}
+            <div className="bg-white/10 backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20">
+              <div className="text-4xl sm:text-5xl mb-3">📊</div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Your Stats</h2>
+              <div className="space-y-2.5 text-sm sm:text-base text-gray-300">
+                <div className="flex justify-between">
+                  <span>Total Games Played:</span>
+                  <span className="font-bold text-blue-400">0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Best Score:</span>
+                  <span className="font-bold text-green-400">--</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Average Grade:</span>
+                  <span className="font-bold text-yellow-400">--</span>
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-500 mt-4">
+                Stats will appear here after your first game!
+              </p>
             </div>
           </div>
 
-          {/* Stats Card (placeholder for future) */}
-          <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20">
-            <div className="text-5xl mb-4">📊</div>
-            <h2 className="text-3xl font-bold text-white mb-3">Your Stats</h2>
-            <div className="space-y-3 text-gray-300">
-              <div className="flex justify-between">
-                <span>Total Games Played:</span>
-                <span className="font-bold text-blue-400">0</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Best Score:</span>
-                <span className="font-bold text-green-400">--</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Average Grade:</span>
-                <span className="font-bold text-yellow-400">--</span>
-              </div>
+          {/* Info section */}
+          <div className="grid grid-cols-1 gap-3 pb-6">
+            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-blue-200">
+                <span className="font-bold">💡 Tip:</span> Each game tests different skills. Play all 5 to get your session score!
+              </p>
             </div>
-            <p className="text-sm text-gray-500 mt-6">
-              Stats will appear here after your first game!
-            </p>
-          </div>
-        </div>
-
-        {/* Info section */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-            <p className="text-sm text-blue-200">
-              <span className="font-bold">💡 Tip:</span> Each game tests different skills. Play all 5 to get your session score!
-            </p>
-          </div>
-          <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
-            <p className="text-sm text-green-200">
-              <span className="font-bold">✨ Feature:</span> Your scores are saved automatically. Track your progress over time.
-            </p>
-          </div>
-          <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
-            <p className="text-sm text-purple-200">
-              <span className="font-bold">🏆 Goal:</span> Earn grades from D to S. Can you hit all S's?
-            </p>
+            <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-green-200">
+                <span className="font-bold">✨ Feature:</span> Your scores are saved automatically. Track your progress over time.
+              </p>
+            </div>
+            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-orange-200">
+                <span className="font-bold">🏆 Goal:</span> Earn grades from D to S. Can you hit all S's?
+              </p>
+            </div>
           </div>
         </div>
       </div>
