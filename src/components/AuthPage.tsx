@@ -1,6 +1,6 @@
 /**
- * COMPLETE OAUTH AUTH FRAMEWORK
- * All providers configured, only Google enabled to start
+ * COMPLETE OAUTH AUTH FRAMEWORK - GOOGLE ONLY
+ * All providers configured in code comments, only Google enabled to start
  * Paste this into bolt.new as components/AuthPage.tsx
  */
 
@@ -80,7 +80,9 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
                 },
               },
             }}
-            providers={['google', 'discord', 'facebook', 'twitch', 'github']}
+            providers={['google']} // Only Google enabled for now
+            // Other providers available (uncomment to enable):
+            // providers={['google', 'discord', 'facebook', 'twitch', 'github']}
             onlyThirdPartyProviders={false}
             view="sign_in"
             redirectTo={window.location.origin}
@@ -109,8 +111,8 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
         {/* Provider Info */}
         <div className="mt-6 p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
           <p className="text-xs text-gray-300 text-center">
-            Sign in with Google, Discord, Facebook, Twitch, or GitHub.<br/>
-            Or create an account with email.
+            Sign in with Google or create an account with email.<br/>
+            More providers coming soon!
           </p>
         </div>
       </div>
