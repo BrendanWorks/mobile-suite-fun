@@ -138,7 +138,7 @@ const WordRescue = forwardRef((props, ref) => {
     canSkipQuestion: false
   }));
 
-  const letterPool = 'AAAAAEEEEEIIIIIOOOOOUUUUBBBCCCDDDFFFFFGGGHHHHJKKLLLMMMNNNNPPQRRRRSSSSTTTTVWWXYYZ';
+  const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
   const initAudio = useCallback(async () => {
     if (audioInitialized.current) return;
