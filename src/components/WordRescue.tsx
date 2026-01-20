@@ -322,15 +322,12 @@ const WordRescue = forwardRef((props, ref) => {
     return letters;
   }, [nextId]);
 
-  // Check if any letters have crossed into view to start timer
+  // Start timer immediately when game begins (since we pre-populate letters)
   useEffect(() => {
-    if (gameState !== 'playing' || timerStarted) return;
-
-    const hasLettersCrossed = letters.some(letter => letter.y > 80); // Check if any letter has moved past top UI
-    if (hasLettersCrossed) {
+    if (gameState === 'playing' && !timerStarted && letters.length > 0) {
       setTimerStarted(true);
     }
-  }, [letters, gameState, timerStarted]);
+  }, [gameState, timerStarted, letters.length]);
 
   // Game timer countdown - now only starts after letters cross screen
   useEffect(() => {
@@ -530,20 +527,37 @@ const WordRescue = forwardRef((props, ref) => {
 
   const startGame = () => {
     setGameState('playing');
-    setLetters([]);
     setPoppingLetters([]);
     setSelectedLetters([]);
     setScore(0);
     setLevel(1);
     setGameSpeed(2500);
-    setNextId(0);
-    setTimeLeft(90); // Changed from 120 to 90
     setWordsFound([]);
     setIsValidating(false);
-    setTimerStarted(false); // Reset timer start flag
-    setScoreNotifications([]); // Reset score notifications
-    submissionInProgress.current = false; // Reset submission flag
-    
+    setTimerStarted(false);
+    setScoreNotifications([]);
+    submissionInProgress.current = false;
+
+    // Pre-populate top 20% of screen with letters (approximately 0-120px from top)
+    const initialLetters = [];
+    const screenHeight = 600;
+    const topZoneHeight = screenHeight * 0.2; // Top 20%
+    const numInitialLetters = 12; // Number of letters to start with
+
+    for (let i = 0; i < numInitialLetters; i++) {
+      initialLetters.push({
+        id: i,
+        letter: getRandomLetter(),
+        x: Math.random() * 270 + 5, // Random horizontal position
+        y: Math.random() * topZoneHeight + 16, // Random position in top 20%, below header
+        selected: false
+      });
+    }
+
+    setLetters(initialLetters);
+    setNextId(numInitialLetters);
+    setTimeLeft(90);
+
     // Play ambient background sound at very low volume
     setTimeout(() => playSound('ambient', 0.1), 500);
   };
@@ -642,12 +656,6 @@ const WordRescue = forwardRef((props, ref) => {
       <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-30 text-white p-3 z-10">
         <div className="flex justify-between items-center text-sm">
           <span>Score: {score}</span>
-          <button
-            onClick={resetGame}
-            className="bg-red-500 px-2 py-1 rounded text-xs"
-          >
-            Menu
-          </button>
         </div>
       </div>
 
