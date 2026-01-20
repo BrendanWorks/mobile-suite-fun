@@ -1,3 +1,12 @@
+/**
+ * Word Rescue - UPDATED
+ * - Guarantees profanity word in initial letters
+ * - Reduced height to 500px
+ * - Letter size reduced 10% (w-14 h-14 = 56px)
+ * 
+ * Replace components/WordRescue.tsx with this version
+ */
+
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
 const WordRescue = forwardRef((props, ref) => {
@@ -47,14 +56,11 @@ const WordRescue = forwardRef((props, ref) => {
     'rod', 'sod', 'cod', 'plod', 'prod', 'clod', 'shod', 'trod', 'broad'
   ]);
 
-  // API-first word validation with smart fallback
   const validateWord = async (word) => {
     const cleanWord = word.toLowerCase().trim();
     
-    // Skip very short words and reject obvious non-words
     if (cleanWord.length < 2) return false;
     
-    // Reject words that are just consonants or just vowels (common non-words)
     const consonantOnly = /^[bcdfghjklmnpqrstvwxyz]+$/i.test(cleanWord);
     const vowelOnly = /^[aeiou]+$/i.test(cleanWord);
     if (consonantOnly || vowelOnly) {
@@ -62,10 +68,9 @@ const WordRescue = forwardRef((props, ref) => {
       return false;
     }
     
-    // First try the comprehensive API with timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       
       const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`, {
         signal: controller.signal
@@ -74,7 +79,6 @@ const WordRescue = forwardRef((props, ref) => {
       clearTimeout(timeoutId);
       
       if (response.ok) {
-        // Actually parse the response to make sure it's a valid word entry
         const data = await response.json();
         if (data && Array.isArray(data) && data.length > 0 && 
             data[0].meanings && Array.isArray(data[0].meanings) && 
@@ -93,7 +97,6 @@ const WordRescue = forwardRef((props, ref) => {
       console.log(`API failed for ${cleanWord}, checking fallback:`, error.message);
     }
     
-    // Fallback to hardcoded list if API fails or times out
     const isInFallback = fallbackWords.has(cleanWord);
     if (isInFallback) {
       console.log(`Fallback validated: ${cleanWord}`);
@@ -104,13 +107,9 @@ const WordRescue = forwardRef((props, ref) => {
     }
   };
 
-  const profanityWords = new Set([
-    'damn', 'hell', 'crap', 'shit', 'fuck', 'ass', 'bitch', 'piss', 'dick', 'cock',
-    'asshole', 'bastard', 'bollocks', 'bugger', 'bullshit', 'fart', 'poop',
-    'tits', 'boobs', 'penis', 'vagina', 'sex'
-  ]);
+  const profanityWords = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'hell', 'cunt'];
 
-  const [gameState, setGameState] = useState('menu'); // 'menu', 'playing', 'roundEnd'
+  const [gameState, setGameState] = useState('menu');
   const [letters, setLetters] = useState([]);
   const [poppingLetters, setPoppingLetters] = useState([]);
   const [selectedLetters, setSelectedLetters] = useState([]);
@@ -118,15 +117,15 @@ const WordRescue = forwardRef((props, ref) => {
   const [level, setLevel] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(2500);
   const [nextId, setNextId] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(90); // Changed from 120 to 90
+  const [timeLeft, setTimeLeft] = useState(90);
   const [wordsFound, setWordsFound] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
-  const [timerStarted, setTimerStarted] = useState(false); // New state to track timer start
-  const [scoreNotifications, setScoreNotifications] = useState([]); // New state for score notifications
-  const submissionInProgress = useRef(false); // Ref to synchronously block double submissions
-  const audioContext = useRef(null); // Audio context for Web Audio API
-  const audioBuffers = useRef(new Map()); // Store loaded audio buffers
-  const audioInitialized = useRef(false); // Track if audio is ready
+  const [timerStarted, setTimerStarted] = useState(false);
+  const [scoreNotifications, setScoreNotifications] = useState([]);
+  const submissionInProgress = useRef(false);
+  const audioContext = useRef(null);
+  const audioBuffers = useRef(new Map());
+  const audioInitialized = useRef(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -139,39 +138,24 @@ const WordRescue = forwardRef((props, ref) => {
     canSkipQuestion: false
   }));
 
-  // Common letters with frequency weights
   const letterPool = 'AAAAAEEEEEIIIIIOOOOOUUUUBBBCCCDDDFFFFFGGGHHHHJKKLLLMMMNNNNPPQRRRRSSSSTTTTVWWXYYZ';
 
-  // Audio System
   const initAudio = useCallback(async () => {
     if (audioInitialized.current) return;
     
     try {
-      // Create audio context
       audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
       
-      // For now, we'll use generated tones (no files needed!)
-      // You can add real audio files to public/sounds/ later and update the URLs
       const sounds = {
-        select: null,   // Will use generateTone
-        success: null,  // Will use generateTone
-        fail: null,     // Will use generateTone  
-        bonus: null,    // Will use generateTone
-        ambient: null   // Will use generateTone
+        select: null,
+        success: null,
+        fail: null,
+        bonus: null,
+        ambient: null
       };
       
-      // If you want to use real audio files, uncomment and modify these:
-      // const sounds = {
-      //   select: '/sounds/select.mp3',
-      //   success: '/sounds/success.mp3', 
-      //   fail: '/sounds/fail.mp3',
-      //   bonus: '/sounds/bonus.mp3',
-      //   ambient: '/sounds/ambient.mp3'
-      // };
-      
-      // Load each sound (with graceful failure for missing files)
       const loadPromises = Object.entries(sounds).map(async ([name, url]) => {
-        if (!url) return; // Skip null URLs (use generated tones)
+        if (!url) return;
         
         try {
           const response = await fetch(url);
@@ -202,7 +186,6 @@ const WordRescue = forwardRef((props, ref) => {
     
     const buffer = audioBuffers.current.get(soundName);
     if (buffer) {
-      // Play loaded audio file
       try {
         const source = audioContext.current.createBufferSource();
         const gainNode = audioContext.current.createGain();
@@ -217,7 +200,6 @@ const WordRescue = forwardRef((props, ref) => {
         console.log(`Failed to play sound ${soundName}:`, error.message);
       }
     } else {
-      // Generate tone for sounds that don't have files yet
       generateTone(soundName, volume);
     }
   }, []);
@@ -229,12 +211,11 @@ const WordRescue = forwardRef((props, ref) => {
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
-    // Different tones for different sounds
     const toneConfig = {
       select: { freq: 800, duration: 0.1, type: 'sine' },
-      success: { freq: 523, duration: 0.3, type: 'sine' }, // C note
+      success: { freq: 523, duration: 0.3, type: 'sine' },
       fail: { freq: 200, duration: 0.2, type: 'sawtooth' },
-      bonus: { freq: 659, duration: 0.5, type: 'sine' }, // E note
+      bonus: { freq: 659, duration: 0.5, type: 'sine' },
       ambient: { freq: 100, duration: 0.1, type: 'sine' }
     };
     
@@ -262,12 +243,9 @@ const WordRescue = forwardRef((props, ref) => {
     initAudio();
   }, [initAudio]);
 
-  // Initialize audio system on component mount
   useEffect(() => {
-    // Try to initialize audio immediately (will fail on mobile until user interaction)
     initAudio();
     
-    // Set up mobile audio unlock
     const handleFirstInteraction = () => {
       initAudioOnFirstTouch();
       document.removeEventListener('touchstart', handleFirstInteraction);
@@ -289,31 +267,29 @@ const WordRescue = forwardRef((props, ref) => {
 
   const createLetters = useCallback(() => {
     const letters = [];
-    const shouldCluster = Math.random() < 0.6; // 60% chance to create cluster
+    const shouldCluster = Math.random() < 0.6;
     
     if (shouldCluster) {
-      // Create 2-3 letters spread out more
       const clusterSize = Math.floor(Math.random() * 2) + 2;
-      const baseX = Math.random() * 220 + 25; // Adjusted for bigger bubbles
-      const baseY = -70; // Adjusted for bigger bubbles
+      const baseX = Math.random() * 220 + 25;
+      const baseY = -70;
       
       for (let i = 0; i < clusterSize; i++) {
         letters.push({
           id: nextId + i,
           letter: getRandomLetter(),
-          x: Math.max(5, Math.min(275, baseX + (Math.random() - 0.5) * 120)), // Adjusted for bigger bubbles
-          y: baseY - (i * 70) - (Math.random() * 40), // More vertical spacing
+          x: Math.max(5, Math.min(275, baseX + (Math.random() - 0.5) * 120)),
+          y: baseY - (i * 70) - (Math.random() * 40),
           selected: false
         });
       }
       setNextId(prev => prev + clusterSize);
     } else {
-      // Single letter
       letters.push({
         id: nextId,
         letter: getRandomLetter(),
-        x: Math.random() * 270 + 5, // Adjusted for bigger bubbles
-        y: -70, // Adjusted for bigger bubbles
+        x: Math.random() * 270 + 5,
+        y: -70,
         selected: false
       });
       setNextId(prev => prev + 1);
@@ -322,14 +298,12 @@ const WordRescue = forwardRef((props, ref) => {
     return letters;
   }, [nextId]);
 
-  // Start timer immediately when game begins (since we pre-populate letters)
   useEffect(() => {
     if (gameState === 'playing' && !timerStarted && letters.length > 0) {
       setTimerStarted(true);
     }
   }, [gameState, timerStarted, letters.length]);
 
-  // Game timer countdown - now only starts after letters cross screen
   useEffect(() => {
     if (gameState !== 'playing' || !timerStarted) return;
 
@@ -346,7 +320,6 @@ const WordRescue = forwardRef((props, ref) => {
     return () => clearInterval(interval);
   }, [gameState, timerStarted]);
 
-  // Add new falling letters
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -358,7 +331,6 @@ const WordRescue = forwardRef((props, ref) => {
     return () => clearInterval(interval);
   }, [gameState, gameSpeed, createLetters]);
 
-  // Move letters down and remove ones that fall off screen
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -369,15 +341,13 @@ const WordRescue = forwardRef((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        // Remove letters that have fallen off the bottom of the screen
-        return updated.filter(letter => letter.y < 600);
+        return updated.filter(letter => letter.y < 500); // Changed from 600 to 500
       });
     }, 50);
 
     return () => clearInterval(interval);
   }, [gameState]);
 
-  // Clean up popping letters and score notifications after animation
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -388,28 +358,26 @@ const WordRescue = forwardRef((props, ref) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Speed increases at 30 and 60 seconds
   useEffect(() => {
     if (gameState !== 'playing' || !timerStarted) return;
 
     const elapsedTime = 90 - timeLeft;
     
     if (elapsedTime === 30) {
-      setGameSpeed(prev => Math.max(2000, prev - 300)); // First speed increase
+      setGameSpeed(prev => Math.max(2000, prev - 300));
       console.log('Speed increased at 30 seconds');
     } else if (elapsedTime === 60) {
-      setGameSpeed(prev => Math.max(1500, prev - 300)); // Second speed increase
+      setGameSpeed(prev => Math.max(1500, prev - 300));
       console.log('Speed increased at 60 seconds');
     }
   }, [timeLeft, gameState, timerStarted]);
 
   const selectLetter = (letterId) => {
-    if (selectedLetters.find(l => l.id === letterId)) return; // Already selected
+    if (selectedLetters.find(l => l.id === letterId)) return;
 
     const letter = letters.find(l => l.id === letterId);
     if (!letter) return;
 
-    // Play letter selection sound
     playSound('select', 0.2);
 
     setSelectedLetters(prev => [...prev, letter]);
@@ -419,31 +387,27 @@ const WordRescue = forwardRef((props, ref) => {
   };
 
   const submitWord = async () => {
-    // Synchronously block multiple submissions using ref
     if (submissionInProgress.current || selectedLetters.length === 0) {
       console.log('Submission blocked - already in progress or no selection');
       return;
     }
     
-    // Set the flag immediately and synchronously
     submissionInProgress.current = true;
-    setIsValidating(true); // Set UI state immediately too
+    setIsValidating(true);
     
     const word = selectedLetters.map(l => l.letter).join('').toLowerCase();
-    console.log('Submitting word:', word); // Debug log
+    console.log('Submitting word:', word);
     
     if (word.length < 2) {
       console.log('Word too short');
       clearSelection();
-      submissionInProgress.current = false; // Reset flag
+      submissionInProgress.current = false;
       return;
     }
     
-    // Store the current selection and clear it immediately to prevent double submission
     const currentSelection = [...selectedLetters];
     const letterIds = currentSelection.map(l => l.id);
     
-    // Clear selection immediately to prevent race conditions
     setSelectedLetters([]);
     setLetters(prev => prev.map(l => 
       letterIds.includes(l.id) ? { ...l, selected: false } : l
@@ -452,46 +416,37 @@ const WordRescue = forwardRef((props, ref) => {
     try {
       const isValid = await validateWord(word);
       
-      console.log('Final validation result:', isValid); // Debug log
+      console.log('Final validation result:', isValid);
       
       if (isValid) {
-        console.log('Valid word found!'); // Debug log
+        console.log('Valid word found!');
         
-        // Check for profanity bonus
         const isProfanity = await checkProfanity(word);
         
-        // Play appropriate success sound
         if (isProfanity) {
-          playSound('bonus', 0.6); // Louder for bonus!
+          playSound('bonus', 0.6);
         } else {
           playSound('success', 0.4);
         }
         
-        // Valid word! Create popping animations using stored selection
         const lettersToRemove = letters.filter(l => letterIds.includes(l.id));
         
-        // Calculate average position for score notification
         const avgX = lettersToRemove.reduce((sum, letter) => sum + letter.x, 0) / lettersToRemove.length;
         const avgY = lettersToRemove.reduce((sum, letter) => sum + letter.y, 0) / lettersToRemove.length;
         
-        // Add letters to popping animation
         setPoppingLetters(prev => [...prev, ...lettersToRemove.map(letter => ({
           ...letter,
           popTime: Date.now()
         }))]);
         
-        // Remove letters from game
         setLetters(prev => prev.filter(l => !letterIds.includes(l.id)));
         
-        // Calculate score based on word length (longer words = exponentially more points)
         let wordScore = word.length * word.length * 5;
         
-        // Easter egg: 4X points for profanity (using API check)
         if (isProfanity) {
           wordScore *= 4;
         }
         
-        // Add score notification
         setScoreNotifications(prev => [...prev, {
           id: Date.now(),
           score: wordScore,
@@ -501,17 +456,14 @@ const WordRescue = forwardRef((props, ref) => {
           showTime: Date.now()
         }]);
         
-        console.log('Adding score:', wordScore); // Debug log
+        console.log('Adding score:', wordScore);
         setScore(prev => prev + wordScore);
         setWordsFound(prev => [...prev, { word, score: wordScore }]);
       } else {
-        console.log('Invalid word, selection already cleared'); // Debug log
-        // Play failure sound
+        console.log('Invalid word, selection already cleared');
         playSound('fail', 0.3);
-        // Selection was already cleared above, so no need to do anything
       }
     } finally {
-      // Always reset flags in finally block to ensure cleanup
       setIsValidating(false);
       submissionInProgress.current = false;
     }
@@ -538,29 +490,40 @@ const WordRescue = forwardRef((props, ref) => {
     setScoreNotifications([]);
     submissionInProgress.current = false;
 
-    // Pre-populate top 20% of screen with letters for continuous flow
-    const initialLetters = [];
-    const screenHeight = 600;
-    const topZoneHeight = screenHeight * 0.2; // Top 20% (120px)
-    const numInitialLetters = 15; // Number of letters to start with
+    // Pick random profanity word
+    const profanityWord = profanityWords[Math.floor(Math.random() * profanityWords.length)];
+    console.log('Profanity word to guarantee:', profanityWord);
 
-    // Spread letters from above screen (-70px) down to 20% mark (120px)
-    // This creates a continuous flow from the start
-    for (let i = 0; i < numInitialLetters; i++) {
-      initialLetters.push({
-        id: i,
-        letter: getRandomLetter(),
-        x: Math.random() * 270 + 5, // Random horizontal position
-        y: Math.random() * (topZoneHeight + 70) - 70, // Range from -70 to +120px
-        selected: false
-      });
-    }
+    const initialLetters = [];
+    const screenHeight = 500; // Changed from 600 to 500
+    const topZoneHeight = screenHeight * 0.2;
+    const numInitialLetters = 15;
+
+    // Create letters for the profanity word
+    const profanityLetters = profanityWord.split('').map((letter, index) => ({
+      id: index,
+      letter: letter.toUpperCase(),
+      x: Math.random() * 270 + 5,
+      y: Math.random() * (topZoneHeight + 70) - 70,
+      selected: false
+    }));
+
+    // Add random filler letters
+    const fillerCount = numInitialLetters - profanityLetters.length;
+    const fillerLetters = Array.from({ length: fillerCount }, (_, index) => ({
+      id: profanityLetters.length + index,
+      letter: getRandomLetter(),
+      x: Math.random() * 270 + 5,
+      y: Math.random() * (topZoneHeight + 70) - 70,
+      selected: false
+    }));
+
+    initialLetters.push(...profanityLetters, ...fillerLetters);
 
     setLetters(initialLetters);
     setNextId(numInitialLetters);
     setTimeLeft(90);
 
-    // Play ambient background sound at very low volume
     setTimeout(() => playSound('ambient', 0.1), 500);
   };
 
@@ -571,11 +534,10 @@ const WordRescue = forwardRef((props, ref) => {
     setSelectedLetters([]);
     setWordsFound([]);
     setIsValidating(false);
-    setTimerStarted(false); // Reset timer start flag
-    setScoreNotifications([]); // Reset score notifications
-    submissionInProgress.current = false; // Reset submission flag
+    setTimerStarted(false);
+    setScoreNotifications([]);
+    submissionInProgress.current = false;
     
-    // Stop any playing ambient sounds (if we were looping them)
     if (audioContext.current && audioContext.current.state === 'running') {
       // Audio context stays alive for future games
     }
@@ -587,7 +549,7 @@ const WordRescue = forwardRef((props, ref) => {
       const isProfanity = await response.text();
       return isProfanity === 'true';
     } catch (error) {
-      return false; // Fallback to no bonus if API fails
+      return false;
     }
   };
 
@@ -638,7 +600,7 @@ const WordRescue = forwardRef((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-sm mx-auto h-screen bg-gradient-to-b from-purple-400 to-blue-500 overflow-hidden">
+    <div className="relative w-full max-w-sm mx-auto h-screen bg-gradient-to-b from-purple-400 to-blue-500 overflow-hidden" style={{ height: '500px' }}>
       {/* Game Stats */}
       <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-30 text-white p-3 z-10">
         <div className="flex justify-between items-center text-sm">
@@ -648,12 +610,12 @@ const WordRescue = forwardRef((props, ref) => {
 
       {/* Game Area */}
       <div className="relative w-full h-full pt-16 pb-32">
-        {/* Regular falling letters - made bigger */}
+        {/* Regular falling letters - 10% smaller */}
         {letters.map(letter => (
           <div
             key={letter.id}
             onClick={() => selectLetter(letter.id)}
-            className={`absolute w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl cursor-pointer transform transition-all duration-200 ${
+            className={`absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg cursor-pointer transform transition-all duration-200 ${
               letter.selected 
                 ? 'bg-yellow-300 text-black scale-110 shadow-lg' 
                 : 'bg-white text-black hover:scale-105 shadow-md'
@@ -667,17 +629,17 @@ const WordRescue = forwardRef((props, ref) => {
           </div>
         ))}
         
-        {/* Popping letters animation - made bigger */}
+        {/* Popping letters animation - 10% smaller */}
         {poppingLetters.map(letter => {
           const elapsed = Date.now() - letter.popTime;
-          const progress = elapsed / 800; // 800ms animation
-          const scale = 1 + (progress * 2); // Scale up to 3x
-          const opacity = Math.max(0, 1 - progress); // Fade out
+          const progress = elapsed / 800;
+          const scale = 1 + (progress * 2);
+          const opacity = Math.max(0, 1 - progress);
           
           return (
             <div
               key={`pop-${letter.id}`}
-              className="absolute w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl pointer-events-none bg-gradient-to-r from-pink-400 to-purple-500 text-white"
+              className="absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg pointer-events-none bg-gradient-to-r from-pink-400 to-purple-500 text-white"
               style={{
                 left: `${letter.x}px`,
                 top: `${letter.y}px`,
@@ -694,9 +656,9 @@ const WordRescue = forwardRef((props, ref) => {
         {/* Score notifications */}
         {scoreNotifications.map(notification => {
           const elapsed = Date.now() - notification.showTime;
-          const progress = elapsed / 1500; // 1500ms animation
-          const yOffset = progress * 60; // Move up 60px
-          const opacity = Math.max(0, 1 - progress); // Fade out
+          const progress = elapsed / 1500;
+          const yOffset = progress * 60;
+          const opacity = Math.max(0, 1 - progress);
           
           return (
             <div
