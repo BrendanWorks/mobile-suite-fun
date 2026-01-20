@@ -206,7 +206,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     <div className="flex flex-col h-full p-6 space-y-6">
       {/* Puzzle Question Header */}
       <div className="text-center">
-        <h3 className="text-2xl font-bold text-white mb-2">{puzzle.prompt}</h3>
+        <h3 className="text-2xl font-bold text-white mb-2 break-words">{puzzle.prompt}</h3>
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-400">Item {currentItemIndex + 1} of {puzzle.items.length}</span>
           <span className="text-xl font-bold text-cyan-400">Score: {score}</span>
@@ -228,14 +228,13 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           disabled={isAnswered}
           className={`
             w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-white uppercase tracking-wide
+            text-white uppercase tracking-wide break-words
             ${getButtonStyle(puzzle.category_1)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
-          <div className="text-sm opacity-75 mb-2">Category A</div>
-          {puzzle.category_1}
+          <span className="block truncate">{puzzle.category_1}</span>
           {feedback === 'correct' && selectedAnswer === puzzle.category_1 && (
             <span className="ml-2">✓</span>
           )}
@@ -250,14 +249,13 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           disabled={isAnswered}
           className={`
             w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-white uppercase tracking-wide
+            text-white uppercase tracking-wide break-words
             ${getButtonStyle(puzzle.category_2)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
-          <div className="text-sm opacity-75 mb-2">Category B</div>
-          {puzzle.category_2}
+          <span className="block truncate">{puzzle.category_2}</span>
           {feedback === 'correct' && selectedAnswer === puzzle.category_2 && (
             <span className="ml-2">✓</span>
           )}
@@ -272,15 +270,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           disabled={isAnswered}
           className={`
             w-full p-6 rounded-xl text-xl font-bold transition-all
-            text-yellow-300 uppercase tracking-wide
+            text-yellow-300 uppercase tracking-wide break-words
             border-2 border-yellow-500
             ${getButtonStyle('BOTH')}
             ${!isAnswered && 'cursor-pointer hover:border-yellow-400 hover:bg-yellow-900/30'}
             ${isAnswered && 'cursor-default'}
           `}
         >
-          <div className="text-sm opacity-75 mb-2">Special Category</div>
-          BOTH
+          <span className="block">BOTH</span>
           {feedback === 'correct' && selectedAnswer === 'BOTH' && (
             <span className="ml-2">✓</span>
           )}
