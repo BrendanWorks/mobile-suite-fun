@@ -185,8 +185,20 @@ export default function GameWrapper({
         </div>
       )}
 
-      {/* Header with Quit button */}
-      <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700">
+      {/* Header with Controls */}
+      <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700 flex justify-between items-center gap-4">
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+          >
+            Next Question
+          </button>
+          <button
+            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+          >
+            Next Round
+          </button>
+        </div>
         <button
           onClick={handleQuitClick}
           disabled={hasEnded}
