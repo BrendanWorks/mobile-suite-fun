@@ -60,6 +60,18 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   }, [gameState, hasStarted]);
 
+  // Auto-start after a short delay when reaching ready state
+  // This gives the global countdown modal time to finish (7 seconds)
+  useEffect(() => {
+    if (gameState === 'ready' && !hasStarted) {
+      const startTimer = setTimeout(() => {
+        setHasStarted(true);
+      }, 7500); // Start 7.5 seconds after reaching ready state
+      
+      return () => clearTimeout(startTimer);
+    }
+  }, [gameState, hasStarted]);
+
   const fetchQuestions = async () => {
     try {
       setGameState('loading');
@@ -327,6 +339,14 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       {gameState === 'ready' && (
         <div className="space-y-6">
+          <div className="flex justify-center items-center mb-4">
+            <div className="flex items-center gap-2 text-purple-400">
+              <Star size={20} />
+              <span className="text-xl font-bold">{Math.round(points)}</span>
+              <span className="text-xs text-purple-300">points</span>
+            </div>
+          </div>
+
           <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
             <img
               src={currentQuestion.prompt}
