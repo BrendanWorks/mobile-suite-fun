@@ -15,6 +15,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [puzzleIds, setPuzzleIds] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const pointsTimerRef = useRef(null);
   const revealTimerRef = useRef(null);
@@ -44,8 +45,20 @@ const PhotoMystery = forwardRef((props, ref) => {
         setCurrentPuzzleIndex(nextIndex);
         loadQuestionById(puzzleIds[nextIndex]);
       }
+    },
+    startPlaying: () => {
+      // Called by GameWrapper when countdown finishes
+      setHasStarted(true);
     }
   }));
+
+  // Start timers when game is ready and round has started
+  useEffect(() => {
+    if (gameState === 'ready' && hasStarted) {
+      setGameState('playing');
+      startQuestionTimers();
+    }
+  }, [gameState, hasStarted]);
 
   const fetchQuestions = async () => {
     try {
@@ -75,7 +88,7 @@ const PhotoMystery = forwardRef((props, ref) => {
       const ids = data.map(q => q.id);
       setPuzzleIds(ids);
       
-      // Load first question immediately - no menu, start playing right away
+      // Load first question but don't start timers yet - wait for global countdown
       if (data.length > 0) {
         const firstQuestion = data[0];
         if (!firstQuestion.difficulty) {
@@ -86,8 +99,8 @@ const PhotoMystery = forwardRef((props, ref) => {
         setSelectedAnswer(null);
         setRevealLevel(0);
         setPoints(maxPoints);
-        setGameState('playing');
-        startQuestionTimers();
+        setGameState('ready');
+        // Don't call startQuestionTimers() here - wait for round to actually start
       }
 
     } catch (error) {
@@ -110,8 +123,15 @@ const PhotoMystery = forwardRef((props, ref) => {
     setSelectedAnswer(null);
     setRevealLevel(0);
     setPoints(maxPoints);
-    setGameState('playing');
-    startQuestionTimers();
+    
+    // If round has started, begin playing immediately
+    // Otherwise wait for startPlaying() to be called
+    if (hasStarted) {
+      setGameState('playing');
+      startQuestionTimers();
+    } else {
+      setGameState('ready');
+    }
   };
 
   const generateNewQuestion = () => {
@@ -134,8 +154,15 @@ const PhotoMystery = forwardRef((props, ref) => {
     setSelectedAnswer(null);
     setRevealLevel(0);
     setPoints(maxPoints);
-    setGameState('playing');
-    startQuestionTimers();
+    
+    // If round has started, begin playing immediately
+    // Otherwise wait for startPlaying() to be called
+    if (hasStarted) {
+      setGameState('playing');
+      startQuestionTimers();
+    } else {
+      setGameState('ready');
+    }
   };
 
   const startQuestionTimers = () => {
@@ -297,6 +324,30 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
         </div>
       </div>
+
+      {gameState === 'ready' && (
+        <div className="space-y-6">
+          <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
+            <img
+              src={currentQuestion.prompt}
+              alt="Mystery"
+              className="w-full h-full object-cover"
+              style={{ transform: 'scale(3)', transition: 'transform 0.5s ease-out' }}
+            />
+          </div>
+
+          <div className="grid gap-3">
+            {answerOptions.map((option, index) => (
+              <div
+                key={index}
+                className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold text-white text-center"
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {gameState === 'playing' && (
         <div className="space-y-6">
