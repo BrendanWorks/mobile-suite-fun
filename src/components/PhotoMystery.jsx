@@ -52,23 +52,29 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   }));
 
-  // Start timers when game is ready and round has started
-  useEffect(() => {
-    if (gameState === 'ready' && hasStarted) {
-      setGameState('playing');
-      startQuestionTimers();
-    }
-  }, [gameState, hasStarted]);
-
-  // Auto-start after a short delay when reaching ready state
-  // This gives the global countdown modal time to finish (7 seconds)
+  // Auto-start points countdown after global countdown (7 seconds)
+  // Start zoom-out 2 seconds after that (9 seconds total)
   useEffect(() => {
     if (gameState === 'ready' && !hasStarted) {
-      const startTimer = setTimeout(() => {
+      // Start points countdown at 7 seconds (when global countdown finishes)
+      const pointsStartTimer = setTimeout(() => {
         setHasStarted(true);
-      }, 7500); // Start 7.5 seconds after reaching ready state
+        setGameState('playing');
+        
+        // Start points decay immediately
+        pointsTimerRef.current = setInterval(() => {
+          setPoints(prev => Math.max(minPoints, prev - 63));
+        }, 1000);
+        
+        // Start zoom-out 2 seconds later
+        setTimeout(() => {
+          revealTimerRef.current = setInterval(() => {
+            setRevealLevel(prev => Math.min(4, prev + 1));
+          }, 3000);
+        }, 2000);
+      }, 7000);
       
-      return () => clearTimeout(startTimer);
+      return () => clearTimeout(pointsStartTimer);
     }
   }, [gameState, hasStarted]);
 
@@ -133,15 +139,15 @@ const PhotoMystery = forwardRef((props, ref) => {
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
     setSelectedAnswer(null);
-    setRevealLevel(0);
-    setPoints(maxPoints);
     
-    // If round has started, begin playing immediately
-    // Otherwise wait for startPlaying() to be called
+    // If round has started, begin playing immediately with timers
     if (hasStarted) {
       setGameState('playing');
       startQuestionTimers();
     } else {
+      // Otherwise wait for auto-start
+      setRevealLevel(0);
+      setPoints(maxPoints);
       setGameState('ready');
     }
   };
@@ -164,15 +170,15 @@ const PhotoMystery = forwardRef((props, ref) => {
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
     setSelectedAnswer(null);
-    setRevealLevel(0);
-    setPoints(maxPoints);
     
-    // If round has started, begin playing immediately
-    // Otherwise wait for startPlaying() to be called
+    // If round has started, begin playing immediately with timers
     if (hasStarted) {
       setGameState('playing');
       startQuestionTimers();
     } else {
+      // Otherwise wait for auto-start
+      setRevealLevel(0);
+      setPoints(maxPoints);
       setGameState('ready');
     }
   };
@@ -182,15 +188,22 @@ const PhotoMystery = forwardRef((props, ref) => {
     clearInterval(pointsTimerRef.current);
     clearInterval(revealTimerRef.current);
 
+    // Reset to starting values
+    setPoints(maxPoints);
+    setRevealLevel(0);
+
     // Start points decay - drops from 1000 to 50 over ~15 seconds
     pointsTimerRef.current = setInterval(() => {
       setPoints(prev => Math.max(minPoints, prev - 63));
     }, 1000);
 
     // Gradually reveal image over time (zoom out)
-    revealTimerRef.current = setInterval(() => {
-      setRevealLevel(prev => Math.min(4, prev + 1));
-    }, 3000);
+    // Start after 2 second delay to match initial timing
+    setTimeout(() => {
+      revealTimerRef.current = setInterval(() => {
+        setRevealLevel(prev => Math.min(4, prev + 1));
+      }, 3000);
+    }, 2000);
   };
 
   const handleAnswerSelect = (answer) => {
@@ -347,23 +360,50 @@ const PhotoMystery = forwardRef((props, ref) => {
             </div>
           </div>
 
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Eye size={16} className="text-purple-300" />
+              <span className="text-sm text-purple-300">Revealed: {Math.round(getRevealProgress())}%</span>
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 shadow-lg shadow-blue-500/25"
+                style={{ width: `${getRevealProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+
           <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
-            <img
-              src={currentQuestion.prompt}
-              alt="Mystery"
-              className="w-full h-full object-cover"
-              style={{ transform: 'scale(3)', transition: 'transform 0.5s ease-out' }}
-            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img
+                src={currentQuestion.prompt}
+                alt="Mystery"
+                className="w-full h-full object-cover"
+                style={getImageStyle()}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="hidden w-full h-full bg-white/10 items-center justify-center text-purple-300">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">🖼️</div>
+                  <div>Image Loading...</div>
+                  <div className="text-xs mt-1">URL: {currentQuestion.prompt}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-3">
             {answerOptions.map((option, index) => (
-              <div
+              <button
                 key={index}
-                className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold text-white text-center"
+                disabled
+                className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold text-white text-center opacity-70 cursor-not-allowed"
               >
                 {option}
-              </div>
+              </button>
             ))}
           </div>
         </div>
