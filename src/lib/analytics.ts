@@ -16,6 +16,10 @@ export const analytics = {
     console.log('User signed out');
   },
 
+  gameSelected: (gameName: string, gameId: number) => {
+    console.log('Game selected:', { gameName, gameId });
+  },
+
   gameStarted: (gameName: string, gameId: number, userId: string) => {
     console.log('Game started:', { gameName, gameId, userId });
   },
