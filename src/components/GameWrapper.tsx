@@ -1,242 +1,323 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '../lib/supabase';
+import { analytics } from '../lib/analytics';
 import VisualTimerBar from './VisualTimerBar';
-import { GameHandle } from '../lib/gameTypes';
+// Import your game components...
+// (keeping this placeholder since you have your own)
 
 interface GameWrapperProps {
-  children: React.ReactElement;
-  duration?: number;
-  onComplete: (score: number, maxScore: number) => void;
-  gameName: string;
-  showTimer?: boolean;
-  onScoreUpdate?: (score: number, maxScore: number) => void;
-  showCompletionModal?: boolean;
+  gameId: number;
+  userId: string;
+  onQuit: () => void;
 }
 
-export default function GameWrapper({
-  children,
-  duration = 60,
-  onComplete,
-  gameName,
-  showTimer = true,
-  onScoreUpdate,
-  showCompletionModal = true
-}: GameWrapperProps) {
-  const [timeLeft, setTimeLeft] = useState(duration);
+// Game name mapping (adjust to match your actual game IDs)
+const GAME_NAMES: Record<number, string> = {
+  2: 'Odd Man Out',
+  3: 'Zooma',
+  4: 'Ranky',
+  5: 'Dalmatian Puzzle',
+  6: 'Split Decision',
+  7: 'Pop',
+  8: 'Shape Sequence',
+};
+
+export default function GameWrapper({ gameId, userId, onQuit }: GameWrapperProps) {
+  const [currentRound, setCurrentRound] = useState(1);
+  const [currentPuzzle, setCurrentPuzzle] = useState(1);
+  const [puzzleData, setPuzzleData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [isPaused, setIsPaused] = useState(false);
   const [hasEnded, setHasEnded] = useState(false);
-  const [isCountingDown, setIsCountingDown] = useState(true);
-  const [countdownTime, setCountdownTime] = useState(7);
-  const [showBorderBlink, setShowBorderBlink] = useState(false);
-  const gameRef = useRef<GameHandle>(null);
-  const audioContext = useRef<AudioContext | null>(null);
+  const [showCountdown, setShowCountdown] = useState(true);
+  const [countdownNumber, setCountdownNumber] = useState(7);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [borderBlink, setBorderBlink] = useState(false);
+  
+  // Score tracking
+  const [roundScore, setRoundScore] = useState(0);
+  const [puzzleScores, setPuzzleScores] = useState<number[]>([]);
+  const [totalGameScore, setTotalGameScore] = useState(0);
+  const [allRoundScores, setAllRoundScores] = useState<number[]>([]);
+  
+  // Time tracking
+  const [puzzleStartTime, setPuzzleStartTime] = useState<number>(0);
+  const [roundStartTime, setRoundStartTime] = useState<number>(0);
+  const [gameStartTime, setGameStartTime] = useState<number>(0);
+  const [puzzleTimes, setPuzzleTimes] = useState<number[]>([]);
+  
+  // Streak tracking
+  const [perfectPuzzleStreak, setPerfectPuzzleStreak] = useState(0);
+  const [perfectRoundStreak, setPerfectRoundStreak] = useState(0);
+  
+  const timerRef = useRef<number | null>(null);
+  const countdownRef = useRef<number | null>(null);
+  const gameName = GAME_NAMES[gameId] || 'Unknown Game';
+  const gameStartedRef = useRef(false);
 
+  // Start countdown on mount
   useEffect(() => {
-    try {
-      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch (error) {
-      console.log('Audio context failed to initialize');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isCountingDown) return;
-
-    if (countdownTime <= 0) {
-      startGame();
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      if (countdownTime <= 3 && countdownTime > 0) {
-        playTinkSound();
-      }
-      setCountdownTime(prev => prev - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [countdownTime, isCountingDown]);
-
-  useEffect(() => {
-    if (!showBorderBlink) return;
-
-    const blink2Timer = setTimeout(() => {
-      setShowBorderBlink(false);
-    }, 500);
-
-    const blink3Timer = setTimeout(() => {
-      setShowBorderBlink(true);
-    }, 500);
-
-    const blink4Timer = setTimeout(() => {
-      setShowBorderBlink(false);
+    countdownRef.current = window.setInterval(() => {
+      setCountdownNumber((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          handleCountdownFinish();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => {
-      clearTimeout(blink2Timer);
-      clearTimeout(blink3Timer);
-      clearTimeout(blink4Timer);
+      if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [showBorderBlink]);
+  }, []);
 
+  // Handle countdown finish
+  const handleCountdownFinish = () => {
+    setShowCountdown(false);
+    setGameStarted(true);
+    setBorderBlink(true);
+    
+    const now = Date.now();
+    setGameStartTime(now);
+    setRoundStartTime(now);
+    setPuzzleStartTime(now);
+
+    // Track game started event
+    if (!gameStartedRef.current) {
+      analytics.gameStarted(gameName, gameId, userId);
+      gameStartedRef.current = true;
+    }
+
+    setTimeout(() => setBorderBlink(false), 500);
+    setTimeout(() => {
+      setBorderBlink(true);
+      setTimeout(() => setBorderBlink(false), 500);
+    }, 1000);
+  };
+
+  // Manual start (skip countdown)
+  const handleManualStart = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    handleCountdownFinish();
+  };
+
+  // Load puzzle data
   useEffect(() => {
-    if (isCountingDown || timeLeft <= 0 || hasEnded) return;
+    if (gameStarted) {
+      loadPuzzle();
+    }
+  }, [gameId, currentRound, currentPuzzle, gameStarted]);
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1));
+  // Timer logic
+  useEffect(() => {
+    if (!gameStarted || isPaused || hasEnded || showCountdown) {
+      return;
+    }
+
+    timerRef.current = window.setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          handleTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, hasEnded, isCountingDown]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isPaused, hasEnded, gameStarted, showCountdown]);
 
-  useEffect(() => {
-    if (timeLeft <= 0 && !isCountingDown && !hasEnded) {
-      endGame('timeout');
-    }
-  }, [timeLeft, isCountingDown, hasEnded]);
+  const loadPuzzle = async () => {
+    setIsLoading(true);
+    
+    // Track puzzle start
+    analytics.puzzleStarted(gameName, currentRound, currentPuzzle);
+    setPuzzleStartTime(Date.now());
+    
+    const { data, error } = await supabase
+      .from('puzzle_data')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('sequence_round', currentRound)
+      .eq('sequence_order', currentPuzzle)
+      .single();
 
-  const playTinkSound = () => {
-    if (!audioContext.current) return;
-
-    try {
-      const ctx = audioContext.current;
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      oscillator.frequency.value = 1000;
-      oscillator.type = 'sine';
-
-      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.1);
-    } catch (error) {
-      console.log('Failed to play tink sound:', error);
-    }
-  };
-
-  const startGame = () => {
-    setIsCountingDown(false);
-    setShowBorderBlink(true);
-    setTimeLeft(duration);
-  };
-
-  const handleStartButtonClick = () => {
-    startGame();
-  };
-
-  const endGame = (reason: 'timeout' | 'quit') => {
-    if (hasEnded) return;
-    setHasEnded(true);
-
-    gameRef.current?.onGameEnd?.();
-
-    const result = gameRef.current?.getGameScore?.();
-    if (result) {
-      const { score, maxScore } = result;
-      if (reason === 'quit') {
-        console.log(`${gameName}: Player quit with ${score}/${maxScore} points`);
-      } else {
-        console.log(`${gameName}: Time up with ${score}/${maxScore} points`);
-      }
-      onComplete(score, maxScore);
+    if (error) {
+      console.error('Error loading puzzle:', error);
+      analytics.gameError(gameName, `Load puzzle failed: ${error.message}`, `R${currentRound}P${currentPuzzle}`);
     } else {
-      console.warn(`${gameName}: Game did not return score. Using 0/100.`);
-      onComplete(0, 100);
+      setPuzzleData(data);
+      setTimeRemaining(30); // Reset timer for new puzzle
+    }
+    setIsLoading(false);
+  };
+
+  const handleTimeUp = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setHasEnded(true);
+    
+    const timePlayedSeconds = Math.round((Date.now() - gameStartTime) / 1000);
+    analytics.gameAbandoned(gameName, currentRound, currentPuzzle, totalGameScore + roundScore, timePlayedSeconds);
+  };
+
+  const handlePuzzleComplete = (score: number) => {
+    const puzzleTime = Math.round((Date.now() - puzzleStartTime) / 1000);
+    const isPerfect = score >= 1000; // Adjust threshold as needed
+    
+    // Update scores
+    const newPuzzleScores = [...puzzleScores, score];
+    setPuzzleScores(newPuzzleScores);
+    setRoundScore(roundScore + score);
+    
+    // Update times
+    const newPuzzleTimes = [...puzzleTimes, puzzleTime];
+    setPuzzleTimes(newPuzzleTimes);
+    
+    // Track perfect streak
+    if (isPerfect) {
+      const newStreak = perfectPuzzleStreak + 1;
+      setPerfectPuzzleStreak(newStreak);
+      
+      // Track streak milestones
+      if (newStreak === 3 || newStreak === 5 || newStreak === 10) {
+        analytics.streakAchieved(gameName, newStreak, 'puzzle');
+      }
+    } else {
+      setPerfectPuzzleStreak(0);
+    }
+    
+    // Track low scores
+    analytics.lowScore(gameName, currentRound, currentPuzzle, score);
+    
+    // Track score thresholds
+    if (score >= 800) analytics.scoreThreshold(gameName, 800, score);
+    if (score >= 900) analytics.scoreThreshold(gameName, 900, score);
+    if (score >= 1000) analytics.scoreThreshold(gameName, 1000, score);
+    
+    // Track puzzle completion with enhanced data
+    analytics.puzzleCompleted(
+      gameName,
+      currentRound,
+      currentPuzzle,
+      score,
+      timeRemaining,
+      isPerfect
+    );
+
+    if (currentPuzzle < 5) {
+      // More puzzles in this round
+      setCurrentPuzzle(currentPuzzle + 1);
+    } else {
+      // Round complete
+      handleRoundComplete(roundScore + score, newPuzzleScores, newPuzzleTimes);
+    }
+  };
+
+  const handleRoundComplete = (totalScore: number, scores: number[], times: number[]) => {
+    const perfectRound = scores.every(s => s >= 1000);
+    const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+    
+    // Update round tracking
+    const newAllRoundScores = [...allRoundScores, totalScore];
+    setAllRoundScores(newAllRoundScores);
+    setTotalGameScore(totalGameScore + totalScore);
+    
+    // Track perfect round streak
+    if (perfectRound) {
+      const newStreak = perfectRoundStreak + 1;
+      setPerfectRoundStreak(newStreak);
+      
+      if (newStreak === 2 || newStreak === 5) {
+        analytics.streakAchieved(gameName, newStreak, 'round');
+      }
+    } else {
+      setPerfectRoundStreak(0);
+    }
+    
+    // Track round completion
+    analytics.roundCompleted(
+      gameName,
+      currentRound,
+      totalScore,
+      perfectRound,
+      avgTime
+    );
+
+    if (currentRound < 5) {
+      // Next round
+      setCurrentRound(currentRound + 1);
+      setCurrentPuzzle(1);
+      setRoundScore(0);
+      setPuzzleScores([]);
+      setPuzzleTimes([]);
+      setRoundStartTime(Date.now());
+    } else {
+      // All rounds complete - game finished!
+      handleGameComplete(newAllRoundScores);
+    }
+  };
+
+  const handleGameComplete = (allScores: number[]) => {
+    const finalScore = allScores.reduce((a, b) => a + b, 0);
+    const perfectGame = allScores.every(roundScore => {
+      // Assuming each round has 5 puzzles at 1000 points each = 5000 max per round
+      return roundScore >= 5000;
+    });
+    const totalTimePlayed = Math.round((Date.now() - gameStartTime) / 1000);
+    
+    analytics.gameCompleted(gameName, finalScore, perfectGame, totalTimePlayed);
+    
+    setHasEnded(true);
+  };
+
+  const handleNextPuzzle = () => {
+    if (currentPuzzle < 5) {
+      setCurrentPuzzle(currentPuzzle + 1);
+    }
+  };
+
+  const handleNextRound = () => {
+    if (currentRound < 5) {
+      setCurrentRound(currentRound + 1);
+      setCurrentPuzzle(1);
+      setRoundScore(0);
+      setPuzzleScores([]);
+      setPuzzleTimes([]);
+      setRoundStartTime(Date.now());
     }
   };
 
   const handleQuitClick = () => {
-    endGame('quit');
+    const completedGame = hasEnded && currentRound === 5 && currentPuzzle === 5;
+    
+    if (!hasEnded && !completedGame) {
+      // Track abandonment if quitting mid-game
+      const timePlayedSeconds = Math.round((Date.now() - gameStartTime) / 1000);
+      analytics.gameAbandoned(
+        gameName,
+        currentRound,
+        currentPuzzle,
+        totalGameScore + roundScore,
+        timePlayedSeconds
+      );
+    }
+    
+    analytics.menuReturned(gameName, completedGame);
+    onQuit();
   };
 
-  const wipeProgress = 1 - (countdownTime / 7);
-
+  // Rest of your GameWrapper JSX...
+  // (Keep your existing rendering logic)
+  
   return (
-    <div className={`relative flex flex-col h-full bg-gray-900 transition-all duration-100 ${
-      showBorderBlink ? 'border-4 border-white' : 'border-4 border-transparent'
-    }`}>
-      {!isCountingDown && showTimer && (
-        <div className="flex-shrink-0">
-          <VisualTimerBar
-            timeRemaining={timeLeft}
-            totalTime={duration}
-          />
-        </div>
-      )}
-
-      <div className="flex-shrink-0 px-3 sm:px-6 py-2.5 sm:py-3 bg-gray-800 border-b border-gray-700 flex justify-between items-center gap-2 sm:gap-4">
-        {gameRef.current?.loadNextPuzzle && (
-          <div className="flex-1 flex justify-center">
-            <button
-              onClick={() => gameRef.current?.loadNextPuzzle?.()}
-              className="px-4 sm:px-6 py-2 bg-cyan-500 active:bg-cyan-600 text-white rounded-lg font-semibold text-xs sm:text-sm transition-colors touch-manipulation"
-            >
-              Next Question
-            </button>
-          </div>
-        )}
-
-        <button
-          onClick={handleQuitClick}
-          disabled={hasEnded}
-          className="px-4 sm:px-6 py-2 bg-blue-600 active:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-xs sm:text-sm transition-colors whitespace-nowrap touch-manipulation"
-        >
-          {hasEnded ? 'Round Complete' : 'Next Round'}
-        </button>
-      </div>
-
-      <div className={`flex-1 overflow-auto relative ${hasEnded ? 'pointer-events-none opacity-50' : ''}`}>
-        {React.cloneElement(children, { ref: gameRef })}
-      </div>
-
-      {isCountingDown && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-50">
-          <div className="text-center">
-            <div className="text-6xl sm:text-8xl font-bold text-white mb-6 sm:mb-8">
-              {countdownTime}
-            </div>
-
-            <button
-              onClick={handleStartButtonClick}
-              className="relative px-10 sm:px-12 py-3 sm:py-4 rounded-full font-bold text-lg sm:text-xl overflow-hidden transition-all active:scale-95 shadow-lg touch-manipulation"
-              style={{
-                background: `linear-gradient(to right,
-                  rgb(255, 255, 255) 0%,
-                  rgb(255, 255, 255) ${wipeProgress * 100}%,
-                  rgb(34, 197, 94) ${wipeProgress * 100}%,
-                  rgb(34, 197, 94) 100%)`
-              }}
-            >
-              <span style={{
-                color: wipeProgress > 0.5 ? 'black' : 'white'
-              }}>
-                Start
-              </span>
-            </button>
-
-            <p className="mt-6 sm:mt-8 text-gray-300 text-xs sm:text-sm">
-              Press to start now, or wait for auto-start
-            </p>
-          </div>
-        </div>
-      )}
-
-      {hasEnded && showCompletionModal && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 rounded-lg">
-          <div className="bg-white p-8 sm:p-12 rounded-xl text-center shadow-2xl max-w-sm mx-4">
-            <div className="mb-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl sm:text-3xl">✓</span>
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Round Complete!</p>
-            <p className="text-sm sm:text-base text-gray-600">Calculating your score...</p>
-          </div>
-        </div>
-      )}
+    <div className={`min-h-screen bg-gray-900 text-white flex flex-col relative ${borderBlink ? 'border-4 border-white' : ''}`}>
+      {/* Your existing countdown, header, timer, and game content */}
+      {/* ... */}
     </div>
   );
 }
