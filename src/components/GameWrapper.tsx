@@ -1,301 +1,242 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import { analytics } from '../lib/analytics';
+import React, { useState, useEffect, useRef } from 'react';
 import VisualTimerBar from './VisualTimerBar';
-import SplitDecisionGame from './SplitDecisionGame';
-import RankyGame from './RankyGame';
-import OddManOutGame from './OddManOutGame';
-import PhotoMysteryGame from './PhotoMysteryGame';
-import DalmatianPuzzleGame from './DalmatianPuzzleGame';
-import ShapeSequenceGame from './ShapeSequenceGame';
-import WordRescueGame from './WordRescueGame';
-import PopGame from './PopGame';
+import { GameHandle } from '../lib/gameTypes';
 
 interface GameWrapperProps {
-  gameId: number;
-  userId: string;
-  onQuit: () => void;
+  children: React.ReactElement;
+  duration?: number;
+  onComplete: (score: number, maxScore: number) => void;
+  gameName: string;
+  showTimer?: boolean;
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+  showCompletionModal?: boolean;
 }
 
-const GAME_COMPONENTS: Record<number, any> = {
-  7: SplitDecisionGame,
-  8: RankyGame,
-  9: OddManOutGame,
-  10: PhotoMysteryGame,
-  11: DalmatianPuzzleGame,
-  12: ShapeSequenceGame,
-  13: WordRescueGame,
-  14: PopGame,
-};
-
-const GAME_NAMES: Record<number, string> = {
-  7: 'Split Decision',
-  8: 'Ranky',
-  9: 'Odd Man Out',
-  10: 'PhotoMystery',
-  11: 'Dalmatian Puzzle',
-  12: 'Shape Sequence',
-  13: 'Word Rescue',
-  14: 'Pop',
-};
-
-export default function GameWrapper({ gameId, userId, onQuit }: GameWrapperProps) {
-  const [currentRound, setCurrentRound] = useState(1);
-  const [currentPuzzle, setCurrentPuzzle] = useState(1);
-  const [puzzleData, setPuzzleData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [timeRemaining, setTimeRemaining] = useState(30);
-  const [isPaused, setIsPaused] = useState(false);
+export default function GameWrapper({
+  children,
+  duration = 60,
+  onComplete,
+  gameName,
+  showTimer = true,
+  onScoreUpdate,
+  showCompletionModal = true
+}: GameWrapperProps) {
+  const [timeLeft, setTimeLeft] = useState(duration);
   const [hasEnded, setHasEnded] = useState(false);
-  const [showCountdown, setShowCountdown] = useState(true);
-  const [countdownNumber, setCountdownNumber] = useState(7);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [borderBlink, setBorderBlink] = useState(false);
-  const [roundScore, setRoundScore] = useState(0);
-  const [puzzleScores, setPuzzleScores] = useState<number[]>([]);
-  
-  const timerRef = useRef<number | null>(null);
-  const countdownRef = useRef<number | null>(null);
-  const gameName = GAME_NAMES[gameId] || 'Unknown Game';
-  const gameStartedRef = useRef(false);
+  const [isCountingDown, setIsCountingDown] = useState(true);
+  const [countdownTime, setCountdownTime] = useState(7);
+  const [showBorderBlink, setShowBorderBlink] = useState(false);
+  const gameRef = useRef<GameHandle>(null);
+  const audioContext = useRef<AudioContext | null>(null);
 
-  // Start countdown on mount
   useEffect(() => {
-    countdownRef.current = window.setInterval(() => {
-      setCountdownNumber((prev) => {
-        if (prev <= 1) {
-          if (countdownRef.current) clearInterval(countdownRef.current);
-          handleCountdownFinish();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
+    try {
+      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (error) {
+      console.log('Audio context failed to initialize');
+    }
   }, []);
 
-  // Handle countdown finish
-  const handleCountdownFinish = () => {
-    setShowCountdown(false);
-    setGameStarted(true);
-    setBorderBlink(true);
-
-    // Track game started event
-    if (!gameStartedRef.current) {
-      analytics.gameStarted(gameName, gameId, userId);
-      gameStartedRef.current = true;
-    }
-
-    setTimeout(() => setBorderBlink(false), 500);
-    setTimeout(() => {
-      setBorderBlink(true);
-      setTimeout(() => setBorderBlink(false), 500);
-    }, 1000);
-  };
-
-  // Manual start (skip countdown)
-  const handleManualStart = () => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    handleCountdownFinish();
-  };
-
-  // Load puzzle data
   useEffect(() => {
-    if (gameStarted) {
-      loadPuzzle();
-    }
-  }, [gameId, currentRound, currentPuzzle, gameStarted]);
+    if (!isCountingDown) return;
 
-  // Timer logic
-  useEffect(() => {
-    if (!gameStarted || isPaused || hasEnded || showCountdown) {
+    if (countdownTime <= 0) {
+      startGame();
       return;
     }
 
-    timerRef.current = window.setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
+    const timer = setTimeout(() => {
+      if (countdownTime <= 3 && countdownTime > 0) {
+        playTinkSound();
+      }
+      setCountdownTime(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdownTime, isCountingDown]);
+
+  useEffect(() => {
+    if (!showBorderBlink) return;
+
+    const blink2Timer = setTimeout(() => {
+      setShowBorderBlink(false);
+    }, 500);
+
+    const blink3Timer = setTimeout(() => {
+      setShowBorderBlink(true);
+    }, 500);
+
+    const blink4Timer = setTimeout(() => {
+      setShowBorderBlink(false);
     }, 1000);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearTimeout(blink2Timer);
+      clearTimeout(blink3Timer);
+      clearTimeout(blink4Timer);
     };
-  }, [isPaused, hasEnded, gameStarted, showCountdown]);
+  }, [showBorderBlink]);
 
-  const loadPuzzle = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('puzzle_data')
-      .select('*')
-      .eq('game_id', gameId)
-      .eq('sequence_round', currentRound)
-      .eq('sequence_order', currentPuzzle)
-      .single();
+  useEffect(() => {
+    if (isCountingDown || timeLeft <= 0 || hasEnded) return;
 
-    if (error) {
-      console.error('Error loading puzzle:', error);
-      analytics.gameError(gameName, `Load puzzle failed: ${error.message}`);
-    } else {
-      setPuzzleData(data);
-      setTimeRemaining(30); // Reset timer for new puzzle
+    const timer = setInterval(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, hasEnded, isCountingDown]);
+
+  useEffect(() => {
+    if (timeLeft <= 0 && !isCountingDown && !hasEnded) {
+      endGame('timeout');
     }
-    setIsLoading(false);
+  }, [timeLeft, isCountingDown, hasEnded]);
+
+  const playTinkSound = () => {
+    if (!audioContext.current) return;
+
+    try {
+      const ctx = audioContext.current;
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.frequency.value = 1000;
+      oscillator.type = 'sine';
+
+      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.1);
+    } catch (error) {
+      console.log('Failed to play tink sound:', error);
+    }
   };
 
-  const handleTimeUp = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
+  const startGame = () => {
+    setIsCountingDown(false);
+    setShowBorderBlink(true);
+    setTimeLeft(duration);
+  };
+
+  const handleStartButtonClick = () => {
+    startGame();
+  };
+
+  const endGame = (reason: 'timeout' | 'quit') => {
+    if (hasEnded) return;
     setHasEnded(true);
-    
-    // Track as abandoned if time ran out
-    analytics.gameAbandoned(gameName, currentPuzzle, currentRound);
-  };
 
-  const handlePuzzleComplete = (score: number) => {
-    const newPuzzleScores = [...puzzleScores, score];
-    setPuzzleScores(newPuzzleScores);
-    setRoundScore(roundScore + score);
+    gameRef.current?.onGameEnd?.();
 
-    // Track puzzle completion
-    analytics.puzzleCompleted(gameName, currentPuzzle, score, timeRemaining);
-
-    if (currentPuzzle < 5) {
-      // More puzzles in this round
-      setCurrentPuzzle(currentPuzzle + 1);
-    } else {
-      // Round complete
-      const totalScore = roundScore + score;
-      const perfectRound = newPuzzleScores.every(s => s >= 1000); // Adjust threshold as needed
-      
-      analytics.roundCompleted(gameName, currentRound, totalScore, perfectRound);
-
-      if (currentRound < 5) {
-        setCurrentRound(currentRound + 1);
-        setCurrentPuzzle(1);
-        setRoundScore(0);
-        setPuzzleScores([]);
+    const result = gameRef.current?.getGameScore?.();
+    if (result) {
+      const { score, maxScore } = result;
+      if (reason === 'quit') {
+        console.log(`${gameName}: Player quit with ${score}/${maxScore} points`);
       } else {
-        // All rounds complete
-        setHasEnded(true);
+        console.log(`${gameName}: Time up with ${score}/${maxScore} points`);
       }
-    }
-  };
-
-  const handleNextPuzzle = () => {
-    if (currentPuzzle < 5) {
-      setCurrentPuzzle(currentPuzzle + 1);
-    }
-  };
-
-  const handleNextRound = () => {
-    if (currentRound < 5) {
-      setCurrentRound(currentRound + 1);
-      setCurrentPuzzle(1);
-      setRoundScore(0);
-      setPuzzleScores([]);
+      onComplete(score, maxScore);
+    } else {
+      console.warn(`${gameName}: Game did not return score. Using 0/100.`);
+      onComplete(0, 100);
     }
   };
 
   const handleQuitClick = () => {
-    if (!hasEnded) {
-      // Track abandonment if quitting mid-game
-      analytics.gameAbandoned(gameName, currentPuzzle, currentRound);
-    }
-    analytics.menuReturned(gameName);
-    onQuit();
+    endGame('quit');
   };
 
-  const GameComponent = GAME_COMPONENTS[gameId];
-
-  if (!GameComponent) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-xl">Game not found</div>
-      </div>
-    );
-  }
+  const wipeProgress = 1 - (countdownTime / 7);
 
   return (
-    <div className={`min-h-screen bg-gray-900 text-white flex flex-col relative ${borderBlink ? 'border-4 border-white' : ''}`}>
-      {/* Countdown Overlay */}
-      {showCountdown && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/95">
-          <div className="text-center">
-            <div className="text-9xl font-bold mb-8">{countdownNumber}</div>
-            <button
-              onClick={handleManualStart}
-              className="relative w-64 h-16 bg-green-600 rounded-lg overflow-hidden group"
-            >
-              <div
-                className="absolute inset-0 bg-white transition-all duration-[7000ms] ease-linear"
-                style={{
-                  width: `${((7 - countdownNumber) / 7) * 100}%`,
-                }}
-              />
-              <span className="relative z-10 text-black font-bold text-xl">Start Game</span>
-            </button>
-          </div>
+    <div className={`relative flex flex-col h-full bg-gray-900 transition-all duration-100 ${
+      showBorderBlink ? 'border-4 border-white' : 'border-4 border-transparent'
+    }`}>
+      {!isCountingDown && showTimer && (
+        <div className="flex-shrink-0">
+          <VisualTimerBar
+            timeRemaining={timeLeft}
+            totalTime={duration}
+          />
         </div>
       )}
 
-      {/* Header with Controls */}
-      <div className="flex-shrink-0 px-6 py-3 bg-gray-800 border-b border-gray-700 flex justify-between items-center gap-4">
-        <div className="flex gap-2">
-          <button
-            onClick={handleNextPuzzle}
-            disabled={currentPuzzle >= 5}
-            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next Question
-          </button>
-          <button
-            onClick={handleNextRound}
-            disabled={currentRound >= 5}
-            className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next Round
-          </button>
-        </div>
+      <div className="flex-shrink-0 px-3 sm:px-6 py-2.5 sm:py-3 bg-gray-800 border-b border-gray-700 flex justify-between items-center gap-2 sm:gap-4">
+        {gameRef.current?.loadNextPuzzle && (
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => gameRef.current?.loadNextPuzzle?.()}
+              className="px-4 sm:px-6 py-2 bg-cyan-500 active:bg-cyan-600 text-white rounded-lg font-semibold text-xs sm:text-sm transition-colors touch-manipulation"
+            >
+              Next Question
+            </button>
+          </div>
+        )}
+
         <button
           onClick={handleQuitClick}
           disabled={hasEnded}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-colors"
+          className="px-4 sm:px-6 py-2 bg-blue-600 active:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-semibold text-xs sm:text-sm transition-colors whitespace-nowrap touch-manipulation"
         >
-          {hasEnded ? 'Finished' : 'Back to Menu'}
+          {hasEnded ? 'Round Complete' : 'Next Round'}
         </button>
       </div>
 
-      {/* Visual Timer Bar */}
-      {gameStarted && !showCountdown && (
-        <VisualTimerBar
-          totalTime={30}
-          timeRemaining={timeRemaining}
-          isPaused={isPaused}
-        />
+      <div className={`flex-1 overflow-auto relative ${hasEnded ? 'pointer-events-none opacity-50' : ''}`}>
+        {React.cloneElement(children, { ref: gameRef })}
+      </div>
+
+      {isCountingDown && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-50">
+          <div className="text-center">
+            <div className="text-6xl sm:text-8xl font-bold text-white mb-6 sm:mb-8">
+              {countdownTime}
+            </div>
+
+            <button
+              onClick={handleStartButtonClick}
+              className="relative px-10 sm:px-12 py-3 sm:py-4 rounded-full font-bold text-lg sm:text-xl overflow-hidden transition-all active:scale-95 shadow-lg touch-manipulation"
+              style={{
+                background: `linear-gradient(to right,
+                  rgb(255, 255, 255) 0%,
+                  rgb(255, 255, 255) ${wipeProgress * 100}%,
+                  rgb(34, 197, 94) ${wipeProgress * 100}%,
+                  rgb(34, 197, 94) 100%)`
+              }}
+            >
+              <span style={{
+                color: wipeProgress > 0.5 ? 'black' : 'white'
+              }}>
+                Start
+              </span>
+            </button>
+
+            <p className="mt-6 sm:mt-8 text-gray-300 text-xs sm:text-sm">
+              Press to start now, or wait for auto-start
+            </p>
+          </div>
+        </div>
       )}
 
-      {/* Game Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-xl">Loading puzzle...</div>
+      {hasEnded && showCompletionModal && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 rounded-lg">
+          <div className="bg-white p-8 sm:p-12 rounded-xl text-center shadow-2xl max-w-sm mx-4">
+            <div className="mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl sm:text-3xl">✓</span>
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Round Complete!</p>
+            <p className="text-sm sm:text-base text-gray-600">Calculating your score...</p>
           </div>
-        ) : puzzleData && gameStarted ? (
-          <GameComponent
-            puzzleData={puzzleData}
-            onComplete={handlePuzzleComplete}
-            timeRemaining={timeRemaining}
-            isPaused={isPaused}
-          />
-        ) : null}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

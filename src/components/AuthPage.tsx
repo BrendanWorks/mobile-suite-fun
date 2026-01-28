@@ -1,89 +1,74 @@
-import { useState } from 'react';
+import React from 'react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../lib/supabase';
-import { analytics } from '../lib/analytics';
 
-export default function AuthPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface AuthPageProps {
+  onPlayAsGuest?: () => void;
+}
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-
-      if (error) throw error;
-
-      // Track sign in attempt (actual success tracked in App.tsx)
-    } catch (error: any) {
-      setError(error.message);
-      analytics.gameError('Auth', `Google sign-in failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Game Box</h1>
-            <p className="text-gray-300">Sign in to start playing</p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Google Sign In Button */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </>
-            )}
-          </button>
-
-          {/* Footer */}
-          <p className="text-center text-gray-400 text-sm mt-6">
-            By signing in, you agree to our Terms of Service and Privacy Policy
-          </p>
+    <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-md text-center">
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 sm:mb-3">🎮 Game Box</h1>
+          <p className="text-lg sm:text-xl text-gray-300">Play. Score. Compete.</p>
         </div>
+
+        {onPlayAsGuest && (
+          <button
+            onClick={onPlayAsGuest}
+            className="w-full mb-4 sm:mb-6 py-3.5 sm:py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 active:from-green-600 active:to-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] text-base sm:text-lg touch-manipulation"
+          >
+            Play as Guest
+          </button>
+        )}
+
+        <div className="bg-white/10 backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20 shadow-2xl">
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#3b82f6',
+                    brandAccent: '#1e40af',
+                    brandButtonText: 'white',
+                    defaultButtonBackground: '#1f2937',
+                    defaultButtonBorder: '#4b5563',
+                    defaultButtonText: '#ffffff',
+                    dividerBackground: '#4b5563',
+                    focusedInputBorder: '#3b82f6',
+                    inputBackground: '#374151',
+                    inputBorder: '#4b5563',
+                    inputBorderFocus: '#3b82f6',
+                    inputText: '#ffffff',
+                    inputPlaceholder: '#9ca3af',
+                  },
+                  borderWidths: {
+                    buttonBorderWidth: '1px',
+                    inputBorderWidth: '1px',
+                  },
+                  radii: {
+                    borderRadiusButton: '0.75rem',
+                    buttonBorderRadius: '0.75rem',
+                    inputBorderRadius: '0.5rem',
+                  },
+                },
+              },
+            }}
+            providers={['google']}
+            onlyThirdPartyProviders={true}
+            view="sign_in"
+            redirectTo={window.location.origin}
+          />
+        </div>
+
+        <p className="mt-6 sm:mt-8 text-gray-400 text-xs sm:text-sm">
+          Sign in to save your progress
+        </p>
       </div>
     </div>
   );
