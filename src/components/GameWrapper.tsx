@@ -18,42 +18,69 @@ export default function GameWrapper({
 }: GameWrapperProps) {
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
+  const [isFastCountdown, setIsFastCountdown] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
+  const gameCompletedRef = useRef(false);
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
+      // Fast countdown: 50ms intervals, subtract 0.05
+      // Normal countdown: 1000ms intervals, subtract 1
+      const intervalTime = isFastCountdown ? 50 : 1000;
+      const decrement = isFastCountdown ? 0.05 : 1;
+
       timerRef.current = window.setInterval(() => {
         setTimeRemaining((prev) => {
-          if (prev <= 1) {
+          const newTime = prev - decrement;
+          if (newTime <= 0) {
             handleTimeUp();
             return 0;
           }
-          return prev - 1;
+          return newTime;
         });
-      }, 1000);
+      }, intervalTime);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeRemaining]);
+  }, [isActive, timeRemaining, isFastCountdown]);
 
   const handleTimeUp = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
+    
+    if (!gameCompletedRef.current) {
+      gameCompletedRef.current = true;
+      if (childrenRef.current?.getGameScore) {
+        const { score, maxScore } = childrenRef.current.getGameScore();
+        onComplete(score, maxScore);
+      } else {
+        onComplete(0, 100);
+      }
+    }
+  };
 
-    if (childrenRef.current?.getGameScore) {
-      const { score, maxScore } = childrenRef.current.getGameScore();
-      onComplete(score, maxScore);
+  const handleGameComplete = (score: number, maxScore: number) => {
+    if (gameCompletedRef.current) return; // Prevent double completion
+    gameCompletedRef.current = true;
+
+    // If more than 2 seconds remaining, trigger fast countdown
+    if (timeRemaining > 2) {
+      setIsFastCountdown(true);
+      // Timer will finish naturally and call onComplete
     } else {
-      onComplete(0, 100);
+      // Less than 2 seconds, complete immediately
+      if (timerRef.current) clearInterval(timerRef.current);
+      setIsActive(false);
+      onComplete(score, maxScore);
     }
   };
 
   const cloneChildren = () => {
     if (!children) return null;
-
+    
     return (children as any).type
       ? {
           ...children,
@@ -61,11 +88,7 @@ export default function GameWrapper({
           props: {
             ...(children as any).props,
             onScoreUpdate,
-            onComplete: (score: number, maxScore: number) => {
-              if (timerRef.current) clearInterval(timerRef.current);
-              setIsActive(false);
-              onComplete(score, maxScore);
-            },
+            onComplete: handleGameComplete,
           },
         }
       : children;
