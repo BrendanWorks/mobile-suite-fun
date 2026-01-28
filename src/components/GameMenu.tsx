@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameId } from '../App';
+import { analytics } from '../lib/analytics';
 
 interface GameMenuProps {
   onGameSelect: (gameId: GameId) => void;
@@ -27,13 +28,19 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     'shape-sequence': '🔷'
   };
 
+  const handleGameClick = (gameId: GameId, gameName: string, numericId: number) => {
+    // Track game selection
+    analytics.gameSelected(gameName, numericId);
+    onGameSelect(gameId);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         {games.map((game) => (
           <button
             key={game.id}
-            onClick={() => onGameSelect(game.slug as GameId)}
+            onClick={() => handleGameClick(game.slug as GameId, game.name, game.id)}
             className="bg-white/10 text-white font-bold py-4 px-4 rounded-lg shadow-md transition-transform duration-200 transform hover:scale-105 hover:bg-white/20 border-2 border-purple-500/30 hover:border-purple-400"
           >
             <div className="text-2xl mb-2">{gameIcons[game.slug as keyof typeof gameIcons] || '🎮'}</div>
