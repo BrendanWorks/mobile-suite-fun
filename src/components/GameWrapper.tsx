@@ -43,8 +43,8 @@ export default function GameWrapper({
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
 
-    if (childrenRef.current?.getScore) {
-      const { score, maxScore } = childrenRef.current.getScore();
+    if (childrenRef.current?.getGameScore) {
+      const { score, maxScore } = childrenRef.current.getGameScore();
       onComplete(score, maxScore);
     } else {
       onComplete(0, 100);

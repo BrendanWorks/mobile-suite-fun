@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 
-const ShapeSequenceGame = forwardRef((props, ref) => {
+interface ShapeSequenceProps {
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+}
+
+const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'waiting' | 'showing' | 'playing' | 'correct' | 'wrong' | 'gameover'>('waiting');
   const [level, setLevel] = useState(1);
@@ -312,8 +316,14 @@ const ShapeSequenceGame = forwardRef((props, ref) => {
         drawGame();
         
         playSound(880, 300); // Success sound
-        setScore(prev => prev + level * 10);
-        
+        setScore(prev => {
+          const newScore = prev + level * 10;
+          if (props.onScoreUpdate) {
+            props.onScoreUpdate(newScore, newScore);
+          }
+          return newScore;
+        });
+
         setTimeout(() => {
           setLevel(prev => prev + 1);
           startNextRound();

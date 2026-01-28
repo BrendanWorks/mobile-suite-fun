@@ -2,7 +2,11 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 
-const OddManOut = forwardRef<GameHandle>((props, ref) => {
+interface OddManOutProps {
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+}
+
+const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -158,9 +162,20 @@ const OddManOut = forwardRef<GameHandle>((props, ref) => {
     setTotalQuestions(prev => prev + 1);
 
     if (isAnswerCorrect) {
-      setScore(prev => prev + 250);
+      setScore(prev => {
+        const newScore = prev + 250;
+        const newTotal = totalQuestions + 1;
+        if (props.onScoreUpdate) {
+          props.onScoreUpdate(newScore, newTotal * 250);
+        }
+        return newScore;
+      });
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
     } else {
+      const newTotal = totalQuestions + 1;
+      if (props.onScoreUpdate) {
+        props.onScoreUpdate(score, newTotal * 250);
+      }
       setMessage("Wrong");
     }
 

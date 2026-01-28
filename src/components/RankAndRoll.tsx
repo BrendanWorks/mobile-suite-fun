@@ -2,7 +2,11 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-const RankAndRoll = forwardRef((props, ref) => {
+interface RankAndRollProps {
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+}
+
+const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
   // Fallback data in case Supabase is unavailable
   const fallbackPuzzles = [
@@ -344,7 +348,13 @@ const RankAndRoll = forwardRef((props, ref) => {
     if (isCorrect) {
       const hintPenalty = hintsUsed * 50;
       const finalScore = Math.max(0, 333 - hintPenalty);
-      setScore(prev => prev + finalScore);
+      setScore(prev => {
+        const newScore = prev + finalScore;
+        if (props.onScoreUpdate) {
+          props.onScoreUpdate(newScore, newScore);
+        }
+        return newScore;
+      });
       setPuzzlesCompleted(prev => prev + 1);
     }
 

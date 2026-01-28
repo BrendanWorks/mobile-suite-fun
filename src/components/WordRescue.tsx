@@ -9,7 +9,11 @@
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const WordRescue = forwardRef((props, ref) => {
+interface WordRescueProps {
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+}
+
+const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   // Word list for validation
   const fallbackWords = new Set([
     'cat', 'dog', 'run', 'fun', 'sun', 'car', 'art', 'bat', 'hat', 'rat',
@@ -457,7 +461,13 @@ const WordRescue = forwardRef((props, ref) => {
         }]);
         
         console.log('Adding score:', wordScore);
-        setScore(prev => prev + wordScore);
+        setScore(prev => {
+          const newScore = prev + wordScore;
+          if (props.onScoreUpdate) {
+            props.onScoreUpdate(newScore, newScore);
+          }
+          return newScore;
+        });
         setWordsFound(prev => [...prev, { word, score: wordScore }]);
       } else {
         console.log('Invalid word, selection already cleared');

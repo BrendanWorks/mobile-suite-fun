@@ -3,6 +3,7 @@ import { Eye, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
+  const { onScoreUpdate } = props;
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState('loading');
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -221,7 +222,17 @@ const PhotoMystery = forwardRef((props, ref) => {
     setTotalQuestions(newTotal);
 
     if (correct) {
-      setScore(prev => prev + Math.round(points));
+      setScore(prev => {
+        const newScore = prev + Math.round(points);
+        if (onScoreUpdate) {
+          onScoreUpdate(newScore, newTotal * maxPoints);
+        }
+        return newScore;
+      });
+    } else {
+      if (onScoreUpdate) {
+        onScoreUpdate(score, newTotal * maxPoints);
+      }
     }
 
     setGameState('result');

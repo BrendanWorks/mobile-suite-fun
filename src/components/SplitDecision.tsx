@@ -37,9 +37,10 @@ interface Puzzle {
 interface SplitDecisionProps {
   userId?: string;
   roundNumber?: number;
+  onScoreUpdate?: (score: number, maxScore: number) => void;
 }
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1 }, ref) => {
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -142,9 +143,23 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     setFeedback(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
-      setScore(prev => prev + 143); // +143 for correct
+      setScore(prev => {
+        const newScore = prev + 143;
+        const maxScore = puzzle ? puzzle.items.length * 143 : 1001;
+        if (onScoreUpdate) {
+          onScoreUpdate(newScore, maxScore);
+        }
+        return newScore;
+      });
     } else {
-      setScore(prev => Math.max(0, prev - 143)); // -143 for wrong, min 0
+      setScore(prev => {
+        const newScore = Math.max(0, prev - 143);
+        const maxScore = puzzle ? puzzle.items.length * 143 : 1001;
+        if (onScoreUpdate) {
+          onScoreUpdate(newScore, maxScore);
+        }
+        return newScore;
+      });
     }
 
     // Check if this is the last item
