@@ -1,8 +1,7 @@
 /**
- * GameSession.tsx - INTEGRATED WITH SUPABASE
+ * GameSession.tsx - WITH NEXT GAME & QUIT/SAVE BUTTONS
  * 
  * Paste this into bolt.new to replace your current GameSession.tsx
- * Automatically saves game sessions and scores to Supabase
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -322,6 +321,59 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     }
   };
 
+  const handleSkipGame = () => {
+    // Skip current game with 0 score
+    if (currentGame) {
+      console.log(`Game skipped: ${currentGame.name}`);
+      handleGameComplete(0, 100);
+    }
+  };
+
+  const handleQuitAndSave = async () => {
+    // Save current progress before quitting
+    const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const completedRounds = roundScores.length;
+    
+    if (user?.id && sessionId) {
+      try {
+        // Calculate grade based on completed rounds
+        const avgScore = completedRounds > 0 ? currentSessionScore / completedRounds : 0;
+        const percentage = avgScore;
+        const grade = getSessionGrade(percentage);
+        const playtimeSeconds = sessionStartTimeRef.current
+          ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+          : 0;
+
+        await completeGameSession(
+          sessionId,
+          Math.round(currentSessionScore),
+          completedRounds * 100,
+          percentage,
+          grade,
+          completedRounds,
+          playtimeSeconds
+        );
+
+        const results = roundScores.map((r, idx) => ({
+          gameId: getGameId(r.gameId),
+          puzzleId: 0,
+          roundNumber: idx + 1,
+          rawScore: r.rawScore,
+          maxScore: r.maxScore,
+          normalizedScore: Math.round(r.normalizedScore.normalizedScore),
+          grade: r.normalizedScore.grade
+        }));
+
+        await saveAllRoundResults(sessionId, user.id, results);
+        console.log('✅ Progress saved on quit:', { completedRounds, score: currentSessionScore });
+      } catch (error) {
+        console.error('Error saving progress on quit:', error);
+      }
+    }
+    
+    onExit();
+  };
+
   useEffect(() => {
     if (gameState === 'intro' && currentRound === 1) {
       const timer = setTimeout(() => startRound(), 2000);
@@ -497,23 +549,42 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     return (
       <div className="h-screen w-screen bg-gray-900 flex flex-col">
         <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
-            <div className="text-white min-w-0 flex-1">
-              <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
-              <p className="text-base sm:text-lg font-bold truncate">{currentGame.name}</p>
-            </div>
-            <div className="text-right text-white flex-shrink-0">
-              <p className="text-xs sm:text-sm text-gray-400">Session Score</p>
-              <p className="text-lg sm:text-2xl font-bold text-yellow-400">
-                {Math.round(totalSessionScore)}/
-                <span className="text-gray-400">{maxPossibleScore}</span>
-              </p>
-              {currentGameNormalizedScore > 0 && (
-                <p className="text-xs text-cyan-400">
-                  +{Math.round(currentGameNormalizedScore)} this round
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-2 sm:gap-3">
+            {/* Left: Skip button */}
+            <button
+              onClick={handleSkipGame}
+              className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+            >
+              Next Game
+            </button>
+
+            {/* Center: Game info and score */}
+            <div className="flex-1 min-w-0 flex justify-between items-center gap-2 sm:gap-3">
+              <div className="text-white min-w-0">
+                <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
+                <p className="text-sm sm:text-base font-bold truncate">{currentGame.name}</p>
+              </div>
+              <div className="text-right text-white flex-shrink-0">
+                <p className="text-xs text-gray-400">Session Score</p>
+                <p className="text-base sm:text-xl font-bold text-yellow-400">
+                  {Math.round(totalSessionScore)}/
+                  <span className="text-gray-400 text-sm sm:text-base">{maxPossibleScore}</span>
                 </p>
-              )}
+                {currentGameNormalizedScore > 0 && (
+                  <p className="text-xs text-cyan-400">
+                    +{Math.round(currentGameNormalizedScore)}
+                  </p>
+                )}
+              </div>
             </div>
+
+            {/* Right: Quit button */}
+            <button
+              onClick={handleQuitAndSave}
+              className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+            >
+              Quit & Save
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
