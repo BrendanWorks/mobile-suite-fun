@@ -73,7 +73,7 @@ export default function GameWrapper({
 
   return (
     <div className="h-full w-full flex flex-col bg-gray-900">
-      <VisualTimerBar duration={duration} timeRemaining={timeRemaining} />
+      <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />
       <div className="flex-1 overflow-hidden">
         {cloneChildren()}
       </div>
