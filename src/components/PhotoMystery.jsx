@@ -97,14 +97,9 @@ const PhotoMystery = forwardRef((props, ref) => {
         setPoints(maxPoints);
         setElapsedTime(0);
         setCurrentPhotoNumber(1);
-        
-        // Start playing immediately
+
+        // Start playing immediately (useEffect will start the timer)
         setGameState('playing');
-        
-        // Start game after a brief delay to let React render
-        setTimeout(() => {
-          startGame();
-        }, 100);
       }
 
     } catch (error) {
@@ -128,7 +123,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     setPoints(maxPoints);
     setElapsedTime(0);
     setGameState('playing');
-    startGame();
   };
 
   const generateNewQuestion = () => {
@@ -153,7 +147,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     setPoints(maxPoints);
     setElapsedTime(0);
     setGameState('playing');
-    startGame();
   };
 
   const startGame = () => {
@@ -272,12 +265,19 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   useEffect(() => {
     fetchQuestions();
-    
+
     return () => {
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
     };
   }, []);
+
+  // Start game timer when state transitions to 'playing'
+  useEffect(() => {
+    if (gameState === 'playing' && currentQuestion) {
+      startGame();
+    }
+  }, [gameState, currentQuestion]);
 
   const getImageStyle = () => {
     return {
