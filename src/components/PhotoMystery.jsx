@@ -272,12 +272,20 @@ const PhotoMystery = forwardRef((props, ref) => {
     };
   }, []);
 
-  // Start game timer when state transitions to 'playing'
+  // Start game timer when currentPhotoNumber changes or initial load
   useEffect(() => {
     if (gameState === 'playing' && currentQuestion) {
+      // Clear any existing timer first
+      clearInterval(timerRef.current);
+      // Start fresh timer
       startGame();
     }
-  }, [gameState, currentQuestion]);
+
+    return () => {
+      // Cleanup timer when effect re-runs
+      clearInterval(timerRef.current);
+    };
+  }, [currentPhotoNumber]);
 
   const getImageStyle = () => {
     return {
