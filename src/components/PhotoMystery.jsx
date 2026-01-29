@@ -50,13 +50,12 @@ const PhotoMystery = forwardRef((props, ref) => {
       }
     },
     startPlaying: () => {
-      // Start game immediately when called
+      // Game starts immediately on load now, so this might not be needed
+      // But if called, ensure we're playing
       console.log('🚀 Zooma: startPlaying called, current state:', gameState);
-      if (gameState === 'ready') {
+      if (gameState !== 'playing') {
         setGameState('playing');
         startGame();
-      } else {
-        console.warn('⚠️ Zooma: startPlaying called but state is not ready:', gameState);
       }
     }
   }));
@@ -99,7 +98,14 @@ const PhotoMystery = forwardRef((props, ref) => {
         setZoomLevel(maxZoom);
         setPoints(maxPoints);
         setElapsedTime(0);
-        setGameState('ready');
+        
+        // Start playing immediately
+        setGameState('playing');
+        
+        // Start game after a brief delay to let React render
+        setTimeout(() => {
+          startGame();
+        }, 100);
       }
 
     } catch (error) {
@@ -344,36 +350,6 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
         </div>
       </div>
-
-      {/* READY STATE - Waiting for global countdown */}
-      {gameState === 'ready' && (
-        <div className="space-y-6">
-          <div className="flex justify-center items-center mb-4">
-            <div className="flex items-center gap-2 text-purple-400">
-              <Star size={20} />
-              <span className="text-xl font-bold">{Math.round(points)}</span>
-              <span className="text-xs text-purple-300">points available</span>
-            </div>
-          </div>
-
-          <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <img
-                src={currentQuestion.prompt}
-                alt="Mystery"
-                className="w-full h-full object-cover"
-                style={getImageStyle()}
-              />
-            </div>
-          </div>
-
-          <div className="p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
-            <div className="text-sm text-purple-200">
-              Get ready to guess...
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* PLAYING STATE - Active gameplay */}
       {gameState === 'playing' && (
