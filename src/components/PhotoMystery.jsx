@@ -3,19 +3,19 @@ import { Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
-  const { onScoreUpdate } = props;
+  const { onScoreUpdate, onComplete } = props;
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState('loading');
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [zoomLevel, setZoomLevel] = useState(2.5); // Start zoomed in
+  const [zoomLevel, setZoomLevel] = useState(2.5);
   const [points, setPoints] = useState(1000);
   const [score, setScore] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
   const [puzzleIds, setPuzzleIds] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const [currentPhotoNumber, setCurrentPhotoNumber] = useState(1); // 1, 2, or 3
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const timerRef = useRef(null);
@@ -23,18 +23,19 @@ const PhotoMystery = forwardRef((props, ref) => {
   const startTimeRef = useRef(null);
 
   const maxPoints = 1000;
-  const minPoints = 0; // Decay all the way to 0
-  const gameDuration = 15; // 15 seconds total (matches GameWrapper duration)
-  const maxZoom = 2.5; // Start zoom level
-  const minZoom = 1.0; // End zoom level (fully revealed)
+  const minPoints = 0;
+  const photoDuration = 15; // 15 seconds per photo
+  const totalPhotos = 3; // 3 photos per game
+  const maxZoom = 2.5;
+  const minZoom = 1.0;
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: totalQuestions * maxPoints
+      maxScore: totalPhotos * maxPoints
     }),
     onGameEnd: () => {
-      console.log(`PhotoMystery ended with score: ${score}`);
+      console.log(`PhotoMystery ended with score: ${score}/${totalPhotos * maxPoints}`);
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
     },
@@ -50,8 +51,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       }
     },
     startPlaying: () => {
-      // Game starts immediately on load now, so this might not be needed
-      // But if called, ensure we're playing
       if (gameState !== 'playing') {
         setGameState('playing');
         startGame();
@@ -97,6 +96,7 @@ const PhotoMystery = forwardRef((props, ref) => {
         setZoomLevel(maxZoom);
         setPoints(maxPoints);
         setElapsedTime(0);
+        setCurrentPhotoNumber(1);
         
         // Start playing immediately
         setGameState('playing');
@@ -165,25 +165,52 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     // Update every 100ms for smooth animation
     timerRef.current = setInterval(() => {
-      const elapsed = (Date.now() - startTimeRef.current) / 1000; // seconds
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
-      if (elapsed >= gameDuration) {
+      if (elapsed >= photoDuration) {
         // Time's up - stop the timer
         clearInterval(timerRef.current);
-        setElapsedTime(gameDuration);
+        setElapsedTime(photoDuration);
+        
+        // Auto-submit with 0 points if no answer selected
+        if (!selectedAnswer) {
+          handleTimeUp();
+        }
         return;
       }
 
       // Calculate smooth zoom (linear from maxZoom to minZoom)
-      const progress = elapsed / gameDuration;
+      const progress = elapsed / photoDuration;
       const currentZoom = maxZoom - (progress * (maxZoom - minZoom));
       setZoomLevel(Math.max(minZoom, currentZoom));
 
       // Calculate points decay (linear from maxPoints to minPoints)
       const currentPoints = maxPoints - (progress * (maxPoints - minPoints));
       setPoints(Math.max(minPoints, currentPoints));
-    }, 100); // Update every 100ms for smooth transitions
+    }, 100);
+  };
+
+  const handleTimeUp = () => {
+    // Time ran out, treat as wrong answer with 0 points
+    setIsCorrect(false);
+    setGameState('result');
+    
+    // Update score (stays the same since 0 points)
+    if (onScoreUpdate) {
+      onScoreUpdate(score, totalPhotos * maxPoints);
+    }
+
+    // Move to next photo or complete game
+    resultTimerRef.current = setTimeout(() => {
+      if (currentPhotoNumber < totalPhotos) {
+        setCurrentPhotoNumber(currentPhotoNumber + 1);
+        generateNewQuestion();
+      } else {
+        // Game complete
+        completeGame();
+      }
+    }, 2500);
   };
 
   const handleAnswerSelect = (answer) => {
@@ -191,40 +218,56 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     setSelectedAnswer(answer);
     
-    // Stop timer
+    // Stop timer immediately when answer selected
     clearInterval(timerRef.current);
 
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
-    const newTotal = totalQuestions + 1;
-    setTotalQuestions(newTotal);
 
-    if (correct) {
-      setScore(prev => {
-        const newScore = prev + Math.round(points);
-        if (onScoreUpdate) {
-          onScoreUpdate(newScore, newTotal * maxPoints);
-        }
-        return newScore;
-      });
-    } else {
-      if (onScoreUpdate) {
-        onScoreUpdate(score, newTotal * maxPoints);
-      }
+    // Update score
+    const earnedPoints = correct ? Math.round(points) : 0;
+    const newScore = score + earnedPoints;
+    setScore(newScore);
+    
+    if (onScoreUpdate) {
+      onScoreUpdate(newScore, totalPhotos * maxPoints);
     }
 
     setGameState('result');
 
     // Auto-advance after 2.5 seconds
     resultTimerRef.current = setTimeout(() => {
-      generateNewQuestion();
+      if (currentPhotoNumber < totalPhotos) {
+        // Next photo
+        setCurrentPhotoNumber(currentPhotoNumber + 1);
+        generateNewQuestion();
+      } else {
+        // All 3 photos done - complete the game
+        completeGame();
+      }
     }, 2500);
+  };
+
+  const completeGame = () => {
+    clearInterval(timerRef.current);
+    clearTimeout(resultTimerRef.current);
+    
+    // Call GameWrapper's onComplete
+    if (onComplete) {
+      onComplete(score, totalPhotos * maxPoints);
+    }
   };
 
   const nextQuestion = () => {
     clearTimeout(resultTimerRef.current);
     clearInterval(timerRef.current);
-    generateNewQuestion();
+    
+    if (currentPhotoNumber < totalPhotos) {
+      setCurrentPhotoNumber(currentPhotoNumber + 1);
+      generateNewQuestion();
+    } else {
+      completeGame();
+    }
   };
 
   useEffect(() => {
@@ -239,7 +282,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const getImageStyle = () => {
     return {
       transform: `scale(${zoomLevel})`,
-      transition: 'transform 0.1s linear' // Fast, smooth transitions
+      transition: 'transform 0.1s linear'
     };
   };
 
@@ -319,7 +362,7 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-cyan-400">
-              Question {totalQuestions + 1}
+              Photo {currentPhotoNumber}/{totalPhotos}
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
               currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
@@ -384,7 +427,7 @@ const PhotoMystery = forwardRef((props, ref) => {
               {isCorrect ? '🎉' : '😅'}
             </div>
             <div className="text-xl font-bold mb-2">
-              {isCorrect ? 'Correct!' : 'Not quite!'}
+              {isCorrect ? 'Correct!' : selectedAnswer ? 'Not quite!' : 'Time\'s up!'}
             </div>
             <div className="text-sm">
               The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
@@ -403,6 +446,14 @@ const PhotoMystery = forwardRef((props, ref) => {
               className="w-full h-full object-cover"
             />
           </div>
+
+          {currentPhotoNumber < totalPhotos && (
+            <div className="p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
+              <div className="text-sm text-purple-200">
+                Next photo loading...
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
