@@ -98,8 +98,9 @@ const PhotoMystery = forwardRef((props, ref) => {
         setElapsedTime(0);
         setCurrentPhotoNumber(1);
 
-        // Start playing immediately (useEffect will start the timer)
+        // Start playing immediately
         setGameState('playing');
+        setTimeout(() => startGame(), 100);
       }
 
     } catch (error) {
@@ -123,6 +124,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     setPoints(maxPoints);
     setElapsedTime(0);
     setGameState('playing');
+    setTimeout(() => startGame(), 100);
   };
 
   const generateNewQuestion = () => {
@@ -147,11 +149,17 @@ const PhotoMystery = forwardRef((props, ref) => {
     setPoints(maxPoints);
     setElapsedTime(0);
     setGameState('playing');
+    
+    // Start fresh timer for new photo
+    setTimeout(() => startGame(), 100);
   };
 
   const startGame = () => {
-    // Clear any existing timer
-    clearInterval(timerRef.current);
+    // Clear any existing timer first
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     // Record start time
     startTimeRef.current = Date.now();
@@ -164,12 +172,11 @@ const PhotoMystery = forwardRef((props, ref) => {
       if (elapsed >= photoDuration) {
         // Time's up - stop the timer
         clearInterval(timerRef.current);
+        timerRef.current = null;
         setElapsedTime(photoDuration);
         
         // Auto-submit with 0 points if no answer selected
-        if (!selectedAnswer) {
-          handleTimeUp();
-        }
+        handleTimeUp();
         return;
       }
 
@@ -185,8 +192,11 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const handleTimeUp = () => {
+    if (gameState !== 'playing') return; // Prevent duplicate calls
+    
     // Time ran out, treat as wrong answer with 0 points
     setIsCorrect(false);
+    setSelectedAnswer(null);
     setGameState('result');
     
     // Update score (stays the same since 0 points)
@@ -212,7 +222,10 @@ const PhotoMystery = forwardRef((props, ref) => {
     setSelectedAnswer(answer);
     
     // Stop timer immediately when answer selected
-    clearInterval(timerRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
@@ -242,8 +255,14 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const completeGame = () => {
-    clearInterval(timerRef.current);
-    clearTimeout(resultTimerRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (resultTimerRef.current) {
+      clearTimeout(resultTimerRef.current);
+      resultTimerRef.current = null;
+    }
     
     // Call GameWrapper's onComplete
     if (onComplete) {
@@ -252,8 +271,14 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const nextQuestion = () => {
-    clearTimeout(resultTimerRef.current);
-    clearInterval(timerRef.current);
+    if (resultTimerRef.current) {
+      clearTimeout(resultTimerRef.current);
+      resultTimerRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     
     if (currentPhotoNumber < totalPhotos) {
       setCurrentPhotoNumber(currentPhotoNumber + 1);
@@ -267,25 +292,14 @@ const PhotoMystery = forwardRef((props, ref) => {
     fetchQuestions();
 
     return () => {
-      clearInterval(timerRef.current);
-      clearTimeout(resultTimerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      if (resultTimerRef.current) {
+        clearTimeout(resultTimerRef.current);
+      }
     };
   }, []);
-
-  // Start game timer when currentPhotoNumber changes or initial load
-  useEffect(() => {
-    if (gameState === 'playing' && currentQuestion) {
-      // Clear any existing timer first
-      clearInterval(timerRef.current);
-      // Start fresh timer
-      startGame();
-    }
-
-    return () => {
-      // Cleanup timer when effect re-runs
-      clearInterval(timerRef.current);
-    };
-  }, [currentPhotoNumber]);
 
   const getImageStyle = () => {
     return {
@@ -440,7 +454,7 @@ const PhotoMystery = forwardRef((props, ref) => {
             <div className="text-sm">
               The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
             </div>
-            {isCorrect && (
+            {isCorrect && points > 0 && (
               <div className="text-lg font-bold text-white mt-2">
                 +{Math.round(points)} points!
               </div>
