@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Eye, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
@@ -23,7 +23,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const startTimeRef = useRef(null);
 
   const maxPoints = 1000;
-  const minPoints = 50;
+  const minPoints = 0; // Decay all the way to 0
   const gameDuration = 15; // 15 seconds total (matches GameWrapper duration)
   const maxZoom = 2.5; // Start zoom level
   const minZoom = 1.0; // End zoom level (fully revealed)
@@ -52,7 +52,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     startPlaying: () => {
       // Game starts immediately on load now, so this might not be needed
       // But if called, ensure we're playing
-      console.log('🚀 Zooma: startPlaying called, current state:', gameState);
       if (gameState !== 'playing') {
         setGameState('playing');
         startGame();
@@ -158,8 +157,6 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const startGame = () => {
-    console.log('🎮 Zooma: Starting game');
-    
     // Clear any existing timer
     clearInterval(timerRef.current);
 
@@ -173,7 +170,6 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       if (elapsed >= gameDuration) {
         // Time's up - stop the timer
-        console.log('⏱️ Zooma: Time up, stopping timer');
         clearInterval(timerRef.current);
         setElapsedTime(gameDuration);
         return;
@@ -187,11 +183,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       // Calculate points decay (linear from maxPoints to minPoints)
       const currentPoints = maxPoints - (progress * (maxPoints - minPoints));
       setPoints(Math.max(minPoints, currentPoints));
-      
-      // Debug every second
-      if (Math.floor(elapsed) !== Math.floor(elapsed - 0.1)) {
-        console.log(`📊 Zooma: ${elapsed.toFixed(1)}s - Zoom: ${currentZoom.toFixed(2)}, Points: ${Math.round(currentPoints)}`);
-      }
     }, 100); // Update every 100ms for smooth transitions
   };
 
@@ -250,11 +241,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       transform: `scale(${zoomLevel})`,
       transition: 'transform 0.1s linear' // Fast, smooth transitions
     };
-  };
-
-  const getRevealProgress = () => {
-    const progress = (maxZoom - zoomLevel) / (maxZoom - minZoom);
-    return progress * 100;
   };
 
   const getAnswerOptions = () => {
@@ -316,7 +302,6 @@ const PhotoMystery = forwardRef((props, ref) => {
   }
 
   const answerOptions = getAnswerOptions();
-  console.log('🎯 Zooma: Render state:', gameState, 'Options:', answerOptions);
 
   return (
     <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -357,21 +342,8 @@ const PhotoMystery = forwardRef((props, ref) => {
           <div className="flex justify-center items-center mb-4">
             <div className="flex items-center gap-2 text-purple-400">
               <Star size={20} />
-              <span className="text-xl font-bold">{Math.round(points)}</span>
+              <span className="text-xl font-bold tabular-nums">{Math.round(points)}</span>
               <span className="text-xs text-purple-300">points</span>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Eye size={16} className="text-purple-300" />
-              <span className="text-sm text-purple-300">Revealed: {Math.round(getRevealProgress())}%</span>
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-100 shadow-lg shadow-blue-500/25"
-                style={{ width: `${getRevealProgress()}%` }}
-              ></div>
             </div>
           </div>
 
