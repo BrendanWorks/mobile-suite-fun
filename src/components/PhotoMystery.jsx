@@ -51,9 +51,12 @@ const PhotoMystery = forwardRef((props, ref) => {
     },
     startPlaying: () => {
       // Start game immediately when called
+      console.log('🚀 Zooma: startPlaying called, current state:', gameState);
       if (gameState === 'ready') {
         setGameState('playing');
         startGame();
+      } else {
+        console.warn('⚠️ Zooma: startPlaying called but state is not ready:', gameState);
       }
     }
   }));
@@ -149,6 +152,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const startGame = () => {
+    console.log('🎮 Zooma: Starting game');
+    
     // Clear any existing timer
     clearInterval(timerRef.current);
 
@@ -162,6 +167,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       if (elapsed >= gameDuration) {
         // Time's up - stop the timer
+        console.log('⏱️ Zooma: Time up, stopping timer');
         clearInterval(timerRef.current);
         setElapsedTime(gameDuration);
         return;
@@ -175,6 +181,11 @@ const PhotoMystery = forwardRef((props, ref) => {
       // Calculate points decay (linear from maxPoints to minPoints)
       const currentPoints = maxPoints - (progress * (maxPoints - minPoints));
       setPoints(Math.max(minPoints, currentPoints));
+      
+      // Debug every second
+      if (Math.floor(elapsed) !== Math.floor(elapsed - 0.1)) {
+        console.log(`📊 Zooma: ${elapsed.toFixed(1)}s - Zoom: ${currentZoom.toFixed(2)}, Points: ${Math.round(currentPoints)}`);
+      }
     }, 100); // Update every 100ms for smooth transitions
   };
 
@@ -299,6 +310,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   }
 
   const answerOptions = getAnswerOptions();
+  console.log('🎯 Zooma: Render state:', gameState, 'Options:', answerOptions);
 
   return (
     <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
