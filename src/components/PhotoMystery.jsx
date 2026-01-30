@@ -366,8 +366,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   return (
-    <>
-      {/* Zooma's timer - positioned at top of GameWrapper container */}
+    <div style={{ paddingTop: '32px', position: 'relative' }}>
+      {/* Zooma's timer - positioned at top of container */}
       {gameState === 'playing' && (
         <div 
           style={{ 
@@ -377,7 +377,6 @@ const PhotoMystery = forwardRef((props, ref) => {
             right: 0,
             width: '100%',
             height: '16px',
-            marginBottom: '12px',
             margin: 0,
             padding: 0,
             zIndex: 50,
@@ -394,8 +393,8 @@ const PhotoMystery = forwardRef((props, ref) => {
         </div>
       )}
 
-      {/* Game content - add top padding to clear the timer */}
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white" style={{ marginTop: '60px' }}>
+      {/* Game content */}
+      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
             📷 Zooma
@@ -505,7 +504,7 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 });
 
