@@ -282,18 +282,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     };
   }, []);
 
-  // Restart timer when moving to next photo
-  useEffect(() => {
-    if (gameState === 'playing' && currentQuestion) {
-      clearInterval(timerRef.current);
-      startGame();
-    }
-
-    return () => {
-      clearInterval(timerRef.current);
-    };
-  }, [currentPhotoNumber]);
-
   const getImageStyle = () => {
     return {
       transform: `scale(${zoomLevel})`,
@@ -376,27 +364,15 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   };
 
-  const isPulsing = percentage < 15;
-
   return (
     <>
-      {/* Timer overlay - matches VisualTimerBar exactly, always visible */}
-      {(gameState === 'playing' || gameState === 'result') && (
-        <div className="fixed top-0 left-0 right-0 z-50 w-full px-4 py-4 bg-gray-900">
-          <div className="w-full h-6 bg-gray-800 rounded-full border border-gray-700 shadow-lg overflow-hidden">
+      {/* Simple timer overlay - covers GameWrapper timer exactly */}
+      {gameState === 'playing' && (
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <div className="h-2 bg-gray-800">
             <div
-              className={`
-                h-full bg-gradient-to-r ${getBarColor()}
-                transition-all duration-100 rounded-full
-                shadow-inner
-                ${isPulsing ? 'animate-pulse' : ''}
-              `}
-              style={{
-                width: `${percentage}%`,
-                boxShadow: isPulsing
-                  ? '0 0 20px rgba(239, 68, 68, 0.8)'
-                  : 'inset 0 1px 3px rgba(0, 0, 0, 0.5)'
-              }}
+              className={`h-2 bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
+              style={{ width: `${percentage}%` }}
             />
           </div>
         </div>
@@ -413,7 +389,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
           <div className="flex justify-between items-center mb-4">
             <div className="text-sm text-purple-300">
-              Score: <strong className="text-yellow-400">{score}</strong>
+              Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-cyan-400">
