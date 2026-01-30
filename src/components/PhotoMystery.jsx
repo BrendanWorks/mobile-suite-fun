@@ -431,16 +431,14 @@ const PhotoMystery = forwardRef((props, ref) => {
         {/* Unified layout for both playing and result states */}
         {(gameState === 'playing' || gameState === 'result') && (
           <div className="space-y-3 sm:space-y-6">
-            {/* Points display - only during active play */}
-            {gameState === 'playing' && (
-              <div className="flex justify-center items-center mb-2 sm:mb-4">
-                <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
-                  <Star size={16} className="sm:w-5 sm:h-5" />
-                  <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
-                  <span className="text-xs text-purple-300">points</span>
-                </div>
+            {/* Points display - always visible, frozen in result state */}
+            <div className="flex justify-center items-center mb-2 sm:mb-4">
+              <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+                <Star size={16} className="sm:w-5 sm:h-5" />
+                <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
+                <span className="text-xs text-purple-300">points</span>
               </div>
-            )}
+            </div>
 
             {/* Image - stays in place at frozen zoom level */}
             <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
@@ -491,17 +489,6 @@ const PhotoMystery = forwardRef((props, ref) => {
                 );
               })}
             </div>
-
-            {/* Points earned - subtle display after correct answer */}
-            {gameState === 'result' && isCorrect && Math.round(points) > 0 && (
-              <div className="text-center py-2">
-                <div className="inline-block px-4 py-2 bg-green-500/20 border-2 border-green-500 rounded-lg">
-                  <span className="text-green-400 font-bold text-lg sm:text-xl">
-                    +{Math.round(points)} points!
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
