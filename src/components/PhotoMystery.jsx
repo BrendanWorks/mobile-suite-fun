@@ -367,7 +367,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Timer at top level - sibling to game content */}
+      {/* Zooma's timer - positioned at top of GameWrapper container */}
       {gameState === 'playing' && (
         <div 
           style={{ 
@@ -376,7 +376,7 @@ const PhotoMystery = forwardRef((props, ref) => {
             left: 0, 
             right: 0,
             width: '100%',
-            height: '8px',
+            height: '16px',
             margin: 0,
             padding: 0,
             zIndex: 50,
@@ -387,7 +387,7 @@ const PhotoMystery = forwardRef((props, ref) => {
             className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
             style={{ 
               width: `${percentage}%`,
-              height: '8px'
+              height: '16px'
             }}
           />
         </div>
