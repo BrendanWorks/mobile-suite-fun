@@ -366,13 +366,13 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   return (
-    <div style={{ paddingTop: '30px', position: 'relative' }}>
+    <div style={{ paddingTop: '44px', position: 'relative' }}>
       {/* Zooma's timer - positioned at top of container */}
       {gameState === 'playing' && (
         <div 
           style={{ 
             position: 'absolute',
-            top: 0, 
+            top: '12px',  // Space above timer
             left: 0, 
             right: 0,
             width: '100%',
