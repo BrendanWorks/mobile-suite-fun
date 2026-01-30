@@ -367,38 +367,31 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Zooma's timer - guaranteed full width */}
+      {/* Zooma's timer - absolutely full width, breaks out of container */}
       {gameState === 'playing' && (
         <div 
-          className="fixed z-50 bg-gray-900"
           style={{ 
+            position: 'fixed',
             top: 0, 
             left: 0, 
+            right: 0,
             width: '100vw',
             height: '8px',
-            margin: 0, 
-            padding: 0 
+            margin: 0,
+            padding: 0,
+            zIndex: 9999,
+            backgroundColor: '#1f2937'
           }}
         >
-          <div 
-            className="bg-gray-800"
+          <div
+            className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
             style={{ 
-              width: '100%', 
+              width: `${percentage}%`,
               height: '8px',
-              margin: 0, 
-              padding: 0 
+              margin: 0,
+              padding: 0
             }}
-          >
-            <div
-              className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
-              style={{ 
-                width: `${percentage}%`,
-                height: '8px',
-                margin: 0, 
-                padding: 0 
-              }}
-            />
-          </div>
+          />
         </div>
       )}
 
