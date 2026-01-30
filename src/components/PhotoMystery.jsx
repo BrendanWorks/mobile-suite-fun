@@ -369,9 +369,9 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Zooma's timer - matches VisualTimerBar exactly */}
-      {gameState === 'playing' && (
-        <div className="w-full px-4 py-4 bg-gray-900">
+      {/* Zooma's timer - matches VisualTimerBar exactly - always reserves space */}
+      <div className="w-full px-4 py-4 bg-gray-900">
+        {gameState === 'playing' && (
           <div className="w-full h-6 bg-gray-800 rounded-full border border-gray-700 shadow-lg overflow-hidden">
             <div
               className={`
@@ -388,8 +388,11 @@ const PhotoMystery = forwardRef((props, ref) => {
               }}
             />
           </div>
-        </div>
-      )}
+        )}
+        {gameState !== 'playing' && (
+          <div className="w-full h-6"></div>
+        )}
+      </div>
 
       {/* Game content */}
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
