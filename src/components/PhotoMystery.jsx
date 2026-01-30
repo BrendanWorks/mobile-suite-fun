@@ -30,6 +30,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const minZoom = 1.0;
 
   useImperativeHandle(ref, () => ({
+    hideTimerBar: true, // Tell GameWrapper to hide its timer
     getGameScore: () => ({
       score: score,
       maxScore: totalPhotos * maxPoints
@@ -366,16 +367,15 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Timer overlay - covers GameWrapper timer, doesn't block UI */}
+      {/* Zooma's timer - replaces GameWrapper timer */}
       {gameState === 'playing' && (
-        <div 
-          className="fixed top-0 left-0 right-0 h-2 bg-gray-800 z-50"
-          style={{ pointerEvents: 'none' }}
-        >
-          <div
-            className={`h-2 bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
-            style={{ width: `${percentage}%` }}
-          />
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900">
+          <div className="w-full h-2 bg-gray-800">
+            <div
+              className={`h-2 bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
         </div>
       )}
 
