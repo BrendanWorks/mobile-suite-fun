@@ -30,7 +30,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const minZoom = 1.0;
 
   useImperativeHandle(ref, () => ({
-    hideTimerBar: true, // Tell GameWrapper to hide its timer
+    hideTimerBar: true,
     getGameScore: () => ({
       score: score,
       maxScore: totalPhotos * maxPoints
@@ -368,31 +368,32 @@ const PhotoMystery = forwardRef((props, ref) => {
   const isPulsing = percentage < 15;
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Zooma's timer - matches VisualTimerBar exactly - always reserves space */}
-      <div className="w-full px-4 py-4 bg-gray-900">
-        {gameState === 'playing' && (
-          <div className="w-full h-6 bg-gray-800 rounded-full border border-gray-700 shadow-lg overflow-hidden">
-            <div
-              className={`
-                h-full bg-gradient-to-r ${getBarColor()}
-                transition-all duration-100 rounded-full
-                shadow-inner
-                ${isPulsing ? 'animate-pulse' : ''}
-              `}
-              style={{
-                width: `${percentage}%`,
-                boxShadow: isPulsing
-                  ? '0 0 20px rgba(239, 68, 68, 0.8)'
-                  : 'inset 0 1px 3px rgba(0, 0, 0, 0.5)'
-              }}
-            />
-          </div>
-        )}
-        {gameState !== 'playing' && (
-          <div className="w-full h-6"></div>
-        )}
-      </div>
+    <div style={{ paddingTop: '44px', position: 'relative' }}>
+      {/* Zooma's timer - positioned at top of container */}
+      {gameState === 'playing' && (
+        <div 
+          style={{ 
+            position: 'absolute',
+            top: '12px',
+            left: 0, 
+            right: 0,
+            width: '100%',
+            height: '16px',
+            margin: 0,
+            padding: 0,
+            zIndex: 50,
+            backgroundColor: '#1f2937'
+          }}
+        >
+          <div
+            className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
+            style={{ 
+              width: `${percentage}%`,
+              height: '16px'
+            }}
+          />
+        </div>
+      )}
 
       {/* Game content */}
       <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -427,78 +428,77 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
         </div>
 
-        {/* PLAYING STATE */}
-        {gameState === 'playing' && (
+        {/* Unified layout for both playing and result states */}
+        {(gameState === 'playing' || gameState === 'result') && (
           <div className="space-y-3 sm:space-y-6">
-            <div className="flex justify-center items-center mb-2 sm:mb-4">
-              <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
-                <Star size={16} className="sm:w-5 sm:h-5" />
-                <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
-                <span className="text-xs text-purple-300">points</span>
+            {/* Points display - only during active play */}
+            {gameState === 'playing' && (
+              <div className="flex justify-center items-center mb-2 sm:mb-4">
+                <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+                  <Star size={16} className="sm:w-5 sm:h-5" />
+                  <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
+                  <span className="text-xs text-purple-300">points</span>
+                </div>
               </div>
-            </div>
+            )}
 
+            {/* Image - stays in place, no shifting */}
             <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={currentQuestion.prompt}
                   alt="Mystery"
                   className="w-full h-full object-cover"
-                  style={getImageStyle()}
+                  style={gameState === 'playing' ? getImageStyle() : { transform: 'scale(1.0)', transition: 'transform 0.3s ease-out' }}
                 />
               </div>
             </div>
 
+            {/* Answer buttons with color feedback */}
             <div className="grid gap-2 sm:gap-3">
-              {answerOptions.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswerSelect(option)}
-                  className="p-2.5 sm:p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl text-sm sm:text-base font-semibold hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 transition-all text-center text-white"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+              {answerOptions.map((option, index) => {
+                const isCorrectAnswer = option === currentQuestion.correct_answer;
+                const isSelectedAnswer = option === selectedAnswer;
+                const showFeedback = gameState === 'result';
 
-        {/* RESULT STATE */}
-        {gameState === 'result' && (
-          <div className="space-y-3 sm:space-y-6">
-            <div className={`p-3 sm:p-6 rounded-xl border-2 shadow-lg ${
-              isCorrect
-                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
-                : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
-            }`}>
-              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">
-                {isCorrect ? '🎉' : '😅'}
-              </div>
-              <div className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">
-                {isCorrect ? 'Correct!' : selectedAnswer ? 'Not quite!' : 'Time\'s up!'}
-              </div>
-              <div className="text-xs sm:text-sm">
-                The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
-              </div>
-              {isCorrect && points > 0 && (
-                <div className="text-base sm:text-lg font-bold text-white mt-1 sm:mt-2">
-                  +{Math.round(points)} points!
-                </div>
-              )}
-            </div>
+                let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-semibold transition-all text-center text-white";
+                
+                if (showFeedback) {
+                  if (isCorrectAnswer) {
+                    // Correct answer - green pulse
+                    buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50";
+                  } else if (isSelectedAnswer) {
+                    // Selected wrong answer - red pulse
+                    buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50";
+                  } else {
+                    // Other options - dimmed
+                    buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30";
+                  }
+                } else {
+                  // Playing state - normal interactive buttons
+                  buttonClass += " bg-white/10 border-2 border-purple-500/30 hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 active:scale-95";
+                }
 
-            <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64">
-              <img
-                src={currentQuestion.prompt}
-                alt={currentQuestion.correct_answer}
-                className="w-full h-full object-cover"
-              />
+                return (
+                  <button
+                    key={index}
+                    onClick={() => gameState === 'playing' ? handleAnswerSelect(option) : null}
+                    disabled={gameState === 'result'}
+                    className={buttonClass}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
             </div>
 
-            {currentPhotoNumber < totalPhotos && (
-              <div className="p-2 sm:p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
-                <div className="text-xs sm:text-sm text-purple-200">
-                  Next photo loading...
+            {/* Points earned - subtle display after correct answer */}
+            {gameState === 'result' && isCorrect && Math.round(points) > 0 && (
+              <div className="text-center py-2">
+                <div className="inline-block px-4 py-2 bg-green-500/20 border-2 border-green-500 rounded-lg">
+                  <span className="text-green-400 font-bold text-lg sm:text-xl">
+                    +{Math.round(points)} points!
+                  </span>
                 </div>
               </div>
             )}
