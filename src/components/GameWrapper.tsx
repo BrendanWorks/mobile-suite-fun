@@ -23,10 +23,11 @@ export default function GameWrapper({
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
 
+  // Check if child game wants to hide the timer bar
+  const hideTimerBar = childrenRef.current?.hideTimerBar === true;
+
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
-      // Fast countdown: 50ms intervals, subtract 0.05
-      // Normal countdown: 1000ms intervals, subtract 1
       const intervalTime = isFastCountdown ? 50 : 1000;
       const decrement = isFastCountdown ? 0.05 : 1;
 
@@ -63,15 +64,12 @@ export default function GameWrapper({
   };
 
   const handleGameComplete = (score: number, maxScore: number) => {
-    if (gameCompletedRef.current) return; // Prevent double completion
+    if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
 
-    // If more than 2 seconds remaining, trigger fast countdown
     if (timeRemaining > 2) {
       setIsFastCountdown(true);
-      // Timer will finish naturally and call onComplete
     } else {
-      // Less than 2 seconds, complete immediately
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       onComplete(score, maxScore);
@@ -96,7 +94,7 @@ export default function GameWrapper({
 
   return (
     <div className="h-full w-full flex flex-col bg-gray-900">
-      <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />
+      {!hideTimerBar && <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />}
       <div className="flex-1 overflow-hidden">
         {cloneChildren()}
       </div>
