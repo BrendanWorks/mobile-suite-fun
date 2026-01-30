@@ -15,7 +15,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [puzzleIds, setPuzzleIds] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
-  const [currentPhotoNumber, setCurrentPhotoNumber] = useState(1); // 1, 2, or 3
+  const [currentPhotoNumber, setCurrentPhotoNumber] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const timerRef = useRef(null);
@@ -24,8 +24,8 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   const maxPoints = 1000;
   const minPoints = 0;
-  const photoDuration = 15; // 15 seconds per photo
-  const totalPhotos = 3; // 3 photos per game
+  const photoDuration = 15;
+  const totalPhotos = 3;
   const maxZoom = 2.5;
   const minZoom = 1.0;
 
@@ -98,7 +98,6 @@ const PhotoMystery = forwardRef((props, ref) => {
         setElapsedTime(0);
         setCurrentPhotoNumber(1);
 
-        // Start playing immediately
         setGameState('playing');
         setTimeout(() => startGame(), 100);
       }
@@ -150,67 +149,55 @@ const PhotoMystery = forwardRef((props, ref) => {
     setElapsedTime(0);
     setGameState('playing');
     
-    // Start fresh timer for new photo
     setTimeout(() => startGame(), 100);
   };
 
   const startGame = () => {
-    // Clear any existing timer first
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
-    // Record start time
     startTimeRef.current = Date.now();
 
-    // Update every 100ms for smooth animation
     timerRef.current = setInterval(() => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
       if (elapsed >= photoDuration) {
-        // Time's up - stop the timer
         clearInterval(timerRef.current);
         timerRef.current = null;
         setElapsedTime(photoDuration);
         
-        // Auto-submit with 0 points if no answer selected
         handleTimeUp();
         return;
       }
 
-      // Calculate smooth zoom (linear from maxZoom to minZoom)
       const progress = elapsed / photoDuration;
       const currentZoom = maxZoom - (progress * (maxZoom - minZoom));
       setZoomLevel(Math.max(minZoom, currentZoom));
 
-      // Calculate points decay (linear from maxPoints to minPoints)
       const currentPoints = maxPoints - (progress * (maxPoints - minPoints));
       setPoints(Math.max(minPoints, currentPoints));
     }, 100);
   };
 
   const handleTimeUp = () => {
-    if (gameState !== 'playing') return; // Prevent duplicate calls
+    if (gameState !== 'playing') return;
     
-    // Time ran out, treat as wrong answer with 0 points
     setIsCorrect(false);
     setSelectedAnswer(null);
     setGameState('result');
     
-    // Update score (stays the same since 0 points)
     if (onScoreUpdate) {
       onScoreUpdate(score, totalPhotos * maxPoints);
     }
 
-    // Move to next photo or complete game
     resultTimerRef.current = setTimeout(() => {
       if (currentPhotoNumber < totalPhotos) {
         setCurrentPhotoNumber(currentPhotoNumber + 1);
         generateNewQuestion();
       } else {
-        // Game complete
         completeGame();
       }
     }, 2500);
@@ -221,7 +208,6 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     setSelectedAnswer(answer);
     
-    // Stop timer immediately when answer selected
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -230,7 +216,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
 
-    // Update score
     const earnedPoints = correct ? Math.round(points) : 0;
     const newScore = score + earnedPoints;
     setScore(newScore);
@@ -241,14 +226,11 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     setGameState('result');
 
-    // Auto-advance after 2.5 seconds
     resultTimerRef.current = setTimeout(() => {
       if (currentPhotoNumber < totalPhotos) {
-        // Next photo
         setCurrentPhotoNumber(currentPhotoNumber + 1);
         generateNewQuestion();
       } else {
-        // All 3 photos done - complete the game
         completeGame();
       }
     }, 2500);
@@ -264,7 +246,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       resultTimerRef.current = null;
     }
     
-    // Call GameWrapper's onComplete
     if (onComplete) {
       onComplete(score, totalPhotos * maxPoints);
     }
@@ -367,118 +348,135 @@ const PhotoMystery = forwardRef((props, ref) => {
   }
 
   const answerOptions = getAnswerOptions();
+  const timeRemaining = Math.max(0, photoDuration - elapsedTime);
+  const timeProgress = (timeRemaining / photoDuration) * 100;
 
   return (
-    <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-          📷 Zooma
-        </h2>
-        <p className="text-purple-300 text-sm mb-4">
-          Guess what's in the photo as it zooms out!
-        </p>
-
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-sm text-purple-300">
-            Score: <strong className="text-yellow-400">{score}</strong>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-cyan-400">
-              Photo {currentPhotoNumber}/{totalPhotos}
-            </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
-              currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-              currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-              currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
-              'bg-gray-500/20 text-gray-300 border-gray-400'
-            }`}>
-              {currentQuestion.difficulty ?
-                currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) :
-                'Unknown'
-              }
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* PLAYING STATE - Active gameplay */}
+    <>
+      {/* Custom timer bar positioned at the very top - overlays GameWrapper's timer */}
       {gameState === 'playing' && (
-        <div className="space-y-6">
-          <div className="flex justify-center items-center mb-4">
-            <div className="flex items-center gap-2 text-purple-400">
-              <Star size={20} />
-              <span className="text-xl font-bold tabular-nums">{Math.round(points)}</span>
-              <span className="text-xs text-purple-300">points</span>
-            </div>
+        <div className="absolute top-0 left-0 right-0 z-50 bg-gray-800 px-6 py-2">
+          <div className="flex items-center justify-between text-white text-sm mb-1">
+            <span>Photo {currentPhotoNumber}/{totalPhotos}</span>
+            <span className="tabular-nums font-bold">{Math.ceil(timeRemaining)}s</span>
           </div>
-
-          <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <img
-                src={currentQuestion.prompt}
-                alt="Mystery"
-                className="w-full h-full object-cover"
-                style={getImageStyle()}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            {answerOptions.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswerSelect(option)}
-                className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 transition-all text-center text-white"
-              >
-                {option}
-              </button>
-            ))}
+          <div className="w-full bg-gray-900 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-100"
+              style={{ width: `${timeProgress}%` }}
+            ></div>
           </div>
         </div>
       )}
 
-      {/* RESULT STATE - Show answer */}
-      {gameState === 'result' && (
-        <div className="space-y-6">
-          <div className={`p-6 rounded-xl border-2 shadow-lg ${
-            isCorrect
-              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
-              : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
-          }`}>
-            <div className="text-4xl mb-2">
-              {isCorrect ? '🎉' : '😅'}
+      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+            📷 Zooma
+          </h2>
+          <p className="text-purple-300 text-sm mb-4">
+            Guess what's in the photo as it zooms out!
+          </p>
+
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-sm text-purple-300">
+              Score: <strong className="text-yellow-400">{score}</strong>
             </div>
-            <div className="text-xl font-bold mb-2">
-              {isCorrect ? 'Correct!' : selectedAnswer ? 'Not quite!' : 'Time\'s up!'}
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
+                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
+                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
+                currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
+                'bg-gray-500/20 text-gray-300 border-gray-400'
+              }`}>
+                {currentQuestion.difficulty ?
+                  currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) :
+                  'Unknown'
+                }
+              </span>
             </div>
-            <div className="text-sm">
-              The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
+          </div>
+        </div>
+
+        {/* PLAYING STATE */}
+        {gameState === 'playing' && (
+          <div className="space-y-6">
+            <div className="flex justify-center items-center mb-4">
+              <div className="flex items-center gap-2 text-purple-400">
+                <Star size={20} />
+                <span className="text-xl font-bold tabular-nums">{Math.round(points)}</span>
+                <span className="text-xs text-purple-300">points</span>
+              </div>
             </div>
-            {isCorrect && points > 0 && (
-              <div className="text-lg font-bold text-white mt-2">
-                +{Math.round(points)} points!
+
+            <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img
+                  src={currentQuestion.prompt}
+                  alt="Mystery"
+                  className="w-full h-full object-cover"
+                  style={getImageStyle()}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {answerOptions.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswerSelect(option)}
+                  className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 transition-all text-center text-white"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* RESULT STATE */}
+        {gameState === 'result' && (
+          <div className="space-y-6">
+            <div className={`p-6 rounded-xl border-2 shadow-lg ${
+              isCorrect
+                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
+                : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
+            }`}>
+              <div className="text-4xl mb-2">
+                {isCorrect ? '🎉' : '😅'}
+              </div>
+              <div className="text-xl font-bold mb-2">
+                {isCorrect ? 'Correct!' : selectedAnswer ? 'Not quite!' : 'Time\'s up!'}
+              </div>
+              <div className="text-sm">
+                The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
+              </div>
+              {isCorrect && points > 0 && (
+                <div className="text-lg font-bold text-white mt-2">
+                  +{Math.round(points)} points!
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64">
+              <img
+                src={currentQuestion.prompt}
+                alt={currentQuestion.correct_answer}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {currentPhotoNumber < totalPhotos && (
+              <div className="p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
+                <div className="text-sm text-purple-200">
+                  Next photo loading...
+                </div>
               </div>
             )}
           </div>
-
-          <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64">
-            <img
-              src={currentQuestion.prompt}
-              alt={currentQuestion.correct_answer}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {currentPhotoNumber < totalPhotos && (
-            <div className="p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
-              <div className="text-sm text-purple-200">
-                Next photo loading...
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 });
 
