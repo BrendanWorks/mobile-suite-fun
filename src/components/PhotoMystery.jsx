@@ -366,15 +366,16 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   return (
     <>
-      {/* Simple timer overlay - covers GameWrapper timer exactly */}
+      {/* Timer overlay - covers GameWrapper timer, doesn't block UI */}
       {gameState === 'playing' && (
-        <div className="fixed top-0 left-0 right-0 z-50">
-          <div className="h-2 bg-gray-800">
-            <div
-              className={`h-2 bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
+        <div 
+          className="fixed top-0 left-0 right-0 h-2 bg-gray-800 z-50"
+          style={{ pointerEvents: 'none' }}
+        >
+          <div
+            className={`h-2 bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
+            style={{ width: `${percentage}%` }}
+          />
         </div>
       )}
 
