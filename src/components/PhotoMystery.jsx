@@ -442,14 +442,14 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             )}
 
-            {/* Image - stays in place, no shifting */}
+            {/* Image - stays in place at frozen zoom level */}
             <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={currentQuestion.prompt}
                   alt="Mystery"
                   className="w-full h-full object-cover"
-                  style={gameState === 'playing' ? getImageStyle() : { transform: 'scale(1.0)', transition: 'transform 0.3s ease-out' }}
+                  style={{ transform: `scale(${zoomLevel})`, transition: gameState === 'playing' ? 'transform 0.1s linear' : 'none' }}
                 />
               </div>
             </div>
