@@ -548,30 +548,30 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
     return (
       <div className="h-screen w-screen bg-gray-900 flex flex-col">
-        <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto gap-2 sm:gap-3">
+        <div className="flex-shrink-0 bg-gray-800 px-2 sm:px-6 py-1.5 sm:py-4 border-b border-gray-700">
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-1.5 sm:gap-3">
             {/* Left: Skip button */}
             <button
               onClick={handleSkipGame}
-              className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+              className="flex-shrink-0 px-2 sm:px-4 py-1 sm:py-2 bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
             >
               Next Game
             </button>
 
             {/* Center: Game info and score */}
-            <div className="flex-1 min-w-0 flex justify-between items-center gap-2 sm:gap-3">
+            <div className="flex-1 min-w-0 flex justify-between items-center gap-1 sm:gap-3">
               <div className="text-white min-w-0">
-                <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
-                <p className="text-sm sm:text-base font-bold truncate">{currentGame.name}</p>
+                <p className="text-[10px] sm:text-sm text-gray-400 leading-tight">Round {currentRound} of {totalRounds}</p>
+                <p className="text-xs sm:text-base font-bold truncate leading-tight">{currentGame.name}</p>
               </div>
               <div className="text-right text-white flex-shrink-0">
-                <p className="text-xs text-gray-400">Session Score</p>
-                <p className="text-base sm:text-xl font-bold text-yellow-400">
+                <p className="text-[9px] sm:text-xs text-gray-400 leading-tight">Session Score</p>
+                <p className="text-sm sm:text-xl font-bold text-yellow-400 leading-tight">
                   {Math.round(totalSessionScore)}/
-                  <span className="text-gray-400 text-sm sm:text-base">{maxPossibleScore}</span>
+                  <span className="text-gray-400 text-xs sm:text-base">{maxPossibleScore}</span>
                 </p>
                 {currentGameNormalizedScore > 0 && (
-                  <p className="text-xs text-cyan-400">
+                  <p className="text-[9px] sm:text-xs text-cyan-400 leading-tight">
                     +{Math.round(currentGameNormalizedScore)}
                   </p>
                 )}
@@ -581,13 +581,13 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             {/* Right: Quit button */}
             <button
               onClick={handleQuitAndSave}
-              className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+              className="flex-shrink-0 px-2 sm:px-4 py-1 sm:py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
             >
               Quit & Save
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           <GameWrapper
             duration={currentGame.duration}
             onComplete={handleGameComplete}

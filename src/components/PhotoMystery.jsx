@@ -395,24 +395,24 @@ const PhotoMystery = forwardRef((props, ref) => {
       </div>
 
       {/* Game content */}
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+      <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+        <div className="mb-3 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
             📷 Zooma
           </h2>
-          <p className="text-purple-300 text-sm mb-4">
+          <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
             Guess what's in the photo as it zooms out!
           </p>
 
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-sm text-purple-300">
+          <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+            <div className="text-purple-300">
               Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-cyan-400">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="font-bold text-cyan-400">
                 Photo {currentPhotoNumber}/{totalPhotos}
               </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
                 currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
                 currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
                 currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
@@ -429,16 +429,16 @@ const PhotoMystery = forwardRef((props, ref) => {
 
         {/* PLAYING STATE */}
         {gameState === 'playing' && (
-          <div className="space-y-6">
-            <div className="flex justify-center items-center mb-4">
-              <div className="flex items-center gap-2 text-purple-400">
-                <Star size={20} />
-                <span className="text-xl font-bold tabular-nums">{Math.round(points)}</span>
+          <div className="space-y-3 sm:space-y-6">
+            <div className="flex justify-center items-center mb-2 sm:mb-4">
+              <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+                <Star size={16} className="sm:w-5 sm:h-5" />
+                <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
                 <span className="text-xs text-purple-300">points</span>
               </div>
             </div>
 
-            <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64 mb-6">
+            <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={currentQuestion.prompt}
@@ -449,12 +449,12 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-2 sm:gap-3">
               {answerOptions.map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleAnswerSelect(option)}
-                  className="p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl font-semibold hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 transition-all text-center text-white"
+                  className="p-2.5 sm:p-4 bg-white/10 border-2 border-purple-500/30 rounded-xl text-sm sm:text-base font-semibold hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 transition-all text-center text-white"
                 >
                   {option}
                 </button>
@@ -465,29 +465,29 @@ const PhotoMystery = forwardRef((props, ref) => {
 
         {/* RESULT STATE */}
         {gameState === 'result' && (
-          <div className="space-y-6">
-            <div className={`p-6 rounded-xl border-2 shadow-lg ${
+          <div className="space-y-3 sm:space-y-6">
+            <div className={`p-3 sm:p-6 rounded-xl border-2 shadow-lg ${
               isCorrect
                 ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
                 : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
             }`}>
-              <div className="text-4xl mb-2">
+              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">
                 {isCorrect ? '🎉' : '😅'}
               </div>
-              <div className="text-xl font-bold mb-2">
+              <div className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">
                 {isCorrect ? 'Correct!' : selectedAnswer ? 'Not quite!' : 'Time\'s up!'}
               </div>
-              <div className="text-sm">
+              <div className="text-xs sm:text-sm">
                 The answer was: <strong className="text-white">{currentQuestion.correct_answer}</strong>
               </div>
               {isCorrect && points > 0 && (
-                <div className="text-lg font-bold text-white mt-2">
+                <div className="text-base sm:text-lg font-bold text-white mt-1 sm:mt-2">
                   +{Math.round(points)} points!
                 </div>
               )}
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-64">
+            <div className="bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64">
               <img
                 src={currentQuestion.prompt}
                 alt={currentQuestion.correct_answer}
@@ -496,8 +496,8 @@ const PhotoMystery = forwardRef((props, ref) => {
             </div>
 
             {currentPhotoNumber < totalPhotos && (
-              <div className="p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
-                <div className="text-sm text-purple-200">
+              <div className="p-2 sm:p-4 bg-purple-500/20 border border-purple-500/30 rounded-xl">
+                <div className="text-xs sm:text-sm text-purple-200">
                   Next photo loading...
                 </div>
               </div>

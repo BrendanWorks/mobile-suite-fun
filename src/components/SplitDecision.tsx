@@ -267,31 +267,31 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   };
 
   return (
-    <div className="flex flex-col h-full p-6 space-y-6">
+    <div className="flex flex-col h-full p-3 sm:p-6 space-y-3 sm:space-y-6">
       {/* Puzzle Question Header */}
       <div className="text-center">
-        <h3 className="text-2xl font-bold text-white mb-2 break-words">{puzzle.prompt}</h3>
-        <div className="flex justify-between items-center text-sm">
+        <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2 break-words">{puzzle.prompt}</h3>
+        <div className="flex justify-between items-center text-xs sm:text-sm">
           <span className="text-gray-400">Item {currentItemIndex + 1} of {puzzle.items.length}</span>
-          <span className="text-xl font-bold text-cyan-400">Score: {score}</span>
+          <span className="text-base sm:text-xl font-bold text-cyan-400">Score: {score}</span>
         </div>
       </div>
 
       {/* Item to categorize */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-full bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-cyan-500/30 rounded-2xl p-12 text-center">
-          <h2 className="text-6xl font-bold text-white">{currentItem.item_text}</h2>
+      <div className="flex-1 flex items-center justify-center min-h-0">
+        <div className="w-full bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-cyan-500/30 rounded-2xl p-4 sm:p-12 text-center">
+          <h2 className="text-3xl sm:text-6xl font-bold text-white break-words">{currentItem.item_text}</h2>
         </div>
       </div>
 
       {/* Category buttons */}
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-4">
         {/* Category A */}
         <button
           onClick={() => handleAnswer(puzzle.category_1)}
           disabled={isAnswered}
           className={`
-            w-full p-4 rounded-xl text-base font-bold transition-all
+            w-full p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-bold transition-all
             text-white uppercase tracking-normal
             ${getButtonStyle(puzzle.category_1)}
             ${!isAnswered && 'cursor-pointer'}
@@ -312,7 +312,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer(puzzle.category_2)}
           disabled={isAnswered}
           className={`
-            w-full p-4 rounded-xl text-base font-bold transition-all
+            w-full p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-bold transition-all
             text-white uppercase tracking-normal
             ${getButtonStyle(puzzle.category_2)}
             ${!isAnswered && 'cursor-pointer'}
@@ -333,7 +333,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer('BOTH')}
           disabled={isAnswered}
           className={`
-            w-full p-4 rounded-xl text-base font-bold transition-all
+            w-full p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-bold transition-all
             text-yellow-300 uppercase tracking-normal
             border-2 border-yellow-500
             ${getButtonStyle('BOTH')}
@@ -353,7 +353,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         {/* Feedback message */}
         {isAnswered && (
           <div className={`
-            text-center py-4 rounded-lg font-bold text-lg transition-all
+            text-center py-2 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all
             ${feedback === 'correct'
               ? 'bg-green-900/50 text-green-300'
               : 'bg-red-900/50 text-red-300'
@@ -361,7 +361,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           `}>
             {feedback === 'correct' ? '✓ Correct!' : '✗ Wrong'}
             {feedback === 'wrong' && (
-              <div className="text-sm mt-1">
+              <div className="text-xs sm:text-sm mt-1">
                 Answer: <span className="text-green-300">{getCorrectAnswerText()}</span>
               </div>
             )}
@@ -371,7 +371,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
       {/* Progress indicator */}
       {currentItemIndex === puzzle.items.length - 1 && isAnswered && (
-        <div className="text-center text-gray-400 text-sm">
+        <div className="text-center text-gray-400 text-xs sm:text-sm">
           Round complete!
         </div>
       )}

@@ -676,18 +676,18 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   }
 
   return (
-    <div className="text-center max-w-4xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+    <div className="text-center max-w-4xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
       {/* Header */}
-      <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+      <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-center mb-3 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
         Dalmatian Puzzle
       </h1>
 
       {/* Info bar */}
-      <div className="flex justify-center items-center gap-6 mb-6">
-        <div className="text-sm text-purple-300">
+      <div className="flex justify-center items-center gap-2 sm:gap-6 mb-3 sm:mb-6 flex-wrap text-xs sm:text-sm">
+        <div className="text-purple-300">
           Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
           {currentPuzzle.difficulty && (
-            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium border ${
+            <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${
               currentPuzzle.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
               currentPuzzle.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
               'bg-red-500/20 text-red-300 border-red-400'
@@ -696,11 +696,11 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className={`text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className={`text-base sm:text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
             ⏰ {timeLeft}s
           </div>
-          <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="w-12 sm:w-16 h-2 bg-white/20 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-100 ${
                 timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
@@ -709,15 +709,15 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
             />
           </div>
         </div>
-        <div className="text-sm text-purple-300">
+        <div className="text-purple-300">
           {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
         </div>
       </div>
 
       <div className="w-full flex flex-col items-center">
         {/* Puzzle Canvas */}
-        <div className="w-full md:w-2/3 mb-8 bg-gray-800 rounded-xl shadow-lg p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square">
-          <canvas 
+        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-gray-800 rounded-xl shadow-lg p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square">
+          <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-purple-600 rounded-lg"
             style={{ touchAction: 'none' }}
@@ -725,17 +725,17 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
         </div>
 
         {/* Draggable pieces container */}
-        <div 
+        <div
           ref={draggableContainerRef}
           id="draggable-pieces-container"
-          className="w-full flex flex-wrap justify-center gap-4 bg-gray-800 rounded-xl shadow-lg p-4 mb-8"
+          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-gray-800 rounded-xl shadow-lg p-2 sm:p-4 mb-3 sm:mb-8"
         />
 
         {/* Controls */}
         <div className="w-full flex justify-center">
           <button
             onClick={resetGame}
-            className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white text-sm sm:text-base font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
           >
             Reset Puzzle
           </button>

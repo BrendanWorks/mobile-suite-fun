@@ -246,30 +246,30 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   }
 
   return (
-    <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+    <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+      <div className="mb-3 sm:mb-6">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
           🎯 Odd Man Out
         </h2>
-        <p className="text-purple-300 text-sm mb-4">
+        <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
           Pick the TWO items that don't belong with the others!
         </p>
       </div>
 
-      <div className="mb-6">
-        <div className="grid grid-cols-1 gap-3">
+      <div className="mb-3 sm:mb-6">
+        <div className="grid grid-cols-1 gap-2 sm:gap-3">
           {shuffledItems.map((item, index) => {
             const isSelected = selectedItems.includes(item);
             const isCorrectAnswer = gameState === 'result' && correctAnswer.includes(item);
             const isWrongAnswer = gameState === 'result' && !correctAnswer.includes(item);
-            
+
             return (
             <button
               key={index}
               onClick={() => handleItemClick(item)}
               disabled={gameState !== 'playing'}
               className={`
-                p-4 rounded-xl font-medium text-left transition-all duration-200 border-2
+                p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200 border-2
                 ${isSelected && gameState === 'playing'
                   ? 'bg-blue-500/20 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25'
                   : isCorrectAnswer
@@ -292,13 +292,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <h4 className="text-sm font-medium text-purple-300 mb-2">Your Selection:</h4>
-        <div className="min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-3">
+      <div className="mb-3 sm:mb-6">
+        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 sm:mb-2">Your Selection:</h4>
+        <div className="min-h-10 sm:min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-2 sm:p-3">
           {selectedItems.length === 0 ? (
-            <span className="text-purple-400 text-sm">Select 2 items that don't belong...</span>
+            <span className="text-purple-400 text-xs sm:text-sm">Select 2 items that don't belong...</span>
           ) : (
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm">
               <strong className="text-white">{selectedItems.join(' & ')}</strong>
               {selectedItems.length < 2 && (
                 <span className="text-purple-400 ml-2">
@@ -315,7 +315,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           onClick={checkAnswer}
           disabled={selectedItems.length !== 2}
           className={`
-            w-full py-4 px-6 rounded-xl font-semibold text-white transition-all border-2
+            w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2
             ${selectedItems.length === 2
               ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98'
               : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
@@ -326,19 +326,19 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </button>
       ) : (
         <div className={`
-          p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+          p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
           ${isCorrect
             ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
             : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
           }
         `}>
-          <div className="text-lg font-bold mb-2">
+          <div className="text-base sm:text-lg font-bold mb-1 sm:mb-2">
             {message}
           </div>
-          <div className="text-sm mb-3">
+          <div className="text-xs sm:text-sm mb-2 sm:mb-3">
             <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
           </div>
-          <div className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
             <span className="text-gray-200">{logic}</span>
           </div>
         </div>

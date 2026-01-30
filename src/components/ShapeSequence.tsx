@@ -430,54 +430,54 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   }, [gameState]);
 
   return (
-    <div className="text-center max-w-4xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+    <div className="text-center max-w-4xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
       {/* Header */}
-      <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+      <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-center mb-3 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
         Shape Sequence
       </h1>
 
       {/* Game Stats */}
-      <div className="flex justify-center items-center gap-8 mb-6 flex-wrap">
-        <div className="flex items-center gap-2">
-          <div className="text-2xl font-bold text-cyan-400">Level {level}</div>
+      <div className="flex justify-center items-center gap-3 sm:gap-8 mb-3 sm:mb-6 flex-wrap text-sm sm:text-base">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="text-lg sm:text-2xl font-bold text-cyan-400">Level {level}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xl font-bold text-yellow-400">Score: {score}</div>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="text-base sm:text-xl font-bold text-yellow-400">Score: {score}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xl font-bold text-red-400">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="text-base sm:text-xl font-bold text-red-400">
             Lives: {'❤️'.repeat(lives)}
           </div>
         </div>
       </div>
 
       {/* Game Status */}
-      <div className="mb-4">
+      <div className="mb-2 sm:mb-4 min-h-[24px] sm:min-h-[28px]">
         {gameState === 'waiting' && (
-          <div className="text-lg text-purple-300">Ready to start?</div>
+          <div className="text-sm sm:text-lg text-purple-300">Ready to start?</div>
         )}
         {gameState === 'showing' && (
-          <div className="text-lg text-cyan-400">
+          <div className="text-sm sm:text-lg text-cyan-400">
             Watch the sequence... ({showingIndex + 1}/{gameStateRef.current.sequence?.length || 0})
           </div>
         )}
         {gameState === 'playing' && (
-          <div className="text-lg text-green-400">
+          <div className="text-sm sm:text-lg text-green-400">
             Repeat the sequence! ({gameStateRef.current.playerSequence?.length || 0}/{gameStateRef.current.sequence?.length || 0})
           </div>
         )}
         {gameState === 'correct' && (
-          <div className="text-lg text-green-400 animate-pulse">Correct! ✨</div>
+          <div className="text-sm sm:text-lg text-green-400 animate-pulse">Correct! ✨</div>
         )}
         {gameState === 'wrong' && (
-          <div className="text-lg text-red-400 animate-pulse">Wrong! Try again...</div>
+          <div className="text-sm sm:text-lg text-red-400 animate-pulse">Wrong! Try again...</div>
         )}
       </div>
 
       {/* Game Canvas */}
-      <div className="w-full flex justify-center mb-8">
-        <div className="w-full max-w-md bg-gray-800 rounded-xl shadow-lg p-4">
-          <canvas 
+      <div className="w-full flex justify-center mb-4 sm:mb-8">
+        <div className="w-full max-w-md bg-gray-800 rounded-xl shadow-lg p-2 sm:p-4">
+          <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-purple-600 rounded-lg cursor-pointer"
             style={{ touchAction: 'none', aspectRatio: '1' }}
@@ -486,11 +486,11 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       </div>
 
       {/* Controls */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-2 sm:gap-4">
         {gameState === 'waiting' && (
           <button
             onClick={startGame}
-            className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105 text-lg"
+            className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105 text-base sm:text-lg"
           >
             🎮 Start Game
           </button>
@@ -499,7 +499,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         {(gameState === 'playing' || gameState === 'showing' || gameState === 'correct' || gameState === 'wrong') && gameState !== 'gameover' && (
           <button
             onClick={resetGame}
-            className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm sm:text-base font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
           >
             Reset Game
           </button>
@@ -508,16 +508,16 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
 
       {/* Game Over Screen */}
       {gameState === 'gameover' && (
-        <div className="mt-6 p-6 bg-red-500/20 border-2 border-red-400 rounded-xl">
+        <div className="mt-3 sm:mt-6 p-3 sm:p-6 bg-red-500/20 border-2 border-red-400 rounded-xl">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-white mb-4">
+            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-4">
               Game Over! 💀
             </h3>
-            <div className="text-lg text-gray-200 mb-4">
+            <div className="text-base sm:text-lg text-gray-200 mb-2 sm:mb-4">
               <div>Final Score: <strong className="text-yellow-400">{score}</strong></div>
               <div>Level Reached: <strong className="text-cyan-400">{level}</strong></div>
             </div>
-            <p className="text-sm text-purple-300">
+            <p className="text-xs sm:text-sm text-purple-300">
               Click "Quit Round" above to continue to the next game
             </p>
           </div>
@@ -525,8 +525,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       )}
 
       {/* Instructions */}
-      <div className="mt-8 text-sm text-purple-300 text-center max-w-2xl mx-auto">
-        <p className="mb-2">🎯 <strong>How to Play:</strong></p>
+      <div className="mt-4 sm:mt-8 text-xs sm:text-sm text-purple-300 text-center max-w-2xl mx-auto">
+        <p className="mb-1 sm:mb-2">🎯 <strong>How to Play:</strong></p>
         <p>Watch the sequence of flashing shapes, then tap them in the same order. Each level adds more shapes to remember!</p>
       </div>
     </div>
