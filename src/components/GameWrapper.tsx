@@ -23,8 +23,8 @@ export default function GameWrapper({
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
 
-  // Check if child game wants to hide the timer bar
-  const hideTimerBar = childrenRef.current?.hideTimerBar === true;
+  // Hide timer for games that manage their own (check gameName immediately to prevent flash)
+  const hideTimerBar = gameName === 'Zooma';
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
