@@ -365,31 +365,29 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   };
 
+  const isPulsing = percentage < 15;
+
   return (
-    <div style={{ paddingTop: '44px', position: 'relative' }}>
-      {/* Zooma's timer - positioned at top of container */}
+    <div style={{ position: 'relative' }}>
+      {/* Zooma's timer - matches VisualTimerBar exactly */}
       {gameState === 'playing' && (
-        <div 
-          style={{ 
-            position: 'absolute',
-            top: '12px',  // Space above timer
-            left: 0, 
-            right: 0,
-            width: '100%',
-            height: '16px',
-            margin: 0,
-            padding: 0,
-            zIndex: 50,
-            backgroundColor: '#1f2937'
-          }}
-        >
-          <div
-            className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
-            style={{ 
-              width: `${percentage}%`,
-              height: '16px'
-            }}
-          />
+        <div className="w-full px-4 py-4 bg-gray-900">
+          <div className="w-full h-6 bg-gray-800 rounded-full border border-gray-700 shadow-lg overflow-hidden">
+            <div
+              className={`
+                h-full bg-gradient-to-r ${getBarColor()}
+                transition-all duration-100 rounded-full
+                shadow-inner
+                ${isPulsing ? 'animate-pulse' : ''}
+              `}
+              style={{
+                width: `${percentage}%`,
+                boxShadow: isPulsing
+                  ? '0 0 20px rgba(239, 68, 68, 0.8)'
+                  : 'inset 0 1px 3px rgba(0, 0, 0, 0.5)'
+              }}
+            />
+          </div>
         </div>
       )}
 
