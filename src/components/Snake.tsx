@@ -46,9 +46,9 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
 
   useEffect(() => {
     if (onTimerPause) {
-      onTimerPause(!gameStarted);
+      onTimerPause(true);
     }
-  }, [gameStarted, onTimerPause]);
+  }, [onTimerPause]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({

@@ -25,7 +25,7 @@ export default function GameWrapper({
   const gameCompletedRef = useRef(false);
 
   // Hide timer for games that manage their own (check gameName immediately to prevent flash)
-  const hideTimerBar = gameName === 'Zooma';
+  const hideTimerBar = gameName === 'Zooma' || gameName === 'Snake';
 
   useEffect(() => {
     // Don't run timer if paused
