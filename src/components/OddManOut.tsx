@@ -305,6 +305,27 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   return (
     <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+      {/* Add custom animation for double pulse */}
+      <style>{`
+        @keyframes pulse-twice {
+          0%, 100% {
+            opacity: 1;
+          }
+          25% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+          75% {
+            opacity: 0.5;
+          }
+        }
+        .animate-pulse-twice {
+          animation: pulse-twice 1s ease-in-out;
+        }
+      `}</style>
+
       <div className="mb-3 sm:mb-6">
         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
           🎯 Odd Man Out
@@ -329,14 +350,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
               if (isCorrectItem) {
                 buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50 text-white";
               } else if (isSelected) {
-                buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
+                buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
               } else {
                 buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30 text-gray-300";
               }
             } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
               // Intermediate 800ms pause - show red on wrong selections only
               if (isSelected) {
-                buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
+                buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
               } else {
                 buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50 text-white";
               }
