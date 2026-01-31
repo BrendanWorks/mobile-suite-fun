@@ -402,14 +402,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Playing state: Visible button + invisible feedback placeholder */}
-      {gameState === 'playing' && (
-        <>
+      {/* Container for button/feedback - they occupy the same space */}
+      <div className="relative">
+        {/* Playing state: Show button */}
+        {gameState === 'playing' && (
           <button
             onClick={checkAnswer}
             disabled={selectedItems.length !== 2}
             className={`
-              w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2 mb-3 sm:mb-6
+              w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2
               ${selectedItems.length === 2
                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98'
                 : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
@@ -418,33 +419,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           >
             {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
           </button>
-          
-          {/* Invisible placeholder to reserve space for feedback */}
-          <div className="opacity-0 pointer-events-none">
-            <div className="p-3 sm:p-4 rounded-xl border-2">
-              <div className="text-base sm:text-lg font-bold mb-2">Placeholder message</div>
-              <div className="text-xs sm:text-sm mb-2">
-                <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
-              </div>
-              <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
-                <span>Placeholder explanation text that takes up space to maintain layout</span>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        )}
 
-      {/* Result state: Invisible button placeholder + visible feedback */}
-      {gameState === 'result' && (
-        <>
-          {/* Invisible placeholder to maintain space for the button */}
-          <div className="opacity-0 pointer-events-none mb-3 sm:mb-6">
-            <button className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white border-2">
-              Placeholder Button Text
-            </button>
-          </div>
-
-          {/* Visible feedback card */}
+        {/* Result state: Show feedback in the exact same position */}
+        {gameState === 'result' && (
           <div className={`
             p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
             ${isCorrect
@@ -482,8 +460,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
               </span>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 });
