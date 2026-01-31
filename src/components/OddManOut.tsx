@@ -270,32 +270,38 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   if (gameState === 'loading') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">🎯 Loading questions...</div>
-        <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
+          <div className="text-lg">🎯 Loading questions...</div>
+          <div className="text-sm text-gray-300 mt-2">Connecting to database</div>
+        </div>
       </div>
     );
   }
 
   if (gameState === 'error') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg text-red-400">❌ Error loading questions</div>
-        <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
-        <button
-          onClick={fetchQuestions}
-          className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
-        >
-          Try Again
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
+          <div className="text-lg text-red-400">❌ Error loading questions</div>
+          <div className="text-sm text-gray-300 mt-2">Check your Supabase connection</div>
+          <button
+            onClick={fetchQuestions}
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!currentQuestion) {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">🎯 Getting ready...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
+          <div className="text-lg">🎯 Getting ready...</div>
+        </div>
       </div>
     );
   }
@@ -303,7 +309,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
-    <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="text-center max-w-2xl w-full text-white">
       {/* Add custom animation for double pulse */}
       <style>{`
         @keyframes pulse-twice {
@@ -475,6 +482,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             <span>Placeholder explanation text</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

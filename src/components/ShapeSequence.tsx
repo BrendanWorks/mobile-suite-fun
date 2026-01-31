@@ -430,9 +430,10 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   }, [gameState]);
 
   return (
-    <div className="text-center max-w-4xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="text-center max-w-4xl w-full text-white">
       {/* Header */}
-      <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-center mb-3 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400">
         Shape Sequence
       </h1>
 
@@ -525,9 +526,10 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       )}
 
       {/* Instructions */}
-      <div className="mt-4 sm:mt-8 text-xs sm:text-sm text-purple-300 text-center max-w-2xl mx-auto">
+      <div className="mt-4 sm:mt-8 text-xs sm:text-sm text-gray-300 text-center max-w-2xl mx-auto">
         <p className="mb-1 sm:mb-2">🎯 <strong>How to Play:</strong></p>
         <p>Watch the sequence of flashing shapes, then tap them in the same order. Each level adds more shapes to remember!</p>
+      </div>
       </div>
     </div>
   );

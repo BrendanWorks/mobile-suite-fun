@@ -393,10 +393,10 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Loading state
   if (loading) {
     return (
-      <div className="max-w-md mx-auto p-3 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
           <div className="text-lg">📊 Loading Ranky puzzles...</div>
-          <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
+          <div className="text-sm text-gray-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -405,13 +405,13 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Error state
   if (error || !currentPuzzle) {
     return (
-      <div className="max-w-md mx-auto p-3 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
           <div className="text-lg text-red-400">❌ {error || 'No puzzles available'}</div>
-          <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
+          <div className="text-sm text-gray-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchPuzzles}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
           >
             Try Again
           </button>
@@ -421,181 +421,167 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   }
 
   return (
-    <div className="max-w-md mx-auto p-3 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-      {/* Header with Title and Hint Button */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">📊 Ranky</h2>
-        <button
-          onClick={getHint}
-          disabled={gameState !== 'playing'}
-          className="text-xs px-3 py-1.5 bg-blue-500/30 border border-blue-400 rounded-lg hover:bg-blue-500/50 transition-all disabled:opacity-50 whitespace-nowrap"
-        >
-          💡 Hint ({hintsUsed})
-        </button>
-      </div>
-
-      {/* Puzzle Info - Compact */}
-      <div className="text-center mb-3 bg-white/10 p-3 rounded-xl">
-        <h3 className="text-base font-semibold text-white mb-1">
-          {currentPuzzle.title}
-        </h3>
-        <p className="text-xs text-purple-300">
-          {currentPuzzle.instruction}
-        </p>
-      </div>
-
-      {/* Hint Message - Compact */}
-      {hintMessage && (
-        <div className="mb-3 p-2 bg-blue-500/20 border border-blue-400 rounded-lg text-center text-blue-200 text-sm">
-          {hintMessage}
-        </div>
-      )}
-
-      {/* Ranking List - Compact */}
-      <div className="space-y-2 mb-4">
-        {playerOrder.map((item, index) => (
-          <div
-            key={item.id}
-            className={`relative bg-white/10 border-2 border-purple-500/30 rounded-lg p-2 transition-all ${
-              draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-purple-400 hover:bg-white/20'
-            }`}
-          >
-            {/* Rank Number - Smaller */}
-            <div className="absolute -left-1.5 -top-1.5 w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white">
-              {index + 1}
-            </div>
-            
-            {/* Draggable Area (left side) */}
-            <div 
-              className={`absolute left-0 top-0 w-3/4 h-full cursor-move select-none ${
-                draggedIndex === index ? 'opacity-50' : ''
-              }`}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, index)}
-              onTouchStart={(e) => handleTouchStart(e, index)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{
-                touchAction: 'none',
-                WebkitUserSelect: 'none',
-                userSelect: 'none'
-              }}
-            />
-            
-            {/* Item Content - Compact */}
-            <div className="flex items-center gap-2 ml-3 pointer-events-none">
-              <div className="text-xl">{item.image}</div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white text-sm truncate">{item.name}</div>
-                <div className="text-xs text-purple-300 truncate">{item.subtitle}</div>
-              </div>
-            </div>
-            
-            {/* Mobile Controls - Smaller */}
-            <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-10">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  moveItem(index, 'up');
-                }}
-                disabled={index === 0}
-                className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-              >
-                <ArrowUp size={18} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  moveItem(index, 'down');
-                }}
-                disabled={index === playerOrder.length - 1}
-                className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-              >
-                <ArrowDown size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Final Answer Button - Compact */}
-      {gameState === 'playing' && (
-        <div className="text-center mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="max-w-md w-full text-white">
+        {/* Header with Title and Hint Button */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-2xl font-bold">📊 Ranky</h2>
           <button
-            onClick={submitFinalAnswer}
-            className="px-6 py-3 rounded-xl font-bold text-base transition-all border-2 bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
+            onClick={getHint}
+            disabled={gameState !== 'playing'}
+            className="text-xs px-3 py-1.5 bg-blue-500/30 border border-blue-400 rounded-lg hover:bg-blue-500/50 transition-all disabled:opacity-50 whitespace-nowrap"
           >
-            🎯 Final Answer
+            💡 Hint ({hintsUsed})
           </button>
         </div>
-      )}
 
-      {/* Success/Failure Message - Compact */}
-      {gameState === 'completed' && (
-        <div className="text-center p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl shadow-lg shadow-green-500/25 mb-4">
-          {(() => {
-            const correctOrder = currentPuzzle.sortOrder === 'desc' 
-              ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
-              : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
-            const isCorrect = playerOrder.every((item, index) => item.id === correctOrder[index].id);
-            
-            if (isCorrect) {
-              const hintPenalty = hintsUsed * 50;
-              const finalScore = Math.max(0, 333 - hintPenalty);
-
-              return (
-                <>
-                  <div className="text-3xl mb-2">🎉</div>
-                  <div className="text-xl font-bold text-green-300 mb-1">Perfect!</div>
-                  <div className="text-green-200 text-sm mb-1">
-                    {hintsUsed > 0 ? `${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used` : 'No hints!'}
-                  </div>
-                  <div className="text-lg font-bold text-white">
-                    +{finalScore} points
-                  </div>
-                  {hintsUsed > 0 && (
-                    <div className="text-xs text-yellow-300 mt-1">
-                      (-{hintPenalty} for hints)
-                    </div>
-                  )}
-                </>
-              );
-            } else {
-              return (
-                <>
-                  <div className="text-3xl mb-2">😅</div>
-                  <div className="text-xl font-bold text-red-300 mb-2">Not quite!</div>
-                  <div className="text-red-200 text-xs mb-2">
-                    Correct order:
-                  </div>
-                  <div className="text-left bg-white/10 p-2 rounded-lg text-xs space-y-1">
-                    {correctOrder.map((item, index) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        <span className="text-yellow-300 font-bold">{index + 1}.</span>
-                        <span className="text-base">{item.image}</span>
-                        <span className="text-white truncate flex-1">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            }
-          })()}
+        {/* Puzzle Info - Compact */}
+        <div className="text-center mb-3 bg-white/10 p-2 rounded-xl">
+          <h3 className="text-sm font-semibold text-white mb-1">
+            {currentPuzzle.title}
+          </h3>
+          <p className="text-xs text-gray-300">
+            {currentPuzzle.instruction}
+          </p>
         </div>
-      )}
 
-      {/* Completion Message - Compact */}
-      {gameState === 'completed' && (
-        <div className="text-center">
-          <div className="p-2 bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-lg">
-            <div className="text-xs text-blue-300">
-              {puzzles.length > 1 ? 'Next puzzle loading...' : 'Great job!'}
-            </div>
+        {/* Hint Message - Compact */}
+        {hintMessage && (
+          <div className="mb-2 p-2 bg-blue-500/20 border border-blue-400 rounded-lg text-center text-blue-200 text-sm">
+            {hintMessage}
           </div>
+        )}
+
+        {/* Ranking List - Compact */}
+        <div className="space-y-2 mb-3">
+          {playerOrder.map((item, index) => (
+            <div
+              key={item.id}
+              className={`relative bg-white/10 border-2 border-blue-500/30 rounded-lg p-2 transition-all ${
+                draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-blue-400 hover:bg-white/20'
+              }`}
+            >
+              {/* Rank Number - Smaller */}
+              <div className="absolute -left-1.5 -top-1.5 w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white">
+                {index + 1}
+              </div>
+
+              {/* Draggable Area (left side) */}
+              <div
+                className={`absolute left-0 top-0 w-3/4 h-full cursor-move select-none ${
+                  draggedIndex === index ? 'opacity-50' : ''
+                }`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, index)}
+                onTouchStart={(e) => handleTouchStart(e, index)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                style={{
+                  touchAction: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
+                }}
+              />
+
+              {/* Item Content - Compact */}
+              <div className="flex items-center gap-2 ml-3 pointer-events-none">
+                <div className="text-xl">{item.image}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white text-sm truncate">{item.name}</div>
+                  <div className="text-xs text-gray-300 truncate">{item.subtitle}</div>
+                </div>
+              </div>
+
+              {/* Mobile Controls - Smaller */}
+              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-10">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveItem(index, 'up');
+                  }}
+                  disabled={index === 0}
+                  className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                >
+                  <ArrowUp size={18} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveItem(index, 'down');
+                  }}
+                  disabled={index === playerOrder.length - 1}
+                  className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                >
+                  <ArrowDown size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+
+        {/* Final Answer Button - Compact */}
+        {gameState === 'playing' && (
+          <div className="text-center mb-3">
+            <button
+              onClick={submitFinalAnswer}
+              className="px-6 py-2.5 rounded-xl font-bold text-base transition-all border-2 bg-gradient-to-r from-blue-500 to-cyan-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
+            >
+              🎯 Final Answer
+            </button>
+          </div>
+        )}
+
+        {/* Success/Failure Message - Compact */}
+        {gameState === 'completed' && (() => {
+          const correctOrder = currentPuzzle.sortOrder === 'desc'
+            ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
+            : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
+          const isCorrect = playerOrder.every((item, index) => item.id === correctOrder[index].id);
+
+          if (isCorrect) {
+            const hintPenalty = hintsUsed * 50;
+            const finalScore = Math.max(0, 333 - hintPenalty);
+
+            return (
+              <div className="text-center p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl mb-3">
+                <div className="text-3xl mb-2">🎉</div>
+                <div className="text-xl font-bold text-green-300 mb-1">Perfect!</div>
+                <div className="text-green-200 text-sm mb-1">
+                  {hintsUsed > 0 ? `${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used` : 'No hints!'}
+                </div>
+                <div className="text-lg font-bold text-white">
+                  +{finalScore} points
+                </div>
+                {hintsUsed > 0 && (
+                  <div className="text-xs text-yellow-300 mt-1">
+                    (-{hintPenalty} for hints)
+                  </div>
+                )}
+              </div>
+            );
+          } else {
+            return (
+              <div className="text-center p-3 bg-gradient-to-r from-red-600/30 to-red-700/30 border-2 border-red-400 rounded-xl mb-3">
+                <div className="text-xl font-bold text-red-300 mb-2">Wrong</div>
+                <div className="text-red-200 text-xs mb-2">
+                  Here's the ranking:
+                </div>
+                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-1">
+                  {correctOrder.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <span className="text-yellow-300 font-bold">{index + 1}.</span>
+                      <span className="text-base">{item.image}</span>
+                      <span className="text-white truncate flex-1">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+        })()}
+      </div>
     </div>
   );
 });

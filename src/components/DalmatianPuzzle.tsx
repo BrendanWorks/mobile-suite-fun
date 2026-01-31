@@ -652,9 +652,11 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   // Loading state
   if (loading) {
     return (
-      <div className="text-center max-w-4xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">🧩 Loading puzzle images...</div>
-        <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
+          <div className="text-lg">🧩 Loading puzzle images...</div>
+          <div className="text-sm text-gray-300 mt-2">Connecting to database</div>
+        </div>
       </div>
     );
   }
@@ -662,29 +664,32 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
   // No puzzles available
   if (!currentPuzzle) {
     return (
-      <div className="text-center max-w-4xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg text-red-400">❌ No puzzles available</div>
-        <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
-        <button
-          onClick={fetchPuzzles}
-          className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
-        >
-          Try Again
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+        <div className="text-center text-white">
+          <div className="text-lg text-red-400">❌ No puzzles available</div>
+          <div className="text-sm text-gray-300 mt-2">Check your Supabase connection</div>
+          <button
+            onClick={fetchPuzzles}
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="text-center max-w-4xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="text-center max-w-4xl w-full text-white">
       {/* Header */}
-      <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-center mb-3 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400">
         Dalmatian Puzzle
       </h1>
 
       {/* Info bar */}
       <div className="flex justify-center items-center gap-2 sm:gap-6 mb-3 sm:mb-6 flex-wrap text-xs sm:text-sm">
-        <div className="text-purple-300">
+        <div className="text-gray-300">
           Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
           {currentPuzzle.difficulty && (
             <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${
@@ -709,7 +714,7 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
             />
           </div>
         </div>
-        <div className="text-purple-300">
+        <div className="text-gray-300">
           {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
         </div>
       </div>
@@ -775,6 +780,7 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 });
