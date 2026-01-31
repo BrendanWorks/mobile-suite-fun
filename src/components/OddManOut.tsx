@@ -334,7 +334,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </p>
       </div>
 
-      {/* Items grid - stays in same position */}
+      {/* Items grid - stays in same position with consistent border width */}
       <div className="mb-3 sm:mb-6">
         <div className="grid grid-cols-1 gap-2 sm:gap-3">
           {shuffledItems.map((item, index) => {
@@ -342,30 +342,31 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             const isCorrectItem = correctAnswer.includes(item);
             const showFeedback = gameState === 'result';
 
-            let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200";
+            // Always use border-4 to maintain consistent size
+            let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200 border-4";
 
             if (showFeedback) {
               // Result state - full feedback
               if (isCorrectItem) {
-                buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50 text-white";
+                buttonClass += " bg-green-500/30 border-green-500 animate-pulse shadow-lg shadow-green-500/50 text-white";
               } else if (isSelected) {
-                buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
+                buttonClass += " bg-red-500/30 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
               } else {
-                buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30 text-gray-300";
+                buttonClass += " bg-white/5 border-purple-500/10 opacity-30 text-gray-300";
               }
             } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
               // Intermediate 800ms pause - show red on wrong selections only
               if (isSelected) {
-                buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
+                buttonClass += " bg-red-500/30 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50 text-white";
               } else {
-                buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50 text-white";
+                buttonClass += " bg-white/10 border-purple-500/30 opacity-50 text-white";
               }
             } else {
-              // Playing state - normal or selected
+              // Playing state - normal or selected (transparent border to maintain size)
               if (isSelected) {
-                buttonClass += " bg-blue-500/20 border-2 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25";
+                buttonClass += " bg-blue-500/20 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25";
               } else {
-                buttonClass += " bg-white/10 border-2 hover:bg-white/20 text-white border-purple-500/30 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/25";
+                buttonClass += " bg-white/10 hover:bg-white/20 text-white border-purple-500/30 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/25";
               }
             }
 
@@ -458,6 +459,21 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
                     : currentQuestion.metadata.logic || 'Think about what makes them different!'
                 )}
               </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Invisible placeholder at bottom to maintain total height - only in playing mode */}
+        {gameState === 'playing' && (
+          <div className="opacity-0 pointer-events-none mt-3 sm:mt-6">
+            <div className="p-3 sm:p-4 rounded-xl border-2">
+              <div className="text-base sm:text-lg font-bold mb-2">Placeholder</div>
+              <div className="text-xs sm:text-sm mb-2">
+                <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
+              </div>
+              <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+                <span>Placeholder explanation text</span>
+              </div>
             </div>
           </div>
         )}
