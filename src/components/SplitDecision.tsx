@@ -245,29 +245,54 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   // Determine button styling based on feedback
   const getButtonStyle = (category: string) => {
     if (!isAnswered) {
-      return 'border-2 border-blue-400 hover:border-blue-300 bg-blue-900/30 hover:bg-blue-900/50';
+      // BOTH button gets yellow styling when not answered
+      if (category === 'BOTH') {
+        return 'border-4 border-yellow-500 hover:border-yellow-400 bg-yellow-900/30 hover:bg-yellow-900/50';
+      }
+      return 'border-4 border-blue-400 hover:border-blue-300 bg-blue-900/30 hover:bg-blue-900/50';
     }
 
     const correctAnswerText = getCorrectAnswerText();
 
     // If answered, highlight accordingly
     if (feedback === 'correct' && category === selectedAnswer) {
-      return 'border-2 border-green-400 bg-green-900/50';
+      return 'border-4 border-green-500 bg-green-500/30 animate-pulse shadow-lg shadow-green-500/50';
     }
 
     if (feedback === 'wrong' && category === selectedAnswer) {
-      return 'border-2 border-red-400 bg-red-900/50';
+      return 'border-4 border-red-500 bg-red-500/30 animate-pulse-twice shadow-lg shadow-red-500/50';
     }
 
     if (feedback === 'wrong' && category === correctAnswerText) {
-      return 'border-2 border-green-400 bg-green-900/50';
+      return 'border-4 border-green-500 bg-green-500/30 animate-pulse shadow-lg shadow-green-500/50';
     }
 
-    return 'border-2 border-gray-600 opacity-50';
+    return 'border-4 border-gray-600 opacity-30';
   };
 
   return (
     <div className="flex flex-col h-full p-3 sm:p-6 space-y-3 sm:space-y-6">
+      {/* Add custom animation for double pulse */}
+      <style>{`
+        @keyframes pulse-twice {
+          0%, 100% {
+            opacity: 1;
+          }
+          25% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+          75% {
+            opacity: 0.5;
+          }
+        }
+        .animate-pulse-twice {
+          animation: pulse-twice 1s ease-in-out;
+        }
+      `}</style>
+
       {/* Puzzle Question Header */}
       <div className="text-center">
         <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2 break-words">{puzzle.prompt}</h3>
@@ -299,12 +324,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           `}
         >
           <span className="block break-words hyphens-auto leading-tight">{puzzle.category_1}</span>
-          {feedback === 'correct' && selectedAnswer === puzzle.category_1 && (
-            <span className="ml-2">✓</span>
-          )}
-          {feedback === 'wrong' && selectedAnswer === puzzle.category_1 && (
-            <span className="ml-2">✗</span>
-          )}
         </button>
 
         {/* Category B */}
@@ -320,12 +339,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           `}
         >
           <span className="block break-words hyphens-auto leading-tight">{puzzle.category_2}</span>
-          {feedback === 'correct' && selectedAnswer === puzzle.category_2 && (
-            <span className="ml-2">✓</span>
-          )}
-          {feedback === 'wrong' && selectedAnswer === puzzle.category_2 && (
-            <span className="ml-2">✗</span>
-          )}
         </button>
 
         {/* BOTH Category */}
@@ -334,47 +347,16 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           disabled={isAnswered}
           className={`
             w-full p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-bold transition-all
-            text-yellow-300 uppercase tracking-normal
-            border-2 border-yellow-500
+            uppercase tracking-normal
+            ${isAnswered ? 'text-white' : 'text-yellow-300'}
             ${getButtonStyle('BOTH')}
-            ${!isAnswered && 'cursor-pointer hover:border-yellow-400 hover:bg-yellow-900/30'}
+            ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
         >
           <span className="block">BOTH</span>
-          {feedback === 'correct' && selectedAnswer === 'BOTH' && (
-            <span className="ml-2">✓</span>
-          )}
-          {feedback === 'wrong' && selectedAnswer === 'BOTH' && (
-            <span className="ml-2">✗</span>
-          )}
         </button>
-
-        {/* Feedback message */}
-        {isAnswered && (
-          <div className={`
-            text-center py-2 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all
-            ${feedback === 'correct'
-              ? 'bg-green-900/50 text-green-300'
-              : 'bg-red-900/50 text-red-300'
-            }
-          `}>
-            {feedback === 'correct' ? '✓ Correct!' : '✗ Wrong'}
-            {feedback === 'wrong' && (
-              <div className="text-xs sm:text-sm mt-1">
-                Answer: <span className="text-green-300">{getCorrectAnswerText()}</span>
-              </div>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* Progress indicator */}
-      {currentItemIndex === puzzle.items.length - 1 && isAnswered && (
-        <div className="text-center text-gray-400 text-xs sm:text-sm">
-          Round complete!
-        </div>
-      )}
     </div>
   );
 });
