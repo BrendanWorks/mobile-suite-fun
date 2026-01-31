@@ -462,21 +462,19 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             </div>
           </div>
         )}
-        
-        {/* Invisible placeholder at bottom to maintain total height - only in playing mode */}
-        {gameState === 'playing' && (
-          <div className="opacity-0 pointer-events-none mt-3 sm:mt-6">
-            <div className="p-3 sm:p-4 rounded-xl border-2">
-              <div className="text-base sm:text-lg font-bold mb-2">Placeholder</div>
-              <div className="text-xs sm:text-sm mb-2">
-                <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
-              </div>
-              <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
-                <span>Placeholder explanation text</span>
-              </div>
-            </div>
+      </div>
+      
+      {/* Always present invisible placeholder at bottom to maintain total container height */}
+      <div className="opacity-0 pointer-events-none mt-3 sm:mt-6">
+        <div className="p-3 sm:p-4 rounded-xl border-2">
+          <div className="text-base sm:text-lg font-bold mb-2">Placeholder</div>
+          <div className="text-xs sm:text-sm mb-2">
+            <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
           </div>
-        )}
+          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+            <span>Placeholder explanation text</span>
+          </div>
+        </div>
       </div>
     </div>
   );
