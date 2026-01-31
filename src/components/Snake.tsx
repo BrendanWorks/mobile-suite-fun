@@ -90,11 +90,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: scoreRef.current,
-      maxScore: 100
+      maxScore: 200
     }),
     onGameEnd: () => {
       if (!gameOverRef.current && onComplete) {
-        onComplete(scoreRef.current, 100);
+        onComplete(scoreRef.current, 200);
       }
     }
   }));
