@@ -402,7 +402,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Playing state: Button + invisible feedback placeholder */}
+      {/* Playing state: Visible button + invisible feedback placeholder */}
       {gameState === 'playing' && (
         <>
           <button
@@ -434,45 +434,55 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </>
       )}
 
-      {/* Result state: Just the feedback card */}
+      {/* Result state: Invisible button placeholder + visible feedback */}
       {gameState === 'result' && (
-        <div className={`
-          p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
-          ${isCorrect
-            ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
-            : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
-          }
-        `}>
-          {/* Show success message only if correct */}
-          {isCorrect && (
-            <div className="text-base sm:text-lg font-bold mb-2">
-              {message}
+        <>
+          {/* Invisible placeholder to maintain space for the button */}
+          <div className="opacity-0 pointer-events-none mb-3 sm:mb-6">
+            <button className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white border-2">
+              Placeholder Button Text
+            </button>
+          </div>
+
+          {/* Visible feedback card */}
+          <div className={`
+            p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+            ${isCorrect
+              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
+              : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
+            }
+          `}>
+            {/* Show success message only if correct */}
+            {isCorrect && (
+              <div className="text-base sm:text-lg font-bold mb-2">
+                {message}
+              </div>
+            )}
+            
+            {/* Show correct answer with label */}
+            <div className="text-xs sm:text-sm mb-2">
+              <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
             </div>
-          )}
-          
-          {/* Show correct answer with label */}
-          <div className="text-xs sm:text-sm mb-2">
-            <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+            
+            {/* Logic explanation */}
+            <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+              <span className="text-gray-200">
+                {currentQuestion.metadata && (
+                  typeof currentQuestion.metadata === 'string' 
+                    ? (() => {
+                        try {
+                          const parsed = JSON.parse(currentQuestion.metadata);
+                          return parsed.logic || 'Think about what makes them different!';
+                        } catch (e) {
+                          return 'Think about what makes them different!';
+                        }
+                      })()
+                    : currentQuestion.metadata.logic || 'Think about what makes them different!'
+                )}
+              </span>
+            </div>
           </div>
-          
-          {/* Logic explanation */}
-          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
-            <span className="text-gray-200">
-              {currentQuestion.metadata && (
-                typeof currentQuestion.metadata === 'string' 
-                  ? (() => {
-                      try {
-                        const parsed = JSON.parse(currentQuestion.metadata);
-                        return parsed.logic || 'Think about what makes them different!';
-                      } catch (e) {
-                        return 'Think about what makes them different!';
-                      }
-                    })()
-                  : currentQuestion.metadata.logic || 'Think about what makes them different!'
-              )}
-            </span>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
