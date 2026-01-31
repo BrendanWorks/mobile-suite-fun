@@ -7,6 +7,7 @@ import DalmatianPuzzle from './DalmatianPuzzle';
 import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
+import Snake from './Snake';
 
 interface TestModeProps {
   onExit: () => void;
@@ -22,6 +23,7 @@ const TEST_GAMES = [
   { id: 'split-decision', name: 'Split Decision', icon: '⚡', duration: 60, component: SplitDecision },
   { id: 'word-rescue', name: 'Pop', icon: '📝', duration: 90, component: WordRescue },
   { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },
+  { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
