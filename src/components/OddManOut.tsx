@@ -213,10 +213,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
       
-      // Auto-advance after 10 seconds
+      // Auto-advance after 3 seconds
       autoAdvanceTimeoutRef.current = window.setTimeout(() => {
         generateNewQuestion();
-      }, 10000);
+      }, 3000);
     } else {
       // Wrong - play sound, brief pause before showing correct
       playSound('incorrect');
@@ -229,10 +229,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setTimeout(() => {
         setGameState('result');
         
-        // Then auto-advance after 10 seconds
+        // Then auto-advance after 3 seconds
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
-        }, 10000);
+        }, 3000);
       }, 800);
     }
   };
@@ -445,10 +445,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
               </div>
             )}
 
-            {/* Show correct answer with label */}
-            <div className="text-xs sm:text-sm mb-1.5">
-              <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
-            </div>
+            {/* Show correct answer with label only if wrong */}
+            {!isCorrect && (
+              <div className="text-xs sm:text-sm mb-1.5">
+                <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+              </div>
+            )}
 
             {/* Logic explanation */}
             <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2">
