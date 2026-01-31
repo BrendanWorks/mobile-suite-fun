@@ -150,6 +150,19 @@ export const scoringSystem = {
       grade: getGrade(accuracy),
       breakdown: `${correct}/${total} correct (${Math.round(accuracy)}%)`
     };
+  },
+
+  // Snake: Score-based
+  snake: (score: number): GameScore => {
+    const normalized = Math.min(100, (score / 200) * 100);
+    return {
+      gameId: 'snake',
+      gameName: 'Snake',
+      rawScore: score,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${score} points`
+    };
   }
 };
 

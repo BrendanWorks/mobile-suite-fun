@@ -21,6 +21,7 @@ import DalmatianPuzzle from './DalmatianPuzzle';
 import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
+import Snake from './Snake';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore } from '../lib/scoringSystem';
@@ -40,6 +41,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60 },
   { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 90 },
   { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 60 },
+  { id: 'snake', name: 'Snake', component: Snake, duration: 75 },
 ];
 
 interface RoundData {
@@ -286,6 +288,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
       case 'dalmatian-puzzle':
         normalizedScore = scoringSystem.dalmatian(rawScore >= 50, maxScore - rawScore, maxScore);
+        break;
+
+      case 'snake':
+        normalizedScore = scoringSystem.snake(rawScore);
         break;
 
       default:
