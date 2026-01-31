@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 
 interface RankAndRollProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
+  onTimerPause?: (paused: boolean) => void;
 }
 
 const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
@@ -194,6 +195,11 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     setShowValues(false);
     setHintMessage('');
     setHintsUsed(0);
+
+    // Resume the timer for the new puzzle
+    if (props.onTimerPause) {
+      props.onTimerPause(false);
+    }
   };
 
   const handleDragStart = (e, index) => {
@@ -344,6 +350,11 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     );
 
     setGameState('completed');
+
+    // Pause the timer while showing feedback
+    if (props.onTimerPause) {
+      props.onTimerPause(true);
+    }
 
     if (isCorrect) {
       const hintPenalty = hintsUsed * 50;
