@@ -402,13 +402,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Check Answer button or Placeholder - always takes up space */}
+      {/* Button/Feedback area - same position, toggle between them */}
       {gameState === 'playing' ? (
         <button
           onClick={checkAnswer}
           disabled={selectedItems.length !== 2}
           className={`
-            w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2 mb-3 sm:mb-6
+            w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2
             ${selectedItems.length === 2
               ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98'
               : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
@@ -418,14 +418,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
         </button>
       ) : (
-        // Invisible placeholder that takes up the same space as the button
-        <div className="w-full py-3 sm:py-4 px-4 sm:px-6 mb-3 sm:mb-6 opacity-0">
-          <div className="text-sm sm:text-base">Placeholder</div>
-        </div>
-      )}
-
-      {/* Explanation card area - always rendered to reserve space */}
-      {gameState === 'result' ? (
         <div className={`
           p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
           ${isCorrect
@@ -461,17 +453,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
                   : currentQuestion.metadata.logic || 'Think about what makes them different!'
               )}
             </span>
-          </div>
-        </div>
-      ) : (
-        // Invisible placeholder that reserves space for the feedback card
-        <div className="p-3 sm:p-4 rounded-xl border-2 opacity-0 pointer-events-none">
-          <div className="text-base sm:text-lg font-bold mb-2">Placeholder message</div>
-          <div className="text-xs sm:text-sm mb-2">
-            <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
-          </div>
-          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
-            <span>Placeholder explanation text that takes up space</span>
           </div>
         </div>
       )}
