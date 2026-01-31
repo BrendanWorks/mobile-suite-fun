@@ -49,7 +49,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   }));
 
-  // Fetch questions from Supabase
   const fetchQuestions = async () => {
     try {
       setGameState('loading');
@@ -57,7 +56,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
-        .eq('game_id', 3); // Odd Man Out game ID
+        .eq('game_id', 3);
       
       if (error) {
         console.error('Supabase error:', error);
@@ -74,7 +73,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       console.log(`Loaded ${data.length} questions from Supabase`);
       setQuestions(data);
       
-      // Extract and store puzzle IDs
       const ids = data.map(q => q.id);
       setPuzzleIds(ids);
       
@@ -86,7 +84,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   };
 
-  // Load a specific question by ID
   const loadQuestionById = (questionId: number) => {
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -104,6 +101,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setSelectedItems([]);
     setGameState('playing');
     setMessage('');
+    setIsCorrect(false);
   };
 
   const generateNewQuestion = () => {
@@ -130,6 +128,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setSelectedItems([]);
     setGameState('playing');
     setMessage('');
+    setIsCorrect(false);
   };
 
   const shuffleArray = (array) => {
@@ -161,8 +160,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setIsCorrect(isAnswerCorrect);
     setTotalQuestions(prev => prev + 1);
 
-    // Play sound based on correctness
     if (isAnswerCorrect) {
+      // Correct - play sound and show feedback immediately
       playSound('correct');
       setScore(prev => {
         const newScore = prev + 250;
@@ -175,6 +174,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
     } else {
+      // Wrong - play sound, brief pause before showing correct
       playSound('incorrect');
       const newTotal = totalQuestions + 1;
       if (props.onScoreUpdate) {
@@ -182,7 +182,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       }
       setMessage("Wrong");
       
-      // Brief pause before showing correct answer
       setTimeout(() => {
         setGameState('result');
       }, 800);
@@ -193,10 +192,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     try {
       const audio = new Audio();
       if (type === 'correct') {
-        // Success sound - simple positive tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
       } else {
-        // Error sound - subtle negative tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
       audio.volume = 0.3;
@@ -206,19 +203,16 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   };
 
-  // Initialize game
   useEffect(() => {
     fetchQuestions();
   }, []);
 
-  // Generate first question when questions are loaded
   useEffect(() => {
     if (questions.length > 0 && !currentQuestion && gameState === 'playing') {
       generateNewQuestion();
     }
   }, [questions, currentQuestion, gameState]);
 
-  // Loading state
   if (gameState === 'loading') {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -228,7 +222,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     );
   }
 
-  // Error state
   if (gameState === 'error') {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -244,7 +237,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     );
   }
 
-  // No current question
   if (!currentQuestion) {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -254,20 +246,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   }
 
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
-
-  let logic = 'Think about what makes them different!';
-  if (currentQuestion.metadata) {
-    if (typeof currentQuestion.metadata === 'string') {
-      try {
-        const parsed = JSON.parse(currentQuestion.metadata);
-        logic = parsed.logic || logic;
-      } catch (e) {
-        console.error('Failed to parse metadata:', e);
-      }
-    } else if (typeof currentQuestion.metadata === 'object') {
-      logic = currentQuestion.metadata.logic || logic;
-    }
-  }
 
   return (
     <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
@@ -280,6 +258,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </p>
       </div>
 
+      {/* Items grid - stays in same position */}
       <div className="mb-3 sm:mb-6">
         <div className="grid grid-cols-1 gap-2 sm:gap-3">
           {shuffledItems.map((item, index) => {
@@ -287,35 +266,30 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             const isCorrectItem = correctAnswer.includes(item);
             const showFeedback = gameState === 'result';
 
-            let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200 border-2";
+            let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200";
 
             if (showFeedback) {
-              // Result state - show full feedback
+              // Result state - full feedback
               if (isCorrectItem) {
-                // Correct answer - green pulse
                 buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50 text-white";
               } else if (isSelected) {
-                // Selected wrong item - red pulse  
                 buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
               } else {
-                // Other options - dimmed
                 buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30 text-gray-300";
               }
-            } else if (selectedItems.includes(item) && !isCorrect) {
-              // Intermediate state - wrong answer selected, waiting to show correct
+            } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
+              // Intermediate 800ms pause - show red on wrong selections only
               if (isSelected) {
-                // Show red on wrong selection immediately
                 buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
               } else {
-                // Other buttons stay normal during pause
                 buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50 text-white";
               }
             } else {
               // Playing state - normal or selected
               if (isSelected) {
-                buttonClass += " bg-blue-500/20 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25";
+                buttonClass += " bg-blue-500/20 border-2 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25";
               } else {
-                buttonClass += " bg-white/10 hover:bg-white/20 text-white border-purple-500/30 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/25";
+                buttonClass += " bg-white/10 border-2 hover:bg-white/20 text-white border-purple-500/30 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/25";
               }
             }
 
@@ -323,7 +297,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
               <button
                 key={index}
                 onClick={() => handleItemClick(item)}
-                disabled={gameState === 'result' || (selectedItems.length > 0 && !isCorrect && !selectedItems.includes(item))}
+                disabled={gameState !== 'playing'}
                 className={`${buttonClass} ${gameState === 'playing' && !isSelected && selectedItems.length < 2 ? 'hover:scale-102 active:scale-98' : ''} ${gameState !== 'playing' ? 'cursor-default' : 'cursor-pointer'}`}
               >
                 {item}
@@ -352,7 +326,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Check Answer button - only show in playing state */}
+      {/* Check Answer button - only during playing state */}
       {gameState === 'playing' && (
         <button
           onClick={checkAnswer}
