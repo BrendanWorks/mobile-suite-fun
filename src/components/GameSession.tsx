@@ -306,14 +306,22 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     }
 
     console.log(`Round ${currentRound} - ${currentGame.name}: ${Math.round(normalizedScore.normalizedScore)}/100 (${normalizedScore.grade})`);
+    console.log('📊 Normalized Score Object:', normalizedScore);
+    console.log('📊 Raw Score:', rawScore, 'Max Score:', maxScore);
 
-    setRoundScores(prev => [...prev, {
-      gameId: currentGame.id,
-      gameName: currentGame.name,
-      rawScore,
-      maxScore,
-      normalizedScore
-    }]);
+    setRoundScores(prev => {
+      const newScores = [...prev, {
+        gameId: currentGame.id,
+        gameName: currentGame.name,
+        rawScore,
+        maxScore,
+        normalizedScore
+      }];
+      console.log('📊 All Round Scores:', newScores);
+      const total = newScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+      console.log('📊 Current Session Total:', total);
+      return newScores;
+    });
 
     setGameState('results');
   };
@@ -390,6 +398,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   // Intro screen
   if (gameState === 'intro') {
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
 
     return (
       <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
@@ -400,7 +409,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
           <h1 className="text-4xl sm:text-6xl font-bold text-white mb-3 sm:mb-4">Round {currentRound}</h1>
           <p className="text-lg sm:text-2xl text-gray-300 mb-6 sm:mb-8">Get ready for the next challenge!</p>
           <div className="bg-white/10 rounded-lg p-4 sm:p-6 backdrop-blur mb-6 sm:mb-8">
-            <p className="text-base sm:text-lg text-gray-200 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{currentRound * 100}</span></p>
+            <p className="text-base sm:text-lg text-gray-200 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{roundScores.length * 100}</span></p>
             <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
           </div>
           <button
@@ -424,6 +433,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
     const lastRound = roundScores[roundScores.length - 1];
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    console.log('🏆 RESULTS SCREEN - Round:', currentRound, 'Last Round Score:', lastRound.normalizedScore.normalizedScore, 'Session Total:', currentSessionScore);
 
     return (
       <RoundResults
@@ -450,6 +460,8 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const gameScores = roundScores.map(r => r.normalizedScore);
     const sessionTotal = calculateSessionScore(gameScores);
     const sessionGrade = getSessionGrade(sessionTotal.percentage);
+    console.log('🎊 COMPLETE SCREEN - Game Scores:', gameScores);
+    console.log('🎊 Session Total:', sessionTotal);
 
     return (
       <div className="h-screen w-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 flex flex-col p-3 sm:p-6">

@@ -23,6 +23,7 @@ export default function GameWrapper({
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
+  const finalScoreRef = useRef<{ score: number; maxScore: number } | null>(null);
 
   // Hide timer for games that manage their own (check gameName immediately to prevent flash)
   const hideTimerBar = gameName === 'Zooma' || gameName === 'Snake';
@@ -58,10 +59,13 @@ export default function GameWrapper({
   const handleTimeUp = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
-    
+
     if (!gameCompletedRef.current) {
       gameCompletedRef.current = true;
-      if (childrenRef.current?.getGameScore) {
+      // Use stored final score if available (from early completion)
+      if (finalScoreRef.current) {
+        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore);
+      } else if (childrenRef.current?.getGameScore) {
         const { score, maxScore } = childrenRef.current.getGameScore();
         onComplete(score, maxScore);
       } else {
@@ -73,6 +77,9 @@ export default function GameWrapper({
   const handleGameComplete = (score: number, maxScore: number) => {
     if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
+
+    // Store the final score for use when countdown completes
+    finalScoreRef.current = { score, maxScore };
 
     if (timeRemaining > 2) {
       setIsFastCountdown(true);
