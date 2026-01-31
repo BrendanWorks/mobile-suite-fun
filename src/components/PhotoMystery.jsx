@@ -39,6 +39,10 @@ const PhotoMystery = forwardRef((props, ref) => {
       console.log(`PhotoMystery ended with score: ${score}/${totalPhotos * maxPoints}`);
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
+      // Call onComplete when time runs out
+      if (onComplete) {
+        onComplete(score, totalPhotos * maxPoints);
+      }
     },
     skipQuestion: () => {
       nextQuestion();

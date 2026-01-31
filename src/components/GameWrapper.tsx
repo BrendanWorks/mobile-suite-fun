@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
 
 interface GameWrapperProps {
@@ -57,18 +57,41 @@ export default function GameWrapper({
   }, [isActive, timeRemaining, isFastCountdown, timerPaused]);
 
   const handleTimeUp = () => {
+    console.log('⏰ GameWrapper.handleTimeUp called');
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
 
     if (!gameCompletedRef.current) {
       gameCompletedRef.current = true;
+
       // Use stored final score if available (from early completion)
       if (finalScoreRef.current) {
+        console.log('⏰ Using stored final score:', finalScoreRef.current);
         onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore);
-      } else if (childrenRef.current?.getGameScore) {
+        return;
+      }
+
+      // Call onGameEnd if available to let game know it's ending
+      // Note: onGameEnd might call onComplete/handleGameComplete, setting finalScoreRef
+      if (childrenRef.current?.onGameEnd) {
+        console.log('⏰ Calling onGameEnd');
+        childrenRef.current.onGameEnd();
+      }
+
+      // Check again if onGameEnd set the finalScoreRef
+      if (finalScoreRef.current) {
+        // onGameEnd already triggered score reporting, we're done
+        console.log('⏰ onGameEnd set finalScoreRef:', finalScoreRef.current);
+        return;
+      }
+
+      // Otherwise, get score directly
+      if (childrenRef.current?.getGameScore) {
         const { score, maxScore } = childrenRef.current.getGameScore();
+        console.log('⏰ Getting score from getGameScore:', { score, maxScore });
         onComplete(score, maxScore);
       } else {
+        console.log('⏰ No getGameScore method, using default 0/100');
         onComplete(0, 100);
       }
     }
@@ -77,6 +100,8 @@ export default function GameWrapper({
   const handleGameComplete = (score: number, maxScore: number) => {
     if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
+
+    console.log('🎮 GameWrapper.handleGameComplete:', { score, maxScore, timeRemaining });
 
     // Store the final score for use when countdown completes
     finalScoreRef.current = { score, maxScore };
@@ -92,19 +117,17 @@ export default function GameWrapper({
 
   const cloneChildren = () => {
     if (!children) return null;
-    
-    return (children as any).type
-      ? {
-          ...children,
-          ref: childrenRef,
-          props: {
-            ...(children as any).props,
-            onScoreUpdate,
-            onComplete: handleGameComplete,
-            onTimerPause: setTimerPaused,
-          },
-        }
-      : children;
+
+    if (React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        ref: childrenRef,
+        onScoreUpdate,
+        onComplete: handleGameComplete,
+        onTimerPause: setTimerPaused,
+      });
+    }
+
+    return children;
   };
 
   return (

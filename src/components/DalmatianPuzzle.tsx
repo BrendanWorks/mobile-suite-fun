@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 
-const DalmatianPuzzle = forwardRef((props, ref) => {
+const DalmatianPuzzle = forwardRef((props: any, ref) => {
+  const { onComplete } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -430,10 +431,14 @@ const DalmatianPuzzle = forwardRef((props, ref) => {
         }
         
         gameStateRef.current.completedSlots++;
-        
+
         // Check if puzzle is complete
         if (gameStateRef.current.completedSlots === gameStateRef.current.NUM_DRAGGABLE_PIECES) {
           setGameState('won');
+          // Call onComplete when puzzle is solved
+          if (onComplete) {
+            onComplete(100, 100);
+          }
         }
       } else {
         console.log('Wrong placement');
