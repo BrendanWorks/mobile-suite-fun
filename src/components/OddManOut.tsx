@@ -309,7 +309,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-start justify-center p-2 pt-4">
       <div className="text-center max-w-2xl w-full text-white">
       {/* Add custom animation for double pulse */}
       <style>{`
@@ -332,18 +332,18 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         }
       `}</style>
 
-      <div className="mb-3 sm:mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+      <div className="mb-2 sm:mb-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 drop-shadow-lg">
           🎯 Odd Man Out
         </h2>
-        <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
+        <p className="text-purple-300 text-xs sm:text-sm">
           Pick the TWO items that don't belong with the others!
         </p>
       </div>
 
       {/* Items grid - stays in same position with consistent border width */}
-      <div className="mb-3 sm:mb-6">
-        <div className="grid grid-cols-1 gap-2 sm:gap-3">
+      <div className="mb-2 sm:mb-4">
+        <div className="grid grid-cols-1 gap-2">
           {shuffledItems.map((item, index) => {
             const isSelected = selectedItems.includes(item);
             const isCorrectItem = correctAnswer.includes(item);
@@ -392,8 +392,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       </div>
 
       {/* Your Answer - stays visible and frozen */}
-      <div className="mb-3 sm:mb-6">
-        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 sm:mb-2">Your Answer:</h4>
+      <div className="mb-2 sm:mb-4">
+        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1">Your Answer:</h4>
         <div className="min-h-10 sm:min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-2 sm:p-3">
           {selectedItems.length === 0 ? (
             <span className="text-purple-400 text-xs sm:text-sm">Select 2 items that don't belong...</span>
@@ -411,7 +411,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       </div>
 
       {/* Container for button/feedback - they occupy the same space */}
-      <div className="relative">
+      <div>
         {/* Playing state: Show button */}
         {gameState === 'playing' && (
           <button
@@ -432,7 +432,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         {/* Result state: Show feedback in the exact same position */}
         {gameState === 'result' && (
           <div className={`
-            p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+            p-2 sm:p-3 rounded-xl border-2 shadow-lg backdrop-blur-sm
             ${isCorrect
               ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
               : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
@@ -440,21 +440,21 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           `}>
             {/* Show success message only if correct */}
             {isCorrect && (
-              <div className="text-base sm:text-lg font-bold mb-2">
+              <div className="text-base sm:text-lg font-bold mb-1.5">
                 {message}
               </div>
             )}
-            
+
             {/* Show correct answer with label */}
-            <div className="text-xs sm:text-sm mb-2">
+            <div className="text-xs sm:text-sm mb-1.5">
               <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
             </div>
-            
+
             {/* Logic explanation */}
-            <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+            <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2">
               <span className="text-gray-200">
                 {currentQuestion.metadata && (
-                  typeof currentQuestion.metadata === 'string' 
+                  typeof currentQuestion.metadata === 'string'
                     ? (() => {
                         try {
                           const parsed = JSON.parse(currentQuestion.metadata);
@@ -469,19 +469,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             </div>
           </div>
         )}
-      </div>
-      
-      {/* Always present invisible placeholder at bottom to maintain total container height */}
-      <div className="opacity-0 pointer-events-none mt-3 sm:mt-6">
-        <div className="p-3 sm:p-4 rounded-xl border-2">
-          <div className="text-base sm:text-lg font-bold mb-2">Placeholder</div>
-          <div className="text-xs sm:text-sm mb-2">
-            <strong>Correct Answer:</strong> <span>Placeholder & Placeholder</span>
-          </div>
-          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
-            <span>Placeholder explanation text</span>
-          </div>
-        </div>
       </div>
       </div>
     </div>
