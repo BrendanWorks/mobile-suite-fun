@@ -1,47 +1,49 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Star } from 'lucide-react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { GameHandle } from '../lib/gameTypes';
 
-const PhotoMystery = forwardRef((props, ref) => {
-  const { onScoreUpdate, onComplete } = props;
+interface OddManOutProps {
+  onScoreUpdate?: (score: number, maxScore: number) => void;
+  onTimerPause?: (paused: boolean) => void;
+}
+
+const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [questions, setQuestions] = useState([]);
-  const [gameState, setGameState] = useState('loading');
   const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [zoomLevel, setZoomLevel] = useState(2.5);
-  const [points, setPoints] = useState(1000);
-  const [score, setScore] = useState(0);
-  const [usedQuestions, setUsedQuestions] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [gameState, setGameState] = useState('loading');
   const [isCorrect, setIsCorrect] = useState(false);
-  const [puzzleIds, setPuzzleIds] = useState([]);
+  const [message, setMessage] = useState('');
+  const [score, setScore] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [usedQuestions, setUsedQuestions] = useState([]);
+  const [shuffledItems, setShuffledItems] = useState([]);
+  const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
-  const [currentPhotoNumber, setCurrentPhotoNumber] = useState(1);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
 
-  const timerRef = useRef(null);
-  const resultTimerRef = useRef(null);
-  const startTimeRef = useRef(null);
-
-  const maxPoints = 1000;
-  const minPoints = 0;
-  const photoDuration = 15;
-  const totalPhotos = 3;
-  const maxZoom = 2.5;
-  const minZoom = 1.0;
+  const successMessages = [
+    "Excellent! You found the odd ones out!",
+    "Perfect! Great logical thinking!",
+    "Brilliant! You nailed it!",
+    "Outstanding! You've got a keen eye!",
+    "Fantastic! Well reasoned!"
+  ];
 
   useImperativeHandle(ref, () => ({
-    hideTimerBar: true,
     getGameScore: () => ({
       score: score,
-      maxScore: totalPhotos * maxPoints
+      maxScore: totalQuestions > 0 ? totalQuestions * 250 : 250
     }),
     onGameEnd: () => {
-      console.log(`PhotoMystery ended with score: ${score}/${totalPhotos * maxPoints}`);
-      clearInterval(timerRef.current);
-      clearTimeout(resultTimerRef.current);
+      console.log(`OddManOut ended with score: ${score}/${totalQuestions * 250}`);
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+        autoAdvanceTimeoutRef.current = null;
+      }
     },
     skipQuestion: () => {
-      nextQuestion();
+      generateNewQuestion();
     },
     canSkipQuestion: true,
     loadNextPuzzle: () => {
@@ -50,68 +52,53 @@ const PhotoMystery = forwardRef((props, ref) => {
         setCurrentPuzzleIndex(nextIndex);
         loadQuestionById(puzzleIds[nextIndex]);
       }
-    },
-    startPlaying: () => {
-      if (gameState !== 'playing') {
-        setGameState('playing');
-        startGame();
-      }
     }
   }));
 
   const fetchQuestions = async () => {
     try {
       setGameState('loading');
-
+      
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
-        .eq('game_id', 4);
-
+        .eq('game_id', 3);
+      
       if (error) {
         console.error('Supabase error:', error);
         setGameState('error');
         return;
       }
-
+      
       if (!data || data.length === 0) {
         console.error('No questions found');
         setGameState('error');
         return;
       }
-
-      console.log(`Loaded ${data.length} photo questions from Supabase`);
+      
+      console.log(`Loaded ${data.length} questions from Supabase`);
       setQuestions(data);
-
+      
       const ids = data.map(q => q.id);
       setPuzzleIds(ids);
-
-      if (data.length > 0) {
-        const firstQuestion = data[0];
-        if (!firstQuestion.difficulty) {
-          firstQuestion.difficulty = 'unknown';
-        }
-        setCurrentQuestion(firstQuestion);
-        setUsedQuestions([firstQuestion.id]);
-        setSelectedAnswer(null);
-        setZoomLevel(maxZoom);
-        setPoints(maxPoints);
-        setElapsedTime(0);
-        setCurrentPhotoNumber(1);
-
-        setGameState('playing');
-        setTimeout(() => startGame(), 100);
-      }
-
+      
+      setGameState('playing');
+      
     } catch (error) {
       console.error('Error fetching questions:', error);
       setGameState('error');
     }
   };
 
-  const loadQuestionById = (questionId) => {
+  const loadQuestionById = (questionId: number) => {
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
+
+    // Clear any existing auto-advance timeout
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
 
     if (!question.difficulty) {
       question.difficulty = 'unknown';
@@ -119,16 +106,29 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
-    setSelectedAnswer(null);
-    setZoomLevel(maxZoom);
-    setPoints(maxPoints);
-    setElapsedTime(0);
+
+    const items = question.prompt.split(';').map(item => item.trim());
+    setShuffledItems(shuffleArray(items));
+
+    setSelectedItems([]);
     setGameState('playing');
-    setTimeout(() => startGame(), 100);
+    setMessage('');
+    setIsCorrect(false);
+
+    // Resume the timer for the new question
+    if (props.onTimerPause) {
+      props.onTimerPause(false);
+    }
   };
 
   const generateNewQuestion = () => {
     if (questions.length === 0) return;
+
+    // Clear any existing auto-advance timeout
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
 
     let availableQuestions = questions.filter(q => !usedQuestions.includes(q.id));
     if (availableQuestions.length === 0) {
@@ -144,129 +144,106 @@ const PhotoMystery = forwardRef((props, ref) => {
 
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
-    setSelectedAnswer(null);
-    setZoomLevel(maxZoom);
-    setPoints(maxPoints);
-    setElapsedTime(0);
+
+    const items = question.prompt.split(';').map(item => item.trim());
+    setShuffledItems(shuffleArray(items));
+
+    setSelectedItems([]);
     setGameState('playing');
-
-    setTimeout(() => startGame(), 100);
-  };
-
-  const startGame = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    startTimeRef.current = Date.now();
-
-    timerRef.current = setInterval(() => {
-      const elapsed = (Date.now() - startTimeRef.current) / 1000;
-      setElapsedTime(elapsed);
-
-      if (elapsed >= photoDuration) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-        setElapsedTime(photoDuration);
-
-        handleTimeUp();
-        return;
-      }
-
-      const progress = elapsed / photoDuration;
-      const currentZoom = maxZoom - (progress * (maxZoom - minZoom));
-      setZoomLevel(Math.max(minZoom, currentZoom));
-
-      const currentPoints = maxPoints - (progress * (maxPoints - minPoints));
-      setPoints(Math.max(minPoints, currentPoints));
-    }, 100);
-  };
-
-  const handleTimeUp = () => {
-    if (gameState !== 'playing') return;
-
+    setMessage('');
     setIsCorrect(false);
-    setSelectedAnswer(null);
-    setGameState('result');
 
-    if (onScoreUpdate) {
-      onScoreUpdate(score, totalPhotos * maxPoints);
+    // Resume the timer for the new question
+    if (props.onTimerPause) {
+      props.onTimerPause(false);
     }
-
-    resultTimerRef.current = setTimeout(() => {
-      if (currentPhotoNumber < totalPhotos) {
-        setCurrentPhotoNumber(currentPhotoNumber + 1);
-        generateNewQuestion();
-      } else {
-        completeGame();
-      }
-    }, 2500);
   };
 
-  const handleAnswerSelect = (answer) => {
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const handleItemClick = (item) => {
     if (gameState !== 'playing') return;
 
-    setSelectedAnswer(answer);
+    if (selectedItems.includes(item)) {
+      // Deselect if already selected
+      setSelectedItems(prev => prev.filter(selected => selected !== item));
+    } else if (selectedItems.length < 2) {
+      // Add if less than 2 selected
+      setSelectedItems(prev => [...prev, item]);
+    } else {
+      // Already have 2 selected - drop the oldest, keep the most recent + add new
+      // This assumes the most recent choice is their best choice
+      setSelectedItems(prev => [prev[1], item]);
+    }
+  };
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  const checkAnswer = () => {
+    if (selectedItems.length !== 2 || !currentQuestion) return;
+
+    const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
+    const isAnswerCorrect = selectedItems.length === correctAnswer.length &&
+      selectedItems.every(item => correctAnswer.includes(item));
+
+    setIsCorrect(isAnswerCorrect);
+    setTotalQuestions(prev => prev + 1);
+
+    // Pause the timer while showing feedback
+    if (props.onTimerPause) {
+      props.onTimerPause(true);
     }
 
-    const correct = answer === currentQuestion.correct_answer;
-    setIsCorrect(correct);
-
-    const earnedPoints = correct ? Math.round(points) : 0;
-    const newScore = score + earnedPoints;
-    setScore(newScore);
-
-    if (onScoreUpdate) {
-      onScoreUpdate(newScore, totalPhotos * maxPoints);
-    }
-
-    // Play sound based on correctness
-    if (correct) {
-      // Correct answer - play success sound and show feedback immediately
+    if (isAnswerCorrect) {
+      // Correct - play sound and show feedback immediately
       playSound('correct');
+      setScore(prev => {
+        const newScore = prev + 250;
+        const newTotal = totalQuestions + 1;
+        if (props.onScoreUpdate) {
+          props.onScoreUpdate(newScore, newTotal * 250);
+        }
+        return newScore;
+      });
+      setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
       
-      resultTimerRef.current = setTimeout(() => {
-        if (currentPhotoNumber < totalPhotos) {
-          setCurrentPhotoNumber(currentPhotoNumber + 1);
-          generateNewQuestion();
-        } else {
-          completeGame();
-        }
-      }, 2500);
+      // Auto-advance after 10 seconds
+      autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+        generateNewQuestion();
+      }, 10000);
     } else {
-      // Wrong answer - play incorrect sound, brief pause before showing correct answer
+      // Wrong - play sound, brief pause before showing correct
       playSound('incorrect');
+      const newTotal = totalQuestions + 1;
+      if (props.onScoreUpdate) {
+        props.onScoreUpdate(score, newTotal * 250);
+      }
+      setMessage("Wrong");
       
-      // Wait 800ms before showing the correct answer feedback
+      // 800ms pause before showing correct answer
       setTimeout(() => {
         setGameState('result');
         
-        resultTimerRef.current = setTimeout(() => {
-          if (currentPhotoNumber < totalPhotos) {
-            setCurrentPhotoNumber(currentPhotoNumber + 1);
-            generateNewQuestion();
-          } else {
-            completeGame();
-          }
-        }, 2500);
+        // Then auto-advance after 10 seconds
+        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+          generateNewQuestion();
+        }, 10000);
       }, 800);
     }
   };
 
-  const playSound = (type) => {
+  const playSound = (type: string) => {
     try {
       const audio = new Audio();
       if (type === 'correct') {
-        // Success sound - simple positive tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
       } else {
-        // Error sound - subtle negative tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
       audio.volume = 0.3;
@@ -276,89 +253,26 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   };
 
-  const completeGame = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (resultTimerRef.current) {
-      clearTimeout(resultTimerRef.current);
-      resultTimerRef.current = null;
-    }
-
-    if (onComplete) {
-      onComplete(score, totalPhotos * maxPoints);
-    }
-  };
-
-  const nextQuestion = () => {
-    if (resultTimerRef.current) {
-      clearTimeout(resultTimerRef.current);
-      resultTimerRef.current = null;
-    }
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    if (currentPhotoNumber < totalPhotos) {
-      setCurrentPhotoNumber(currentPhotoNumber + 1);
-      generateNewQuestion();
-    } else {
-      completeGame();
-    }
-  };
-
   useEffect(() => {
     fetchQuestions();
-
+    
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (resultTimerRef.current) {
-        clearTimeout(resultTimerRef.current);
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
       }
     };
   }, []);
 
-  const getImageStyle = () => {
-    return {
-      transform: `scale(${zoomLevel})`,
-      transition: 'transform 0.1s linear'
-    };
-  };
-
-  const getAnswerOptions = () => {
-    if (!currentQuestion) return [];
-
-    let options = [];
-
-    if (currentQuestion.metadata) {
-      if (typeof currentQuestion.metadata === 'string') {
-        try {
-          const parsed = JSON.parse(currentQuestion.metadata);
-          options = parsed.options || [];
-        } catch (e) {
-          console.error('Failed to parse metadata string:', e);
-        }
-      }
-      else if (typeof currentQuestion.metadata === 'object') {
-        options = currentQuestion.metadata.options || [];
-      }
+  useEffect(() => {
+    if (questions.length > 0 && !currentQuestion && gameState === 'playing') {
+      generateNewQuestion();
     }
-
-    if (options.length === 0) {
-      options = [currentQuestion.correct_answer, "Unknown", "Mystery"];
-    }
-
-    return options;
-  };
+  }, [questions, currentQuestion, gameState]);
 
   if (gameState === 'loading') {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">📷 Loading Zooma...</div>
+        <div className="text-lg">🎯 Loading questions...</div>
         <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
       </div>
     );
@@ -382,169 +296,146 @@ const PhotoMystery = forwardRef((props, ref) => {
   if (!currentQuestion) {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">📷 Getting ready...</div>
+        <div className="text-lg">🎯 Getting ready...</div>
       </div>
     );
   }
 
-  const answerOptions = getAnswerOptions();
-  const timeRemaining = Math.max(0, photoDuration - elapsedTime);
-  const percentage = (timeRemaining / photoDuration) * 100;
-
-  // Match VisualTimerBar color logic
-  const getBarColor = () => {
-    if (percentage > 66) {
-      return 'from-blue-500 to-blue-600';
-    } else if (percentage > 33) {
-      return 'from-amber-400 to-yellow-500';
-    } else if (percentage > 10) {
-      return 'from-orange-500 to-red-500';
-    } else {
-      return 'from-red-600 to-red-700';
-    }
-  };
-
-  const isPulsing = percentage < 15;
+  const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
-    <div style={{ paddingTop: '44px', position: 'relative' }}>
-      {/* Zooma's timer - positioned at top of container */}
-      {gameState === 'playing' && (
-        <div 
-          style={{ 
-            position: 'absolute',
-            top: '12px',
-            left: 0, 
-            right: 0,
-            width: '100%',
-            height: '16px',
-            margin: 0,
-            padding: 0,
-            zIndex: 50,
-            backgroundColor: '#1f2937'
-          }}
-        >
-          <div
-            className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
-            style={{ 
-              width: `${percentage}%`,
-              height: '16px'
-            }}
-          />
+    <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+      <div className="mb-3 sm:mb-6">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+          🎯 Odd Man Out
+        </h2>
+        <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
+          Pick the TWO items that don't belong with the others!
+        </p>
+      </div>
+
+      {/* Items grid - stays in same position */}
+      <div className="mb-3 sm:mb-6">
+        <div className="grid grid-cols-1 gap-2 sm:gap-3">
+          {shuffledItems.map((item, index) => {
+            const isSelected = selectedItems.includes(item);
+            const isCorrectItem = correctAnswer.includes(item);
+            const showFeedback = gameState === 'result';
+
+            let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-medium text-left transition-all duration-200";
+
+            if (showFeedback) {
+              // Result state - full feedback
+              if (isCorrectItem) {
+                buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50 text-white";
+              } else if (isSelected) {
+                buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
+              } else {
+                buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30 text-gray-300";
+              }
+            } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
+              // Intermediate 800ms pause - show red on wrong selections only
+              if (isSelected) {
+                buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50 text-white";
+              } else {
+                buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50 text-white";
+              }
+            } else {
+              // Playing state - normal or selected
+              if (isSelected) {
+                buttonClass += " bg-blue-500/20 border-2 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/25";
+              } else {
+                buttonClass += " bg-white/10 border-2 hover:bg-white/20 text-white border-purple-500/30 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/25";
+              }
+            }
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleItemClick(item)}
+                disabled={gameState !== 'playing'}
+                className={`${buttonClass} ${gameState === 'playing' && !isSelected && selectedItems.length < 2 ? 'hover:scale-102 active:scale-98' : ''} ${gameState !== 'playing' ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                {item}
+              </button>
+            );
+          })}
         </div>
+      </div>
+
+      {/* Your Selection - stays visible and frozen */}
+      <div className="mb-3 sm:mb-6">
+        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 sm:mb-2">Your Selection:</h4>
+        <div className="min-h-10 sm:min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-2 sm:p-3">
+          {selectedItems.length === 0 ? (
+            <span className="text-purple-400 text-xs sm:text-sm">Select 2 items that don't belong...</span>
+          ) : (
+            <div className="text-xs sm:text-sm">
+              <strong className="text-white">{selectedItems.join(' & ')}</strong>
+              {gameState === 'playing' && selectedItems.length < 2 && (
+                <span className="text-purple-400 ml-2">
+                  (Select {2 - selectedItems.length} more)
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Check Answer button - only during playing state */}
+      {gameState === 'playing' && (
+        <button
+          onClick={checkAnswer}
+          disabled={selectedItems.length !== 2}
+          className={`
+            w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white transition-all border-2
+            ${selectedItems.length === 2
+              ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25 active:scale-98'
+              : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
+            }
+          `}
+        >
+          {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
+        </button>
       )}
 
-      {/* Game content */}
-      <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="mb-3 sm:mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
-            📷 Zooma
-          </h2>
-          <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            Guess what's in the photo as it zooms out!
-          </p>
-
-          <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
-            <div className="text-purple-300">
-              Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="font-bold text-cyan-400">
-                Photo {currentPhotoNumber}/{totalPhotos}
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-                currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
-                'bg-gray-500/20 text-gray-300 border-gray-400'
-              }`}>
-                {currentQuestion.difficulty ?
-                  currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) :
-                  'Unknown'
-                }
-              </span>
-            </div>
+      {/* Explanation card - shown in result state */}
+      {gameState === 'result' && (
+        <div className={`
+          p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+          ${isCorrect
+            ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
+            : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
+          }
+        `}>
+          <div className="text-base sm:text-lg font-bold mb-1 sm:mb-2">
+            {message}
+          </div>
+          <div className="text-xs sm:text-sm mb-2 sm:mb-3">
+            <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+          </div>
+          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+            <span className="text-gray-200">
+              {currentQuestion.metadata && (
+                typeof currentQuestion.metadata === 'string' 
+                  ? (() => {
+                      try {
+                        const parsed = JSON.parse(currentQuestion.metadata);
+                        return parsed.logic || 'Think about what makes them different!';
+                      } catch (e) {
+                        return 'Think about what makes them different!';
+                      }
+                    })()
+                  : currentQuestion.metadata.logic || 'Think about what makes them different!'
+              )}
+            </span>
           </div>
         </div>
-
-        {/* Unified layout for both playing and result states */}
-        {(gameState === 'playing' || gameState === 'result') && (
-          <div className="space-y-3 sm:space-y-6">
-            {/* Points display - always visible, frozen in result state */}
-            <div className="flex justify-center items-center mb-2 sm:mb-4">
-              <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
-                <Star size={16} className="sm:w-5 sm:h-5" />
-                <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
-                <span className="text-xs text-purple-300">points</span>
-              </div>
-            </div>
-
-            {/* Image - stays in place at frozen zoom level */}
-            <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <img
-                  src={currentQuestion.prompt}
-                  alt="Mystery"
-                  className="w-full h-full object-cover"
-                  style={{ transform: `scale(${zoomLevel})`, transition: gameState === 'playing' ? 'transform 0.1s linear' : 'none' }}
-                />
-              </div>
-            </div>
-
-            {/* Answer buttons with color feedback */}
-            <div className="grid gap-2 sm:gap-3">
-              {answerOptions.map((option, index) => {
-                const isCorrectAnswer = option === currentQuestion.correct_answer;
-                const isSelectedAnswer = option === selectedAnswer;
-                const showFeedback = gameState === 'result';
-
-                let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-semibold transition-all text-center text-white";
-                
-                if (showFeedback) {
-                  // Result state - show full feedback
-                  if (isCorrectAnswer) {
-                    // Correct answer - green pulse
-                    buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50";
-                  } else if (isSelectedAnswer) {
-                    // Selected wrong answer - red pulse
-                    buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50";
-                  } else {
-                    // Other options - dimmed
-                    buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30";
-                  }
-                } else if (selectedAnswer && !isCorrect) {
-                  // Intermediate state - wrong answer selected, waiting to show correct
-                  if (isSelectedAnswer) {
-                    // Show red on wrong selection immediately
-                    buttonClass += " bg-red-500/30 border-4 border-red-500 animate-pulse shadow-lg shadow-red-500/50";
-                  } else {
-                    // Other buttons stay normal during pause
-                    buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50";
-                  }
-                } else {
-                  // Playing state - normal interactive buttons
-                  buttonClass += " bg-white/10 border-2 border-purple-500/30 hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 active:scale-95";
-                }
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => gameState === 'playing' ? handleAnswerSelect(option) : null}
-                    disabled={gameState === 'result' || (selectedAnswer !== null)}
-                    className={buttonClass}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 });
 
-PhotoMystery.displayName = 'PhotoMystery';
+OddManOut.displayName = 'OddManOut';
 
-export default PhotoMystery;
+export default OddManOut;
