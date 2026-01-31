@@ -161,9 +161,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     if (gameState !== 'playing') return;
 
     if (selectedItems.includes(item)) {
+      // Deselect if already selected
       setSelectedItems(prev => prev.filter(selected => selected !== item));
     } else if (selectedItems.length < 2) {
+      // Add if less than 2 selected
       setSelectedItems(prev => [...prev, item]);
+    } else {
+      // Already have 2 selected - drop the oldest, keep the most recent + add new
+      // This assumes the most recent choice is their best choice
+      setSelectedItems(prev => [prev[1], item]);
     }
   };
 
