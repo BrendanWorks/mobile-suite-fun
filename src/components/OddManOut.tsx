@@ -4,6 +4,7 @@ import { GameHandle } from '../lib/gameTypes';
 
 interface OddManOutProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
+  onTimerPause?: (paused: boolean) => void;
 }
 
 const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
@@ -113,6 +114,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setGameState('playing');
     setMessage('');
     setIsCorrect(false);
+
+    // Resume the timer for the new question
+    if (props.onTimerPause) {
+      props.onTimerPause(false);
+    }
   };
 
   const generateNewQuestion = () => {
@@ -146,6 +152,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setGameState('playing');
     setMessage('');
     setIsCorrect(false);
+
+    // Resume the timer for the new question
+    if (props.onTimerPause) {
+      props.onTimerPause(false);
+    }
   };
 
   const shuffleArray = (array) => {
@@ -182,6 +193,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
     setIsCorrect(isAnswerCorrect);
     setTotalQuestions(prev => prev + 1);
+
+    // Pause the timer while showing feedback
+    if (props.onTimerPause) {
+      props.onTimerPause(true);
+    }
 
     if (isAnswerCorrect) {
       // Correct - play sound and show feedback immediately
