@@ -214,9 +214,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       if (newLives <= 0) {
         setGameOver(true);
         gameOverRef.current = true;
-        if (onComplete) {
-          onComplete(scoreRef.current, 100);
-        }
+        setTimeout(() => {
+          if (onComplete) {
+            onComplete(scoreRef.current, 200);
+          }
+        }, 2000);
       } else {
         resetSnake();
       }
@@ -238,7 +240,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       scoreRef.current = newScore;
 
       if (onScoreUpdate) {
-        onScoreUpdate(newScore, 100);
+        onScoreUpdate(newScore, 200);
       }
 
       const newFood = createFood(newSnake, obstaclesRef.current, powerUpRef.current);
@@ -279,7 +281,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
         scoreRef.current = newScore;
 
         if (onScoreUpdate) {
-          onScoreUpdate(newScore, 100);
+          onScoreUpdate(newScore, 200);
         }
       } else if (currentPowerUp.type === 'ice') {
         setSlowedUntil(Date.now() + SLOW_DURATION);
