@@ -19,6 +19,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [shuffledItems, setShuffledItems] = useState([]);
   const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
 
   const successMessages = [
     "Excellent! You found the odd ones out!",
@@ -35,6 +36,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }),
     onGameEnd: () => {
       console.log(`OddManOut ended with score: ${score}/${totalQuestions * 250}`);
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+        autoAdvanceTimeoutRef.current = null;
+      }
     },
     skipQuestion: () => {
       generateNewQuestion();
@@ -88,6 +93,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
 
+    // Clear any existing auto-advance timeout
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
     if (!question.difficulty) {
       question.difficulty = 'unknown';
     }
@@ -106,6 +117,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   const generateNewQuestion = () => {
     if (questions.length === 0) return;
+
+    // Clear any existing auto-advance timeout
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
 
     let availableQuestions = questions.filter(q => !usedQuestions.includes(q.id));
     if (availableQuestions.length === 0) {
@@ -173,6 +190,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       });
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
+      
+      // Auto-advance after 10 seconds
+      autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+        generateNewQuestion();
+      }, 10000);
     } else {
       // Wrong - play sound, brief pause before showing correct
       playSound('incorrect');
@@ -182,8 +204,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       }
       setMessage("Wrong");
       
+      // 800ms pause before showing correct answer
       setTimeout(() => {
         setGameState('result');
+        
+        // Then auto-advance after 10 seconds
+        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+          generateNewQuestion();
+        }, 10000);
       }, 800);
     }
   };
@@ -205,6 +233,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   useEffect(() => {
     fetchQuestions();
+    
+    return () => {
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -341,6 +375,40 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         >
           {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
         </button>
+      )}
+
+      {/* Explanation card - shown in result state */}
+      {gameState === 'result' && (
+        <div className={`
+          p-3 sm:p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm
+          ${isCorrect
+            ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400 shadow-green-500/25'
+            : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
+          }
+        `}>
+          <div className="text-base sm:text-lg font-bold mb-1 sm:mb-2">
+            {message}
+          </div>
+          <div className="text-xs sm:text-sm mb-2 sm:mb-3">
+            <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+          </div>
+          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+            <span className="text-gray-200">
+              {currentQuestion.metadata && (
+                typeof currentQuestion.metadata === 'string' 
+                  ? (() => {
+                      try {
+                        const parsed = JSON.parse(currentQuestion.metadata);
+                        return parsed.logic || 'Think about what makes them different!';
+                      } catch (e) {
+                        return 'Think about what makes them different!';
+                      }
+                    })()
+                  : currentQuestion.metadata.logic || 'Think about what makes them different!'
+              )}
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
