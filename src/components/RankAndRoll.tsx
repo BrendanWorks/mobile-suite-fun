@@ -421,10 +421,10 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-start justify-center p-2 pt-4">
       <div className="max-w-md w-full text-white">
         {/* Header with Title and Hint Button */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="text-2xl font-bold">📊 Ranky</h2>
           <button
             onClick={getHint}
@@ -436,8 +436,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
         </div>
 
         {/* Puzzle Info - Compact */}
-        <div className="text-center mb-3 bg-white/10 p-2 rounded-xl">
-          <h3 className="text-sm font-semibold text-white mb-1">
+        <div className="text-center mb-2 bg-white/10 p-2 rounded-xl">
+          <h3 className="text-sm font-semibold text-white mb-0.5">
             {currentPuzzle.title}
           </h3>
           <p className="text-xs text-gray-300">
@@ -453,7 +453,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
         )}
 
         {/* Ranking List - Compact */}
-        <div className="space-y-2 mb-3">
+        <div className="space-y-1.5 mb-2">
           {playerOrder.map((item, index) => (
             <div
               key={item.id}
@@ -523,7 +523,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
         {/* Final Answer Button - Compact */}
         {gameState === 'playing' && (
-          <div className="text-center mb-3">
+          <div className="text-center mb-2">
             <button
               onClick={submitFinalAnswer}
               className="px-6 py-2.5 rounded-xl font-bold text-base transition-all border-2 bg-gradient-to-r from-blue-500 to-cyan-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
@@ -545,8 +545,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
             const finalScore = Math.max(0, 333 - hintPenalty);
 
             return (
-              <div className="text-center p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl mb-3">
-                <div className="text-3xl mb-2">🎉</div>
+              <div className="text-center p-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl">
+                <div className="text-3xl mb-1">🎉</div>
                 <div className="text-xl font-bold text-green-300 mb-1">Perfect!</div>
                 <div className="text-green-200 text-sm mb-1">
                   {hintsUsed > 0 ? `${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used` : 'No hints!'}
@@ -563,12 +563,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
             );
           } else {
             return (
-              <div className="text-center p-3 bg-gradient-to-r from-red-600/30 to-red-700/30 border-2 border-red-400 rounded-xl mb-3">
-                <div className="text-xl font-bold text-red-300 mb-2">Wrong</div>
-                <div className="text-red-200 text-xs mb-2">
-                  Here's the ranking:
-                </div>
-                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-1">
+              <div className="text-center p-2 bg-gradient-to-r from-red-600/30 to-red-700/30 border-2 border-red-400 rounded-xl">
+                <div className="text-base font-bold text-red-300 mb-1.5">Wrong - Here's the ranking:</div>
+                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-0.5">
                   {correctOrder.map((item, index) => (
                     <div key={item.id} className="flex items-center gap-2">
                       <span className="text-yellow-300 font-bold">{index + 1}.</span>
