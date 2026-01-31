@@ -19,6 +19,7 @@ export default function GameWrapper({
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
@@ -27,6 +28,12 @@ export default function GameWrapper({
   const hideTimerBar = gameName === 'Zooma';
 
   useEffect(() => {
+    // Don't run timer if paused
+    if (timerPaused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
     if (isActive && timeRemaining > 0) {
       const intervalTime = isFastCountdown ? 50 : 1000;
       const decrement = isFastCountdown ? 0.05 : 1;
@@ -46,7 +53,7 @@ export default function GameWrapper({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeRemaining, isFastCountdown]);
+  }, [isActive, timeRemaining, isFastCountdown, timerPaused]);
 
   const handleTimeUp = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -87,6 +94,7 @@ export default function GameWrapper({
             ...(children as any).props,
             onScoreUpdate,
             onComplete: handleGameComplete,
+            onTimerPause: setTimerPaused,
           },
         }
       : children;
