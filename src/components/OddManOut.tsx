@@ -224,7 +224,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       if (props.onScoreUpdate) {
         props.onScoreUpdate(score, newTotal * 250);
       }
-      setMessage("Wrong");
       
       // 800ms pause before showing correct answer
       setTimeout(() => {
@@ -384,9 +383,9 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Your Selection - stays visible and frozen */}
+      {/* Your Answer - stays visible and frozen */}
       <div className="mb-3 sm:mb-6">
-        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 sm:mb-2">Your Selection:</h4>
+        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 sm:mb-2">Your Answer:</h4>
         <div className="min-h-10 sm:min-h-12 bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-2 sm:p-3">
           {selectedItems.length === 0 ? (
             <span className="text-purple-400 text-xs sm:text-sm">Select 2 items that don't belong...</span>
@@ -429,12 +428,19 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             : 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-400 shadow-red-500/25'
           }
         `}>
-          <div className="text-base sm:text-lg font-bold mb-1 sm:mb-2">
-            {message}
+          {/* Show success message only if correct */}
+          {isCorrect && (
+            <div className="text-base sm:text-lg font-bold mb-2">
+              {message}
+            </div>
+          )}
+          
+          {/* Show correct answer with label */}
+          <div className="text-xs sm:text-sm mb-2">
+            <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
           </div>
-          <div className="text-xs sm:text-sm mb-2 sm:mb-3">
-            <strong>Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
-          </div>
+          
+          {/* Logic explanation */}
           <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
             <span className="text-gray-200">
               {currentQuestion.metadata && (
