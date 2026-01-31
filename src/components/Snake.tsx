@@ -253,21 +253,19 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
 
       <div className="px-3 sm:px-6 py-2 flex justify-between items-center">
         <h2 className="text-lg sm:text-2xl font-bold text-white">Snake</h2>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {[...Array(3)].map((_, i) => (
+            <span key={i} className={`text-base sm:text-xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
+              {i < lives ? '❤️' : '🖤'}
+            </span>
+          ))}
+        </div>
         <div className="text-right">
           <p className="text-lg sm:text-xl font-bold text-cyan-400">Score: {score}</p>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center space-y-3 sm:space-y-4 px-3">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-white text-sm sm:text-base font-semibold">Lives:</span>
-          {[...Array(3)].map((_, i) => (
-            <span key={i} className={`text-xl sm:text-2xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
-              {i < lives ? '❤️' : '🖤'}
-            </span>
-          ))}
-        </div>
-
         <div className="relative">
           <canvas
             ref={canvasRef}
