@@ -38,9 +38,10 @@ interface SplitDecisionProps {
   userId?: string;
   roundNumber?: number;
   onScoreUpdate?: (score: number, maxScore: number) => void;
+  onTimerPause?: (paused: boolean) => void;
 }
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate }, ref) => {
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -117,6 +118,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setIsAnswered(false);
       setFeedback(null);
       setLoading(false);
+
+      // Resume timer when new puzzle loads
+      if (onTimerPause) {
+        onTimerPause(false);
+      }
     } catch (error) {
       console.error('Error fetching puzzle data:', error);
       setLoading(false);
@@ -130,6 +136,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     const currentItem = puzzle.items[currentItemIndex];
     setSelectedAnswer(category);
     setIsAnswered(true);
+
+    // Pause the timer during feedback
+    if (onTimerPause) {
+      onTimerPause(true);
+    }
 
     // Map category buttons to correct_category values
     const categoryMap: { [key: string]: string } = {
@@ -172,6 +183,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
+      // Resume the timer before advancing
+      if (onTimerPause) {
+        onTimerPause(false);
+      }
+
       if (currentItemIndex < puzzle.items.length - 1) {
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
