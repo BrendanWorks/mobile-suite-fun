@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { Shapes } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const DalmatianPuzzle = forwardRef((props: any, ref) => {
@@ -21,7 +22,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       maxScore: 100
     }),
     onGameEnd: () => {
-      console.log(`DalmatianPuzzle ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
+      console.log(`SnapShot ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
@@ -63,7 +64,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
-        .eq('game_id', 6); // Dalmatian Puzzle game ID
+        .eq('game_id', 6); // SnapShot game ID
       
       if (error) {
         console.error('Supabase error:', error);
@@ -79,7 +80,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }
       
       if (!data || data.length === 0) {
-        console.error('No puzzles found for Dalmatian Puzzle');
+        console.error('No puzzles found for SnapShot');
         // Fallback to default image
         setPuzzles([{
           id: 1,
@@ -91,7 +92,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         return;
       }
       
-      console.log(`Loaded ${data.length} Dalmatian puzzles from Supabase`);
+      console.log(`Loaded ${data.length} SnapShot puzzles from Supabase`);
       setPuzzles(data);
       setLoading(false);
       
@@ -658,9 +659,12 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-cyan-400">
-          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>🧩 Loading puzzle images...</div>
-          <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
+        <div className="text-center text-pink-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #ec4899' }}>
+            <Shapes className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
+            Loading puzzles...
+          </div>
+          <div className="text-sm text-pink-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -672,11 +676,11 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
           <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ No puzzles available</div>
-          <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
+          <div className="text-sm text-pink-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchPuzzles}
-            className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
-            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+            className="mt-4 px-6 py-3 bg-transparent border-2 border-pink-400 text-pink-400 rounded-lg font-semibold hover:bg-pink-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
           >
             Try Again
           </button>
@@ -686,81 +690,77 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-3">
+    <div className="min-h-screen bg-black flex items-center justify-center p-2 pt-4">
       <div className="text-center max-w-4xl w-full text-white">
-      {/* Header */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
-        🧩 Dalmatian Puzzle
-      </h1>
+      
+      {/* Header - Updated to match pattern */}
+      <div className="mb-3 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-pink-400 mb-1 border-b border-pink-400 pb-1 flex items-center justify-center gap-2">
+          <Shapes 
+            className="w-6 h-6 sm:w-7 sm:h-7" 
+            style={{ 
+              color: '#ec4899',
+              filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
+              strokeWidth: 2
+            }} 
+          />
+          <span style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</span>
+        </h2>
+        
+        {/* Tagline */}
+        <p className="text-pink-300 text-xs sm:text-sm mb-2 sm:mb-4">
+          Piece it Together
+        </p>
 
-      {/* Info bar */}
-      <div className="flex justify-center items-center gap-2 sm:gap-6 mb-3 sm:mb-6 flex-wrap text-xs sm:text-sm">
-        <div className="text-cyan-300">
-          Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
-          {currentPuzzle.difficulty && (
-            <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border-2 ${
-              currentPuzzle.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border-green-500' :
-              currentPuzzle.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500' :
-              'bg-red-500/20 text-red-400 border-red-500'
-            }`}>
-              {currentPuzzle.difficulty.charAt(0).toUpperCase() + currentPuzzle.difficulty.slice(1)}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className={`text-base sm:text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`} style={{ textShadow: timeLeft > 10 ? '0 0 10px #00ffff' : '0 0 10px #ff0066' }}>
-            ⏰ {timeLeft}s
+        {/* Stats - Score, Timer, Pieces (removed puzzle number and difficulty) */}
+        <div className="flex justify-center items-center gap-3 sm:gap-6 text-xs sm:text-sm">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className={`text-base sm:text-lg font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-pink-400'}`} style={{ textShadow: timeLeft > 10 ? '0 0 10px #ec4899' : '0 0 10px #ff0066' }}>
+              ⏰ {timeLeft}s
+            </div>
           </div>
-          <div className="w-12 sm:w-16 h-2 bg-black rounded-full overflow-hidden border border-cyan-400/30">
-            <div
-              className={`h-full rounded-full transition-all duration-100 ${
-                timeLeft <= 10 ? 'bg-red-500' : 'bg-cyan-400'
-              }`}
-              style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%`, boxShadow: timeLeft <= 10 ? '0 0 10px #ff0066' : '0 0 10px #00ffff' }}
-            />
+          <div className="text-pink-300">
+            {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
           </div>
-        </div>
-        <div className="text-cyan-300">
-          {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
         </div>
       </div>
 
       <div className="w-full flex flex-col items-center">
-        {/* Puzzle Canvas */}
-        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-cyan-400/40" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)' }}>
+        {/* Puzzle Canvas - Updated to pink theme */}
+        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
           <canvas
             ref={canvasRef}
-            className="w-full h-full border-2 border-cyan-500 rounded-lg"
-            style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+            className="w-full h-full border-2 border-pink-500 rounded-lg"
+            style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
           />
         </div>
 
-        {/* Draggable pieces container */}
+        {/* Draggable pieces container - Updated to pink theme */}
         <div
           ref={draggableContainerRef}
           id="draggable-pieces-container"
-          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-cyan-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-8"
-          style={{ boxShadow: 'inset 0 0 20px rgba(0, 255, 255, 0.1)' }}
+          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-8"
+          style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)' }}
         />
 
-        {/* Controls */}
+        {/* Controls - Updated to pink theme */}
         <div className="w-full flex justify-center">
           <button
             onClick={resetGame}
-            className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 text-sm sm:text-base font-bold rounded-lg hover:bg-cyan-400 hover:text-black transition-all"
-            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-pink-400 text-pink-400 text-sm sm:text-base font-bold rounded-lg hover:bg-pink-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
           >
             🔄 Reset Puzzle
           </button>
         </div>
       </div>
 
-      {/* Game Over Message */}
+      {/* Game Over Message - Updated to pink theme */}
       {gameState !== 'playing' && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-black border-2 border-cyan-400 p-8 rounded-lg" style={{ boxShadow: '0 0 30px rgba(0, 255, 255, 0.5)' }}>
+          <div className="bg-black border-2 border-pink-400 p-8 rounded-lg" style={{ boxShadow: '0 0 30px rgba(236, 72, 153, 0.5)' }}>
             <div className="flex flex-col items-center justify-center space-y-4">
-              <h3 className="text-3xl font-bold text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+              <h3 className="text-3xl font-bold text-pink-400" style={{ textShadow: '0 0 15px #ec4899' }}>
                 {gameState === 'won' ? '🎉 Puzzle Solved!' : "⏰ Time's Up!"}
               </h3>
               {gameState === 'won' && (
@@ -769,19 +769,19 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
                 </div>
               )}
               {currentPuzzle.correct_answer && (
-                <div className="text-lg text-cyan-300 text-center">
+                <div className="text-lg text-pink-300 text-center">
                   Answer: <strong className="text-yellow-400">{currentPuzzle.correct_answer}</strong>
                 </div>
               )}
               {puzzles.length > 1 && gameState === 'won' && (
-                <div className="text-sm text-cyan-400 text-center" style={{ textShadow: '0 0 8px #00ffff' }}>
+                <div className="text-sm text-pink-400 text-center" style={{ textShadow: '0 0 8px #ec4899' }}>
                   Next puzzle loading automatically...
                 </div>
               )}
               <button
                 onClick={resetGame}
-                className="px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg hover:bg-cyan-400 hover:text-black transition-all"
-                style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+                className="px-6 py-3 bg-transparent border-2 border-pink-400 text-pink-400 font-bold rounded-lg hover:bg-pink-400 hover:text-black transition-all"
+                style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
               >
                 Try Again
               </button>
