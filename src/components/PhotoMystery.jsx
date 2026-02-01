@@ -483,10 +483,13 @@ const PhotoMystery = forwardRef((props, ref) => {
             <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' }}>
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
-                  src={currentQuestion.prompt}
+                  src={currentQuestion.image_url || currentQuestion.prompt}
                   alt="Mystery"
                   className="w-full h-full object-cover"
                   style={{ transform: `scale(${zoomLevel})`, transition: gameState === 'playing' ? 'transform 0.1s linear' : 'none' }}
+                  onError={(e) => {
+                    console.error('Failed to load image:', currentQuestion.prompt, currentQuestion.image_url);
+                  }}
                 />
               </div>
             </div>
