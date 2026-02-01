@@ -458,28 +458,12 @@ const PhotoMystery = forwardRef((props, ref) => {
           </h2>
           
           <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            Guess what's in the photo as it zooms out!
+            What's in the photo?
           </p>
 
-          <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+          <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
             <div className="text-cyan-300">
               Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="font-bold text-cyan-400">
-                Photo {currentPhotoNumber}/{totalPhotos}
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border-2 ${
-                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border-green-500' :
-                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500' :
-                currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-400 border-red-500' :
-                'bg-cyan-500/20 text-cyan-400 border-cyan-500'
-              }`}>
-                {currentQuestion.difficulty ?
-                  currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) :
-                  'Unknown'
-                }
-              </span>
             </div>
           </div>
         </div>
