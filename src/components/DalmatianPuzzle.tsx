@@ -3,7 +3,7 @@ import { Shapes } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const DalmatianPuzzle = forwardRef((props: any, ref) => {
-  const { onComplete } = props;
+  const { onComplete, onTimerPause } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -679,6 +679,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   // Initialize puzzles
   useEffect(() => {
+    // Pause timer while loading initial puzzles
+    if (onTimerPause) {
+      onTimerPause(true);
+    }
     fetchPuzzles();
   }, []);
 
@@ -692,8 +696,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
-    // Reset image loaded state while loading new puzzle
+    // Pause the timer while loading new puzzle
+    if (onTimerPause) {
+      onTimerPause(true);
+    }
+
+    // Reset all game state while loading new puzzle to prevent timer from running
     setIsImageLoaded(false);
+    setGameState('playing'); // Set to playing but timer won't start because isImageLoaded is false
+    setTimeLeft(maxTimePerPuzzle);
+    gameStateRef.current.completedSlots = 0;
 
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
@@ -709,6 +721,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         resetGame();
         // Only set isImageLoaded to true after everything is drawn
         setIsImageLoaded(true);
+        // Resume the timer now that the puzzle is ready
+        if (onTimerPause) {
+          onTimerPause(false);
+        }
       });
     };
 
