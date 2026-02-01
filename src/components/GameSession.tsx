@@ -1,7 +1,5 @@
 /**
- * GameSession.tsx - WITH NEXT GAME & QUIT/SAVE BUTTONS
- * 
- * Paste this into bolt.new to replace your current GameSession.tsx
+ * GameSession.tsx - NEON EDITION
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -336,7 +334,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   };
 
   const handleSkipGame = () => {
-    // Skip current game with 0 score
     if (currentGame) {
       console.log(`Game skipped: ${currentGame.name}`);
       handleGameComplete(0, 100);
@@ -344,13 +341,11 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   };
 
   const handleQuitAndSave = async () => {
-    // Save current progress before quitting
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
     const completedRounds = roundScores.length;
     
     if (user?.id && sessionId) {
       try {
-        // Calculate grade based on completed rounds
         const avgScore = completedRounds > 0 ? currentSessionScore / completedRounds : 0;
         const percentage = avgScore;
         const grade = getSessionGrade(percentage);
@@ -401,20 +396,21 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
 
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
+      <div className="h-screen w-screen bg-black flex items-center justify-center p-4 sm:p-6">
         <div className="text-center max-w-2xl w-full">
           <div className="mb-6 sm:mb-8">
-            <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-yellow-400 animate-pulse" />
+            <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
           </div>
-          <h1 className="text-4xl sm:text-6xl font-bold text-white mb-3 sm:mb-4">Round {currentRound}</h1>
-          <p className="text-lg sm:text-2xl text-gray-300 mb-6 sm:mb-8">Get ready for the next challenge!</p>
-          <div className="bg-white/10 rounded-lg p-4 sm:p-6 backdrop-blur mb-6 sm:mb-8">
-            <p className="text-base sm:text-lg text-gray-200 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{roundScores.length * 100}</span></p>
-            <p className="text-xs sm:text-sm text-gray-400">Round {currentRound} of {totalRounds}</p>
+          <h1 className="text-4xl sm:text-6xl font-bold text-cyan-400 mb-3 sm:mb-4" style={{ textShadow: '0 0 20px #00ffff' }}>Round {currentRound}</h1>
+          <p className="text-lg sm:text-2xl text-cyan-300 mb-6 sm:mb-8">Get ready for the next challenge!</p>
+          <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-6 backdrop-blur mb-6 sm:mb-8" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
+            <p className="text-base sm:text-lg text-cyan-300 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{roundScores.length * 100}</span></p>
+            <p className="text-xs sm:text-sm text-cyan-400">Round {currentRound} of {totalRounds}</p>
           </div>
           <button
             onClick={startRound}
-            className="mt-6 sm:mt-8 px-8 py-4 bg-green-600 active:bg-green-700 text-white font-bold rounded-lg text-lg sm:text-xl transition-all active:scale-[0.98] touch-manipulation"
+            className="mt-6 sm:mt-8 px-8 py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-lg sm:text-xl transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
+            style={{ textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           >
             Start Round
           </button>
@@ -464,53 +460,48 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     console.log('🎊 Session Total:', sessionTotal);
 
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 flex flex-col p-3 sm:p-6">
+      <div className="h-screen w-screen bg-black flex flex-col p-3 sm:p-6">
         <div className="max-w-2xl w-full mx-auto flex flex-col flex-1 min-h-0">
-          {/* Compact Header */}
           <div className="text-center mb-3 sm:mb-4 flex-shrink-0">
-            <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-400 mb-2" />
-            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-1">Game Complete!</h1>
+            <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-400 mb-2" style={{ filter: 'drop-shadow(0 0 20px #fbbf24)' }} />
+            <h1 className="text-2xl sm:text-4xl font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 15px #00ffff' }}>Game Complete!</h1>
           </div>
 
-          {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto mb-3">
-            <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur">
-              {/* Hero Score */}
-              <div className="text-center mb-3 pb-3 border-b border-white/20">
-                <div className="text-5xl sm:text-6xl font-bold text-yellow-400 mb-1">
+            <div className="bg-black border-2 border-cyan-400 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
+              <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
+                <div className="text-5xl sm:text-6xl font-bold text-yellow-400 mb-1" style={{ textShadow: '0 0 20px #fbbf24' }}>
                   {sessionGrade}
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-white mb-1">
+                <p className="text-xl sm:text-2xl font-bold text-cyan-300 mb-1">
                   {sessionTotal.totalScore}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-300">
+                <p className="text-xs sm:text-sm text-cyan-400">
                   out of {sessionTotal.maxPossible} possible points
                 </p>
               </div>
 
-              {/* Overall Performance */}
-              <div className="text-center mb-3 pb-3 border-b border-white/20">
-                <p className="text-xs sm:text-sm text-gray-300 mb-1">Overall Performance</p>
-                <div className="text-xl sm:text-2xl font-bold text-cyan-400">
+              <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
+                <p className="text-xs sm:text-sm text-cyan-400 mb-1">Overall Performance</p>
+                <div className="text-xl sm:text-2xl font-bold text-cyan-300">
                   {sessionTotal.percentage}%
                 </div>
               </div>
 
-              {/* Game Breakdown - Compact */}
               <div className="mb-3">
-                <p className="text-xs sm:text-sm text-gray-300 mb-2 font-semibold">Game Breakdown:</p>
+                <p className="text-xs sm:text-sm text-cyan-400 mb-2 font-semibold">Game Breakdown:</p>
                 <div className="space-y-1">
                   {roundScores.map((round, idx) => (
-                    <div key={idx} className="flex justify-between items-center bg-white/5 px-2 py-1.5 rounded text-xs sm:text-sm">
-                      <span className="text-white truncate flex-1 mr-2">{idx + 1}. {round.gameName}</span>
+                    <div key={idx} className="flex justify-between items-center bg-black/50 border border-cyan-400/30 px-2 py-1.5 rounded text-xs sm:text-sm">
+                      <span className="text-cyan-300 truncate flex-1 mr-2">{idx + 1}. {round.gameName}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-cyan-400 font-bold">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
-                        <span className={`font-bold w-6 sm:w-7 text-center rounded px-1 py-0.5 text-xs ${
-                          round.normalizedScore.grade === 'S' ? 'bg-yellow-400/30 text-yellow-400' :
-                          round.normalizedScore.grade === 'A' ? 'bg-green-400/30 text-green-400' :
-                          round.normalizedScore.grade === 'B' ? 'bg-blue-400/30 text-blue-400' :
-                          round.normalizedScore.grade === 'C' ? 'bg-orange-400/30 text-orange-400' :
-                          'bg-red-400/30 text-red-400'
+                        <span className={`font-bold w-6 sm:w-7 text-center rounded border-2 px-1 py-0.5 text-xs ${
+                          round.normalizedScore.grade === 'S' ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400' :
+                          round.normalizedScore.grade === 'A' ? 'bg-green-400/20 text-green-400 border-green-400' :
+                          round.normalizedScore.grade === 'B' ? 'bg-blue-400/20 text-blue-400 border-blue-400' :
+                          round.normalizedScore.grade === 'C' ? 'bg-orange-400/20 text-orange-400 border-orange-400' :
+                          'bg-red-400/20 text-red-400 border-red-400'
                         }`}>
                           {round.normalizedScore.grade}
                         </span>
@@ -520,34 +511,34 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
                 </div>
               </div>
 
-              {/* Status Messages */}
               {sessionSaved && (
-                <div className="p-2 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-200">
+                <div className="p-2 bg-green-500/20 border-2 border-green-500 rounded text-xs text-green-400">
                   ✅ Score saved
                 </div>
               )}
 
               {!user && !sessionSaved && (
-                <div className="p-2 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-200">
+                <div className="p-2 bg-cyan-500/20 border-2 border-cyan-400 rounded text-xs text-cyan-300">
                   Sign in to save your score!
                 </div>
               )}
             </div>
           </div>
 
-          {/* Action Buttons - Always Visible */}
           <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
             {!user && !sessionSaved && (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="flex-1 px-4 py-3 bg-green-600 active:bg-green-700 text-white font-bold rounded-lg text-sm sm:text-base transition-all active:scale-[0.98] touch-manipulation"
+                className="flex-1 px-4 py-3 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-green-500 hover:text-black active:scale-[0.98] touch-manipulation"
+                style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
               >
                 Sign In to Save
               </button>
             )}
             <button
               onClick={onExit}
-              className="flex-1 px-4 py-3 bg-blue-600 active:bg-blue-700 text-white font-bold rounded-lg text-sm sm:text-base transition-all active:scale-[0.98] touch-manipulation"
+              className="flex-1 px-4 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
+              style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
             >
               {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
             </button>
@@ -565,7 +556,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     );
   }
 
-  // Playing state
+  // Playing state - NEON NAV BAR
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
     const previousRoundsScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
@@ -580,31 +571,33 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const maxPossibleScore = currentRound * 100;
 
     return (
-      <div className="h-screen w-screen bg-gray-900 flex flex-col">
-        <div className="flex-shrink-0 bg-gray-800 px-2 sm:px-6 py-1.5 sm:py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto gap-1.5 sm:gap-3">
-            {/* Left: Skip button */}
+      <div className="h-screen w-screen bg-black flex flex-col">
+        {/* NEON NAVIGATION BAR */}
+        <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-2">
+            {/* Left: Next Game button */}
             <button
               onClick={handleSkipGame}
-              className="flex-shrink-0 px-2 sm:px-4 py-1 sm:py-2 bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+              className="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 bg-transparent border-2 border-pink-500 text-pink-400 font-semibold rounded text-xs sm:text-sm transition-all hover:bg-pink-500 hover:text-black active:scale-95 touch-manipulation"
+              style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)' }}
             >
               Next Game
             </button>
 
             {/* Center: Game info and score */}
-            <div className="flex-1 min-w-0 flex justify-between items-center gap-1 sm:gap-3">
-              <div className="text-white min-w-0">
-                <p className="text-[10px] sm:text-sm text-gray-400 leading-tight">Round {currentRound} of {totalRounds}</p>
-                <p className="text-xs sm:text-base font-bold truncate leading-tight">{currentGame.name}</p>
+            <div className="flex-1 min-w-0 flex justify-between items-center gap-2 sm:gap-3">
+              <div className="text-cyan-400 min-w-0">
+                <p className="text-[10px] sm:text-xs leading-tight">Round {currentRound} of {totalRounds}</p>
+                <p className="text-xs sm:text-sm font-bold truncate leading-tight" style={{ textShadow: '0 0 8px #00ffff' }}>{currentGame.name}</p>
               </div>
-              <div className="text-right text-white flex-shrink-0">
-                <p className="text-[9px] sm:text-xs text-gray-400 leading-tight">Session Score</p>
-                <p className="text-sm sm:text-xl font-bold text-yellow-400 leading-tight">
+              <div className="text-right flex-shrink-0">
+                <p className="text-[9px] sm:text-[10px] text-cyan-400 leading-tight">Session Score</p>
+                <p className="text-sm sm:text-base font-bold text-yellow-400 leading-tight" style={{ textShadow: '0 0 10px #fbbf24' }}>
                   {Math.round(totalSessionScore)}/
-                  <span className="text-gray-400 text-xs sm:text-base">{maxPossibleScore}</span>
+                  <span className="text-cyan-400/60 text-xs sm:text-sm">{maxPossibleScore}</span>
                 </p>
                 {currentGameNormalizedScore > 0 && (
-                  <p className="text-[9px] sm:text-xs text-cyan-400 leading-tight">
+                  <p className="text-[9px] sm:text-[10px] text-cyan-300 leading-tight">
                     +{Math.round(currentGameNormalizedScore)}
                   </p>
                 )}
@@ -614,7 +607,8 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             {/* Right: Quit button */}
             <button
               onClick={handleQuitAndSave}
-              className="flex-shrink-0 px-2 sm:px-4 py-1 sm:py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-semibold rounded text-xs sm:text-sm transition-colors touch-manipulation"
+              className="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 bg-transparent border-2 border-red-500 text-red-400 font-semibold rounded text-xs sm:text-sm transition-all hover:bg-red-500 hover:text-black active:scale-95 touch-manipulation"
+              style={{ textShadow: '0 0 8px #ef4444', boxShadow: '0 0 10px rgba(239, 68, 68, 0.3)' }}
             >
               Quit & Save
             </button>
