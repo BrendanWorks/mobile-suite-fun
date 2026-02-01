@@ -343,7 +343,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 300);
+        return updated.filter(letter => letter.y < 450);
       });
     }, 50);
 
