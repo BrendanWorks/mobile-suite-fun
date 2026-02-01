@@ -166,36 +166,53 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const drawDraggablePieces = () => {
     const container = draggableContainerRef.current;
-    if (!container) return;
+    if (!container) {
+      console.log('Container not found');
+      return;
+    }
+
+    console.log('Drawing draggable pieces, container width:', container.offsetWidth, 'canvas width:', gameStateRef.current.canvasWidth);
 
     container.innerHTML = '';
-    
-    const draggablePieceSize = Math.min(
+
+    // Calculate piece size with a minimum of 60px
+    let draggablePieceSize = Math.min(
       (container.offsetWidth - (gameStateRef.current.draggablePieces.length - 1) * 16) / gameStateRef.current.draggablePieces.length,
       gameStateRef.current.canvasWidth / gameStateRef.current.PUZZLE_COLS
     );
+
+    // Ensure minimum size
+    draggablePieceSize = Math.max(60, draggablePieceSize);
+
+    console.log('Draggable piece size:', draggablePieceSize, 'num pieces:', gameStateRef.current.draggablePieces.length);
 
     gameStateRef.current.draggablePieces.forEach(piece => {
       const pieceCanvas = document.createElement('canvas');
       pieceCanvas.width = draggablePieceSize;
       pieceCanvas.height = draggablePieceSize;
       pieceCanvas.dataset.id = piece.id.toString();
-      pieceCanvas.className = 'rounded-lg shadow-md transition-transform duration-100 hover:scale-110 cursor-pointer';
-      
+      pieceCanvas.className = 'rounded-lg shadow-md transition-transform duration-100 hover:scale-110 cursor-pointer border-2 border-pink-400';
+      pieceCanvas.style.minWidth = '60px';
+      pieceCanvas.style.minHeight = '60px';
+
+      console.log('Creating piece canvas:', pieceCanvas.width, 'x', pieceCanvas.height);
+
       const pieceCtx = pieceCanvas.getContext('2d');
       if (pieceCtx) {
         pieceCtx.drawImage(
           gameStateRef.current.img,
           piece.sourceX, piece.sourceY,
-          gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS, 
+          gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS,
           gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS,
           0, 0,
           draggablePieceSize, draggablePieceSize
         );
       }
-      
+
       container.appendChild(pieceCanvas);
     });
+
+    console.log('Finished drawing pieces, container children:', container.children.length);
   };
 
   const drawGame = () => {
@@ -475,7 +492,12 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const resetGame = () => {
     const currentPuzzle = getCurrentPuzzle();
-    if (!currentPuzzle) return;
+    if (!currentPuzzle) {
+      console.log('No current puzzle found');
+      return;
+    }
+
+    console.log('Resetting game with puzzle:', currentPuzzle.id);
 
     // Clear any pending result timeout
     if (resultTimeout) {
@@ -492,6 +514,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     setGameState('playing');
     setTimeLeft(maxTimePerPuzzle);
 
+    console.log('Image dimensions:', gameStateRef.current.img.width, 'x', gameStateRef.current.img.height);
+    console.log('Canvas dimensions:', gameStateRef.current.canvasWidth, 'x', gameStateRef.current.canvasHeight);
+    console.log('Piece size:', gameStateRef.current.pieceSize);
+
     const allPieces = [];
     for (let row = 0; row < gameStateRef.current.PUZZLE_ROWS; row++) {
       for (let col = 0; col < gameStateRef.current.PUZZLE_COLS; col++) {
@@ -507,14 +533,18 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         });
       }
     }
-    
+
+    console.log('Created', allPieces.length, 'pieces');
+
     const shuffledPieces = [...allPieces].sort(() => Math.random() - 0.5);
-    
+
     gameStateRef.current.draggablePieces = shuffledPieces.slice(0, gameStateRef.current.NUM_DRAGGABLE_PIECES);
-    
+
+    console.log('Draggable pieces:', gameStateRef.current.draggablePieces.length);
+
     gameStateRef.current.puzzlePieces = [];
     gameStateRef.current.emptySlots = [];
-    
+
     allPieces.forEach(originalPiece => {
       const isDraggable = gameStateRef.current.draggablePieces.some(d => d.id === originalPiece.id);
       if (isDraggable) {
@@ -526,8 +556,11 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }
     });
 
+    console.log('About to draw draggable pieces...');
     drawDraggablePieces();
+    console.log('About to draw game...');
     drawGame();
+    console.log('Reset complete');
   };
 
   // Timer effect
@@ -740,7 +773,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
           ref={draggableContainerRef}
           id="draggable-pieces-container"
           className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-8"
-          style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)' }}
+          style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)', minHeight: '100px' }}
         />
 
         {/* Controls - Updated to pink theme */}
