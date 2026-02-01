@@ -266,17 +266,18 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   const createLetters = useCallback(() => {
     const letters = [];
     const shouldCluster = Math.random() < 0.6;
-    
+    const maxWidth = 650;
+
     if (shouldCluster) {
       const clusterSize = Math.floor(Math.random() * 2) + 2;
-      const baseX = Math.random() * 220 + 25;
+      const baseX = Math.random() * (maxWidth - 100) + 50;
       const baseY = -70;
-      
+
       for (let i = 0; i < clusterSize; i++) {
         letters.push({
           id: nextId + i,
           letter: getRandomLetter(),
-          x: Math.max(5, Math.min(275, baseX + (Math.random() - 0.5) * 120)),
+          x: Math.max(5, Math.min(maxWidth - 5, baseX + (Math.random() - 0.5) * 150)),
           y: baseY - (i * 70) - (Math.random() * 40),
           selected: false
         });
@@ -286,13 +287,13 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       letters.push({
         id: nextId,
         letter: getRandomLetter(),
-        x: Math.random() * 270 + 5,
+        x: Math.random() * (maxWidth - 10) + 5,
         y: -70,
         selected: false
       });
       setNextId(prev => prev + 1);
     }
-    
+
     return letters;
   }, [nextId]);
 
@@ -339,7 +340,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 500);
+        return updated.filter(letter => letter.y < 700);
       });
     }, 50);
 
@@ -498,14 +499,15 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
-    const screenHeight = 500;
+    const screenHeight = 700;
+    const maxWidth = 650;
     const topZoneHeight = screenHeight * 0.2;
-    const numInitialLetters = 15;
+    const numInitialLetters = 20;
 
     const profanityLetters = profanityWord.split('').map((letter, index) => ({
       id: index,
       letter: letter.toUpperCase(),
-      x: Math.random() * 270 + 5,
+      x: Math.random() * (maxWidth - 10) + 5,
       y: Math.random() * (topZoneHeight + 70) - 70,
       selected: false
     }));
@@ -514,7 +516,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     const fillerLetters = Array.from({ length: fillerCount }, (_, index) => ({
       id: profanityLetters.length + index,
       letter: getRandomLetter(),
-      x: Math.random() * 270 + 5,
+      x: Math.random() * (maxWidth - 10) + 5,
       y: Math.random() * (topZoneHeight + 70) - 70,
       selected: false
     }));
@@ -598,16 +600,16 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-sm mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '500px' }}>
+    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '700px' }}>
       {/* Game Stats */}
-      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-3 z-10">
+      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-2 z-10">
         <div className="flex justify-between items-center text-sm">
           <span className="text-cyan-400">Score: <span className="text-yellow-400 font-bold">{score}</span></span>
         </div>
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full h-full pt-16 pb-32">
+      <div className="relative w-full h-full pt-12 pb-28">
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
@@ -684,19 +686,19 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Bottom Control Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-4">
-        <div className="mb-3">
-          <div className="text-center text-sm text-cyan-400 mb-2">Selected Word:</div>
-          <div className="text-center text-xl font-bold min-h-8 bg-black border-2 border-cyan-400/50 rounded px-3 py-1 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
+      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-3">
+        <div className="mb-2">
+          <div className="text-center text-xs text-cyan-400 mb-1">Selected Word:</div>
+          <div className="text-center text-lg font-bold min-h-7 bg-black border-2 border-cyan-400/50 rounded px-3 py-1 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
             {selectedLetters.map(l => l.letter).join('')}
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <button
             onClick={submitWord}
             disabled={selectedLetters.length === 0 || isValidating}
-            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-3 px-4 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95"
+            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-2.5 px-4 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95"
             style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' } : {}}
           >
             {isValidating ? 'Checking...' : 'Submit Word'}
@@ -704,7 +706,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           <button
             onClick={clearSelection}
             disabled={selectedLetters.length === 0}
-            className="bg-transparent border-2 border-red-500 text-red-400 font-bold py-3 px-4 rounded-lg transition-all hover:bg-red-500 hover:text-black disabled:border-red-500/30 disabled:text-red-400/30 disabled:hover:bg-transparent active:scale-95"
+            className="bg-transparent border-2 border-red-500 text-red-400 font-bold py-2.5 px-4 rounded-lg transition-all hover:bg-red-500 hover:text-black disabled:border-red-500/30 disabled:text-red-400/30 disabled:hover:bg-transparent active:scale-95"
             style={selectedLetters.length > 0 ? { textShadow: '0 0 10px #ef4444', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' } : {}}
           >
             Clear
