@@ -16,6 +16,20 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const maxTimePerPuzzle = 60;
 
+  // Pause timer immediately on mount until first image loads
+  useEffect(() => {
+    if (onTimerPause) {
+      onTimerPause(true);
+    }
+  }, []);
+
+  // Pause timer whenever image is not loaded
+  useEffect(() => {
+    if (onTimerPause) {
+      onTimerPause(!isImageLoaded);
+    }
+  }, [isImageLoaded]);
+
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: gameState === 'won' ? 100 : Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100),
@@ -679,10 +693,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   // Initialize puzzles
   useEffect(() => {
-    // Pause timer while loading initial puzzles
-    if (onTimerPause) {
-      onTimerPause(true);
-    }
     fetchPuzzles();
   }, []);
 
@@ -696,14 +706,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
-    // Pause the timer while loading new puzzle
-    if (onTimerPause) {
-      onTimerPause(true);
-    }
-
-    // Reset all game state while loading new puzzle to prevent timer from running
+    // Reset all game state while loading new puzzle
+    // Setting isImageLoaded to false will automatically pause the timer via the useEffect
     setIsImageLoaded(false);
-    setGameState('playing'); // Set to playing but timer won't start because isImageLoaded is false
+    setGameState('playing');
     setTimeLeft(maxTimePerPuzzle);
     gameStateRef.current.completedSlots = 0;
 
@@ -719,12 +725,8 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       requestAnimationFrame(() => {
         handleResize();
         resetGame();
-        // Only set isImageLoaded to true after everything is drawn
+        // Set isImageLoaded to true - this will automatically resume the timer via the useEffect
         setIsImageLoaded(true);
-        // Resume the timer now that the puzzle is ready
-        if (onTimerPause) {
-          onTimerPause(false);
-        }
       });
     };
 
