@@ -1,8 +1,10 @@
 /**
- * Word Rescue - NEON EDITION
+ * WordSurge - BRANDED EDITION
+ * Type icon, blue theme, "Make Words" tagline
  */
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Type } from 'lucide-react';
 
 interface WordRescueProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -131,13 +133,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       maxScore: 1000
     }),
     onGameEnd: () => {
-      console.log(`WordRescue ended with score: ${score} (${wordsFound.length} words)`);
+      console.log(`WordSurge ended with score: ${score} (${wordsFound.length} words)`);
     },
     canSkipQuestion: false
   }));
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
+  // [Audio functions remain the same - generateTone, playSound, initAudio, etc.]
   const initAudio = useCallback(async () => {
     if (audioInitialized.current) return;
     
@@ -555,17 +558,32 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   if (gameState === 'menu') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="text-center mb-8 border-2 border-cyan-400 rounded-lg p-6" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}>
-          <h1 className="text-4xl font-bold mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>📝 Pop</h1>
-          <p className="text-lg mb-2 text-cyan-300">Make words from falling letters!</p>
-          <p className="text-sm text-cyan-400 mb-2">90 seconds per round - longer words = more points!</p>
+        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
+          {/* Header with icon */}
+          <div className="mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-blue-400 mb-1 flex items-center justify-center gap-2">
+              <Type 
+                className="w-8 h-8 sm:w-10 sm:h-10" 
+                style={{ 
+                  color: '#3b82f6',
+                  filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
+                  strokeWidth: 2
+                }} 
+              />
+              <span style={{ textShadow: '0 0 15px #3b82f6' }}>WordSurge</span>
+            </h2>
+            <p className="text-blue-300 text-sm">Make Words</p>
+          </div>
+
+          <p className="text-lg mb-2 text-blue-300">Make words from falling letters!</p>
+          <p className="text-sm text-blue-400 mb-2">90 seconds per round - longer words = more points!</p>
           <p className="text-xs text-yellow-400 font-semibold mb-1">🤭 Big bonus for potty mouths!</p>
-          <p className="text-xs text-cyan-300">🔊 Turn on sound for the full experience!</p>
+          <p className="text-xs text-blue-300">🔊 Turn on sound for the full experience!</p>
         </div>
         <button 
           onClick={startGame}
-          className="bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-4 px-8 rounded-lg text-xl transition-all hover:bg-cyan-400 hover:text-black active:scale-95"
-          style={{ textShadow: '0 0 10px #00ffff', boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}
+          className="bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-4 px-8 rounded-lg text-xl transition-all hover:bg-blue-400 hover:text-black active:scale-95"
+          style={{ textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}
         >
           Start Playing
         </button>
@@ -576,17 +594,17 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   if (gameState === 'roundEnd') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="text-center mb-8 border-2 border-cyan-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}>
-          <h1 className="text-4xl font-bold mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>🎉 Round Complete!</h1>
+        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
+          <h1 className="text-4xl font-bold mb-4 text-blue-400" style={{ textShadow: '0 0 15px #3b82f6' }}>🎉 Round Complete!</h1>
           <p className="text-3xl mb-4 text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>Final Score: {score}</p>
-          <p className="text-lg mb-6 text-cyan-300">Words Found: {wordsFound.length}</p>
+          <p className="text-lg mb-6 text-blue-300">Words Found: {wordsFound.length}</p>
           
           {wordsFound.length > 0 && (
-            <div className="bg-black border-2 border-cyan-400/50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto" style={{ boxShadow: 'inset 0 0 15px rgba(0, 255, 255, 0.2)' }}>
-              <h3 className="text-lg font-bold mb-2 text-cyan-400">Your Words:</h3>
+            <div className="bg-black border-2 border-blue-400/50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto" style={{ boxShadow: 'inset 0 0 15px rgba(59, 130, 246, 0.2)' }}>
+              <h3 className="text-lg font-bold mb-2 text-blue-400">Your Words:</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {wordsFound.map((item, index) => (
-                  <div key={index} className="flex justify-between text-cyan-300">
+                  <div key={index} className="flex justify-between text-blue-300">
                     <span className="uppercase font-bold">{item.word}</span>
                     <span className="text-yellow-400">+{item.score}</span>
                   </div>
@@ -600,16 +618,34 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '520px' }}>
-      {/* Game Stats */}
-      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-2 z-10">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-cyan-400">Score: <span className="text-yellow-400 font-bold">{score}</span></span>
+    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-blue-400/30" style={{ height: '600px' }}>
+      {/* Header - Branded */}
+      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-blue-400/50 text-white p-2 z-10">
+        <div className="mb-2">
+          <h2 className="text-lg sm:text-xl font-bold text-blue-400 mb-1 flex items-center justify-center gap-2">
+            <Type 
+              className="w-5 h-5 sm:w-6 sm:h-6" 
+              style={{ 
+                color: '#3b82f6',
+                filter: 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.6))',
+                strokeWidth: 2
+              }} 
+            />
+            <span style={{ textShadow: '0 0 10px #3b82f6' }}>WordSurge</span>
+          </h2>
+          <p className="text-blue-300 text-xs text-center">Make Words</p>
+        </div>
+        
+        {/* Score left-aligned */}
+        <div className="flex justify-start items-center text-xs sm:text-sm">
+          <div className="text-blue-300">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          </div>
         </div>
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full pt-10 pb-20" style={{ height: '300px' }}>
+      <div className="relative w-full pt-28 pb-20" style={{ height: '300px' }}>
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
@@ -618,12 +654,12 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
             className={`absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg cursor-pointer transform transition-all duration-200 border-2 ${
               letter.selected 
                 ? 'bg-yellow-400/20 border-yellow-400 text-yellow-400 scale-110' 
-                : 'bg-black/80 border-cyan-400 text-cyan-400 hover:scale-105'
+                : 'bg-black/80 border-blue-400 text-blue-400 hover:scale-105'
             }`}
             style={{
               left: `${letter.x}px`,
               top: `${letter.y}px`,
-              boxShadow: letter.selected ? '0 0 20px #fbbf24' : '0 0 10px rgba(0, 255, 255, 0.3)'
+              boxShadow: letter.selected ? '0 0 20px #fbbf24' : '0 0 10px rgba(59, 130, 246, 0.3)'
             }}
           >
             {letter.letter}
@@ -686,10 +722,10 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Bottom Control Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-2.5">
+      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-blue-400/50 text-white p-2.5">
         <div className="mb-2">
-          <div className="text-center text-xs text-cyan-400 mb-1">Selected Word:</div>
-          <div className="text-center text-lg font-bold min-h-7 bg-black border-2 border-cyan-400/50 rounded px-3 py-1 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
+          <div className="text-center text-xs text-blue-400 mb-1">Selected Word:</div>
+          <div className="text-center text-lg font-bold min-h-7 bg-black border-2 border-blue-400/50 rounded px-3 py-1 text-blue-300" style={{ boxShadow: 'inset 0 0 10px rgba(59, 130, 246, 0.2)' }}>
             {selectedLetters.map(l => l.letter).join('')}
           </div>
         </div>
@@ -698,8 +734,8 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           <button
             onClick={submitWord}
             disabled={selectedLetters.length === 0 || isValidating}
-            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-2 px-4 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95"
-            style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' } : {}}
+            className="flex-1 bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-2 px-4 rounded-lg transition-all hover:bg-blue-400 hover:text-black disabled:border-blue-400/30 disabled:text-blue-400/30 disabled:hover:bg-transparent active:scale-95"
+            style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)' } : {}}
           >
             {isValidating ? 'Checking...' : 'Submit Word'}
           </button>
