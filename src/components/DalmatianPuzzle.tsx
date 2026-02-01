@@ -657,10 +657,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
-        <div className="text-center text-white">
-          <div className="text-lg">🧩 Loading puzzle images...</div>
-          <div className="text-sm text-gray-300 mt-2">Connecting to database</div>
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center text-cyan-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>🧩 Loading puzzle images...</div>
+          <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -669,13 +669,14 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   // No puzzles available
   if (!currentPuzzle) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
-          <div className="text-lg text-red-400">❌ No puzzles available</div>
-          <div className="text-sm text-gray-300 mt-2">Check your Supabase connection</div>
+          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ No puzzles available</div>
+          <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchPuzzles}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+            className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           >
             Try Again
           </button>
@@ -685,52 +686,52 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+    <div className="min-h-screen bg-black flex items-center justify-center p-3">
       <div className="text-center max-w-4xl w-full text-white">
       {/* Header */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400">
-        Dalmatian Puzzle
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+        🧩 Dalmatian Puzzle
       </h1>
 
       {/* Info bar */}
       <div className="flex justify-center items-center gap-2 sm:gap-6 mb-3 sm:mb-6 flex-wrap text-xs sm:text-sm">
-        <div className="text-gray-300">
+        <div className="text-cyan-300">
           Puzzle {currentPuzzleIndex + 1} of {puzzles.length}
           {currentPuzzle.difficulty && (
-            <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${
-              currentPuzzle.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-              currentPuzzle.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-              'bg-red-500/20 text-red-300 border-red-400'
+            <span className={`ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border-2 ${
+              currentPuzzle.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border-green-500' :
+              currentPuzzle.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500' :
+              'bg-red-500/20 text-red-400 border-red-500'
             }`}>
               {currentPuzzle.difficulty.charAt(0).toUpperCase() + currentPuzzle.difficulty.slice(1)}
             </span>
           )}
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className={`text-base sm:text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
+          <div className={`text-base sm:text-xl font-bold ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`} style={{ textShadow: timeLeft > 10 ? '0 0 10px #00ffff' : '0 0 10px #ff0066' }}>
             ⏰ {timeLeft}s
           </div>
-          <div className="w-12 sm:w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="w-12 sm:w-16 h-2 bg-black rounded-full overflow-hidden border border-cyan-400/30">
             <div
               className={`h-full rounded-full transition-all duration-100 ${
-                timeLeft <= 10 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-blue-500'
+                timeLeft <= 10 ? 'bg-red-500' : 'bg-cyan-400'
               }`}
-              style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%` }}
+              style={{ width: `${(timeLeft / maxTimePerPuzzle) * 100}%`, boxShadow: timeLeft <= 10 ? '0 0 10px #ff0066' : '0 0 10px #00ffff' }}
             />
           </div>
         </div>
-        <div className="text-gray-300">
+        <div className="text-cyan-300">
           {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
         </div>
       </div>
 
       <div className="w-full flex flex-col items-center">
         {/* Puzzle Canvas */}
-        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-gray-800 rounded-xl shadow-lg p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square">
+        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-cyan-400/40" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)' }}>
           <canvas
             ref={canvasRef}
-            className="w-full h-full border-2 border-purple-600 rounded-lg"
-            style={{ touchAction: 'none' }}
+            className="w-full h-full border-2 border-cyan-500 rounded-lg"
+            style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           />
         </div>
 
@@ -738,46 +739,49 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         <div
           ref={draggableContainerRef}
           id="draggable-pieces-container"
-          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-gray-800 rounded-xl shadow-lg p-2 sm:p-4 mb-3 sm:mb-8"
+          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-cyan-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-8"
+          style={{ boxShadow: 'inset 0 0 20px rgba(0, 255, 255, 0.1)' }}
         />
 
         {/* Controls */}
         <div className="w-full flex justify-center">
           <button
             onClick={resetGame}
-            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white text-sm sm:text-base font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 text-sm sm:text-base font-bold rounded-lg hover:bg-cyan-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           >
-            Reset Puzzle
+            🔄 Reset Puzzle
           </button>
         </div>
       </div>
 
       {/* Game Over Message */}
       {gameState !== 'playing' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-700 p-8 rounded-lg shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-black border-2 border-cyan-400 p-8 rounded-lg" style={{ boxShadow: '0 0 30px rgba(0, 255, 255, 0.5)' }}>
             <div className="flex flex-col items-center justify-center space-y-4">
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {gameState === 'won' ? 'Puzzle Solved!' : "Time's Up!"}
+              <h3 className="text-3xl font-bold text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+                {gameState === 'won' ? '🎉 Puzzle Solved!' : "⏰ Time's Up!"}
               </h3>
               {gameState === 'won' && (
-                <div className="text-lg text-green-600 dark:text-green-400 text-center">
-                  Completed in {maxTimePerPuzzle - timeLeft} seconds! 🎉
+                <div className="text-lg text-green-400 text-center" style={{ textShadow: '0 0 10px #22c55e' }}>
+                  Completed in {maxTimePerPuzzle - timeLeft} seconds!
                 </div>
               )}
               {currentPuzzle.correct_answer && (
-                <div className="text-lg text-gray-700 dark:text-gray-300 text-center">
-                  Answer: <strong>{currentPuzzle.correct_answer}</strong>
+                <div className="text-lg text-cyan-300 text-center">
+                  Answer: <strong className="text-yellow-400">{currentPuzzle.correct_answer}</strong>
                 </div>
               )}
               {puzzles.length > 1 && gameState === 'won' && (
-                <div className="text-sm text-blue-600 dark:text-blue-400 text-center">
+                <div className="text-sm text-cyan-400 text-center" style={{ textShadow: '0 0 8px #00ffff' }}>
                   Next puzzle loading automatically...
                 </div>
               )}
               <button
                 onClick={resetGame}
-                className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+                className="px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg hover:bg-cyan-400 hover:text-black transition-all"
+                style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
               >
                 Try Again
               </button>

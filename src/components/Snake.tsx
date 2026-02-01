@@ -533,18 +533,18 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800">
-      <div className="px-3 sm:px-6 py-2 bg-gray-900/50">
-        <p className="text-gray-300 text-xs sm:text-sm text-center mb-1">
+    <div className="flex flex-col h-full bg-black">
+      <div className="px-3 sm:px-6 py-2 bg-black border-b border-cyan-400/30">
+        <p className="text-cyan-300 text-xs sm:text-sm text-center mb-1">
           Eat the red food. Avoid walls and yourself!
         </p>
-        <p className="text-gray-400 text-xs text-center">
+        <p className="text-cyan-400 text-xs text-center">
           Gold Apple: +50pts | Blue Ice: Slow down | Gray blocks: Death
         </p>
       </div>
 
       <div className="px-3 sm:px-6 py-2 flex justify-between items-center">
-        <h2 className="text-lg sm:text-2xl font-bold text-white">Snake</h2>
+        <h2 className="text-lg sm:text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>�� Snake</h2>
         <div className="flex items-center gap-1 sm:gap-2">
           {[...Array(3)].map((_, i) => (
             <span key={i} className={`text-base sm:text-xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
@@ -553,20 +553,20 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           ))}
         </div>
         <div className="text-right">
-          <p className="text-lg sm:text-xl font-bold text-cyan-400">Score: {score}</p>
+          <p className="text-lg sm:text-xl font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>Score: {score}</p>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center space-y-3 sm:space-y-4 px-3">
         <div className="flex gap-2 flex-wrap justify-center">
           {Date.now() < slowedUntil && (
-            <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg px-3 py-1 text-blue-300 text-sm font-semibold">
-              Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
+            <div className="bg-blue-500/20 border-2 border-blue-500 rounded-lg px-3 py-1 text-blue-300 text-sm font-semibold" style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>
+              ❄️ Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
             </div>
           )}
           {obstacles.length > 0 && (
-            <div className="bg-gray-500/20 border border-gray-500/50 rounded-lg px-3 py-1 text-gray-300 text-sm font-semibold">
-              Obstacles: {obstacles.length}
+            <div className="bg-gray-500/20 border-2 border-gray-500 rounded-lg px-3 py-1 text-gray-300 text-sm font-semibold" style={{ boxShadow: '0 0 10px rgba(107, 114, 128, 0.4)' }}>
+              ⚠️ Obstacles: {obstacles.length}
             </div>
           )}
         </div>
@@ -577,24 +577,24 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
             ref={canvasRef}
             width={400}
             height={400}
-            className="border-4 border-cyan-500/30 rounded-lg shadow-2xl shadow-cyan-500/20 bg-black"
-            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px' }}
+            className="border-4 border-cyan-500 rounded-lg bg-black"
+            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px', boxShadow: '0 0 25px rgba(0, 255, 255, 0.4)' }}
           />
 
           {!gameStarted && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg">
               <div className="text-center px-4">
-                <p className="text-white text-base sm:text-xl font-bold mb-2">Press any arrow or button to start!</p>
-                <p className="text-gray-400 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
+                <p className="text-cyan-400 text-base sm:text-xl font-bold mb-2" style={{ textShadow: '0 0 10px #00ffff' }}>Press any arrow or button to start!</p>
+                <p className="text-cyan-300 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
               </div>
             </div>
           )}
 
           {gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/95 rounded-lg">
               <div className="text-center">
-                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2">Game Over!</p>
-                <p className="text-white text-lg sm:text-2xl">Final Score: {score}</p>
+                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2" style={{ textShadow: '0 0 15px #ff0066' }}>💀 Game Over!</p>
+                <p className="text-yellow-400 text-lg sm:text-2xl" style={{ textShadow: '0 0 10px #fbbf24' }}>Final Score: {score}</p>
               </div>
             </div>
           )}
@@ -604,7 +604,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: -1 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
+            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
             disabled={gameOver}
           >
             ↑
@@ -612,21 +613,24 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: -1, y: 0 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
+            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
             disabled={gameOver}
           >
             ←
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: 1 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
+            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
             disabled={gameOver}
           >
             ↓
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 1, y: 0 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
+            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
             disabled={gameOver}
           >
             →

@@ -393,10 +393,10 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
-        <div className="text-center text-white">
-          <div className="text-lg">📊 Loading Ranky puzzles...</div>
-          <div className="text-sm text-gray-300 mt-2">Connecting to database</div>
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center text-cyan-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>📊 Loading Ranky puzzles...</div>
+          <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -405,13 +405,14 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Error state
   if (error || !currentPuzzle) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
-          <div className="text-lg text-red-400">❌ {error || 'No puzzles available'}</div>
-          <div className="text-sm text-gray-300 mt-2">Check your Supabase connection</div>
+          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ {error || 'No puzzles available'}</div>
+          <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchPuzzles}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+            className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           >
             Try Again
           </button>
@@ -421,33 +422,34 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-start justify-center p-2 pt-4">
+    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
       <div className="max-w-md w-full text-white">
         {/* Header with Title and Hint Button */}
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold">📊 Ranky</h2>
+          <h2 className="text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>📊 Ranky</h2>
           <button
             onClick={getHint}
             disabled={gameState !== 'playing'}
-            className="text-xs px-3 py-1.5 bg-blue-500/30 border border-blue-400 rounded-lg hover:bg-blue-500/50 transition-all disabled:opacity-50 whitespace-nowrap"
+            className="text-xs px-3 py-1.5 bg-transparent border-2 border-yellow-400 text-yellow-400 rounded-lg hover:bg-yellow-400 hover:text-black transition-all disabled:opacity-50 whitespace-nowrap"
+            style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}
           >
             💡 Hint ({hintsUsed})
           </button>
         </div>
 
         {/* Puzzle Info - Compact */}
-        <div className="text-center mb-2 bg-white/10 p-2 rounded-xl">
-          <h3 className="text-sm font-semibold text-white mb-0.5">
+        <div className="text-center mb-2 bg-black border-2 border-cyan-400/40 p-2 rounded-xl" style={{ boxShadow: 'inset 0 0 15px rgba(0, 255, 255, 0.1)' }}>
+          <h3 className="text-sm font-semibold text-cyan-400 mb-0.5">
             {currentPuzzle.title}
           </h3>
-          <p className="text-xs text-gray-300">
+          <p className="text-xs text-cyan-300">
             {currentPuzzle.instruction}
           </p>
         </div>
 
         {/* Hint Message - Compact */}
         {hintMessage && (
-          <div className="mb-2 p-2 bg-blue-500/20 border border-blue-400 rounded-lg text-center text-blue-200 text-sm">
+          <div className="mb-2 p-2 bg-yellow-500/20 border-2 border-yellow-400 rounded-lg text-center text-yellow-300 text-sm" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}>
             {hintMessage}
           </div>
         )}
@@ -457,12 +459,13 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           {playerOrder.map((item, index) => (
             <div
               key={item.id}
-              className={`relative bg-white/10 border-2 border-blue-500/30 rounded-lg p-2 transition-all ${
-                draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-blue-400 hover:bg-white/20'
+              className={`relative bg-black border-2 border-cyan-400/30 rounded-lg p-2 transition-all ${
+                draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-cyan-400 hover:bg-cyan-400/10'
               }`}
+              style={{ boxShadow: draggedIndex === index ? 'none' : '0 0 10px rgba(0, 255, 255, 0.2)' }}
             >
               {/* Rank Number - Smaller */}
-              <div className="absolute -left-1.5 -top-1.5 w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white">
+              <div className="absolute -left-1.5 -top-1.5 w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-black text-black" style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}>
                 {index + 1}
               </div>
 
@@ -489,8 +492,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
               <div className="flex items-center gap-2 ml-3 pointer-events-none">
                 <div className="text-xl">{item.image}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white text-sm truncate">{item.name}</div>
-                  <div className="text-xs text-gray-300 truncate">{item.subtitle}</div>
+                  <div className="font-semibold text-cyan-400 text-sm truncate">{item.name}</div>
+                  <div className="text-xs text-cyan-300 truncate">{item.subtitle}</div>
                 </div>
               </div>
 
@@ -502,7 +505,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                     moveItem(index, 'up');
                   }}
                   disabled={index === 0}
-                  className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                  className="text-cyan-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
                 >
                   <ArrowUp size={18} />
                 </button>
@@ -512,7 +515,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                     moveItem(index, 'down');
                   }}
                   disabled={index === playerOrder.length - 1}
-                  className="disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                  className="text-cyan-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
                 >
                   <ArrowDown size={18} />
                 </button>
@@ -526,7 +529,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           <div className="text-center mb-2">
             <button
               onClick={submitFinalAnswer}
-              className="px-6 py-2.5 rounded-xl font-bold text-base transition-all border-2 bg-gradient-to-r from-blue-500 to-cyan-600 border-blue-400 hover:shadow-lg hover:shadow-blue-500/25"
+              className="px-6 py-2.5 rounded-xl font-bold text-base transition-all border-2 bg-transparent border-green-500 text-green-400 hover:bg-green-500 hover:text-black"
+              style={{ textShadow: '0 0 10px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
             >
               🎯 Final Answer
             </button>

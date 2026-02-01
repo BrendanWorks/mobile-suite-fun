@@ -430,23 +430,23 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   }, [gameState]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-gray-900 flex items-center justify-center p-3">
+    <div className="min-h-screen bg-black flex items-center justify-center p-3">
       <div className="text-center max-w-4xl w-full text-white">
       {/* Header */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400">
-        Shape Sequence
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+        🔷 Shape Sequence
       </h1>
 
       {/* Game Stats */}
       <div className="flex justify-center items-center gap-3 sm:gap-8 mb-3 sm:mb-6 flex-wrap text-sm sm:text-base">
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className="text-lg sm:text-2xl font-bold text-cyan-400">Level {level}</div>
+          <div className="text-lg sm:text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Level {level}</div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className="text-base sm:text-xl font-bold text-yellow-400">Score: {score}</div>
+          <div className="text-base sm:text-xl font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>Score: {score}</div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className="text-base sm:text-xl font-bold text-red-400">
+          <div className="text-base sm:text-xl font-bold text-red-400" style={{ textShadow: '0 0 10px #ff0066' }}>
             Lives: {'❤️'.repeat(lives)}
           </div>
         </div>
@@ -455,33 +455,33 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       {/* Game Status */}
       <div className="mb-2 sm:mb-4 min-h-[24px] sm:min-h-[28px]">
         {gameState === 'waiting' && (
-          <div className="text-sm sm:text-lg text-purple-300">Ready to start?</div>
+          <div className="text-sm sm:text-lg text-cyan-300">Ready to start?</div>
         )}
         {gameState === 'showing' && (
-          <div className="text-sm sm:text-lg text-cyan-400">
+          <div className="text-sm sm:text-lg text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
             Watch the sequence... ({showingIndex + 1}/{gameStateRef.current.sequence?.length || 0})
           </div>
         )}
         {gameState === 'playing' && (
-          <div className="text-sm sm:text-lg text-green-400">
+          <div className="text-sm sm:text-lg text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>
             Repeat the sequence! ({gameStateRef.current.playerSequence?.length || 0}/{gameStateRef.current.sequence?.length || 0})
           </div>
         )}
         {gameState === 'correct' && (
-          <div className="text-sm sm:text-lg text-green-400 animate-pulse">Correct! ✨</div>
+          <div className="text-sm sm:text-lg text-green-400 animate-pulse" style={{ textShadow: '0 0 15px #22c55e' }}>Correct! ✨</div>
         )}
         {gameState === 'wrong' && (
-          <div className="text-sm sm:text-lg text-red-400 animate-pulse">Wrong! Try again...</div>
+          <div className="text-sm sm:text-lg text-red-400 animate-pulse" style={{ textShadow: '0 0 15px #ff0066' }}>Wrong! Try again...</div>
         )}
       </div>
 
       {/* Game Canvas */}
       <div className="w-full flex justify-center mb-4 sm:mb-8">
-        <div className="w-full max-w-md bg-gray-800 rounded-xl shadow-lg p-2 sm:p-4">
+        <div className="w-full max-w-md bg-black rounded-xl p-2 sm:p-4 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)' }}>
           <canvas
             ref={canvasRef}
-            className="w-full h-full border-2 border-purple-600 rounded-lg cursor-pointer"
-            style={{ touchAction: 'none', aspectRatio: '1' }}
+            className="w-full h-full border-2 border-cyan-500 rounded-lg cursor-pointer"
+            style={{ touchAction: 'none', aspectRatio: '1', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           />
         </div>
       </div>
@@ -491,7 +491,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         {gameState === 'waiting' && (
           <button
             onClick={startGame}
-            className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105 text-base sm:text-lg"
+            className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-lg hover:bg-green-500 hover:text-black transition-all text-base sm:text-lg"
+            style={{ textShadow: '0 0 10px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
           >
             🎮 Start Game
           </button>
@@ -500,25 +501,26 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         {(gameState === 'playing' || gameState === 'showing' || gameState === 'correct' || gameState === 'wrong') && gameState !== 'gameover' && (
           <button
             onClick={resetGame}
-            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm sm:text-base font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 transform hover:scale-105"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 text-sm sm:text-base font-bold rounded-lg hover:bg-cyan-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
           >
-            Reset Game
+            🔄 Reset Game
           </button>
         )}
       </div>
 
       {/* Game Over Screen */}
       {gameState === 'gameover' && (
-        <div className="mt-3 sm:mt-6 p-3 sm:p-6 bg-red-500/20 border-2 border-red-400 rounded-xl">
+        <div className="mt-3 sm:mt-6 p-3 sm:p-6 bg-black border-2 border-red-500 rounded-xl" style={{ boxShadow: '0 0 25px rgba(239, 68, 68, 0.4)' }}>
           <div className="text-center">
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-4">
-              Game Over! 💀
+            <h3 className="text-2xl sm:text-3xl font-bold text-red-500 mb-2 sm:mb-4" style={{ textShadow: '0 0 15px #ff0066' }}>
+              💀 Game Over!
             </h3>
-            <div className="text-base sm:text-lg text-gray-200 mb-2 sm:mb-4">
+            <div className="text-base sm:text-lg text-cyan-300 mb-2 sm:mb-4">
               <div>Final Score: <strong className="text-yellow-400">{score}</strong></div>
               <div>Level Reached: <strong className="text-cyan-400">{level}</strong></div>
             </div>
-            <p className="text-xs sm:text-sm text-purple-300">
+            <p className="text-xs sm:text-sm text-cyan-400">
               Click "Quit Round" above to continue to the next game
             </p>
           </div>
