@@ -92,7 +92,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         onComplete(scoreRef.current, 200);
       }
     },
-    canSkipQuestion: false
+    canSkipQuestion: false,
+    hideTimer: true // Endless survival game, no global timer needed
   }));
 
   const createFood = (currentSnake: Position[], currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Position => {
