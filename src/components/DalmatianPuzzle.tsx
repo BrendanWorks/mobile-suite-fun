@@ -631,9 +631,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     console.log('Reset complete');
   };
 
-  // Timer effect - PROPERLY stops when gameState is not 'playing'
+  // Timer effect - only starts when image is loaded and puzzle is ready
   useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0) {
+    if (gameState === 'playing' && timeLeft > 0 && isImageLoaded) {
       const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -645,8 +645,8 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }, 1000);
       return () => clearInterval(timer);
     }
-    // Timer stops when gameState !== 'playing' or timeLeft <= 0
-  }, [gameState, timeLeft]);
+    // Timer stops when gameState !== 'playing' or timeLeft <= 0 or image not loaded
+  }, [gameState, timeLeft, isImageLoaded]);
 
   // Handle puzzle completion - auto-advance to next puzzle
   useEffect(() => {
@@ -859,26 +859,26 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       <div className="text-center max-w-4xl w-full text-white">
       
       {/* Header - Cleaned up */}
-      <div className="mb-1 sm:mb-2">
-        <h2 className="text-xl sm:text-2xl font-bold text-pink-400 mb-0.5 border-b border-pink-400 pb-0.5 flex items-center justify-center gap-2">
-          <Shapes
-            className="w-6 h-6 sm:w-7 sm:h-7"
-            style={{
+      <div className="mb-3 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-pink-400 mb-1 border-b border-pink-400 pb-1 flex items-center justify-center gap-2">
+          <Shapes 
+            className="w-6 h-6 sm:w-7 sm:h-7" 
+            style={{ 
               color: '#ec4899',
               filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
               strokeWidth: 2
-            }}
+            }} 
           />
           <span style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</span>
         </h2>
-
+        
         {/* Tagline */}
-        <p className="text-pink-300 text-xs sm:text-sm mb-1 sm:mb-2">
+        <p className="text-pink-300 text-xs sm:text-sm mb-2 sm:mb-4">
           Piece it Together
         </p>
 
         {/* Score only - removed timer and piece counter */}
-        <div className="flex justify-start items-center mb-1 sm:mb-2 text-xs sm:text-sm">
+        <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
           <div className="text-pink-300">
             Score: <strong className="text-yellow-400 tabular-nums">{Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100)}</strong>
           </div>
@@ -887,7 +887,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
       <div className="w-full flex flex-col items-center">
         {/* Puzzle Canvas */}
-        <div className="w-full md:w-2/3 mb-2 sm:mb-4 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
+        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
           <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-pink-500 rounded-lg"
@@ -899,7 +899,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         <div
           ref={draggableContainerRef}
           id="draggable-pieces-container"
-          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-4 mb-2 sm:mb-4"
+          className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-8"
           style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)', minHeight: '100px' }}
         />
 
