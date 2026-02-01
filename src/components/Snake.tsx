@@ -499,7 +499,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
-      setShowInstructions(false); // Hide instructions when starting
+      // Instructions will auto-hide after 3 seconds via useEffect
     }
 
     switch (e.key) {
@@ -538,7 +538,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
-      setShowInstructions(false); // Hide instructions when starting
+      // Instructions will auto-hide after 3 seconds via useEffect
     }
 
     if (newDirection.x === -1 && x !== 1) setDirection(newDirection);
