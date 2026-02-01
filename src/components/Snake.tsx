@@ -57,6 +57,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   const [shimmer, setShimmer] = useState(0);
   const [slowedUntil, setSlowedUntil] = useState(0);
   const [backgroundHue, setBackgroundHue] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(true);
 
   const directionRef = useRef(direction);
   const snakeRef = useRef(snake);
@@ -351,6 +352,14 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     }
   }, [shimmer]);
 
+  // Hide instructions after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowInstructions(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -488,6 +497,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
+      setShowInstructions(false); // Hide instructions when starting
     }
 
     switch (e.key) {
@@ -526,6 +536,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
+      setShowInstructions(false); // Hide instructions when starting
     }
 
     if (newDirection.x === -1 && x !== 1) setDirection(newDirection);
@@ -536,16 +547,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
   return (
     <div className="flex flex-col h-full bg-black">
-      {/* Instructions */}
-      <div className="px-3 sm:px-6 py-2 bg-black border-b border-green-400/30">
-        <p className="text-green-300 text-xs sm:text-sm text-center mb-1">
-          Eat the red food. Avoid walls and yourself!
-        </p>
-        <p className="text-green-400 text-xs text-center">
-          Gold Apple: +50pts | Blue Ice: Slow down | Gray blocks: Death
-        </p>
-      </div>
-
       {/* Header - Branded */}
       <div className="px-3 sm:px-6 py-2 sm:py-3">
         <div className="mb-2">
@@ -611,11 +612,27 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
             style={{ width: '340px', height: '340px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
           />
 
+          {/* Instructions overlay - fades after 3 seconds */}
+          {showInstructions && (
+            <div 
+              className="absolute inset-0 bg-black/70 rounded-lg flex items-center justify-center transition-opacity duration-500"
+              style={{ opacity: showInstructions ? 1 : 0 }}
+            >
+              <div className="text-center px-4">
+                <p className="text-green-300 text-sm sm:text-base mb-2">
+                  Eat the red food. Avoid walls and yourself!
+                </p>
+                <p className="text-green-400 text-xs sm:text-sm">
+                  🟡 Gold: +50pts | ❄️ Blue Ice: Slow down | ⚫ Gray: Death
+                </p>
+              </div>
+            </div>
+          )}
+
           {!gameStarted && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg">
               <div className="text-center px-4">
-                <p className="text-green-400 text-base sm:text-xl font-bold mb-2" style={{ textShadow: '0 0 10px #22c55e' }}>Press any arrow or button to start!</p>
-                <p className="text-green-300 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
+                <p className="text-green-400 text-lg sm:text-2xl font-bold" style={{ textShadow: '0 0 10px #22c55e' }}>Press any arrow to start!</p>
               </div>
             </div>
           )}
