@@ -449,13 +449,13 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
           Repeat the Pattern
         </p>
 
-        {/* Stats - Score and Lives only (removed Level) */}
-        <div className="flex justify-center items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+        {/* Stats - Score left, Lives right */}
+        <div className="flex justify-between items-center text-xs sm:text-sm">
           <div className="text-orange-300">
             Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
           </div>
           <div className="text-orange-300">
-            Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
+            <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
           </div>
         </div>
       </div>
