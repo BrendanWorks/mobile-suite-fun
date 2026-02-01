@@ -39,7 +39,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       console.log(`PhotoMystery ended with score: ${score}/${totalPhotos * maxPoints}`);
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
-      // Call onComplete when time runs out
       if (onComplete) {
         onComplete(score, totalPhotos * maxPoints);
       }
@@ -229,9 +228,7 @@ const PhotoMystery = forwardRef((props, ref) => {
       onScoreUpdate(newScore, totalPhotos * maxPoints);
     }
 
-    // Play sound based on correctness
     if (correct) {
-      // Correct answer - play success sound and show feedback immediately
       playSound('correct');
       setGameState('result');
       
@@ -244,10 +241,8 @@ const PhotoMystery = forwardRef((props, ref) => {
         }
       }, 2500);
     } else {
-      // Wrong answer - play incorrect sound, brief pause before showing correct answer
       playSound('incorrect');
       
-      // Wait 800ms before showing the correct answer feedback
       setTimeout(() => {
         setGameState('result');
         
@@ -267,10 +262,8 @@ const PhotoMystery = forwardRef((props, ref) => {
     try {
       const audio = new Audio();
       if (type === 'correct') {
-        // Success sound - simple positive tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
       } else {
-        // Error sound - subtle negative tone
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
       audio.volume = 0.3;
@@ -326,13 +319,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     };
   }, []);
 
-  const getImageStyle = () => {
-    return {
-      transform: `scale(${zoomLevel})`,
-      transition: 'transform 0.1s linear'
-    };
-  };
-
   const getAnswerOptions = () => {
     if (!currentQuestion) return [];
 
@@ -361,21 +347,22 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (gameState === 'loading') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">📷 Loading Zooma...</div>
-        <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
+        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>📷 Loading Zooma...</div>
+        <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
       </div>
     );
   }
 
   if (gameState === 'error') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg text-red-400">❌ Error loading questions</div>
-        <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-white">
+        <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading questions</div>
+        <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
         <button
           onClick={fetchQuestions}
-          className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all border-2 border-blue-400"
+          className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
+          style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
         >
           Try Again
         </button>
@@ -385,8 +372,8 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (!currentQuestion) {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
-        <div className="text-lg">📷 Getting ready...</div>
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
+        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>📷 Getting ready...</div>
       </div>
     );
   }
@@ -395,24 +382,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   const timeRemaining = Math.max(0, photoDuration - elapsedTime);
   const percentage = (timeRemaining / photoDuration) * 100;
 
-  // Match VisualTimerBar color logic
-  const getBarColor = () => {
-    if (percentage > 66) {
-      return 'from-blue-500 to-blue-600';
-    } else if (percentage > 33) {
-      return 'from-amber-400 to-yellow-500';
-    } else if (percentage > 10) {
-      return 'from-orange-500 to-red-500';
-    } else {
-      return 'from-red-600 to-red-700';
-    }
-  };
-
-  const isPulsing = percentage < 15;
-
   return (
     <div style={{ paddingTop: '44px', position: 'relative' }}>
-      {/* Add custom animation for double pulse */}
       <style>{`
         @keyframes pulse-twice {
           0%, 100% {
@@ -433,7 +404,7 @@ const PhotoMystery = forwardRef((props, ref) => {
         }
       `}</style>
 
-      {/* Zooma's timer - positioned at top of container */}
+      {/* Timer bar - cyan neon */}
       {gameState === 'playing' && (
         <div 
           style={{ 
@@ -442,46 +413,51 @@ const PhotoMystery = forwardRef((props, ref) => {
             left: 0, 
             right: 0,
             width: '100%',
-            height: '16px',
+            height: '8px',
             margin: 0,
             padding: 0,
             zIndex: 50,
-            backgroundColor: '#1f2937'
+            backgroundColor: '#000',
+            border: '2px solid #00ffff',
+            borderRadius: '8px',
+            boxShadow: '0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1)'
           }}
         >
           <div
-            className={`bg-gradient-to-r ${getBarColor()} transition-all duration-100`}
             style={{ 
               width: `${percentage}%`,
-              height: '16px'
+              height: '100%',
+              background: '#00ffff',
+              boxShadow: '0 0 20px #00ffff',
+              transition: 'width 0.3s linear'
             }}
           />
         </div>
       )}
 
       {/* Game content */}
-      <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl text-white">
+      <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-black rounded-lg text-white" style={{ border: '2px solid #00ffff40' }}>
         <div className="mb-3 sm:mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+          <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
             📷 Zooma
           </h2>
-          <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
+          <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
             Guess what's in the photo as it zooms out!
           </p>
 
           <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
-            <div className="text-purple-300">
+            <div className="text-cyan-300">
               Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
             </div>
             <div className="flex items-center gap-1 sm:gap-2">
               <span className="font-bold text-cyan-400">
                 Photo {currentPhotoNumber}/{totalPhotos}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-300 border-green-400' :
-                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400' :
-                currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-300 border-red-400' :
-                'bg-gray-500/20 text-gray-300 border-gray-400'
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border-2 ${
+                currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border-green-500' :
+                currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500' :
+                currentQuestion.difficulty === 'hard' ? 'bg-red-500/20 text-red-400 border-red-500' :
+                'bg-cyan-500/20 text-cyan-400 border-cyan-500'
               }`}>
                 {currentQuestion.difficulty ?
                   currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1) :
@@ -492,20 +468,19 @@ const PhotoMystery = forwardRef((props, ref) => {
           </div>
         </div>
 
-        {/* Unified layout for both playing and result states */}
         {(gameState === 'playing' || gameState === 'result') && (
           <div className="space-y-3 sm:space-y-6">
-            {/* Points display - always visible, frozen in result state */}
+            {/* Points display */}
             <div className="flex justify-center items-center mb-2 sm:mb-4">
-              <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+              <div className="flex items-center gap-1 sm:gap-2 text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
                 <Star size={16} className="sm:w-5 sm:h-5" />
                 <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
-                <span className="text-xs text-purple-300">points</span>
+                <span className="text-xs text-cyan-300">points</span>
               </div>
             </div>
 
-            {/* Image - stays in place at frozen zoom level */}
-            <div className="relative bg-white/10 backdrop-blur-sm border border-purple-500/30 rounded-xl overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6">
+            {/* Image */}
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' }}>
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={currentQuestion.prompt}
@@ -516,39 +491,38 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            {/* Answer buttons with color feedback */}
+            {/* Answer buttons */}
             <div className="grid gap-2 sm:gap-3">
               {answerOptions.map((option, index) => {
                 const isCorrectAnswer = option === currentQuestion.correct_answer;
                 const isSelectedAnswer = option === selectedAnswer;
                 const showFeedback = gameState === 'result';
 
-                let buttonClass = "p-2.5 sm:p-4 rounded-xl text-sm sm:text-base font-semibold transition-all text-center text-white";
+                let buttonClass = "p-2.5 sm:p-3 rounded-lg text-sm sm:text-base font-semibold transition-all text-center text-white border-2";
+                let glowStyle = {};
                 
                 if (showFeedback) {
-                  // Result state - show full feedback
                   if (isCorrectAnswer) {
-                    // Correct answer - green pulse with thick border
-                    buttonClass += " bg-green-500/30 border-4 border-green-500 animate-pulse shadow-lg shadow-green-500/50";
+                    buttonClass += " bg-green-500/20 border-green-500 animate-pulse";
+                    glowStyle = { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' };
                   } else if (isSelectedAnswer) {
-                    // Selected wrong answer - red pulse twice with thin border
-                    buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50";
+                    buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice";
+                    glowStyle = { boxShadow: '0 0 20px rgba(239, 68, 68, 0.5)' };
                   } else {
-                    // Other options - dimmed
-                    buttonClass += " bg-white/5 border-2 border-purple-500/10 opacity-30";
+                    buttonClass += " bg-black/50 border-cyan-400/20 opacity-30";
                   }
                 } else if (selectedAnswer && !isCorrect) {
-                  // Intermediate state - wrong answer selected, waiting to show correct
                   if (isSelectedAnswer) {
-                    // Show red on wrong selection immediately with thin border and double pulse
-                    buttonClass += " bg-red-500/30 border-2 border-red-500 animate-pulse-twice shadow-lg shadow-red-500/50";
+                    buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice";
+                    glowStyle = { boxShadow: '0 0 20px rgba(239, 68, 68, 0.5)' };
                   } else {
-                    // Other buttons stay normal during pause
-                    buttonClass += " bg-white/10 border-2 border-purple-500/30 opacity-50";
+                    buttonClass += " bg-black/50 border-cyan-400/30 opacity-50";
                   }
                 } else {
-                  // Playing state - normal interactive buttons
-                  buttonClass += " bg-white/10 border-2 border-purple-500/30 hover:border-purple-400 hover:bg-white/20 hover:shadow-lg hover:shadow-purple-500/25 active:scale-95";
+                  buttonClass += " bg-black/50 border-cyan-400/30 hover:border-cyan-400 hover:bg-cyan-500/10";
+                  if (gameState === 'playing') {
+                    glowStyle = { boxShadow: '0 0 10px rgba(0, 255, 255, 0.2)' };
+                  }
                 }
 
                 return (
@@ -557,6 +531,7 @@ const PhotoMystery = forwardRef((props, ref) => {
                     onClick={() => gameState === 'playing' ? handleAnswerSelect(option) : null}
                     disabled={gameState === 'result' || (selectedAnswer !== null)}
                     className={buttonClass}
+                    style={glowStyle}
                   >
                     {option}
                   </button>
