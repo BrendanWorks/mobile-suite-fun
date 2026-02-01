@@ -639,6 +639,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
 
+    // Set crossOrigin to allow canvas operations on images from Supabase storage
+    img.crossOrigin = "anonymous";
+
     img.onload = () => {
       console.log('Image loaded successfully!', img.width, 'x', img.height);
       setIsImageLoaded(true);
@@ -653,16 +656,19 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       console.error("Failed to load image:", err, "URL:", currentPuzzle.image_url);
       // Try fallback image
       const fallbackUrl = 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
-      if (img.src !== fallbackUrl) {
+      if (!img.src.includes('unsplash.com')) {
         console.log('Trying fallback image');
+        img.crossOrigin = "anonymous";
         img.src = fallbackUrl;
       } else {
+        console.error('Fallback image also failed to load');
         setIsImageLoaded(false);
       }
     };
 
+    // Set src last (after crossOrigin is set)
     // If image is already loaded (cached), trigger onload manually
-    if (img.complete && img.naturalWidth > 0) {
+    if (img.complete && img.naturalWidth > 0 && img.src === currentPuzzle.image_url) {
       console.log('Image already cached, triggering onload');
       img.onload(null);
     } else {
