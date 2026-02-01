@@ -41,11 +41,11 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   });
 
   const SHAPES = [
-    { id: 0, type: 'circle', color: '#ff6b6b', x: 0.2, y: 0.3, size: 80 },
-    { id: 1, type: 'square', color: '#4ecdc4', x: 0.8, y: 0.3, size: 80 },
-    { id: 2, type: 'triangle', color: '#45b7d1', x: 0.2, y: 0.7, size: 80 },
-    { id: 3, type: 'diamond', color: '#f9ca24', x: 0.8, y: 0.7, size: 80 },
-    { id: 4, type: 'star', color: '#6c5ce7', x: 0.5, y: 0.5, size: 80 }
+    { id: 0, type: 'circle', color: '#ef4444', x: 0.2, y: 0.3, size: 80 },      // Brighter red
+    { id: 1, type: 'square', color: '#06b6d4', x: 0.8, y: 0.3, size: 80 },      // Brighter cyan
+    { id: 2, type: 'triangle', color: '#22d3ee', x: 0.2, y: 0.7, size: 80 },    // Bright cyan/blue
+    { id: 3, type: 'diamond', color: '#fbbf24', x: 0.8, y: 0.7, size: 80 },     // Brighter yellow
+    { id: 4, type: 'star', color: '#a855f7', x: 0.5, y: 0.5, size: 80 }         // Brighter purple
   ];
 
   const playSound = (frequency = 440, duration = 150) => {
@@ -177,14 +177,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas with gradient background
-    const gradient = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height / 2, 0,
-      canvas.width / 2, canvas.height / 2, canvas.width / 2
-    );
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(1, '#0f0f23');
-    ctx.fillStyle = gradient;
+    // Clear canvas with pure black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const currentTime = Date.now();
@@ -316,7 +310,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         gameStateRef.current.feedbackStartTime = Date.now();
         drawGame();
         
-        playSound(880, 300); // Success sound
+        // Brief delay before success sound to let shape sound finish
+        setTimeout(() => playSound(880, 300), 150);
         setScore(prev => {
           const newScore = prev + level * 10;
           if (props.onScoreUpdate) {
@@ -431,11 +426,11 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   }, [gameState]);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-2 pt-4">
+    <div className="bg-black flex items-start justify-center p-2 pt-2">
       <div className="text-center max-w-4xl w-full text-white">
       
       {/* Header - Updated to match pattern */}
-      <div className="mb-3 sm:mb-6">
+      <div className="mb-2 sm:mb-3">
         <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-1 border-b border-orange-400 pb-1 flex items-center justify-center gap-2">
           <Repeat 
             className="w-6 h-6 sm:w-7 sm:h-7" 
@@ -449,7 +444,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         </h2>
         
         {/* Tagline */}
-        <p className="text-orange-300 text-xs sm:text-sm mb-2 sm:mb-4">
+        <p className="text-orange-300 text-xs sm:text-sm mb-1 sm:mb-2">
           Repeat the Pattern
         </p>
 
@@ -485,8 +480,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       </div>
 
       {/* Game Canvas - Updated border to orange */}
-      <div className="w-full flex justify-center mb-4 sm:mb-8">
-        <div className="w-full max-w-md bg-black rounded-xl p-2 sm:p-4 border-2 border-orange-400/40" style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
+      <div className="w-full flex justify-center mb-2 sm:mb-4">
+        <div className="w-full max-w-md bg-black rounded-xl p-2 sm:p-3 border-2 border-orange-400/40" style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
           <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-orange-500 rounded-lg cursor-pointer"
