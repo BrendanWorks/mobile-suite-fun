@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 
@@ -205,7 +206,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       
       autoAdvanceTimeoutRef.current = window.setTimeout(() => {
         generateNewQuestion();
-      }, 3000);
+      }, 10000);
     } else {
       playSound('incorrect');
       const newTotal = totalQuestions + 1;
@@ -218,7 +219,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
-        }, 3000);
+        }, 10000);
       }, 800);
     }
   };
@@ -257,9 +258,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   if (gameState === 'loading') {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-cyan-400">
-          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>🎯 Loading questions...</div>
-          <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
+        <div className="text-center text-purple-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
+            <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
+            Loading questions...
+          </div>
+          <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -270,11 +274,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
           <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading questions</div>
-          <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
+          <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchQuestions}
-            className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
-            style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+            className="mt-4 px-6 py-3 bg-transparent border-2 border-purple-400 text-purple-400 rounded-lg font-semibold hover:bg-purple-400 hover:text-black transition-all"
+            style={{ textShadow: '0 0 8px #a855f7', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' }}
           >
             Try Again
           </button>
@@ -286,8 +290,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-cyan-400">
-          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>🎯 Getting ready...</div>
+        <div className="text-center text-purple-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
+            <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
+            Getting ready...
+          </div>
         </div>
       </div>
     );
@@ -318,13 +325,31 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         }
       `}</style>
 
-      <div className="mb-2 sm:mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
-          🎯 Odd Man Out
+      <div className="mb-3 sm:mb-6">
+        {/* Header with Sparkles icon */}
+        <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-1 border-b border-purple-400 pb-1 flex items-center justify-center gap-2">
+          <Sparkles 
+            className="w-6 h-6 sm:w-7 sm:h-7" 
+            style={{ 
+              color: '#a855f7',
+              filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))',
+              strokeWidth: 2
+            }} 
+          />
+          <span style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</span>
         </h2>
-        <p className="text-cyan-300 text-xs sm:text-sm">
-          Pick the TWO items that don't belong with the others!
+        
+        {/* Updated tagline */}
+        <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
+          Spot the Oddballs
         </p>
+
+        {/* Score - left aligned like Zooma */}
+        <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+          <div className="text-purple-300">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          </div>
+        </div>
       </div>
 
       {/* Items grid */}
@@ -343,25 +368,25 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
               } else if (isSelected) {
                 buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
               } else {
-                buttonClass += " bg-black/50 border-cyan-400/20 opacity-30 text-gray-500";
+                buttonClass += " bg-black/50 border-purple-400/20 opacity-30 text-gray-500";
               }
             } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
               if (isSelected) {
                 buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
               } else {
-                buttonClass += " bg-black/50 border-cyan-400/30 opacity-50 text-white";
+                buttonClass += " bg-black/50 border-purple-400/30 opacity-50 text-white";
               }
             } else {
               if (isSelected) {
-                buttonClass += " bg-cyan-500/20 border-cyan-400 text-cyan-300";
+                buttonClass += " bg-purple-500/20 border-purple-400 text-purple-300";
               } else {
-                buttonClass += " bg-black/50 hover:bg-cyan-500/10 text-white border-cyan-400/30 hover:border-cyan-400";
+                buttonClass += " bg-black/50 hover:bg-purple-500/10 text-white border-purple-400/30 hover:border-purple-400";
               }
             }
 
             const glowStyle = showFeedback && isCorrectItem ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
                              showFeedback && isSelected && !isCorrectItem ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
-                             isSelected && gameState === 'playing' ? { boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' } : {};
+                             isSelected && gameState === 'playing' ? { boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)' } : {};
 
             return (
               <button
@@ -380,15 +405,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
       {/* Your Answer */}
       <div className="mb-2 sm:mb-4">
-        <h4 className="text-xs sm:text-sm font-medium text-cyan-300 mb-1">Your Answer:</h4>
-        <div className="min-h-10 sm:min-h-12 bg-black/80 border-2 border-cyan-400/50 rounded-lg p-2 sm:p-3" style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.2)' }}>
+        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1">Your Answer:</h4>
+        <div className="min-h-10 sm:min-h-12 bg-black/80 border-2 border-purple-400/50 rounded-lg p-2 sm:p-3" style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}>
           {selectedItems.length === 0 ? (
-            <span className="text-cyan-400/60 text-xs sm:text-sm">Select 2 items that don't belong...</span>
+            <span className="text-purple-400/60 text-xs sm:text-sm">Select 2 items that don't belong...</span>
           ) : (
             <div className="text-xs sm:text-sm">
-              <strong className="text-cyan-300">{selectedItems.join(' & ')}</strong>
+              <strong className="text-purple-300">{selectedItems.join(' & ')}</strong>
               {gameState === 'playing' && selectedItems.length < 2 && (
-                <span className="text-cyan-400/70 ml-2">
+                <span className="text-purple-400/70 ml-2">
                   (Select {2 - selectedItems.length} more)
                 </span>
               )}
@@ -406,13 +431,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             className={`
               w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2
               ${selectedItems.length === 2
-                ? 'bg-transparent border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black'
-                : 'bg-black/50 border-cyan-400/30 text-cyan-400/40 cursor-not-allowed'
+                ? 'bg-transparent border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black'
+                : 'bg-black/50 border-purple-400/30 text-purple-400/40 cursor-not-allowed'
               }
             `}
-            style={selectedItems.length === 2 ? { textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' } : {}}
+            style={selectedItems.length === 2 ? { textShadow: '0 0 8px #a855f7', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' } : {}}
           >
-            {selectedItems.length === 2 ? '🎯 Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
+            {selectedItems.length === 2 ? '✨ Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
           </button>
         )}
 
