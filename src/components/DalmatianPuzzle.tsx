@@ -16,19 +16,13 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const maxTimePerPuzzle = 60;
 
-  // Pause timer immediately on mount until first image loads
+  // Control timer based on whether image is loaded
   useEffect(() => {
     if (onTimerPause) {
-      onTimerPause(true);
-    }
-  }, []);
-
-  // Pause timer whenever image is not loaded
-  useEffect(() => {
-    if (onTimerPause) {
+      // Pause when image not loaded, unpause when loaded
       onTimerPause(!isImageLoaded);
     }
-  }, [isImageLoaded]);
+  }, [isImageLoaded, onTimerPause]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({

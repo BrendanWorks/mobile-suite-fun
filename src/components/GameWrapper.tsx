@@ -19,7 +19,7 @@ export default function GameWrapper({
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(true); // Start paused, let child unpause when ready
   const [hideTimerBar, setHideTimerBar] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
