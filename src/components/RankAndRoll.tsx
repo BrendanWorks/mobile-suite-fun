@@ -443,7 +443,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           </h2>
           
           {/* Tagline */}
-          <p className="text-green-300 text-xs sm:text-sm mb-2 sm:mb-4">
+          <p className="text-green-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
             Rank 'em!
           </p>
 

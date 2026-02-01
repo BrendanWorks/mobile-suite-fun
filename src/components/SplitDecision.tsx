@@ -328,7 +328,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         </h2>
         
         {/* Tagline */}
-        <p className="text-yellow-300 text-xs sm:text-sm mb-2 sm:mb-4">
+        <p className="text-yellow-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
           Think Fast
         </p>
 
