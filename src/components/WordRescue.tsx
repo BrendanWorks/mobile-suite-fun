@@ -1,10 +1,5 @@
 /**
- * Word Rescue - UPDATED
- * - Guarantees profanity word in initial letters
- * - Reduced height to 500px
- * - Letter size reduced 10% (w-14 h-14 = 56px)
- * 
- * Replace components/WordRescue.tsx with this version
+ * Word Rescue - NEON EDITION
  */
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
@@ -41,7 +36,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     'night', 'might', 'start', 'heart', 'party', 'happy', 'early', 'ready',
     'money', 'funny', 'bread', 'great', 'plant', 'point', 'sound', 'round',
     'letter', 'better', 'little', 'simple', 'people', 'purple', 'circle',
-    // Adding missing common words
     'hog', 'log', 'fog', 'cog', 'bog', 'jog', 'dog', 'sin', 'din', 'gin',
     'pin', 'tin', 'fin', 'kin', 'dim', 'him', 'rim', 'gym', 'sum', 'gum',
     'hum', 'rum', 'bum', 'yum', 'gun', 'bun', 'nun', 'pun', 'sub', 'rub',
@@ -345,7 +339,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 500); // Changed from 600 to 500
+        return updated.filter(letter => letter.y < 500);
       });
     }, 50);
 
@@ -500,16 +494,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setScoreNotifications([]);
     submissionInProgress.current = false;
 
-    // Pick random profanity word
     const profanityWord = profanityWords[Math.floor(Math.random() * profanityWords.length)];
     console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
-    const screenHeight = 500; // Changed from 600 to 500
+    const screenHeight = 500;
     const topZoneHeight = screenHeight * 0.2;
     const numInitialLetters = 15;
 
-    // Create letters for the profanity word
     const profanityLetters = profanityWord.split('').map((letter, index) => ({
       id: index,
       letter: letter.toUpperCase(),
@@ -518,7 +510,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       selected: false
     }));
 
-    // Add random filler letters
     const fillerCount = numInitialLetters - profanityLetters.length;
     const fillerLetters = Array.from({ length: fillerCount }, (_, index) => ({
       id: profanityLetters.length + index,
@@ -547,10 +538,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setTimerStarted(false);
     setScoreNotifications([]);
     submissionInProgress.current = false;
-    
-    if (audioContext.current && audioContext.current.state === 'running') {
-      // Audio context stays alive for future games
-    }
   };
 
   const checkProfanity = async (word) => {
@@ -565,17 +552,18 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   if (gameState === 'menu') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-400 to-blue-600 text-white p-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">📝 Word Rescue</h1>
-          <p className="text-lg mb-2">Make words from falling letters!</p>
-          <p className="text-sm opacity-80 mb-2">90 seconds per round - longer words = more points!</p>
-          <p className="text-xs text-yellow-300 font-semibold mb-1">🤭 Big bonus for potty mouths!</p>
-          <p className="text-xs text-blue-200">🔊 Turn on sound for the full experience!</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
+        <div className="text-center mb-8 border-2 border-cyan-400 rounded-lg p-6" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}>
+          <h1 className="text-4xl font-bold mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>📝 Pop</h1>
+          <p className="text-lg mb-2 text-cyan-300">Make words from falling letters!</p>
+          <p className="text-sm text-cyan-400 mb-2">90 seconds per round - longer words = more points!</p>
+          <p className="text-xs text-yellow-400 font-semibold mb-1">🤭 Big bonus for potty mouths!</p>
+          <p className="text-xs text-cyan-300">🔊 Turn on sound for the full experience!</p>
         </div>
         <button 
           onClick={startGame}
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105"
+          className="bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-4 px-8 rounded-lg text-xl transition-all hover:bg-cyan-400 hover:text-black active:scale-95"
+          style={{ textShadow: '0 0 10px #00ffff', boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}
         >
           Start Playing
         </button>
@@ -585,20 +573,20 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   if (gameState === 'roundEnd') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-400 to-pink-600 text-white p-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">🎉 Round Complete!</h1>
-          <p className="text-3xl mb-4">Final Score: {score}</p>
-          <p className="text-lg mb-6">Words Found: {wordsFound.length}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
+        <div className="text-center mb-8 border-2 border-cyan-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.4)' }}>
+          <h1 className="text-4xl font-bold mb-4 text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>🎉 Round Complete!</h1>
+          <p className="text-3xl mb-4 text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>Final Score: {score}</p>
+          <p className="text-lg mb-6 text-cyan-300">Words Found: {wordsFound.length}</p>
           
           {wordsFound.length > 0 && (
-            <div className="bg-black bg-opacity-30 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto">
-              <h3 className="text-lg font-bold mb-2">Your Words:</h3>
+            <div className="bg-black border-2 border-cyan-400/50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto" style={{ boxShadow: 'inset 0 0 15px rgba(0, 255, 255, 0.2)' }}>
+              <h3 className="text-lg font-bold mb-2 text-cyan-400">Your Words:</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {wordsFound.map((item, index) => (
-                  <div key={index} className="flex justify-between">
+                  <div key={index} className="flex justify-between text-cyan-300">
                     <span className="uppercase font-bold">{item.word}</span>
-                    <span className="text-yellow-300">+{item.score}</span>
+                    <span className="text-yellow-400">+{item.score}</span>
                   </div>
                 ))}
               </div>
@@ -610,36 +598,37 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-sm mx-auto h-screen bg-gradient-to-b from-purple-400 to-blue-500 overflow-hidden" style={{ height: '500px' }}>
+    <div className="relative w-full max-w-sm mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '500px' }}>
       {/* Game Stats */}
-      <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-30 text-white p-3 z-10">
+      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-3 z-10">
         <div className="flex justify-between items-center text-sm">
-          <span>Score: {score}</span>
+          <span className="text-cyan-400">Score: <span className="text-yellow-400 font-bold">{score}</span></span>
         </div>
       </div>
 
       {/* Game Area */}
       <div className="relative w-full h-full pt-16 pb-32">
-        {/* Regular falling letters - 10% smaller */}
+        {/* Regular falling letters */}
         {letters.map(letter => (
           <div
             key={letter.id}
             onClick={() => selectLetter(letter.id)}
-            className={`absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg cursor-pointer transform transition-all duration-200 ${
+            className={`absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg cursor-pointer transform transition-all duration-200 border-2 ${
               letter.selected 
-                ? 'bg-yellow-300 text-black scale-110 shadow-lg' 
-                : 'bg-white text-black hover:scale-105 shadow-md'
+                ? 'bg-yellow-400/20 border-yellow-400 text-yellow-400 scale-110' 
+                : 'bg-black/80 border-cyan-400 text-cyan-400 hover:scale-105'
             }`}
             style={{
               left: `${letter.x}px`,
               top: `${letter.y}px`,
+              boxShadow: letter.selected ? '0 0 20px #fbbf24' : '0 0 10px rgba(0, 255, 255, 0.3)'
             }}
           >
             {letter.letter}
           </div>
         ))}
         
-        {/* Popping letters animation - 10% smaller */}
+        {/* Popping letters animation */}
         {poppingLetters.map(letter => {
           const elapsed = Date.now() - letter.popTime;
           const progress = elapsed / 800;
@@ -649,13 +638,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           return (
             <div
               key={`pop-${letter.id}`}
-              className="absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg pointer-events-none bg-gradient-to-r from-pink-400 to-purple-500 text-white"
+              className="absolute w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg pointer-events-none bg-green-500/30 border-2 border-green-500 text-green-400"
               style={{
                 left: `${letter.x}px`,
                 top: `${letter.y}px`,
                 transform: `scale(${scale})`,
                 opacity: opacity,
-                transition: 'none'
+                transition: 'none',
+                boxShadow: '0 0 30px rgba(34, 197, 94, 0.8)'
               }}
             >
               {letter.letter}
@@ -683,7 +673,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
                 top: `${notification.y - yOffset}px`,
                 opacity: opacity,
                 transition: 'none',
-                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                textShadow: notification.isProfanity ? '0 0 20px #fbbf24' : '0 0 15px #22c55e',
                 fontWeight: notification.isProfanity ? '900' : '700'
               }}
             >
@@ -694,10 +684,10 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Bottom Control Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-40 text-white p-4">
+      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-4">
         <div className="mb-3">
-          <div className="text-center text-sm opacity-80 mb-2">Selected Word:</div>
-          <div className="text-center text-xl font-bold min-h-8 bg-black bg-opacity-30 rounded px-3 py-1">
+          <div className="text-center text-sm text-cyan-400 mb-2">Selected Word:</div>
+          <div className="text-center text-xl font-bold min-h-8 bg-black border-2 border-cyan-400/50 rounded px-3 py-1 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
             {selectedLetters.map(l => l.letter).join('')}
           </div>
         </div>
@@ -706,14 +696,16 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           <button
             onClick={submitWord}
             disabled={selectedLetters.length === 0 || isValidating}
-            className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg transition"
+            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-3 px-4 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95"
+            style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' } : {}}
           >
             {isValidating ? 'Checking...' : 'Submit Word'}
           </button>
           <button
             onClick={clearSelection}
             disabled={selectedLetters.length === 0}
-            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg transition"
+            className="bg-transparent border-2 border-red-500 text-red-400 font-bold py-3 px-4 rounded-lg transition-all hover:bg-red-500 hover:text-black disabled:border-red-500/30 disabled:text-red-400/30 disabled:hover:bg-transparent active:scale-95"
+            style={selectedLetters.length > 0 ? { textShadow: '0 0 10px #ef4444', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' } : {}}
           >
             Clear
           </button>
