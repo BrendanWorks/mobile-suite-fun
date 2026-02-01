@@ -340,7 +340,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 1000);
+        return updated.filter(letter => letter.y < 750);
       });
     }, 50);
 
@@ -499,10 +499,10 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
-    const screenHeight = 900;
+    const screenHeight = 750;
     const maxWidth = 650;
-    const topZoneHeight = screenHeight * 0.25;
-    const numInitialLetters = 25;
+    const topZoneHeight = screenHeight * 0.22;
+    const numInitialLetters = 22;
 
     const profanityLetters = profanityWord.split('').map((letter, index) => ({
       id: index,
@@ -600,16 +600,16 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '90vh', minHeight: '800px', maxHeight: '1000px' }}>
+    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '750px' }}>
       {/* Game Stats */}
-      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-1.5 z-10">
+      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-2 z-10">
         <div className="flex justify-between items-center text-sm">
           <span className="text-cyan-400">Score: <span className="text-yellow-400 font-bold">{score}</span></span>
         </div>
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full h-full pt-10 pb-24">
+      <div className="relative w-full h-full pt-11 pb-26">
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
@@ -686,10 +686,10 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Bottom Control Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-2">
-        <div className="mb-1.5">
-          <div className="text-center text-xs text-cyan-400 mb-0.5">Selected Word:</div>
-          <div className="text-center text-base font-bold min-h-6 bg-black border-2 border-cyan-400/50 rounded px-2 py-0.5 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
+      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-cyan-400/50 text-white p-2.5">
+        <div className="mb-2">
+          <div className="text-center text-xs text-cyan-400 mb-1">Selected Word:</div>
+          <div className="text-center text-lg font-bold min-h-7 bg-black border-2 border-cyan-400/50 rounded px-3 py-1 text-cyan-300" style={{ boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.2)' }}>
             {selectedLetters.map(l => l.letter).join('')}
           </div>
         </div>
@@ -698,7 +698,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           <button
             onClick={submitWord}
             disabled={selectedLetters.length === 0 || isValidating}
-            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-2 px-3 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95 text-sm"
+            className="flex-1 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold py-2 px-4 rounded-lg transition-all hover:bg-cyan-400 hover:text-black disabled:border-cyan-400/30 disabled:text-cyan-400/30 disabled:hover:bg-transparent active:scale-95"
             style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' } : {}}
           >
             {isValidating ? 'Checking...' : 'Submit Word'}
@@ -706,7 +706,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           <button
             onClick={clearSelection}
             disabled={selectedLetters.length === 0}
-            className="bg-transparent border-2 border-red-500 text-red-400 font-bold py-2 px-3 rounded-lg transition-all hover:bg-red-500 hover:text-black disabled:border-red-500/30 disabled:text-red-400/30 disabled:hover:bg-transparent active:scale-95 text-sm"
+            className="bg-transparent border-2 border-red-500 text-red-400 font-bold py-2 px-4 rounded-lg transition-all hover:bg-red-500 hover:text-black disabled:border-red-500/30 disabled:text-red-400/30 disabled:hover:bg-transparent active:scale-95"
             style={selectedLetters.length > 0 ? { textShadow: '0 0 10px #ef4444', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' } : {}}
           >
             Clear
