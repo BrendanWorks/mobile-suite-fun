@@ -41,7 +41,8 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
           <button
             key={game.id}
             onClick={() => handleGameClick(game.slug as GameId, game.name, game.id)}
-            className="bg-white/10 text-white font-bold py-4 px-4 rounded-lg shadow-md transition-transform duration-200 transform hover:scale-105 hover:bg-white/20 border-2 border-purple-500/30 hover:border-purple-400"
+            className="bg-black text-cyan-400 font-bold py-4 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 hover:bg-cyan-400/10 border-2 border-cyan-400/40 hover:border-cyan-400 active:scale-100"
+            style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)', textShadow: '0 0 8px #00ffff' }}
           >
             <div className="text-2xl mb-2">{gameIcons[game.slug as keyof typeof gameIcons] || '🎮'}</div>
             <div className="text-sm">{game.name}</div>
