@@ -131,7 +131,7 @@ export default function GameWrapper({
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-900" style={{ position: 'relative' }}>
+    <div className="h-full w-full flex flex-col bg-black" style={{ position: 'relative' }}>
       {!hideTimerBar && <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />}
       <div className="flex-1 overflow-hidden" style={{ position: 'relative' }}>
         {cloneChildren()}
