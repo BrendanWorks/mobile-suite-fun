@@ -352,15 +352,13 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     }
   }, [shimmer]);
 
-  // Hide instructions after 3 seconds of gameplay (not on mount)
+  // Hide instructions after 3 seconds (starts immediately on mount)
   useEffect(() => {
-    if (!gameStarted) return; // Wait for game to start
-    
     const timer = setTimeout(() => {
       setShowInstructions(false);
     }, 3000);
     return () => clearTimeout(timer);
-  }, [gameStarted]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -499,7 +497,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
-      // Instructions will auto-hide after 3 seconds via useEffect
+      setShowInstructions(false); // Hide instructions instantly when starting
     }
 
     switch (e.key) {
@@ -538,7 +536,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
     if (!gameStarted) {
       setGameStarted(true);
-      // Instructions will auto-hide after 3 seconds via useEffect
+      setShowInstructions(false); // Hide instructions instantly when starting
     }
 
     if (newDirection.x === -1 && x !== 1) setDirection(newDirection);
@@ -614,27 +612,20 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
             style={{ width: '340px', height: '340px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
           />
 
-          {/* Start screen - shown before game starts */}
-          {!gameStarted && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg z-30">
-              <div className="text-center px-4">
-                <p className="text-green-400 text-lg sm:text-2xl font-bold" style={{ textShadow: '0 0 10px #22c55e' }}>Press any arrow to start!</p>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions overlay - shows for 3 seconds AFTER game starts */}
-          {gameStarted && showInstructions && (
+          {/* Instructions overlay - shows immediately, fades after 3 seconds or instantly on press */}
+          {showInstructions && (
             <div 
-              className="absolute inset-0 bg-black/70 rounded-lg flex items-center justify-center transition-opacity duration-500 z-20"
-              style={{ opacity: showInstructions ? 1 : 0 }}
+              className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center transition-opacity duration-500 z-20"
             >
               <div className="text-center px-4">
                 <p className="text-green-300 text-sm sm:text-base mb-2">
                   Eat the red food. Avoid walls and yourself!
                 </p>
-                <p className="text-green-400 text-xs sm:text-sm">
+                <p className="text-green-400 text-xs sm:text-sm mb-3">
                   🟡 Gold: +50pts | ❄️ Blue Ice: Slow down | ⚫ Gray: Death
+                </p>
+                <p className="text-green-400 text-xs sm:text-sm font-bold" style={{ textShadow: '0 0 10px #22c55e' }}>
+                  Press any arrow to start!
                 </p>
               </div>
             </div>
