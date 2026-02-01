@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { TrendingUp } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 
 interface Position {
@@ -33,7 +34,7 @@ interface SnakeProps {
 }
 
 const GRID_SIZE = 20;
-const INITIAL_SPEED = 200; // Slower starting speed (was 150)
+const INITIAL_SPEED = 200;
 const SPEED_INCREMENT = 5;
 const MAX_SPEED = 50;
 const POWERUP_CHANCE = 0.15;
@@ -53,7 +54,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [screenShake, setScreenShake] = useState(0);
-  const [shimmer, setShimmer] = useState(0); // New shimmer effect for good events
+  const [shimmer, setShimmer] = useState(0);
   const [slowedUntil, setSlowedUntil] = useState(0);
   const [backgroundHue, setBackgroundHue] = useState(0);
 
@@ -205,7 +206,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     };
 
     if (checkCollision(head, currentSnake, obstaclesRef.current)) {
-      triggerScreenShake(); // Only shake on collision (bad event)
+      triggerScreenShake();
       const newLives = livesRef.current - 1;
       setLives(newLives);
       livesRef.current = newLives;
@@ -232,7 +233,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       ateFood = true;
       pointsGained = 10;
       createParticleBurst(head.x, head.y, '#ef4444');
-      triggerShimmer(); // Shimmer instead of shake for eating food
+      triggerShimmer();
 
       const newScore = scoreRef.current + pointsGained;
       setScore(newScore);
@@ -273,7 +274,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       if (currentPowerUp.type === 'gold') {
         pointsGained = 50;
         createParticleBurst(head.x, head.y, '#fbbf24');
-        triggerShimmer(); // Shimmer instead of shake for powerup
+        triggerShimmer();
 
         const newScore = scoreRef.current + pointsGained;
         setScore(newScore);
@@ -286,7 +287,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         setSlowedUntil(Date.now() + SLOW_DURATION);
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
         createParticleBurst(head.x, head.y, '#60a5fa');
-        triggerShimmer(); // Shimmer for ice powerup too
+        triggerShimmer();
 
         const isSlowed = true;
         const newSpeed = Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT) * 1.5;
@@ -447,22 +448,22 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         ctx.globalAlpha = 1;
       });
 
-      // Draw shimmer effect on edges
+      // Draw shimmer effect with green color matching the brand
       if (shimmer > 0) {
         const shimmerIntensity = Math.sin(shimmer * Math.PI * 3) * shimmer;
         const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient1.addColorStop(0, `rgba(34, 211, 238, ${shimmerIntensity * 0.5})`);
-        gradient1.addColorStop(0.5, `rgba(34, 211, 238, 0)`);
-        gradient1.addColorStop(1, `rgba(34, 211, 238, ${shimmerIntensity * 0.5})`);
+        gradient1.addColorStop(0, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
+        gradient1.addColorStop(0.5, `rgba(34, 197, 94, 0)`);
+        gradient1.addColorStop(1, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
         
         ctx.fillStyle = gradient1;
         ctx.fillRect(0, 0, canvas.width, 10);
         ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
         const gradient2 = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient2.addColorStop(0, `rgba(34, 211, 238, ${shimmerIntensity * 0.5})`);
-        gradient2.addColorStop(0.5, `rgba(34, 211, 238, 0)`);
-        gradient2.addColorStop(1, `rgba(34, 211, 238, ${shimmerIntensity * 0.5})`);
+        gradient2.addColorStop(0, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
+        gradient2.addColorStop(0.5, `rgba(34, 197, 94, 0)`);
+        gradient2.addColorStop(1, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
         
         ctx.fillStyle = gradient2;
         ctx.fillRect(0, 0, 10, canvas.height);
@@ -534,26 +535,49 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
   return (
     <div className="flex flex-col h-full bg-black">
-      <div className="px-3 sm:px-6 py-2 bg-black border-b border-cyan-400/30">
-        <p className="text-cyan-300 text-xs sm:text-sm text-center mb-1">
+      {/* Instructions */}
+      <div className="px-3 sm:px-6 py-2 bg-black border-b border-green-400/30">
+        <p className="text-green-300 text-xs sm:text-sm text-center mb-1">
           Eat the red food. Avoid walls and yourself!
         </p>
-        <p className="text-cyan-400 text-xs text-center">
+        <p className="text-green-400 text-xs text-center">
           Gold Apple: +50pts | Blue Ice: Slow down | Gray blocks: Death
         </p>
       </div>
 
-      <div className="px-3 sm:px-6 py-2 flex justify-between items-center">
-        <h2 className="text-lg sm:text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>�� Snake</h2>
-        <div className="flex items-center gap-1 sm:gap-2">
-          {[...Array(3)].map((_, i) => (
-            <span key={i} className={`text-base sm:text-xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
-              {i < lives ? '❤️' : '🖤'}
-            </span>
-          ))}
+      {/* Header - Branded */}
+      <div className="px-3 sm:px-6 py-2 sm:py-3">
+        <div className="mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-1 border-b border-green-400 pb-1 flex items-center justify-center gap-2">
+            <TrendingUp 
+              className="w-6 h-6 sm:w-7 sm:h-7" 
+              style={{ 
+                color: '#22c55e',
+                filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))',
+                strokeWidth: 2
+              }} 
+            />
+            <span style={{ textShadow: '0 0 10px #22c55e' }}>Snake</span>
+          </h2>
+          
+          {/* Tagline */}
+          <p className="text-green-300 text-xs sm:text-sm text-center mb-2">
+            Thrive and Survive
+          </p>
         </div>
-        <div className="text-right">
-          <p className="text-lg sm:text-xl font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>Score: {score}</p>
+
+        {/* Score and Lives */}
+        <div className="flex justify-between items-center text-xs sm:text-sm">
+          <div className="text-green-300">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          </div>
+          <div className="flex items-center gap-1">
+            {[...Array(3)].map((_, i) => (
+              <span key={i} className={`text-sm sm:text-base ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
+                {i < lives ? '❤️' : '🖤'}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -577,15 +601,15 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
             ref={canvasRef}
             width={400}
             height={400}
-            className="border-4 border-cyan-500 rounded-lg bg-black"
-            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px', boxShadow: '0 0 25px rgba(0, 255, 255, 0.4)' }}
+            className="border-4 border-green-500 rounded-lg bg-black"
+            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
           />
 
           {!gameStarted && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg">
               <div className="text-center px-4">
-                <p className="text-cyan-400 text-base sm:text-xl font-bold mb-2" style={{ textShadow: '0 0 10px #00ffff' }}>Press any arrow or button to start!</p>
-                <p className="text-cyan-300 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
+                <p className="text-green-400 text-base sm:text-xl font-bold mb-2" style={{ textShadow: '0 0 10px #22c55e' }}>Press any arrow or button to start!</p>
+                <p className="text-green-300 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
               </div>
             </div>
           )}
@@ -604,8 +628,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: -1 })}
-            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
             ↑
@@ -613,24 +637,24 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: -1, y: 0 })}
-            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
             ←
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: 1 })}
-            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
             ↓
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 1, y: 0 })}
-            className="bg-transparent border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black active:bg-cyan-500 text-cyan-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
             →
