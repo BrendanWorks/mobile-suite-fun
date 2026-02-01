@@ -20,13 +20,18 @@ export default function GameWrapper({
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
+  const [hideTimerBar, setHideTimerBar] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number } | null>(null);
 
-  // Hide timer for games that manage their own (check gameName immediately to prevent flash)
-  const hideTimerBar = gameName === 'Zooma' || gameName === 'Snake';
+  // Check if game wants to hide timer (set by game's imperative handle)
+  useEffect(() => {
+    if (childrenRef.current?.hideTimer) {
+      setHideTimerBar(true);
+    }
+  }, [children]);
 
   useEffect(() => {
     // Don't run timer if paused
