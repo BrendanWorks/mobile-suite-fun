@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Star } from 'lucide-react';
+import { Star, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
@@ -262,7 +262,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     try {
       const audio = new Audio();
       if (type === 'correct') {
-        audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
+        audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
       } else {
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
@@ -348,7 +348,10 @@ const PhotoMystery = forwardRef((props, ref) => {
   if (gameState === 'loading') {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
-        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>📷 Loading Zooma...</div>
+        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
+          <Search className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }} />
+          Loading Zooma...
+        </div>
         <div className="text-sm text-cyan-300 mt-2">Connecting to database</div>
       </div>
     );
@@ -373,10 +376,13 @@ const PhotoMystery = forwardRef((props, ref) => {
   if (!currentQuestion) {
     return (
       <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
-        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>📷 Getting ready...</div>
+        <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
+          <Search className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }} />
+          Getting ready...
+        </div>
       </div>
     );
-  }
+  };
 
   const answerOptions = getAnswerOptions();
   const timeRemaining = Math.max(0, photoDuration - elapsedTime);
@@ -438,9 +444,19 @@ const PhotoMystery = forwardRef((props, ref) => {
       {/* Game content */}
       <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-black rounded-lg text-white" style={{ border: '2px solid #00ffff40' }}>
         <div className="mb-3 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
-            📷 Zooma
+          {/* UPDATED: Icon + Title with neon glow */}
+          <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
+            <Search 
+              className="w-6 h-6 sm:w-7 sm:h-7" 
+              style={{ 
+                color: '#00ffff',
+                filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))',
+                strokeWidth: 2
+              }} 
+            />
+            <span style={{ textShadow: '0 0 10px #00ffff' }}>Zooma</span>
           </h2>
+          
           <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
             Guess what's in the photo as it zooms out!
           </p>
