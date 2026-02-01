@@ -146,10 +146,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const handleResize = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.log('Canvas not found in handleResize');
+      return;
+    }
 
     const container = canvas.parentElement;
-    if (!container) return;
+    if (!container) {
+      console.log('Canvas container not found in handleResize');
+      return;
+    }
 
     const size = Math.min(container.offsetWidth, window.innerHeight * 0.7);
     canvas.width = size;
@@ -157,7 +163,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     gameStateRef.current.canvasWidth = canvas.width;
     gameStateRef.current.canvasHeight = canvas.height;
     gameStateRef.current.pieceSize = gameStateRef.current.canvasWidth / gameStateRef.current.PUZZLE_COLS;
-    
+
+    console.log('Canvas resized to:', size, 'pieceSize:', gameStateRef.current.pieceSize);
+
     if (isImageLoaded) {
       drawGame();
       drawDraggablePieces();
@@ -171,9 +179,22 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       return;
     }
 
+    // Wait for container to have dimensions
+    if (container.offsetWidth === 0) {
+      console.log('Container width is 0, waiting...');
+      requestAnimationFrame(drawDraggablePieces);
+      return;
+    }
+
     console.log('Drawing draggable pieces, container width:', container.offsetWidth, 'canvas width:', gameStateRef.current.canvasWidth);
 
     container.innerHTML = '';
+
+    // If no pieces to draw, exit
+    if (gameStateRef.current.draggablePieces.length === 0) {
+      console.log('No draggable pieces to draw');
+      return;
+    }
 
     // Calculate piece size with a minimum of 60px
     let draggablePieceSize = Math.min(
@@ -181,12 +202,17 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       gameStateRef.current.canvasWidth / gameStateRef.current.PUZZLE_COLS
     );
 
-    // Ensure minimum size
+    // Ensure minimum size and valid number
     draggablePieceSize = Math.max(60, draggablePieceSize);
+
+    if (isNaN(draggablePieceSize) || draggablePieceSize <= 0) {
+      console.error('Invalid piece size:', draggablePieceSize);
+      return;
+    }
 
     console.log('Draggable piece size:', draggablePieceSize, 'num pieces:', gameStateRef.current.draggablePieces.length);
 
-    gameStateRef.current.draggablePieces.forEach(piece => {
+    gameStateRef.current.draggablePieces.forEach((piece, index) => {
       const pieceCanvas = document.createElement('canvas');
       pieceCanvas.width = draggablePieceSize;
       pieceCanvas.height = draggablePieceSize;
@@ -194,19 +220,24 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       pieceCanvas.className = 'rounded-lg shadow-md transition-transform duration-100 hover:scale-110 cursor-pointer border-2 border-pink-400';
       pieceCanvas.style.minWidth = '60px';
       pieceCanvas.style.minHeight = '60px';
+      pieceCanvas.style.display = 'block';
 
-      console.log('Creating piece canvas:', pieceCanvas.width, 'x', pieceCanvas.height);
+      console.log(`Creating piece ${index} (id: ${piece.id}):`, pieceCanvas.width, 'x', pieceCanvas.height, 'source:', piece.sourceX, piece.sourceY);
 
       const pieceCtx = pieceCanvas.getContext('2d');
       if (pieceCtx) {
-        pieceCtx.drawImage(
-          gameStateRef.current.img,
-          piece.sourceX, piece.sourceY,
-          gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS,
-          gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS,
-          0, 0,
-          draggablePieceSize, draggablePieceSize
-        );
+        try {
+          pieceCtx.drawImage(
+            gameStateRef.current.img,
+            piece.sourceX, piece.sourceY,
+            gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS,
+            gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS,
+            0, 0,
+            draggablePieceSize, draggablePieceSize
+          );
+        } catch (err) {
+          console.error('Error drawing piece:', err);
+        }
       }
 
       container.appendChild(pieceCanvas);
@@ -598,23 +629,38 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   // Load image when puzzles change or current puzzle changes
   useEffect(() => {
     const currentPuzzle = getCurrentPuzzle();
-    if (!currentPuzzle || loading) return;
-    
+    if (!currentPuzzle || loading) {
+      console.log('No puzzle or still loading, skipping image load');
+      return;
+    }
+
+    console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
+
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
-    
+
     img.onload = () => {
+      console.log('Image loaded successfully!', img.width, 'x', img.height);
       setIsImageLoaded(true);
-      handleResize();
-      resetGame();
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        handleResize();
+        resetGame();
+      });
     };
-    
-    img.onerror = () => {
+
+    img.onerror = (err) => {
       setIsImageLoaded(false);
-      console.error("Failed to load image. Please check the URL.");
+      console.error("Failed to load image:", err, "URL:", currentPuzzle.image_url);
     };
-    
-    img.src = currentPuzzle.image_url;
+
+    // If image is already loaded (cached), trigger onload manually
+    if (img.complete && img.naturalWidth > 0) {
+      console.log('Image already cached, triggering onload');
+      img.onload(null);
+    } else {
+      img.src = currentPuzzle.image_url;
+    }
   }, [puzzles, currentPuzzleIndex, loading]);
 
   // Handle resize
