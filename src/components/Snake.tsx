@@ -30,17 +30,16 @@ interface Obstacle {
 interface SnakeProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number) => void;
-  onTimerPause?: (paused: boolean) => void;
 }
 
 const GRID_SIZE = 20;
-const INITIAL_SPEED = 150;
+const INITIAL_SPEED = 200; // Slower starting speed (was 150)
 const SPEED_INCREMENT = 5;
 const MAX_SPEED = 50;
 const POWERUP_CHANCE = 0.15;
 const SLOW_DURATION = 10000;
 
-const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, onTimerPause }, ref) => {
+const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -54,6 +53,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
   const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [screenShake, setScreenShake] = useState(0);
+  const [shimmer, setShimmer] = useState(0); // New shimmer effect for good events
   const [slowedUntil, setSlowedUntil] = useState(0);
   const [backgroundHue, setBackgroundHue] = useState(0);
 
@@ -81,12 +81,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
     slowedUntilRef.current = slowedUntil;
   }, [direction, snake, food, gameOver, score, lives, particles, powerUp, obstacles, slowedUntil]);
 
-  useEffect(() => {
-    if (onTimerPause) {
-      onTimerPause(true);
-    }
-  }, [onTimerPause]);
-
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: scoreRef.current,
@@ -96,7 +90,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       if (!gameOverRef.current && onComplete) {
         onComplete(scoreRef.current, 200);
       }
-    }
+    },
+    canSkipQuestion: false
   }));
 
   const createFood = (currentSnake: Position[], currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Position => {
@@ -175,6 +170,10 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
     setScreenShake(10);
   };
 
+  const triggerShimmer = () => {
+    setShimmer(1);
+  };
+
   const checkCollision = (head: Position, body: Position[], currentObstacles: Obstacle[]): boolean => {
     if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) return true;
 
@@ -206,7 +205,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
     };
 
     if (checkCollision(head, currentSnake, obstaclesRef.current)) {
-      triggerScreenShake();
+      triggerScreenShake(); // Only shake on collision (bad event)
       const newLives = livesRef.current - 1;
       setLives(newLives);
       livesRef.current = newLives;
@@ -233,7 +232,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       ateFood = true;
       pointsGained = 10;
       createParticleBurst(head.x, head.y, '#ef4444');
-      triggerScreenShake();
+      triggerShimmer(); // Shimmer instead of shake for eating food
 
       const newScore = scoreRef.current + pointsGained;
       setScore(newScore);
@@ -274,7 +273,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       if (currentPowerUp.type === 'gold') {
         pointsGained = 50;
         createParticleBurst(head.x, head.y, '#fbbf24');
-        triggerScreenShake();
+        triggerShimmer(); // Shimmer instead of shake for powerup
 
         const newScore = scoreRef.current + pointsGained;
         setScore(newScore);
@@ -287,6 +286,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
         setSlowedUntil(Date.now() + SLOW_DURATION);
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
         createParticleBurst(head.x, head.y, '#60a5fa');
+        triggerShimmer(); // Shimmer for ice powerup too
 
         const isSlowed = true;
         const newSpeed = Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT) * 1.5;
@@ -339,6 +339,15 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       return () => clearTimeout(timer);
     }
   }, [screenShake]);
+
+  useEffect(() => {
+    if (shimmer > 0) {
+      const timer = setTimeout(() => {
+        setShimmer(prev => Math.max(0, prev - 0.05));
+      }, 30);
+      return () => clearTimeout(timer);
+    }
+  }, [shimmer]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -398,214 +407,4 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, o
       snake.forEach((segment, index) => {
         const gradient = ctx.createLinearGradient(
           segment.x * GRID_SIZE, segment.y * GRID_SIZE,
-          (segment.x + 1) * GRID_SIZE, (segment.y + 1) * GRID_SIZE
-        );
-
-        if (index === 0) {
-          gradient.addColorStop(0, '#22d3ee');
-          gradient.addColorStop(1, '#06b6d4');
-          ctx.shadowColor = '#22d3ee';
-          ctx.shadowBlur = 20;
-
-          const headSize = GRID_SIZE - 1;
-          const headOffset = -0.5;
-          ctx.fillStyle = gradient;
-          ctx.fillRect(
-            segment.x * GRID_SIZE + headOffset,
-            segment.y * GRID_SIZE + headOffset,
-            headSize,
-            headSize
-          );
-        } else {
-          gradient.addColorStop(0, '#10b981');
-          gradient.addColorStop(1, '#059669');
-          ctx.shadowColor = '#10b981';
-          ctx.shadowBlur = 10;
-
-          ctx.fillStyle = gradient;
-          ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE - 2, GRID_SIZE - 2);
-        }
-        ctx.shadowBlur = 0;
-      });
-
-      particlesRef.current.forEach(particle => {
-        ctx.fillStyle = particle.color;
-        ctx.globalAlpha = particle.life;
-        ctx.shadowColor = particle.color;
-        ctx.shadowBlur = 10;
-        ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-      });
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [snake, food, backgroundHue]);
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (gameOver) return;
-
-    const { x, y } = directionRef.current;
-
-    if (!gameStarted) {
-      setGameStarted(true);
-    }
-
-    switch (e.key) {
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        if (x !== 1) setDirection({ x: -1, y: 0 });
-        break;
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        if (x !== -1) setDirection({ x: 1, y: 0 });
-        break;
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        if (y !== 1) setDirection({ x: 0, y: -1 });
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (y !== -1) setDirection({ x: 0, y: 1 });
-        break;
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver, gameStarted]);
-
-  const handleDirectionButton = (newDirection: Position) => {
-    if (gameOver) return;
-
-    const { x, y } = directionRef.current;
-
-    if (!gameStarted) {
-      setGameStarted(true);
-    }
-
-    if (newDirection.x === -1 && x !== 1) setDirection(newDirection);
-    else if (newDirection.x === 1 && x !== -1) setDirection(newDirection);
-    else if (newDirection.y === -1 && y !== 1) setDirection(newDirection);
-    else if (newDirection.y === 1 && y !== -1) setDirection(newDirection);
-  };
-
-  return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800">
-      <div className="px-3 sm:px-6 py-2 bg-gray-900/50">
-        <p className="text-gray-300 text-xs sm:text-sm text-center mb-1">
-          Eat the red food. Avoid walls and yourself!
-        </p>
-        <p className="text-gray-400 text-xs text-center">
-          Gold Apple: +50pts | Blue Ice: Slow down | Gray blocks: Death
-        </p>
-      </div>
-
-      <div className="px-3 sm:px-6 py-2 flex justify-between items-center">
-        <h2 className="text-lg sm:text-2xl font-bold text-white">Snake</h2>
-        <div className="flex items-center gap-1 sm:gap-2">
-          {[...Array(3)].map((_, i) => (
-            <span key={i} className={`text-base sm:text-xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
-              {i < lives ? '❤️' : '🖤'}
-            </span>
-          ))}
-        </div>
-        <div className="text-right">
-          <p className="text-lg sm:text-xl font-bold text-cyan-400">Score: {score}</p>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center space-y-3 sm:space-y-4 px-3">
-        <div className="flex gap-2 flex-wrap justify-center">
-          {Date.now() < slowedUntil && (
-            <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg px-3 py-1 text-blue-300 text-sm font-semibold">
-              Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
-            </div>
-          )}
-          {obstacles.length > 0 && (
-            <div className="bg-gray-500/20 border border-gray-500/50 rounded-lg px-3 py-1 text-gray-300 text-sm font-semibold">
-              Obstacles: {obstacles.length}
-            </div>
-          )}
-        </div>
-        <div className="relative" style={{
-          transform: `translate(${(Math.random() - 0.5) * screenShake}px, ${(Math.random() - 0.5) * screenShake}px)`
-        }}>
-          <canvas
-            ref={canvasRef}
-            width={400}
-            height={400}
-            className="border-4 border-cyan-500/30 rounded-lg shadow-2xl shadow-cyan-500/20 bg-black"
-            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px' }}
-          />
-
-          {!gameStarted && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
-              <div className="text-center px-4">
-                <p className="text-white text-base sm:text-xl font-bold mb-2">Press any arrow or button to start!</p>
-                <p className="text-gray-400 text-xs sm:text-sm">Use WASD or Arrow Keys</p>
-              </div>
-            </div>
-          )}
-
-          {gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-lg">
-              <div className="text-center">
-                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2">Game Over!</p>
-                <p className="text-white text-lg sm:text-2xl">Final Score: {score}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 w-40 sm:w-56">
-          <div></div>
-          <button
-            onClick={() => handleDirectionButton({ x: 0, y: -1 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
-            disabled={gameOver}
-          >
-            ↑
-          </button>
-          <div></div>
-          <button
-            onClick={() => handleDirectionButton({ x: -1, y: 0 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
-            disabled={gameOver}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => handleDirectionButton({ x: 0, y: 1 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
-            disabled={gameOver}
-          >
-            ↓
-          </button>
-          <button
-            onClick={() => handleDirectionButton({ x: 1, y: 0 })}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 sm:py-3 px-3 rounded-lg transition-colors text-lg sm:text-xl"
-            disabled={gameOver}
-          >
-            →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-Snake.displayName = 'Snake';
-
-export default Snake;
+          (segment.x + 1) * GRID_SIZE
