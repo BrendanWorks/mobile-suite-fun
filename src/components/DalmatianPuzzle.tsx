@@ -135,8 +135,8 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   // Next puzzle
   const nextPuzzle = () => {
+    setIsImageLoaded(false); // Reset image loaded state for new puzzle
     setCurrentPuzzleIndex(prev => (prev + 1) % puzzles.length);
-    resetGame();
   };
 
   const playSound = (frequency = 440) => {
@@ -692,6 +692,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
+    // Reset image loaded state while loading new puzzle
+    setIsImageLoaded(false);
+
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
 
@@ -700,11 +703,12 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     img.onload = () => {
       console.log('Image loaded successfully!', img.width, 'x', img.height);
-      setIsImageLoaded(true);
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         handleResize();
         resetGame();
+        // Only set isImageLoaded to true after everything is drawn
+        setIsImageLoaded(true);
       });
     };
 
