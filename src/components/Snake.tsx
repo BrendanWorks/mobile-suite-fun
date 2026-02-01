@@ -581,28 +581,33 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center space-y-3 sm:space-y-4 px-3">
-        <div className="flex gap-2 flex-wrap justify-center">
-          {Date.now() < slowedUntil && (
-            <div className="bg-blue-500/20 border-2 border-blue-500 rounded-lg px-3 py-1 text-blue-300 text-sm font-semibold" style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>
-              ❄️ Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
-            </div>
-          )}
-          {obstacles.length > 0 && (
-            <div className="bg-gray-500/20 border-2 border-gray-500 rounded-lg px-3 py-1 text-gray-300 text-sm font-semibold" style={{ boxShadow: '0 0 10px rgba(107, 114, 128, 0.4)' }}>
-              ⚠️ Obstacles: {obstacles.length}
-            </div>
-          )}
-        </div>
-        <div className="relative" style={{
-          transform: `translate(${(Math.random() - 0.5) * screenShake}px, ${(Math.random() - 0.5) * screenShake}px)`
+      <div className="flex flex-col items-center justify-center px-3 py-2">
+        {/* Fixed-size canvas container */}
+        <div className="relative mb-3" style={{
+          transform: `translate(${(Math.random() - 0.5) * screenShake}px, ${(Math.random() - 0.5) * screenShake}px)`,
+          width: '340px',
+          height: '340px'
         }}>
+          {/* Power-up indicators - overlaid at top */}
+          <div className="absolute -top-10 left-0 right-0 flex gap-2 flex-wrap justify-center z-20">
+            {Date.now() < slowedUntil && (
+              <div className="bg-blue-500/20 border-2 border-blue-500 rounded-lg px-3 py-1 text-blue-300 text-xs font-semibold" style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>
+                ❄️ Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
+              </div>
+            )}
+            {obstacles.length > 0 && (
+              <div className="bg-gray-500/20 border-2 border-gray-500 rounded-lg px-3 py-1 text-gray-300 text-xs font-semibold" style={{ boxShadow: '0 0 10px rgba(107, 114, 128, 0.4)' }}>
+                ⚠️ Obstacles: {obstacles.length}
+              </div>
+            )}
+          </div>
+
           <canvas
             ref={canvasRef}
             width={400}
             height={400}
             className="border-4 border-green-500 rounded-lg bg-black"
-            style={{ maxWidth: '90vw', maxHeight: '45vh', width: '400px', height: '400px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
+            style={{ width: '340px', height: '340px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
           />
 
           {!gameStarted && (
@@ -624,11 +629,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 w-40 sm:w-56">
+        {/* Fixed control buttons */}
+        <div className="grid grid-cols-3 gap-2 w-40 sm:w-48 mt-3">
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: -1 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
             style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
@@ -637,7 +643,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           <div></div>
           <button
             onClick={() => handleDirectionButton({ x: -1, y: 0 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
             style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
@@ -645,7 +651,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 0, y: 1 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
             style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
@@ -653,7 +659,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           </button>
           <button
             onClick={() => handleDirectionButton({ x: 1, y: 0 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 sm:py-3 px-3 rounded-lg transition-all text-lg sm:text-xl disabled:opacity-30"
+            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
             style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
             disabled={gameOver}
           >
