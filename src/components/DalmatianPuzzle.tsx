@@ -53,8 +53,26 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     completedSlots: 0,
     canvasWidth: 0,
     canvasHeight: 0,
-    pieceSize: 0
+    pieceSize: 0,
+    // Crop coordinates for center-cropping to square
+    cropX: 0,
+    cropY: 0,
+    cropSize: 0
   });
+
+  // Calculate center crop coordinates for square aspect ratio
+  const calculateCenterCrop = () => {
+    const img = gameStateRef.current.img;
+    const size = Math.min(img.width, img.height);
+    const cropX = (img.width - size) / 2;
+    const cropY = (img.height - size) / 2;
+    
+    gameStateRef.current.cropX = cropX;
+    gameStateRef.current.cropY = cropY;
+    gameStateRef.current.cropSize = size;
+    
+    console.log('Center crop calculated:', { cropX, cropY, cropSize: size, imgWidth: img.width, imgHeight: img.height });
+  };
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
@@ -227,11 +245,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       const pieceCtx = pieceCanvas.getContext('2d');
       if (pieceCtx) {
         try {
+          // Use center-cropped coordinates
+          const pieceWidth = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_COLS;
+          const pieceHeight = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_ROWS;
+          
           pieceCtx.drawImage(
             gameStateRef.current.img,
-            piece.sourceX, piece.sourceY,
-            gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS,
-            gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS,
+            gameStateRef.current.cropX + piece.sourceX, 
+            gameStateRef.current.cropY + piece.sourceY,
+            pieceWidth,
+            pieceHeight,
             0, 0,
             draggablePieceSize, draggablePieceSize
           );
@@ -265,11 +288,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         ctx.strokeRect(piece.destX, piece.destY, gameStateRef.current.pieceSize, gameStateRef.current.pieceSize);
         ctx.setLineDash([]);
       } else {
+        // Use center-cropped coordinates
+        const pieceWidth = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_COLS;
+        const pieceHeight = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_ROWS;
+        
         ctx.drawImage(
           gameStateRef.current.img, 
-          piece.sourceX, piece.sourceY, 
-          gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS, 
-          gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS, 
+          gameStateRef.current.cropX + piece.sourceX,
+          gameStateRef.current.cropY + piece.sourceY,
+          pieceWidth,
+          pieceHeight,
           piece.destX, piece.destY, 
           gameStateRef.current.pieceSize, gameStateRef.current.pieceSize
         );
@@ -287,12 +315,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       ctx.shadowOffsetX = 5;
       ctx.shadowOffsetY = 5;
       
+      // Use center-cropped coordinates
+      const pieceWidth = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_COLS;
+      const pieceHeight = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_ROWS;
+      
       ctx.drawImage(
         gameStateRef.current.img, 
-        dragPiece.sourceX, 
-        dragPiece.sourceY, 
-        gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS, 
-        gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS, 
+        gameStateRef.current.cropX + dragPiece.sourceX,
+        gameStateRef.current.cropY + dragPiece.sourceY,
+        pieceWidth,
+        pieceHeight,
         dragPiece.dragX || 0, 
         dragPiece.dragY || 0, 
         gameStateRef.current.pieceSize, gameStateRef.current.pieceSize
@@ -542,17 +574,24 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     setGameState('playing');
     setTimeLeft(maxTimePerPuzzle);
 
+    // Calculate center crop coordinates
+    calculateCenterCrop();
+
     console.log('Image dimensions:', gameStateRef.current.img.width, 'x', gameStateRef.current.img.height);
     console.log('Canvas dimensions:', gameStateRef.current.canvasWidth, 'x', gameStateRef.current.canvasHeight);
     console.log('Piece size:', gameStateRef.current.pieceSize);
+    console.log('Crop area:', gameStateRef.current.cropSize, 'x', gameStateRef.current.cropSize);
 
     const allPieces = [];
+    const pieceWidth = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_COLS;
+    const pieceHeight = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_ROWS;
+    
     for (let row = 0; row < gameStateRef.current.PUZZLE_ROWS; row++) {
       for (let col = 0; col < gameStateRef.current.PUZZLE_COLS; col++) {
         allPieces.push({
           id: row * gameStateRef.current.PUZZLE_COLS + col,
-          sourceX: col * (gameStateRef.current.img.width / gameStateRef.current.PUZZLE_COLS),
-          sourceY: row * (gameStateRef.current.img.height / gameStateRef.current.PUZZLE_ROWS),
+          sourceX: col * pieceWidth,  // Position within cropped square
+          sourceY: row * pieceHeight,  // Position within cropped square
           destX: col * gameStateRef.current.pieceSize,
           destY: row * gameStateRef.current.pieceSize,
           correctRow: row,
