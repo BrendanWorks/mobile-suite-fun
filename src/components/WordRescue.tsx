@@ -340,7 +340,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 750);
+        return updated.filter(letter => letter.y < 680);
       });
     }, 50);
 
@@ -499,10 +499,10 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
-    const screenHeight = 750;
+    const screenHeight = 680;
     const maxWidth = 650;
-    const topZoneHeight = screenHeight * 0.22;
-    const numInitialLetters = 22;
+    const topZoneHeight = screenHeight * 0.20;
+    const numInitialLetters = 20;
 
     const profanityLetters = profanityWord.split('').map((letter, index) => ({
       id: index,
@@ -600,7 +600,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '750px' }}>
+    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-cyan-400/30" style={{ height: '680px' }}>
       {/* Game Stats */}
       <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-cyan-400/50 text-white p-2 z-10">
         <div className="flex justify-between items-center text-sm">
@@ -609,7 +609,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full h-full pt-11 pb-26">
+      <div className="relative w-full h-full pt-12 pb-28">
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
