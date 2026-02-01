@@ -340,7 +340,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           y: letter.y + 0.8
         }));
 
-        return updated.filter(letter => letter.y < 615);
+        return updated.filter(letter => letter.y < 450);
       });
     }, 50);
 
@@ -499,7 +499,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
-    const screenHeight = 615;
+    const screenHeight = 450;
     const maxWidth = 650;
     const topZoneHeight = screenHeight * 0.25;
     const numInitialLetters = 18;
@@ -609,7 +609,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full h-full pt-10 pb-20">
+      <div className="relative w-full pt-10 pb-20" style={{ height: '450px' }}>
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
