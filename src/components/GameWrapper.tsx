@@ -20,6 +20,7 @@ export default function GameWrapper({
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
   const [hideTimerBar, setHideTimerBar] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
@@ -32,18 +33,34 @@ export default function GameWrapper({
     }
   }, [children]);
 
+  // Monitor when child is ready to start timer
   useEffect(() => {
-    if (isActive && timeRemaining > 0) {
+    if (!timerStarted && childrenRef.current && childrenRef.current.pauseTimer === false) {
+      console.log('🎮 Child is ready, starting timer');
+      setTimerStarted(true);
+    }
+  }, [timerStarted]);
+
+  // Poll to check if child is ready (since we can't watch ref changes directly)
+  useEffect(() => {
+    if (timerStarted) return;
+
+    const checkInterval = setInterval(() => {
+      if (childrenRef.current && childrenRef.current.pauseTimer === false) {
+        console.log('🎮 Child is ready (polled), starting timer');
+        setTimerStarted(true);
+      }
+    }, 100);
+
+    return () => clearInterval(checkInterval);
+  }, [timerStarted]);
+
+  useEffect(() => {
+    if (isActive && timeRemaining > 0 && timerStarted) {
       const intervalTime = isFastCountdown ? 50 : 1000;
       const decrement = isFastCountdown ? 0.05 : 1;
 
       timerRef.current = window.setInterval(() => {
-        // Don't start countdown until child component is ready
-        // This prevents timer from running while images are loading
-        if (!childrenRef.current || childrenRef.current?.pauseTimer === true) {
-          return; // Skip this tick if child not ready or explicitly paused
-        }
-
         setTimeRemaining((prev) => {
           const newTime = prev - decrement;
           if (newTime <= 0) {
@@ -58,7 +75,7 @@ export default function GameWrapper({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeRemaining, isFastCountdown]);
+  }, [isActive, timeRemaining, isFastCountdown, timerStarted]);
 
   const handleTimeUp = () => {
     console.log('⏰ GameWrapper.handleTimeUp called');

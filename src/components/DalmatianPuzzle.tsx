@@ -16,26 +16,30 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const maxTimePerPuzzle = 60;
 
-  useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: gameState === 'won' ? 100 : Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100),
-      maxScore: 100
-    }),
-    onGameEnd: () => {
-      console.log(`SnapShot ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
-      if (resultTimeout) {
-        clearTimeout(resultTimeout);
-      }
-    },
-    skipQuestion: () => {
-      nextPuzzle();
-    },
-    canSkipQuestion: true,
-    loadNextPuzzle: () => {
-      nextPuzzle();
-    },
-    pauseTimer: !isImageLoaded // Pause timer when image not loaded
-  }), [isImageLoaded, gameState, resultTimeout]);
+  useImperativeHandle(ref, () => {
+    const handle = {
+      getGameScore: () => ({
+        score: gameState === 'won' ? 100 : Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100),
+        maxScore: 100
+      }),
+      onGameEnd: () => {
+        console.log(`SnapShot ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
+        if (resultTimeout) {
+          clearTimeout(resultTimeout);
+        }
+      },
+      skipQuestion: () => {
+        nextPuzzle();
+      },
+      canSkipQuestion: true,
+      loadNextPuzzle: () => {
+        nextPuzzle();
+      },
+      pauseTimer: !isImageLoaded // Pause timer when image not loaded
+    };
+    console.log('🎯 SnapShot useImperativeHandle updated:', { isImageLoaded, pauseTimer: handle.pauseTimer });
+    return handle;
+  }, [isImageLoaded, gameState, resultTimeout]);
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -694,6 +698,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
     // Reset image loaded state when starting to load new image
+    console.log('🖼️ Setting isImageLoaded = false (starting load)');
     setIsImageLoaded(false);
 
     const img = gameStateRef.current.img;
@@ -703,12 +708,13 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      console.log('Image loaded successfully!', img.width, 'x', img.height);
+      console.log('🖼️ Image loaded successfully!', img.width, 'x', img.height);
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         handleResize();
         resetGame();
         // Only mark as loaded AFTER the image is rendered on canvas
+        console.log('🖼️ Setting isImageLoaded = true (image rendered)');
         setIsImageLoaded(true);
       });
     };
