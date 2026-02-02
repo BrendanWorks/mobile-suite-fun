@@ -5,6 +5,7 @@ import { initGA, trackPageView, analytics } from './lib/analytics';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 import TestMode from './components/TestMode';
+import AdminTools from './components/AdminTools';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -12,6 +13,7 @@ export default function App() {
   const [showGames, setShowGames] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [testGameId, setTestGameId] = useState<string | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Initialize analytics on mount
   useEffect(() => {
@@ -62,6 +64,20 @@ export default function App() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.5)' }}></div>
           <p className="text-cyan-400 text-base" style={{ textShadow: '0 0 10px #00ffff' }}>Loading Game Box...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (showAdmin) {
+    return (
+      <div>
+        <button
+          onClick={() => setShowAdmin(false)}
+          className="fixed top-4 left-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg z-50"
+        >
+          ← Back
+        </button>
+        <AdminTools />
       </div>
     );
   }
@@ -120,6 +136,13 @@ export default function App() {
           style={{ textShadow: '0 0 8px #fbbf24', boxShadow: '0 0 15px rgba(251, 191, 36, 0.4)' }}
         >
           🧪 Test Mode
+        </button>
+        <button
+          onClick={() => setShowAdmin(true)}
+          className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-semibold rounded-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
+          style={{ textShadow: '0 0 8px #c084fc', boxShadow: '0 0 15px rgba(192, 132, 252, 0.4)' }}
+        >
+          🔧 Admin
         </button>
       </>
     );
