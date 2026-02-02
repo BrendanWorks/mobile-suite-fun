@@ -693,6 +693,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
+    // Reset image loaded state when starting to load new image
+    setIsImageLoaded(false);
+
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
 
