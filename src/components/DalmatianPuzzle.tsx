@@ -27,15 +27,14 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         clearTimeout(resultTimeout);
       }
     },
-    skipQuestion: () => {
-      nextPuzzle();
-    },
+    skipQuestion: () => nextPuzzle(),
     canSkipQuestion: true,
-    loadNextPuzzle: () => {
-      nextPuzzle();
-    },
-    pauseTimer: !isImageLoaded // Pause timer when image not loaded
-  }), [isImageLoaded, gameState, resultTimeout]);
+    loadNextPuzzle: () => nextPuzzle(),
+    get pauseTimer() {
+      // Pause if image not loaded, still loading puzzles, or not in playing state
+      return !isImageLoaded || loading || gameState !== 'playing';
+    }
+  }), [isImageLoaded, loading, gameState, resultTimeout]);
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -703,38 +702,54 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      console.log('Image loaded successfully!', img.width, 'x', img.height);
+      console.log('Image loaded OK', img.width, '×', img.height);
+      // Just mark as loaded - handleResize/resetGame moved to separate effect
       setIsImageLoaded(true);
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        handleResize();
-        resetGame();
-      });
     };
 
     img.onerror = (err) => {
-      console.error("Failed to load image:", err, "URL:", currentPuzzle.image_url);
+      console.error("Image load failed:", currentPuzzle.image_url, err);
       // Try fallback image
       const fallbackUrl = 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
-      if (!img.src.includes('unsplash.com')) {
+      if (img.src !== fallbackUrl) {
         console.log('Trying fallback image');
         img.crossOrigin = "anonymous";
         img.src = fallbackUrl;
       } else {
-        console.error('Fallback image also failed to load');
-        setIsImageLoaded(false);
+        console.error('Fallback image also failed');
+        setIsImageLoaded(false); // permanent fail
       }
     };
 
     // Set src last (after crossOrigin is set)
     // If image is already loaded (cached), trigger onload manually
-    if (img.complete && img.naturalWidth > 0 && img.src === currentPuzzle.image_url) {
+    if (img.complete && img.naturalWidth !== 0 && img.src === currentPuzzle.image_url) {
       console.log('Image already cached, triggering onload');
-      img.onload(null);
+      img.onload?.(new Event('load'));
     } else {
       img.src = currentPuzzle.image_url;
     }
+
+    // Cleanup: remove handlers when effect re-runs or unmounts
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
   }, [puzzles, currentPuzzleIndex, loading]);
+
+  // Initialize puzzle AFTER image is loaded and canvas is rendered
+  useEffect(() => {
+    if (!isImageLoaded || !canvasRef.current) return;
+    
+    // Give browser one frame to render canvas element
+    const timer = requestAnimationFrame(() => {
+      console.log('Post-load init: resizing + resetting game');
+      handleResize();     // sets canvas dimensions & pieceSize
+      resetGame();        // creates pieces, draws everything
+    });
+    
+    return () => cancelAnimationFrame(timer);
+  }, [isImageLoaded]);
 
   // Handle resize
   useEffect(() => {
