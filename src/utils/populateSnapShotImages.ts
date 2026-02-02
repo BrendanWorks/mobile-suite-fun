@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
  * and create puzzle records for any missing ones
  */
 export async function listStorageImages() {
+  console.log('Attempting to list images from jigsaw-images bucket...');
+
   const { data, error } = await supabase.storage
     .from('jigsaw-images')
     .list('', {
@@ -14,8 +16,12 @@ export async function listStorageImages() {
 
   if (error) {
     console.error('Error listing storage images:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return null;
   }
+
+  console.log(`Successfully fetched ${data?.length || 0} images`);
+  console.log('Images:', data);
 
   return data;
 }

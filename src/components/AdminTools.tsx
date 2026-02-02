@@ -10,13 +10,20 @@ export default function AdminTools() {
     setLoading(true);
     setMessage('Fetching images from storage...');
 
-    const imageList = await listStorageImages();
+    try {
+      const imageList = await listStorageImages();
 
-    if (imageList) {
-      setImages(imageList);
-      setMessage(`Found ${imageList.length} images in storage`);
-    } else {
-      setMessage('Failed to fetch images');
+      if (imageList && imageList.length > 0) {
+        setImages(imageList);
+        setMessage(`✅ Found ${imageList.length} images in storage`);
+      } else if (imageList && imageList.length === 0) {
+        setMessage('⚠️ No images found in storage bucket');
+      } else {
+        setMessage('❌ Failed to fetch images - check console for details');
+      }
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     setLoading(false);
