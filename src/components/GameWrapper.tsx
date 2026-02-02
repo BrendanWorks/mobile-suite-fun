@@ -38,11 +38,12 @@ export default function GameWrapper({
       const decrement = isFastCountdown ? 0.05 : 1;
 
       timerRef.current = window.setInterval(() => {
-        // Check if child wants timer paused on every tick
-        if (childrenRef.current?.pauseTimer === true) {
-          return; // Skip this tick if paused
+        // Don't start countdown until child component is ready
+        // This prevents timer from running while images are loading
+        if (!childrenRef.current || childrenRef.current?.pauseTimer === true) {
+          return; // Skip this tick if child not ready or explicitly paused
         }
-        
+
         setTimeRemaining((prev) => {
           const newTime = prev - decrement;
           if (newTime <= 0) {

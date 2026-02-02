@@ -704,11 +704,12 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     img.onload = () => {
       console.log('Image loaded successfully!', img.width, 'x', img.height);
-      setIsImageLoaded(true);
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         handleResize();
         resetGame();
+        // Only mark as loaded AFTER the image is rendered on canvas
+        setIsImageLoaded(true);
       });
     };
 
