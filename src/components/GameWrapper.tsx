@@ -19,7 +19,6 @@ export default function GameWrapper({
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(true); // Start paused, let child unpause when ready
   const [hideTimerBar, setHideTimerBar] = useState(false);
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
@@ -34,8 +33,11 @@ export default function GameWrapper({
   }, [children]);
 
   useEffect(() => {
-    // Don't run timer if paused
-    if (timerPaused) {
+    // Check if child wants timer paused (from pauseTimer property)
+    const shouldPause = childrenRef.current?.pauseTimer === true;
+    
+    // Don't run timer if child wants it paused
+    if (shouldPause) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -59,7 +61,7 @@ export default function GameWrapper({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeRemaining, isFastCountdown, timerPaused]);
+  }, [isActive, timeRemaining, isFastCountdown, children]); // Added children to re-check pauseTimer
 
   const handleTimeUp = () => {
     console.log('⏰ GameWrapper.handleTimeUp called');
@@ -128,7 +130,6 @@ export default function GameWrapper({
         ref: childrenRef,
         onScoreUpdate,
         onComplete: handleGameComplete,
-        onTimerPause: setTimerPaused,
       });
     }
 
