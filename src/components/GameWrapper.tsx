@@ -1,4 +1,13 @@
-// ... imports remain the same
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import VisualTimerBar from './VisualTimerBar';
+
+interface GameWrapperProps {
+  duration: number;
+  onComplete: (rawScore: number, maxScore: number) => void;
+  gameName: string;
+  onScoreUpdate: (score: number, maxScore: number) => void;
+  children: ReactNode;
+}
 
 export default function GameWrapper({
   duration,
@@ -11,74 +20,127 @@ export default function GameWrapper({
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
   const [hideTimerBar, setHideTimerBar] = useState(false);
-  
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number } | null>(null);
 
-  // Use a ref for the interval duration to avoid re-triggering the effect
-  const intervalConfig = isFastCountdown 
-    ? { ms: 50, dec: 0.05 } 
-    : { ms: 1000, dec: 1 };
+  // Check if game wants to hide timer (set by game's imperative handle)
+  useEffect(() => {
+    if (childrenRef.current?.hideTimer) {
+      setHideTimerBar(true);
+    }
+  }, [children]);
 
   useEffect(() => {
-    if (isActive) {
-      timerRef.current = window.setInterval(() => {
-        // Only run if the child explicitly says pauseTimer is false
-        // Using a ref check here is fine for imperative logic
-        if (childrenRef.current?.pauseTimer !== false) return;
+    if (isActive && timeRemaining > 0) {
+      const intervalTime = isFastCountdown ? 50 : 1000;
+      const decrement = isFastCountdown ? 0.05 : 1;
 
+      timerRef.current = window.setInterval(() => {
+        // Pause by default if child not ready, only run when explicitly false
+        const shouldPause = childrenRef.current?.pauseTimer !== false;
+        
+        if (shouldPause) {
+          console.log('⏸️  Timer paused:', childrenRef.current?.pauseTimer);
+          return; // Skip this tick if paused or child not ready
+        }
+        
         setTimeRemaining((prev) => {
-          const nextValue = prev - intervalConfig.dec;
-          if (nextValue <= 0) {
+          const newTime = prev - decrement;
+          if (newTime <= 0) {
             handleTimeUp();
             return 0;
           }
-          return nextValue;
+          return newTime;
         });
-      }, intervalConfig.ms);
+      }, intervalTime);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, isFastCountdown]); // Removed timeRemaining from dependencies
+  }, [isActive, timeRemaining, isFastCountdown]);
 
   const handleTimeUp = () => {
-    if (gameCompletedRef.current) return;
-    gameCompletedRef.current = true;
-    
-    setIsActive(false);
+    console.log('⏰ GameWrapper.handleTimeUp called');
     if (timerRef.current) clearInterval(timerRef.current);
+    setIsActive(false);
 
-    // 1. Check for stored score (Fast Countdown finished)
-    if (finalScoreRef.current) {
-      onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore);
-      return;
+    if (!gameCompletedRef.current) {
+      gameCompletedRef.current = true;
+
+      // Use stored final score if available (from early completion)
+      if (finalScoreRef.current) {
+        console.log('⏰ Using stored final score:', finalScoreRef.current);
+        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore);
+        return;
+      }
+
+      // Call onGameEnd if available to let game know it's ending
+      // Note: onGameEnd might call onComplete/handleGameComplete, setting finalScoreRef
+      if (childrenRef.current?.onGameEnd) {
+        console.log('⏰ Calling onGameEnd');
+        childrenRef.current.onGameEnd();
+      }
+
+      // Check again if onGameEnd set the finalScoreRef
+      if (finalScoreRef.current) {
+        // onGameEnd already triggered score reporting, we're done
+        console.log('⏰ onGameEnd set finalScoreRef:', finalScoreRef.current);
+        return;
+      }
+
+      // Otherwise, get score directly
+      if (childrenRef.current?.getGameScore) {
+        const { score, maxScore } = childrenRef.current.getGameScore();
+        console.log('⏰ Getting score from getGameScore:', { score, maxScore });
+        onComplete(score, maxScore);
+      } else {
+        console.log('⏰ No getGameScore method, using default 0/100');
+        onComplete(0, 100);
+      }
     }
-
-    // 2. Fallback: Request score from child
-    if (childrenRef.current?.onGameEnd) {
-       childrenRef.current.onGameEnd();
-    }
-
-    const finalScore = childrenRef.current?.getGameScore?.() || { score: 0, maxScore: 100 };
-    onComplete(finalScore.score, finalScore.maxScore);
   };
 
   const handleGameComplete = (score: number, maxScore: number) => {
     if (gameCompletedRef.current) return;
-    
+    gameCompletedRef.current = true;
+
+    console.log('🎮 GameWrapper.handleGameComplete:', { score, maxScore, timeRemaining });
+
+    // Store the final score for use when countdown completes
     finalScoreRef.current = { score, maxScore };
 
     if (timeRemaining > 2) {
       setIsFastCountdown(true);
     } else {
-      gameCompletedRef.current = true;
+      if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       onComplete(score, maxScore);
     }
   };
 
-  // ... cloneChildren logic
+  const cloneChildren = () => {
+    if (!children) return null;
+
+    if (React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        ref: childrenRef,
+        onScoreUpdate,
+        onComplete: handleGameComplete,
+      });
+    }
+
+    return children;
+  };
+
+  return (
+    <div className="h-full w-full flex flex-col bg-black" style={{ position: 'relative' }}>
+      {!hideTimerBar && <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />}
+      <div className="flex-1 overflow-hidden" style={{ position: 'relative' }}>
+        {cloneChildren()}
+      </div>
+    </div>
+  );
+}
