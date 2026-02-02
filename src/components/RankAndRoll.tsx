@@ -1,6 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ArrowUp, ArrowDown, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { audioManager } from '../lib/audioManager';
 
 interface RankAndRollProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -170,6 +171,19 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     fetchPuzzles();
   }, []);
 
+  // Load audio files
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('select', '/sounds/select.mp3');
+      await audioManager.loadSound('success', '/sounds/success.mp3');
+      await audioManager.loadSound('fail', '/sounds/fail.mp3');
+      await audioManager.loadSound('bonus', '/sounds/bonus.mp3');
+      console.log('✅ Ranky audio loaded');
+    };
+
+    loadAudio();
+  }, []);
+
   // Initialize puzzle
   useEffect(() => {
     if (currentPuzzle) {
@@ -283,55 +297,59 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
   const moveItem = (fromIndex, direction) => {
     const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
-    
+
     if (toIndex < 0 || toIndex >= playerOrder.length) return;
-    
+
+    audioManager.play('select', 0.3);
+
     setMoves(prev => prev + 1);
-    
+
     const newOrder = [...playerOrder];
     [newOrder[fromIndex], newOrder[toIndex]] = [newOrder[toIndex], newOrder[fromIndex]];
     setPlayerOrder(newOrder);
-    
+
     // Clear hint message when player makes a move
     setHintMessage('');
   };
 
   const getHint = () => {
     if (!currentPuzzle) return;
-    
+
     if (playerOrder.length === 0) return;
-    
+
+    audioManager.play('bonus', 0.4);
+
     // Get correct order
-    const correctOrder = currentPuzzle.sortOrder === 'desc' 
+    const correctOrder = currentPuzzle.sortOrder === 'desc'
       ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
       : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
-    
+
     // Find a randomly selected item that's in the wrong position
     const wrongItems = playerOrder.filter((item, currentIndex) => {
       const correctIndex = correctOrder.findIndex(correct => correct.id === item.id);
       return currentIndex !== correctIndex;
     });
-    
+
     if (wrongItems.length === 0) {
       setHintMessage('🎉 All correct!');
       return;
     }
-    
+
     // Pick a random wrong item
     const randomWrongItem = wrongItems[Math.floor(Math.random() * wrongItems.length)];
     const currentIndex = playerOrder.findIndex(item => item.id === randomWrongItem.id);
     const correctIndex = correctOrder.findIndex(item => item.id === randomWrongItem.id);
-    
+
     let direction = '';
     if (currentIndex < correctIndex) {
       direction = 'should be moved DOWN';
     } else {
       direction = 'should be moved UP';
     }
-    
+
     setHintMessage(`💡 ${randomWrongItem.name} ${direction}`);
     setHintsUsed(prev => prev + 1);
-    
+
     // Clear hint message after 5 seconds
     setTimeout(() => setHintMessage(''), 5000);
   };
@@ -356,6 +374,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     }
 
     if (isCorrect) {
+      audioManager.play('success', 0.5);
       const hintPenalty = hintsUsed * 50;
       const finalScore = Math.max(0, 333 - hintPenalty);
       setScore(prev => {
@@ -366,6 +385,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
         return newScore;
       });
       setPuzzlesCompleted(prev => prev + 1);
+    } else {
+      audioManager.play('fail', 0.3);
     }
 
     // Auto-advance to next puzzle after 3 seconds
