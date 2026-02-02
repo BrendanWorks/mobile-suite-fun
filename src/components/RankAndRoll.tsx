@@ -175,14 +175,10 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   useEffect(() => {
     const loadAudio = async () => {
       try {
-        await audioManager.loadSound('select', '/sounds/select.mp3');
-        console.log('✅ Loaded: select');
-        await audioManager.loadSound('success', '/sounds/success.mp3');
-        console.log('✅ Loaded: success');
-        await audioManager.loadSound('fail', '/sounds/fail.mp3');
-        console.log('✅ Loaded: fail');
-        await audioManager.loadSound('bonus', '/sounds/bonus.mp3');
-        console.log('✅ Loaded: bonus');
+        await audioManager.loadSound('select', '/sounds/select.mp3', 3);
+        await audioManager.loadSound('success', '/sounds/success.mp3', 3);
+        await audioManager.loadSound('fail', '/sounds/fail.mp3', 3);
+        await audioManager.loadSound('bonus', '/sounds/bonus.mp3', 3);
         console.log('✅ All Ranky audio loaded');
       } catch (error) {
         console.error('❌ Error loading Ranky audio:', error);
@@ -308,6 +304,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     if (toIndex < 0 || toIndex >= playerOrder.length) return;
 
+    audioManager.initialize();
     audioManager.play('select', 0.3);
 
     setMoves(prev => prev + 1);
@@ -325,7 +322,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     if (playerOrder.length === 0) return;
 
-    console.log('🔊 Playing bonus sound');
+    audioManager.initialize();
     audioManager.play('bonus', 0.4);
 
     // Get correct order
@@ -366,6 +363,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const submitFinalAnswer = () => {
     if (!currentPuzzle) return;
 
+    audioManager.initialize();
+
     // Check if puzzle is complete
     const correctOrder = currentPuzzle.sortOrder === 'desc'
       ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
@@ -383,7 +382,6 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     }
 
     if (isCorrect) {
-      console.log('🔊 Playing success sound');
       audioManager.play('success', 0.5);
       const hintPenalty = hintsUsed * 50;
       const finalScore = Math.max(0, 333 - hintPenalty);
@@ -396,7 +394,6 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       });
       setPuzzlesCompleted(prev => prev + 1);
     } else {
-      console.log('🔊 Playing fail sound');
       audioManager.play('fail', 0.3);
     }
 
