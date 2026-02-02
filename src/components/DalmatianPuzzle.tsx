@@ -3,7 +3,7 @@ import { Shapes } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const DalmatianPuzzle = forwardRef((props: any, ref) => {
-  const { onComplete, onTimerPause } = props;
+  const { onComplete } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -15,14 +15,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const maxTimePerPuzzle = 60;
-
-  // Control timer based on whether image is loaded
-  useEffect(() => {
-    if (onTimerPause) {
-      // Pause when image not loaded, unpause when loaded
-      onTimerPause(!isImageLoaded);
-    }
-  }, [isImageLoaded, onTimerPause]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -41,8 +33,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     canSkipQuestion: true,
     loadNextPuzzle: () => {
       nextPuzzle();
-    }
-  }));
+    },
+    pauseTimer: !isImageLoaded // Pause timer when image not loaded
+  }), [isImageLoaded, gameState, resultTimeout]);
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -143,8 +136,8 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   // Next puzzle
   const nextPuzzle = () => {
-    setIsImageLoaded(false); // Reset image loaded state for new puzzle
     setCurrentPuzzleIndex(prev => (prev + 1) % puzzles.length);
+    resetGame();
   };
 
   const playSound = (frequency = 440) => {
@@ -700,13 +693,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
 
-    // Reset all game state while loading new puzzle
-    // Setting isImageLoaded to false will automatically pause the timer via the useEffect
-    setIsImageLoaded(false);
-    setGameState('playing');
-    setTimeLeft(maxTimePerPuzzle);
-    gameStateRef.current.completedSlots = 0;
-
     const img = gameStateRef.current.img;
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
 
@@ -715,12 +701,11 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     img.onload = () => {
       console.log('Image loaded successfully!', img.width, 'x', img.height);
+      setIsImageLoaded(true);
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         handleResize();
         resetGame();
-        // Set isImageLoaded to true - this will automatically resume the timer via the useEffect
-        setIsImageLoaded(true);
       });
     };
 
