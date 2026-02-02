@@ -24,9 +24,10 @@ class AudioManager {
 
     const sound = this.sounds.get(key);
     if (sound) {
-      sound.currentTime = 0;
-      sound.volume = volume ?? this.sfxVolume;
-      sound.play().catch(err => console.log('Audio play failed:', err));
+      // Clone the audio to allow overlapping plays
+      const clone = sound.cloneNode(true) as HTMLAudioElement;
+      clone.volume = volume ?? this.sfxVolume;
+      clone.play().catch(err => console.log('Audio play failed:', err));
     } else {
       console.warn(`Sound not found: ${key}`);
     }
