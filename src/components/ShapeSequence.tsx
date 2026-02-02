@@ -15,8 +15,8 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
-      score: Math.round((score / 500) * 100), // Normalize score to 0-100
-      maxScore: 100
+      score: level, // Return level reached for scoring
+      maxScore: 10  // Max level for normalization
     }),
     onGameEnd: () => {
       console.log(`Simple ended at level: ${level}, score: ${score}`);
