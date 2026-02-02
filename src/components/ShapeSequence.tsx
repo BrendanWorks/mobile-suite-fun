@@ -21,6 +21,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     onGameEnd: () => {
       console.log(`Simple ended at level: ${level}, score: ${score}`);
     },
+    pauseTimer: false,
     canSkipQuestion: false,
     hideTimer: true // Life-based game, no timer needed
   }));
