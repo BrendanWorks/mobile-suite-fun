@@ -19,11 +19,11 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       maxScore: 10  // Max level for normalization
     }),
     onGameEnd: () => {
+      // Lives-based game - only ends when lives run out, not by timer
       console.log(`Simple ended at level: ${level}, score: ${score}`);
     },
-    pauseTimer: false,
     canSkipQuestion: false,
-    hideTimer: true // Life-based game, no timer needed
+    hideTimer: true // Lives-based game, no timer needed
   }));
 
   // Game state variables (using refs to maintain state across renders)

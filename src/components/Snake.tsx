@@ -89,13 +89,13 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       maxScore: 200
     }),
     onGameEnd: () => {
+      // Lives-based game - only ends when lives run out, not by timer
       if (!gameOverRef.current && onComplete) {
         onComplete(scoreRef.current, 200);
       }
     },
-    pauseTimer: false,
     canSkipQuestion: false,
-    hideTimer: true // Endless survival game, no global timer needed
+    hideTimer: true // Lives-based game, no timer needed
   }));
 
   const createFood = (currentSnake: Position[], currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Position => {
