@@ -3,7 +3,7 @@ import VisualTimerBar from './VisualTimerBar';
 
 interface GameWrapperProps {
   duration: number;
-  onComplete: (rawScore: number, maxScore: number) => void;
+  onComplete: (rawScore: number, maxScore: number, timeRemaining?: number) => void;
   gameName: string;
   onScoreUpdate: (score: number, maxScore: number) => void;
   children: ReactNode;
@@ -23,7 +23,7 @@ export default function GameWrapper({
   const timerRef = useRef<number | null>(null);
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
-  const finalScoreRef = useRef<{ score: number; maxScore: number } | null>(null);
+  const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
 
   // Check if game wants to hide timer (set by game's imperative handle)
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function GameWrapper({
       // Use stored final score if available (from early completion)
       if (finalScoreRef.current) {
         console.log('⏰ Using stored final score:', finalScoreRef.current);
-        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore);
+        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore, finalScoreRef.current.timeRemaining);
         return;
       }
 
@@ -94,11 +94,11 @@ export default function GameWrapper({
       // Otherwise, get score directly
       if (childrenRef.current?.getGameScore) {
         const { score, maxScore } = childrenRef.current.getGameScore();
-        console.log('⏰ Getting score from getGameScore:', { score, maxScore });
-        onComplete(score, maxScore);
+        console.log('⏰ Getting score from getGameScore:', { score, maxScore, timeRemaining: 0 });
+        onComplete(score, maxScore, 0);
       } else {
         console.log('⏰ No getGameScore method, using default 0/100');
-        onComplete(0, 100);
+        onComplete(0, 100, 0);
       }
     }
   };
@@ -109,15 +109,15 @@ export default function GameWrapper({
 
     console.log('🎮 GameWrapper.handleGameComplete:', { score, maxScore, timeRemaining });
 
-    // Store the final score for use when countdown completes
-    finalScoreRef.current = { score, maxScore };
+    // Store the final score AND time remaining for use when countdown completes
+    finalScoreRef.current = { score, maxScore, timeRemaining };
 
     if (timeRemaining > 2) {
       setIsFastCountdown(true);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
-      onComplete(score, maxScore);
+      onComplete(score, maxScore, timeRemaining);
     }
   };
 

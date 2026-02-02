@@ -243,7 +243,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     setCurrentGameScore({ score, maxScore });
   };
 
-  const handleGameComplete = (rawScore: number, maxScore: number) => {
+  const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
     if (!currentGame) {
       console.error('Invalid game completion: no currentGame, skipping to next round');
       handleNextRound();
@@ -255,6 +255,8 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
       maxScore = 100;
       rawScore = 0;
     }
+
+    console.log('🎯 Game Complete:', { game: currentGame.id, rawScore, maxScore, timeRemaining });
 
     let normalizedScore: GameScore;
     const percentage = (rawScore / maxScore) * 100;
@@ -285,7 +287,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         break;
 
       case 'dalmatian-puzzle':
-        normalizedScore = scoringSystem.dalmatian(rawScore >= 50, maxScore - rawScore, maxScore);
+        // Use the actual time remaining for scoring
+        const completed = rawScore >= 50;
+        normalizedScore = scoringSystem.dalmatian(completed, timeRemaining, currentGame.duration);
+        console.log('🧩 Dalmatian scoring:', { completed, timeRemaining, duration: currentGame.duration, normalizedScore });
         break;
 
       case 'snake':
