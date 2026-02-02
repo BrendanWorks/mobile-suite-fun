@@ -33,20 +33,16 @@ export default function GameWrapper({
   }, [children]);
 
   useEffect(() => {
-    // Check if child wants timer paused (from pauseTimer property)
-    const shouldPause = childrenRef.current?.pauseTimer === true;
-    
-    // Don't run timer if child wants it paused
-    if (shouldPause) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-
     if (isActive && timeRemaining > 0) {
       const intervalTime = isFastCountdown ? 50 : 1000;
       const decrement = isFastCountdown ? 0.05 : 1;
 
       timerRef.current = window.setInterval(() => {
+        // Check if child wants timer paused on every tick
+        if (childrenRef.current?.pauseTimer === true) {
+          return; // Skip this tick if paused
+        }
+        
         setTimeRemaining((prev) => {
           const newTime = prev - decrement;
           if (newTime <= 0) {
@@ -61,7 +57,7 @@ export default function GameWrapper({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeRemaining, isFastCountdown, children]); // Added children to re-check pauseTimer
+  }, [isActive, timeRemaining, isFastCountdown]);
 
   const handleTimeUp = () => {
     console.log('⏰ GameWrapper.handleTimeUp called');
