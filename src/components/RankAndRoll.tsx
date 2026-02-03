@@ -62,6 +62,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [audioReady, setAudioReady] = useState(false);
 
   // Game state
   const [playerOrder, setPlayerOrder] = useState([]);
@@ -176,12 +177,14 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     const loadAudio = async () => {
       try {
         await audioManager.loadSound('ranky-select', '/sounds/ranky/select.mp3', 3);
-        await audioManager.loadSound('ranky-success', '/sounds/ranky/success.mp3', 3);
-        await audioManager.loadSound('ranky-fail', '/sounds/ranky/fail.mp3', 3);
-        await audioManager.loadSound('ranky-hint', '/sounds/ranky/hint.mp3', 3);
+        await audioManager.loadSound('ranky-success', '/sounds/ranky/success.mp3', 2);
+        await audioManager.loadSound('ranky-fail', '/sounds/ranky/fail.mp3', 2);
+        await audioManager.loadSound('ranky-hint', '/sounds/ranky/hint.mp3', 2);
         console.log('✅ All Ranky audio loaded');
+        setAudioReady(true);
       } catch (error) {
         console.error('❌ Error loading Ranky audio:', error);
+        setAudioReady(true); // Proceed even if audio fails to load
       }
     };
 
@@ -418,6 +421,19 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     }
     return `${value} ${unit}`;
   };
+
+  // Audio loading state
+  if (!audioReady) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center">
+          <p className="text-cyan-400 text-sm" style={{ textShadow: '0 0 8px #00ffff' }}>
+            🔊 Loading...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (loading) {
