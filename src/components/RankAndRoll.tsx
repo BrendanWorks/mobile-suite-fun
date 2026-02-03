@@ -177,7 +177,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       await audioManager.loadSound('ranky-select', '/sounds/ranky/select.mp3', 3);
       await audioManager.loadSound('ranky-success', '/sounds/ranky/success.mp3', 2);
       await audioManager.loadSound('ranky-fail', '/sounds/ranky/fail.mp3', 2);
-      await audioManager.loadSound('ranky-hint', '/sounds/ranky/hint.mp3', 2);
+      await audioManager.loadSound('ranky-hint', '/sounds/ranky/hint_optimized.mp3', 2);
     };
     loadAudio();
   }, []);
