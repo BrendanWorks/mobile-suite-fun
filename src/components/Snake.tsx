@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
+import { audioManager } from '../lib/audioManager';
 
 interface Position {
   x: number;
@@ -89,14 +90,29 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       maxScore: 200
     }),
     onGameEnd: () => {
-      // Lives-based game - only ends when lives run out, not by timer
       if (!gameOverRef.current && onComplete) {
         onComplete(scoreRef.current, 200);
       }
     },
     canSkipQuestion: false,
-    hideTimer: true // Lives-based game, no timer needed
+    hideTimer: true
   }));
+
+  // --- AUDIO: background load on mount, cleanup ticktock on unmount ---
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('snake_eat', '/sounds/snake/short_success.mp3', 3);
+      await audioManager.loadSound('snake_gobble', '/sounds/snake/gobble_optimized.mp3', 2);
+      await audioManager.loadSound('snake_die', '/sounds/fail.mp3', 2);
+      await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
+      await audioManager.loadSound('snake_ticktock', '/sounds/snake/ticktock.mp3', 1);
+    };
+    loadAudio();
+
+    return () => {
+      audioManager.stopMusic('snake_ticktock');
+    };
+  }, []);
 
   const createFood = (currentSnake: Position[], currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Position => {
     let newFood: Position;
@@ -208,13 +224,16 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       y: currentSnake[0].y + directionRef.current.y
     };
 
+    // --- AUDIO: collision → stop ticktock, then play die or gameover ---
     if (checkCollision(head, currentSnake, obstaclesRef.current)) {
+      audioManager.stopMusic('snake_ticktock');
       triggerScreenShake();
       const newLives = livesRef.current - 1;
       setLives(newLives);
       livesRef.current = newLives;
 
       if (newLives <= 0) {
+        audioManager.play('snake_gameover', 0.7);
         setGameOver(true);
         gameOverRef.current = true;
         setTimeout(() => {
@@ -223,6 +242,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           }
         }, 2000);
       } else {
+        audioManager.play('snake_die', 0.5);
         resetSnake();
       }
       return;
@@ -232,9 +252,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     let ateFood = false;
     let pointsGained = 0;
 
+    // --- AUDIO: ate food → short success ---
     if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
       ateFood = true;
       pointsGained = 10;
+      audioManager.play('snake_eat', 0.5);
       createParticleBurst(head.x, head.y, '#ef4444');
       triggerShimmer();
 
@@ -271,10 +293,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       setSpeed(newSpeed);
     }
 
+    // --- AUDIO: power-up → gobble for both gold and ice ---
     if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
       const currentPowerUp = powerUpRef.current;
 
       if (currentPowerUp.type === 'gold') {
+        audioManager.play('snake_gobble', 0.5);
         pointsGained = 50;
         createParticleBurst(head.x, head.y, '#fbbf24');
         triggerShimmer();
@@ -287,12 +311,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           onScoreUpdate(newScore, 200);
         }
       } else if (currentPowerUp.type === 'ice') {
+        audioManager.play('snake_gobble', 0.5);
         setSlowedUntil(Date.now() + SLOW_DURATION);
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
         createParticleBurst(head.x, head.y, '#60a5fa');
         triggerShimmer();
 
-        const isSlowed = true;
         const newSpeed = Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT) * 1.5;
         setSpeed(newSpeed);
       }
@@ -353,7 +377,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     }
   }, [shimmer]);
 
-  // Hide instructions after 3 seconds (starts immediately on mount)
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowInstructions(false);
@@ -459,7 +482,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         ctx.globalAlpha = 1;
       });
 
-      // Draw shimmer effect with green color matching the brand
       if (shimmer > 0) {
         const shimmerIntensity = Math.sin(shimmer * Math.PI * 3) * shimmer;
         const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
@@ -491,37 +513,44 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     };
   }, [snake, food, backgroundHue, shimmer]);
 
+  // --- AUDIO: start ticktock when snake goes from stationary to moving ---
   const handleKeyDown = (e: KeyboardEvent) => {
     if (gameOver) return;
 
     const { x, y } = directionRef.current;
+    const wasStationary = x === 0 && y === 0;
+    let moved = false;
 
     if (!gameStarted) {
       setGameStarted(true);
-      setShowInstructions(false); // Hide instructions instantly when starting
+      setShowInstructions(false);
     }
 
     switch (e.key) {
       case 'ArrowLeft':
       case 'a':
       case 'A':
-        if (x !== 1) setDirection({ x: -1, y: 0 });
+        if (x !== 1) { setDirection({ x: -1, y: 0 }); moved = true; }
         break;
       case 'ArrowRight':
       case 'd':
       case 'D':
-        if (x !== -1) setDirection({ x: 1, y: 0 });
+        if (x !== -1) { setDirection({ x: 1, y: 0 }); moved = true; }
         break;
       case 'ArrowUp':
       case 'w':
       case 'W':
-        if (y !== 1) setDirection({ x: 0, y: -1 });
+        if (y !== 1) { setDirection({ x: 0, y: -1 }); moved = true; }
         break;
       case 'ArrowDown':
       case 's':
       case 'S':
-        if (y !== -1) setDirection({ x: 0, y: 1 });
+        if (y !== -1) { setDirection({ x: 0, y: 1 }); moved = true; }
         break;
+    }
+
+    if (wasStationary && moved) {
+      audioManager.playMusic('snake_ticktock');
     }
   };
 
@@ -530,20 +559,27 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameOver, gameStarted]);
 
+  // --- AUDIO: same ticktock logic for touch buttons ---
   const handleDirectionButton = (newDirection: Position) => {
     if (gameOver) return;
 
     const { x, y } = directionRef.current;
+    const wasStationary = x === 0 && y === 0;
+    let moved = false;
 
     if (!gameStarted) {
       setGameStarted(true);
-      setShowInstructions(false); // Hide instructions instantly when starting
+      setShowInstructions(false);
     }
 
-    if (newDirection.x === -1 && x !== 1) setDirection(newDirection);
-    else if (newDirection.x === 1 && x !== -1) setDirection(newDirection);
-    else if (newDirection.y === -1 && y !== 1) setDirection(newDirection);
-    else if (newDirection.y === 1 && y !== -1) setDirection(newDirection);
+    if (newDirection.x === -1 && x !== 1) { setDirection(newDirection); moved = true; }
+    else if (newDirection.x === 1 && x !== -1) { setDirection(newDirection); moved = true; }
+    else if (newDirection.y === -1 && y !== 1) { setDirection(newDirection); moved = true; }
+    else if (newDirection.y === 1 && y !== -1) { setDirection(newDirection); moved = true; }
+
+    if (wasStationary && moved) {
+      audioManager.playMusic('snake_ticktock');
+    }
   };
 
   return (
@@ -613,7 +649,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
             style={{ width: '340px', height: '340px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
           />
 
-          {/* Instructions overlay - shows immediately, fades after 3 seconds or instantly on press */}
+          {/* Instructions overlay */}
           {showInstructions && (
             <div 
               className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center transition-opacity duration-500 z-20"
