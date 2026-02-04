@@ -29,17 +29,18 @@ interface GameConfig {
   name: string;
   component: React.ComponentType<any>;
   duration: number;
+  instructions: string;
 }
 
 const AVAILABLE_GAMES: GameConfig[] = [
-  { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60 },
-  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 45 },
-  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 90 },
-  { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', component: DalmatianPuzzle, duration: 60 },
-  { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60 },
-  { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 90 },
-  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 60 },
-  { id: 'snake', name: 'Snake', component: Snake, duration: 75 },
+  { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60, instructions: "Select the 2 items that don't belong" },
+  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 45, instructions: 'Identify the photo as it zooms out' },
+  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 90, instructions: 'Arrange items in the correct order' },
+  { id: 'dalmatian-puzzle', name: 'SnapShot', component: DalmatianPuzzle, duration: 60, instructions: 'Drag 4 pieces to complete the puzzle' },
+  { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60, instructions: 'Categorize items: A, B, or BOTH' },
+  { id: 'word-rescue', name: 'WordSurge', component: WordRescue, duration: 90, instructions: 'Click falling letters to make words' },
+  { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
+  { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
 ];
 
 interface RoundData {
@@ -234,7 +235,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   };
 
   const startRound = () => {
-    selectRandomGame();
     setCurrentGameScore({ score: 0, maxScore: 0 });
     setGameState('playing');
   };
@@ -287,7 +287,6 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         break;
 
       case 'dalmatian-puzzle':
-        // Use the actual time remaining for scoring
         const completed = rawScore >= 50;
         normalizedScore = scoringSystem.dalmatian(completed, timeRemaining, currentGame.duration);
         console.log('🧩 Dalmatian scoring:', { completed, timeRemaining, duration: currentGame.duration, normalizedScore });
@@ -334,7 +333,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
       setGameState('complete');
     } else {
       setCurrentRound(prev => prev + 1);
-      setGameState('intro');
+      // Skip intro for rounds 2+, go straight to playing
+      selectRandomGame();
+      setCurrentGameScore({ score: 0, maxScore: 0 });
+      setGameState('playing');
     }
   };
 
@@ -388,17 +390,33 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     onExit();
   };
 
+  // Select game for round 1 intro, then auto-advance after 4 seconds
   useEffect(() => {
-    if (gameState === 'intro' && currentRound === 1) {
-      const timer = setTimeout(() => startRound(), 2000);
+    if (gameState === 'intro' && currentRound === 1 && !currentGame) {
+      selectRandomGame();
+    }
+  }, [gameState, currentRound, currentGame]);
+
+  useEffect(() => {
+    if (gameState === 'intro' && currentRound === 1 && currentGame) {
+      const timer = setTimeout(() => startRound(), 4000);
       return () => clearTimeout(timer);
     }
-  }, [gameState, currentRound]);
+  }, [gameState, currentRound, currentGame]);
 
-  // Intro screen
+  // Intro screen (round 1 only)
   if (gameState === 'intro') {
     const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
     console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
+
+    // Wait for game to be selected
+    if (!currentGame) {
+      return (
+        <div className="h-screen w-screen bg-black flex items-center justify-center">
+          <Star className="w-16 h-16 text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
+        </div>
+      );
+    }
 
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center p-4 sm:p-6">
@@ -407,18 +425,11 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
             <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold text-cyan-400 mb-3 sm:mb-4" style={{ textShadow: '0 0 20px #00ffff' }}>Round {currentRound}</h1>
-          <p className="text-lg sm:text-2xl text-cyan-300 mb-6 sm:mb-8">Get ready for the next challenge!</p>
-          <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-6 backdrop-blur mb-6 sm:mb-8" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
-            <p className="text-base sm:text-lg text-cyan-300 mb-2">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}/{roundScores.length * 100}</span></p>
-            <p className="text-xs sm:text-sm text-cyan-400">Round {currentRound} of {totalRounds}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 mb-4" style={{ textShadow: '0 0 15px #ec4899' }}>{currentGame.name}</h2>
+          <p className="text-lg sm:text-xl text-cyan-300 mb-6 sm:mb-8">{currentGame.instructions}</p>
+          <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-6 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
+            <p className="text-xs sm:text-sm text-cyan-400">Starting in a moment...</p>
           </div>
-          <button
-            onClick={startRound}
-            className="mt-6 sm:mt-8 px-8 py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-lg sm:text-xl transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
-            style={{ textShadow: '0 0 10px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
-          >
-            Start Round
-          </button>
         </div>
       </div>
     );
