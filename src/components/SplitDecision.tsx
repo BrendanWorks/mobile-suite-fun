@@ -7,12 +7,14 @@
  * - Zap icon with yellow glow
  * - "Think Fast" tagline
  * - Score left-aligned
- * - Removed "Item X of Y" display
+ * - One puzzle (7 items) per round
  * - Three categories: A, B, and BOTH
  * - Immediate visual feedback on answer
  * - Green highlight for correct
  * - Red/Green for wrong (shows correct answer)
  * - Auto-advances after 1.5 seconds
+ * - No timer pause - keeps moving fast
+ * - No penalty for wrong answers
  */
 
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
@@ -40,9 +42,13 @@ interface SplitDecisionProps {
   roundNumber?: number;
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause }, ref) => {
+const MAX_SCORE = 1000;
+const POINTS_PER_ITEM = Math.round(MAX_SCORE / 7); // ~143 points per item
+
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -53,7 +59,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
-  const earlyCompleteCallback = useRef<(() => void) | null>(null);
 
   // Load all puzzle IDs on mount
   useEffect(() => {
@@ -119,11 +124,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setIsAnswered(false);
       setFeedback(null);
       setLoading(false);
-
-      // Resume timer when new puzzle loads
-      if (onTimerPause) {
-        onTimerPause(false);
-      }
     } catch (error) {
       console.error('Error fetching puzzle data:', error);
       setLoading(false);
@@ -138,11 +138,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     setSelectedAnswer(category);
     setIsAnswered(true);
 
-    // Pause the timer during feedback
-    if (onTimerPause) {
-      onTimerPause(true);
-    }
-
     // Map category buttons to correct_category values
     const categoryMap: { [key: string]: string } = {
       [puzzle.category_1]: 'category_1',
@@ -156,40 +151,31 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
     if (isCorrect) {
       setScore(prev => {
-        const newScore = prev + 143;
-        const maxScore = puzzle ? puzzle.items.length * 143 : 1001;
+        const newScore = prev + POINTS_PER_ITEM;
         if (onScoreUpdate) {
-          onScoreUpdate(newScore, maxScore);
+          onScoreUpdate(newScore, MAX_SCORE);
         }
         return newScore;
       });
     } else {
-      setScore(prev => {
-        const newScore = Math.max(0, prev - 143);
-        const maxScore = puzzle ? puzzle.items.length * 143 : 1001;
-        if (onScoreUpdate) {
-          onScoreUpdate(newScore, maxScore);
-        }
-        return newScore;
-      });
+      // Wrong answer: no points, no penalty
+      if (onScoreUpdate) {
+        onScoreUpdate(score, MAX_SCORE);
+      }
     }
 
     // Check if this is the last item
     const isLastItem = currentItemIndex === puzzle.items.length - 1;
 
-    // If this is the last item, trigger early completion
-    if (isLastItem && earlyCompleteCallback.current) {
-      earlyCompleteCallback.current();
-    }
-
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
-      // Resume the timer before advancing
-      if (onTimerPause) {
-        onTimerPause(false);
-      }
-
-      if (currentItemIndex < puzzle.items.length - 1) {
+      if (isLastItem) {
+        // Puzzle complete - call onComplete
+        if (onComplete) {
+          onComplete(score + (isCorrect ? POINTS_PER_ITEM : 0), MAX_SCORE);
+        }
+      } else {
+        // More items - advance to next
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
@@ -209,21 +195,16 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
   // Expose score and loadNextPuzzle via GameHandle
   useImperativeHandle(ref, () => ({
-    getGameScore: () => {
-      const maxPossibleScore = puzzle ? puzzle.items.length * 143 : 1001;
-      return {
-        score: Math.round((score / maxPossibleScore) * 100), // Normalize to 0-100
-        maxScore: 100
-      };
-    },
+    getGameScore: () => ({
+      score: score,
+      maxScore: MAX_SCORE
+    }),
     onGameEnd: () => {
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
       }
     },
-    onEarlyComplete: (callback: () => void) => {
-      earlyCompleteCallback.current = callback;
-    },
+    canSkipQuestion: false,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
       if (nextIndex < puzzleIds.length) {
@@ -332,10 +313,13 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           Think Fast
         </p>
 
-        {/* Score left-aligned */}
-        <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        {/* Score and Progress */}
+        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
           <div className="text-yellow-300">
             Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          </div>
+          <div className="text-yellow-400">
+            Item {currentItemIndex + 1} of {puzzle.items.length}
           </div>
         </div>
       </div>
