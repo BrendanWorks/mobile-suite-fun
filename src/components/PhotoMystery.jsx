@@ -21,6 +21,9 @@ const PhotoMystery = forwardRef((props, ref) => {
   const timerRef = useRef(null);
   const resultTimerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const onCompleteRef = useRef(onComplete);
+  const onScoreUpdateRef = useRef(onScoreUpdate);
+  const scoreRef = useRef(0);
 
   const maxPoints = 333; // ~1000 points total across 3 photos
   const minPoints = 0;
@@ -30,15 +33,39 @@ const PhotoMystery = forwardRef((props, ref) => {
   const minZoom = 1.0;
   const totalMaxScore = 1000; // Normalized total score
 
+  // Keep callback refs up to date
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    onScoreUpdateRef.current = onScoreUpdate;
+  }, [onScoreUpdate]);
+
+  // Keep score ref in sync
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
   useImperativeHandle(ref, () => ({
     hideTimer: true, // Zooma manages its own per-photo timers
     getGameScore: () => ({
-      score: score,
+      score: scoreRef.current,
       maxScore: totalMaxScore
     }),
     onGameEnd: () => {
+      console.log('Zooma: onGameEnd called (GameWrapper timer hit 0)');
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
+      // GameWrapper timer ran out - complete with current score
+      const callback = onCompleteRef.current;
+      const finalScore = scoreRef.current;
+      console.log('Zooma: GameWrapper time up! Calling onComplete with score:', finalScore);
+      if (callback) {
+        callback(finalScore, totalMaxScore);
+      } else {
+        console.error('Zooma: onComplete callback is undefined in onGameEnd!');
+      }
     },
     skipQuestion: () => {
       nextQuestion();
@@ -154,18 +181,22 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const startGame = () => {
+    console.log('Zooma: startGame called for photo', currentPhotoNumber);
+    
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
     startTimeRef.current = Date.now();
+    console.log('Zooma: Timer started at', startTimeRef.current);
 
     timerRef.current = setInterval(() => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
       if (elapsed >= photoDuration) {
+        console.log('Zooma: Photo timer expired, elapsed:', elapsed);
         clearInterval(timerRef.current);
         timerRef.current = null;
         setElapsedTime(photoDuration);
@@ -184,27 +215,33 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const handleTimeUp = () => {
+    console.log('Zooma: handleTimeUp called, gameState:', gameState, 'photo:', currentPhotoNumber);
     if (gameState !== 'playing') return;
 
     setIsCorrect(false);
     setSelectedAnswer(null);
     setGameState('result');
 
-    if (onScoreUpdate) {
-      onScoreUpdate(score, totalMaxScore);
+    console.log('Zooma: Time up on photo', currentPhotoNumber, 'current score:', score);
+    
+    if (onScoreUpdateRef.current) {
+      onScoreUpdateRef.current(score, totalMaxScore);
     }
 
     resultTimerRef.current = setTimeout(() => {
       if (currentPhotoNumber < totalPhotos) {
+        console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
         setCurrentPhotoNumber(currentPhotoNumber + 1);
         generateNewQuestion();
       } else {
+        console.log('Zooma: All photos complete, calling completeGame');
         completeGame();
       }
     }, 2500);
   };
 
   const handleAnswerSelect = (answer) => {
+    console.log('Zooma: Answer selected:', answer, 'correct:', currentQuestion.correct_answer, 'photo:', currentPhotoNumber);
     if (gameState !== 'playing') return;
 
     setSelectedAnswer(answer);
@@ -221,8 +258,10 @@ const PhotoMystery = forwardRef((props, ref) => {
     const newScore = score + earnedPoints;
     setScore(newScore);
 
-    if (onScoreUpdate) {
-      onScoreUpdate(newScore, totalMaxScore);
+    console.log('Zooma: Photo', currentPhotoNumber, correct ? 'CORRECT' : 'WRONG', 'earned:', earnedPoints, 'new score:', newScore);
+
+    if (onScoreUpdateRef.current) {
+      onScoreUpdateRef.current(newScore, totalMaxScore);
     }
 
     if (correct) {
@@ -231,9 +270,11 @@ const PhotoMystery = forwardRef((props, ref) => {
       
       resultTimerRef.current = setTimeout(() => {
         if (currentPhotoNumber < totalPhotos) {
+          console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
           setCurrentPhotoNumber(currentPhotoNumber + 1);
           generateNewQuestion();
         } else {
+          console.log('Zooma: All photos complete, calling completeGame');
           completeGame();
         }
       }, 2500);
@@ -245,9 +286,11 @@ const PhotoMystery = forwardRef((props, ref) => {
         
         resultTimerRef.current = setTimeout(() => {
           if (currentPhotoNumber < totalPhotos) {
+            console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
             setCurrentPhotoNumber(currentPhotoNumber + 1);
             generateNewQuestion();
           } else {
+            console.log('Zooma: All photos complete, calling completeGame');
             completeGame();
           }
         }, 2500);
@@ -271,6 +314,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const completeGame = () => {
+    const finalScore = scoreRef.current;
+    console.log('Zooma: completeGame called, final score:', finalScore);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -280,8 +325,12 @@ const PhotoMystery = forwardRef((props, ref) => {
       resultTimerRef.current = null;
     }
 
-    if (onComplete) {
-      onComplete(score, totalMaxScore);
+    const callback = onCompleteRef.current;
+    console.log('Zooma: Calling onComplete with score:', finalScore, 'max:', totalMaxScore);
+    if (callback) {
+      callback(finalScore, totalMaxScore);
+    } else {
+      console.error('Zooma: onComplete callback is undefined!');
     }
   };
 
