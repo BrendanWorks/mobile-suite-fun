@@ -50,7 +50,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       generateNewQuestion();
     },
     canSkipQuestion: true,
-    pauseTimer: gameState !== 'playing', // Pause when showing results or complete
+    pauseTimer: gameState === 'result', // Pause when showing results
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
       if (nextIndex < puzzleIds.length) {
@@ -212,7 +212,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
       // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        setGameState('complete');
+        // Last question - auto-advance to results after showing feedback
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           if (props.onComplete) {
             props.onComplete(newScore, MAX_QUESTIONS * 250);
@@ -235,7 +235,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
         // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          setGameState('complete');
+          // Last question - auto-advance to results after showing feedback
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             if (props.onComplete) {
               props.onComplete(score, MAX_QUESTIONS * 250);
@@ -314,33 +314,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
             <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
             Getting ready...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Complete state - show before auto-advancing
-  if (gameState === 'complete') {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-white max-w-md">
-          <div className="mb-6">
-            <Sparkles 
-              className="w-16 h-16 mx-auto text-purple-400 animate-pulse" 
-              style={{ filter: 'drop-shadow(0 0 20px #a855f7)' }} 
-            />
-          </div>
-          <h2 className="text-3xl font-bold text-purple-400 mb-4" style={{ textShadow: '0 0 15px #a855f7' }}>
-            Round Complete!
-          </h2>
-          <div className="bg-black border-2 border-purple-400 rounded-lg p-4 mb-4" style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' }}>
-            <p className="text-lg text-purple-300 mb-2">
-              Final Score: <span className="text-yellow-400 font-bold text-2xl">{score}</span>
-            </p>
-            <p className="text-sm text-purple-400">
-              {totalQuestions} questions answered
-            </p>
           </div>
         </div>
       </div>
