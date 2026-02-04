@@ -549,6 +549,15 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   if (gameState === 'roundEnd') {
+    const handleNextGame = () => {
+      if (roundEndTimeoutRef.current) {
+        clearTimeout(roundEndTimeoutRef.current);
+      }
+      if (props.onComplete) {
+        props.onComplete(score, MAX_SCORE);
+      }
+    };
+
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
         <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
@@ -569,6 +578,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
               </div>
             </div>
           )}
+
+          <button
+            onClick={handleNextGame}
+            className="mt-4 bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-3 px-8 rounded-lg text-lg transition-all hover:bg-blue-400 hover:text-black active:scale-95"
+            style={{ textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}
+          >
+            Next Game
+          </button>
         </div>
       </div>
     );
