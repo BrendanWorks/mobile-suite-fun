@@ -3,7 +3,10 @@ import { Repeat } from 'lucide-react';
 
 interface ShapeSequenceProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
+
+const MAX_SCORE = 1000;
 
 const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,15 +15,19 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [showingIndex, setShowingIndex] = useState(0);
+  const gameOverTimeoutRef = useRef<number | null>(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
-      score: level, // Return level reached for scoring
-      maxScore: 10  // Max level for normalization
+      score: score,
+      maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
       // Lives-based game - only ends when lives run out, not by timer
-      console.log(`Simple ended at level: ${level}, score: ${score}`);
+      if (gameOverTimeoutRef.current) {
+        clearTimeout(gameOverTimeoutRef.current);
+        gameOverTimeoutRef.current = null;
+      }
     },
     canSkipQuestion: false,
     hideTimer: true // Lives-based game, no timer needed
@@ -317,7 +324,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         setScore(prev => {
           const newScore = prev + level * 10;
           if (props.onScoreUpdate) {
-            props.onScoreUpdate(newScore, newScore);
+            props.onScoreUpdate(newScore, MAX_SCORE);
           }
           return newScore;
         });
@@ -338,7 +345,15 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       setLives(prev => {
         const newLives = prev - 1;
         if (newLives <= 0) {
-          setTimeout(() => setGameState('gameover'), 1000);
+          setTimeout(() => {
+            setGameState('gameover');
+            // Auto-advance to results after 2.5 seconds
+            gameOverTimeoutRef.current = window.setTimeout(() => {
+              if (props.onComplete) {
+                props.onComplete(score, MAX_SCORE);
+              }
+            }, 2500);
+          }, 1000);
         } else {
           setTimeout(() => showSequence(), 1000);
         }
@@ -392,6 +407,10 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     gameStateRef.current.sequence = [];
     gameStateRef.current.animatingShape = null;
     gameStateRef.current.feedbackType = null;
+    if (gameOverTimeoutRef.current) {
+      clearTimeout(gameOverTimeoutRef.current);
+      gameOverTimeoutRef.current = null;
+    }
     drawGame();
   };
 
@@ -404,6 +423,9 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     
     return () => {
       window.removeEventListener('resize', handleResizeEvent);
+      if (gameOverTimeoutRef.current) {
+        clearTimeout(gameOverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -461,7 +483,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Game Status - Removed "Ready to start?" */}
+      {/* Game Status */}
       <div className="mb-2 sm:mb-4 min-h-[24px] sm:min-h-[28px]">
         {gameState === 'showing' && (
           <div className="text-sm sm:text-lg text-orange-400" style={{ textShadow: '0 0 10px #f97316' }}>
@@ -515,25 +537,20 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         )}
       </div>
 
-      {/* Game Over Screen - Updated colors to orange */}
+      {/* Game Over Screen - Updated to show auto-advance message */}
       {gameState === 'gameover' && (
         <div className="mt-3 sm:mt-6 p-3 sm:p-6 bg-black border-2 border-red-500 rounded-xl" style={{ boxShadow: '0 0 25px rgba(239, 68, 68, 0.4)' }}>
           <div className="text-center">
             <h3 className="text-2xl sm:text-3xl font-bold text-red-500 mb-2 sm:mb-4" style={{ textShadow: '0 0 15px #ff0066' }}>
               💀 Game Over!
             </h3>
-            <div className="text-base sm:text-lg text-orange-300 mb-2 sm:mb-4">
+            <div className="text-base sm:text-lg text-orange-300 mb-2">
               <div>Final Score: <strong className="text-yellow-400">{score}</strong></div>
               <div>Level Reached: <strong className="text-orange-400">{level}</strong></div>
             </div>
-            <p className="text-xs sm:text-sm text-orange-400">
-              Click "Quit Round" above to continue to the next game
-            </p>
           </div>
         </div>
       )}
-
-      {/* Instructions removed */}
       </div>
     </div>
   );
