@@ -133,14 +133,22 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
-      console.log('WordSurge: onGameEnd called, clearing timeout');
+      console.log('WordSurge: onGameEnd called (GameWrapper timer hit 0)');
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
         console.log('WordSurge: Timeout cleared');
       }
+      // Time ran out on GameWrapper timer - complete with current score
+      // (WordSurge usually handles its own time-up via internal timer, but this is a fallback)
+      const callback = onCompleteRef.current;
+      console.log('WordSurge: GameWrapper time up! Calling onComplete with score:', score);
+      if (callback) {
+        callback(score, MAX_SCORE);
+      }
     },
+    pauseTimer: gameState !== 'playing' || !timerStarted, // Pause when not playing or timer hasn't started
     canSkipQuestion: false
-  }), [score]);
+  }), [score, gameState, timerStarted]);
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
