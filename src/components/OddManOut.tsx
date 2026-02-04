@@ -47,9 +47,16 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       maxScore: MAX_QUESTIONS * 250
     }),
     onGameEnd: () => {
+      console.log('OddManOut: onGameEnd called (time ran out)');
       if (autoAdvanceTimeoutRef.current) {
         clearTimeout(autoAdvanceTimeoutRef.current);
         autoAdvanceTimeoutRef.current = null;
+      }
+      // Time ran out - complete with current score
+      const callback = onCompleteRef.current;
+      console.log('OddManOut: Time up! Calling onComplete with score:', score);
+      if (callback) {
+        callback(score, MAX_QUESTIONS * 250);
       }
     },
     skipQuestion: () => {
