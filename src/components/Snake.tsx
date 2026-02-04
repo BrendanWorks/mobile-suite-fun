@@ -103,7 +103,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     const loadAudio = async () => {
       await audioManager.loadSound('snake_eat', '/sounds/snake/short_success.mp3', 3);
       await audioManager.loadSound('snake_gobble', '/sounds/snake/gobble_optimized.mp3', 2);
-      await audioManager.loadSound('snake_die', '/sounds/fail.mp3', 2);
+      await audioManager.loadSound('snake_die', '/sounds/ranky/fail.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
       await audioManager.loadSound('snake_ticktock', '/sounds/snake/ticktock.mp3', 1);
     };
@@ -236,16 +236,10 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         audioManager.play('snake_gameover', 0.7);
         setGameOver(true);
         gameOverRef.current = true;
-        
-        // Auto-advance to results after 2.5 seconds
-        setTimeout(() => {
-          if (onComplete && gameOverRef.current) {
-            console.log('🐍 Snake game over, auto-advancing with score:', scoreRef.current);
-            onComplete(scoreRef.current, 200);
-          }
-        }, 2500);
+        console.log('🐍 Snake: All lives lost, setting game over');
       } else {
         audioManager.play('snake_die', 0.5);
+        console.log('🐍 Snake: Hit wall, lives remaining:', newLives);
         resetSnake();
       }
       return;
@@ -370,6 +364,21 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
       return () => clearTimeout(timer);
     }
   }, [screenShake]);
+
+  // Auto-advance to results screen after game over
+  useEffect(() => {
+    if (gameOver && onComplete) {
+      console.log('🐍 Snake: Game over detected, starting 2.5s countdown');
+      const timer = setTimeout(() => {
+        console.log('🐍 Snake: Auto-advancing to results with score:', scoreRef.current);
+        onComplete(scoreRef.current, 200);
+      }, 2500);
+      return () => {
+        console.log('🐍 Snake: Auto-advance timer cancelled');
+        clearTimeout(timer);
+      };
+    }
+  }, [gameOver, onComplete]);
 
   useEffect(() => {
     if (shimmer > 0) {
