@@ -9,7 +9,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(2.5);
-  const [points, setPoints] = useState(1000);
+  const [points, setPoints] = useState(333);
   const [score, setScore] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -22,26 +22,23 @@ const PhotoMystery = forwardRef((props, ref) => {
   const resultTimerRef = useRef(null);
   const startTimeRef = useRef(null);
 
-  const maxPoints = 1000;
+  const maxPoints = 333; // ~1000 points total across 3 photos
   const minPoints = 0;
   const photoDuration = 15;
   const totalPhotos = 3;
   const maxZoom = 2.5;
   const minZoom = 1.0;
+  const totalMaxScore = 1000; // Normalized total score
 
   useImperativeHandle(ref, () => ({
     hideTimer: true, // Zooma manages its own per-photo timers
     getGameScore: () => ({
       score: score,
-      maxScore: totalPhotos * maxPoints
+      maxScore: totalMaxScore
     }),
     onGameEnd: () => {
-      console.log(`PhotoMystery ended with score: ${score}/${totalPhotos * maxPoints}`);
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
-      if (onComplete) {
-        onComplete(score, totalPhotos * maxPoints);
-      }
     },
     skipQuestion: () => {
       nextQuestion();
@@ -194,7 +191,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     setGameState('result');
 
     if (onScoreUpdate) {
-      onScoreUpdate(score, totalPhotos * maxPoints);
+      onScoreUpdate(score, totalMaxScore);
     }
 
     resultTimerRef.current = setTimeout(() => {
@@ -225,7 +222,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     setScore(newScore);
 
     if (onScoreUpdate) {
-      onScoreUpdate(newScore, totalPhotos * maxPoints);
+      onScoreUpdate(newScore, totalMaxScore);
     }
 
     if (correct) {
@@ -284,7 +281,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
 
     if (onComplete) {
-      onComplete(score, totalPhotos * maxPoints);
+      onComplete(score, totalMaxScore);
     }
   };
 
@@ -444,7 +441,7 @@ const PhotoMystery = forwardRef((props, ref) => {
       {/* Game content */}
       <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-black rounded-lg text-white" style={{ border: '2px solid #00ffff40' }}>
         <div className="mb-3 sm:mb-6">
-          {/* UPDATED: Icon + Title with neon glow */}
+          {/* Icon + Title with neon glow */}
           <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
             <Search 
               className="w-6 h-6 sm:w-7 sm:h-7" 
@@ -461,9 +458,13 @@ const PhotoMystery = forwardRef((props, ref) => {
             What's in the photo?
           </p>
 
-          <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+          {/* Score and Progress */}
+          <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
             <div className="text-cyan-300">
               Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+            </div>
+            <div className="text-cyan-400">
+              Photo {currentPhotoNumber} of {totalPhotos}
             </div>
           </div>
         </div>
