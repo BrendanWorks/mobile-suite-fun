@@ -225,12 +225,20 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
-      console.log('SplitDecision: onGameEnd called, clearing timer');
+      console.log('SplitDecision: onGameEnd called (time ran out), clearing timer');
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
         console.log('SplitDecision: Timer cleared');
       }
+      // Time ran out - complete with current score
+      const callback = onCompleteRef.current;
+      const finalScore = scoreRef.current;
+      console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore);
+      if (callback) {
+        callback(finalScore, MAX_SCORE);
+      }
     },
+    pauseTimer: false, // Always let GameWrapper timer run
     canSkipQuestion: false,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
