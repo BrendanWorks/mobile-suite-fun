@@ -107,11 +107,21 @@ export default function GameWrapper({
     if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
 
-    console.log('🎮 GameWrapper.handleGameComplete:', { score, maxScore, timeRemaining });
+    console.log('🎮 GameWrapper.handleGameComplete:', { score, maxScore, timeRemaining, hideTimerBar });
 
     // Store the final score AND time remaining for use when countdown completes
     finalScoreRef.current = { score, maxScore, timeRemaining };
 
+    // If game hides timer (like Snake), skip countdown and advance immediately
+    if (hideTimerBar) {
+      console.log('🎮 Game has hidden timer, advancing immediately');
+      if (timerRef.current) clearInterval(timerRef.current);
+      setIsActive(false);
+      onComplete(score, maxScore, timeRemaining);
+      return;
+    }
+
+    // Normal timer games: fast countdown if time remains
     if (timeRemaining > 2) {
       setIsFastCountdown(true);
     } else {
