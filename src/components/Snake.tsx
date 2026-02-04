@@ -46,6 +46,16 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
+
+  // Debug: Check if onComplete is provided
+  useEffect(() => {
+    console.log('🐍 Snake mounted with onComplete:', !!onComplete);
+  }, []);
+
+  // Debug: Log gameOver state changes
+  useEffect(() => {
+    console.log('🐍 Snake gameOver state changed to:', gameOver);
+  }, [gameOver]);
   const [direction, setDirection] = useState<Position>({ x: 0, y: 0 });
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
@@ -367,18 +377,22 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
   // Auto-advance to results screen after game over
   useEffect(() => {
-    if (gameOver && onComplete) {
+    if (gameOver) {
       console.log('🐍 Snake: Game over detected, starting 2.5s countdown');
       const timer = setTimeout(() => {
         console.log('🐍 Snake: Auto-advancing to results with score:', scoreRef.current);
-        onComplete(scoreRef.current, 200);
+        if (onComplete) {
+          onComplete(scoreRef.current, 200);
+        } else {
+          console.error('🐍 Snake: onComplete is undefined!');
+        }
       }, 2500);
       return () => {
         console.log('🐍 Snake: Auto-advance timer cancelled');
         clearTimeout(timer);
       };
     }
-  }, [gameOver, onComplete]);
+  }, [gameOver]); // Only depend on gameOver, not onComplete
 
   useEffect(() => {
     if (shimmer > 0) {
