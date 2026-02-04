@@ -223,6 +223,16 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
 
   const selectRandomGame = () => {
+    // TEMP: Force Snake for testing - remove this after fixing
+    const snakeGame = AVAILABLE_GAMES.find(g => g.id === 'snake');
+    if (snakeGame && currentRound === 1) {
+      setCurrentGame(snakeGame);
+      setPlayedGames(prev => [...prev, snakeGame.id]);
+      console.log('🎮 TEMP: Forcing Snake for Round 1 testing');
+      return;
+    }
+    
+    // Normal random logic
     const availableGames = AVAILABLE_GAMES.filter(
       game => !playedGames.includes(game.id)
     );
