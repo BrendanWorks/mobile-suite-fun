@@ -236,11 +236,14 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         audioManager.play('snake_gameover', 0.7);
         setGameOver(true);
         gameOverRef.current = true;
+        
+        // Auto-advance to results after 2.5 seconds
         setTimeout(() => {
-          if (onComplete) {
+          if (onComplete && gameOverRef.current) {
+            console.log('🐍 Snake game over, auto-advancing with score:', scoreRef.current);
             onComplete(scoreRef.current, 200);
           }
-        }, 2000);
+        }, 2500);
       } else {
         audioManager.play('snake_die', 0.5);
         resetSnake();
@@ -669,9 +672,10 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
           )}
 
           {gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/95 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/95 rounded-lg z-30">
               <div className="text-center">
-                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2" style={{ textShadow: '0 0 15px #ff0066' }}>💀 Game Over!</p>
+                <p className="text-6xl sm:text-8xl mb-4" style={{ filter: 'drop-shadow(0 0 20px #ef4444)' }}>💀</p>
+                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2" style={{ textShadow: '0 0 15px #ef4444' }}>Game Over!</p>
                 <p className="text-yellow-400 text-lg sm:text-2xl" style={{ textShadow: '0 0 10px #fbbf24' }}>Final Score: {score}</p>
               </div>
             </div>
