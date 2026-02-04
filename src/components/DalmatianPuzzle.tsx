@@ -612,7 +612,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         if (timeout) clearTimeout(timeout);
       };
     }
-  }, [gameState]);
+  }, [gameState, onComplete]);
 
   // Initialize puzzles
   useEffect(() => {
@@ -829,12 +829,42 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
       <div className="w-full flex flex-col items-center">
         {/* Puzzle Canvas */}
-        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
+        <div className="w-full md:w-2/3 mb-3 sm:mb-8 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40 relative" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
           <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-pink-500 rounded-lg"
             style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
           />
+          
+          {/* Completion Overlay */}
+          {gameState === 'won' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
+              <div className="text-center">
+                <div className="text-4xl sm:text-5xl mb-2">🎉</div>
+                <div className="text-2xl sm:text-3xl font-bold text-green-400 mb-2" style={{ textShadow: '0 0 20px #22c55e' }}>
+                  Puzzle Complete!
+                </div>
+                <div className="text-lg text-green-300">
+                  +{MAX_SCORE} points
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Time Out Overlay */}
+          {gameState === 'lost' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
+              <div className="text-center">
+                <div className="text-4xl sm:text-5xl mb-2">⏱️</div>
+                <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={{ textShadow: '0 0 20px #fbbf24' }}>
+                  Time's Up!
+                </div>
+                <div className="text-lg text-yellow-300">
+                  +{Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE)} points
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Draggable pieces container */}
