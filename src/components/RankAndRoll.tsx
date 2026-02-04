@@ -6,7 +6,12 @@ import { audioManager } from '../lib/audioManager';
 interface RankAndRollProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
+
+const MAX_PUZZLES = 2;
+const POINTS_PER_ITEM = 75;
+const MAX_SCORE = MAX_PUZZLES * 4 * POINTS_PER_ITEM; // 2 puzzles × 4 items × 75 points = 600
 
 const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
@@ -78,10 +83,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: puzzlesCompleted > 0 ? puzzlesCompleted * 333 : 333
+      maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
-      console.log(`RankAndRoll ended with score: ${score}/${puzzlesCompleted > 0 ? puzzlesCompleted * 333 : 333}`);
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
@@ -90,6 +94,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       nextPuzzle();
     },
     canSkipQuestion: true,
+    pauseTimer: gameState === 'completed', // Pause when showing results
     loadNextPuzzle: () => {
       nextPuzzle();
     }
@@ -176,7 +181,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     const loadAudio = async () => {
       await audioManager.loadSound('ranky-select', '/sounds/ranky/select_optimized.mp3', 3);
       await audioManager.loadSound('ranky-success', '/sounds/global/win_optimized.mp3', 2);
-      await audioManager.loadSound('ranky-fail', '/sounds/ranky/failotimized.mp3', 2);
+      await audioManager.loadSound('ranky-fail', '/sounds/ranky/fail.mp3', 2);
       await audioManager.loadSound('ranky-hint', '/sounds/ranky/hint_optimized.mp3', 2);
     };
     loadAudio();
@@ -359,14 +364,21 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     audioManager.initialize();
 
-    // Check if puzzle is complete
+    // Check which items are in correct positions
     const correctOrder = currentPuzzle.sortOrder === 'desc'
       ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
       : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
 
-    const isCorrect = playerOrder.every((item, index) =>
-      item.id === correctOrder[index].id
-    );
+    // Count correct positions for partial credit
+    let correctCount = 0;
+    playerOrder.forEach((item, index) => {
+      if (item.id === correctOrder[index].id) {
+        correctCount++;
+      }
+    });
+
+    const earnedPoints = correctCount * POINTS_PER_ITEM;
+    const isFullyCorrect = correctCount === currentPuzzle.items.length;
 
     setGameState('completed');
 
@@ -375,27 +387,40 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       props.onTimerPause(true);
     }
 
-    if (isCorrect) {
+    if (isFullyCorrect) {
       audioManager.play('ranky-success', 0.5);
-      const hintPenalty = hintsUsed * 50;
-      const finalScore = Math.max(0, 333 - hintPenalty);
-      setScore(prev => {
-        const newScore = prev + finalScore;
-        if (props.onScoreUpdate) {
-          props.onScoreUpdate(newScore, newScore);
-        }
-        return newScore;
-      });
-      setPuzzlesCompleted(prev => prev + 1);
+    } else if (earnedPoints > 0) {
+      audioManager.play('ranky-success', 0.3); // Quieter for partial credit
     } else {
       audioManager.play('ranky-fail', 0.3);
     }
 
-    // Auto-advance to next puzzle after 3 seconds
-    const timeout = setTimeout(() => {
-      nextPuzzle();
-    }, 3000);
-    setResultTimeout(timeout);
+    const newScore = score + earnedPoints;
+    setScore(newScore);
+    
+    if (props.onScoreUpdate) {
+      props.onScoreUpdate(newScore, MAX_SCORE);
+    }
+
+    const newPuzzlesCompleted = puzzlesCompleted + 1;
+    setPuzzlesCompleted(newPuzzlesCompleted);
+
+    // Check if game is complete (2 puzzles done)
+    if (newPuzzlesCompleted >= MAX_PUZZLES) {
+      // Last puzzle - auto-advance to results after showing feedback
+      const timeout = setTimeout(() => {
+        if (props.onComplete) {
+          props.onComplete(newScore, MAX_SCORE);
+        }
+      }, 3000);
+      setResultTimeout(timeout);
+    } else {
+      // More puzzles to go - advance to next puzzle
+      const timeout = setTimeout(() => {
+        nextPuzzle();
+      }, 3000);
+      setResultTimeout(timeout);
+    }
   };
 
   const nextPuzzle = () => {
@@ -447,6 +472,20 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     );
   }
 
+  // Calculate correct count for display
+  const correctOrder = currentPuzzle.sortOrder === 'desc'
+    ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
+    : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
+  
+  let correctCount = 0;
+  if (gameState === 'completed') {
+    playerOrder.forEach((item, index) => {
+      if (item.id === correctOrder[index].id) {
+        correctCount++;
+      }
+    });
+  }
+
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
       <div className="max-w-md w-full text-white">
@@ -470,20 +509,28 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
             Rank 'em!
           </p>
 
-          {/* Score and Hint Button Row */}
+          {/* Score and Progress */}
           <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
             <div className="text-green-300">
               Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
             </div>
-            <button
-              onClick={getHint}
-              disabled={gameState !== 'playing'}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-transparent border-2 border-yellow-400 text-yellow-400 rounded hover:bg-yellow-400 hover:text-black transition-all disabled:opacity-50 whitespace-nowrap text-xs"
-              style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}
-            >
-              💡 Hint ({hintsUsed})
-            </button>
+            <div className="text-green-400">
+              Puzzle {puzzlesCompleted + 1} of {MAX_PUZZLES}
+            </div>
           </div>
+
+          {/* Hint Button */}
+          {gameState === 'playing' && (
+            <div className="flex justify-center mb-2">
+              <button
+                onClick={getHint}
+                className="px-3 py-1.5 bg-transparent border-2 border-yellow-400 text-yellow-400 rounded hover:bg-yellow-400 hover:text-black transition-all whitespace-nowrap text-xs"
+                style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}
+              >
+                💡 Hint ({hintsUsed})
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Puzzle Info - Updated colors to green */}
@@ -553,7 +600,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                     e.stopPropagation();
                     moveItem(index, 'up');
                   }}
-                  disabled={index === 0}
+                  disabled={index === 0 || gameState !== 'playing'}
                   className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
                 >
                   <ArrowUp size={18} />
@@ -563,7 +610,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                     e.stopPropagation();
                     moveItem(index, 'down');
                   }}
-                  disabled={index === playerOrder.length - 1}
+                  disabled={index === playerOrder.length - 1 || gameState !== 'playing'}
                   className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
                 >
                   <ArrowDown size={18} />
@@ -588,36 +635,49 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
         {/* Success/Failure Message */}
         {gameState === 'completed' && (() => {
-          const correctOrder = currentPuzzle.sortOrder === 'desc'
-            ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
-            : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
-          const isCorrect = playerOrder.every((item, index) => item.id === correctOrder[index].id);
+          const isFullyCorrect = correctCount === currentPuzzle.items.length;
+          const earnedPoints = correctCount * POINTS_PER_ITEM;
 
-          if (isCorrect) {
-            const hintPenalty = hintsUsed * 50;
-            const finalScore = Math.max(0, 333 - hintPenalty);
-
+          if (isFullyCorrect) {
             return (
               <div className="text-center p-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl">
                 <div className="text-3xl mb-1">🎉</div>
                 <div className="text-xl font-bold text-green-300 mb-1">Perfect!</div>
-                <div className="text-green-200 text-sm mb-1">
-                  {hintsUsed > 0 ? `${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used` : 'No hints!'}
-                </div>
                 <div className="text-lg font-bold text-white">
-                  +{finalScore} points
+                  +{earnedPoints} points
                 </div>
-                {hintsUsed > 0 && (
-                  <div className="text-xs text-yellow-300 mt-1">
-                    (-{hintPenalty} for hints)
-                  </div>
-                )}
+                <div className="text-xs text-green-300 mt-1">
+                  All {correctCount} items correct!
+                </div>
+              </div>
+            );
+          } else if (earnedPoints > 0) {
+            return (
+              <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-400 rounded-xl">
+                <div className="text-2xl mb-1">⚠️</div>
+                <div className="text-lg font-bold text-yellow-300 mb-1">Partial Credit</div>
+                <div className="text-base font-bold text-white mb-1">
+                  +{earnedPoints} points
+                </div>
+                <div className="text-xs text-yellow-300 mb-2">
+                  {correctCount} of {currentPuzzle.items.length} correct
+                </div>
+                <div className="text-xs font-bold text-white mb-1">Correct Order:</div>
+                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-0.5">
+                  {correctOrder.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <span className="text-yellow-300 font-bold">{index + 1}.</span>
+                      <span className="text-base">{item.image}</span>
+                      <span className="text-white truncate flex-1">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           } else {
             return (
               <div className="text-center p-2 bg-gradient-to-r from-red-600/30 to-red-700/30 border-2 border-red-400 rounded-xl">
-                <div className="text-base font-bold text-red-300 mb-1.5">Wrong - Here's the ranking:</div>
+                <div className="text-base font-bold text-red-300 mb-1.5">All Wrong - Here's the ranking:</div>
                 <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-0.5">
                   {correctOrder.map((item, index) => (
                     <div key={item.id} className="flex items-center gap-2">
