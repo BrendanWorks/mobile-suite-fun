@@ -79,6 +79,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const [touchStartY, setTouchStartY] = useState(null);
   const [moves, setMoves] = useState(0);
   const [showValues, setShowValues] = useState(false);
+  const [touchStartIndex, setTouchStartIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -98,10 +101,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     loadNextPuzzle: () => {
       nextPuzzle();
     }
-  }));
-  const [touchStartIndex, setTouchStartIndex] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
+  }), [score, resultTimeout, gameState]);
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
@@ -175,6 +175,15 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   useEffect(() => {
     fetchPuzzles();
   }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resultTimeout) {
+        clearTimeout(resultTimeout);
+      }
+    };
+  }, [resultTimeout]);
 
   // Load audio files
   useEffect(() => {
