@@ -46,16 +46,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
-
-  // Debug: Check if onComplete is provided
-  useEffect(() => {
-    console.log('🐍 Snake mounted with onComplete:', !!onComplete);
-  }, []);
-
-  // Debug: Log gameOver state changes
-  useEffect(() => {
-    console.log('🐍 Snake gameOver state changed to:', gameOver);
-  }, [gameOver]);
   const [direction, setDirection] = useState<Position>({ x: 0, y: 0 });
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
@@ -246,10 +236,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
         audioManager.play('snake_gameover', 0.7);
         setGameOver(true);
         gameOverRef.current = true;
-        console.log('🐍 Snake: All lives lost, setting game over');
       } else {
         audioManager.play('snake_die', 0.5);
-        console.log('🐍 Snake: Hit wall, lives remaining:', newLives);
         resetSnake();
       }
       return;
@@ -377,22 +365,13 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
 
   // Auto-advance to results screen after game over
   useEffect(() => {
-    if (gameOver) {
-      console.log('🐍 Snake: Game over detected, starting 2.5s countdown');
+    if (gameOver && onComplete) {
       const timer = setTimeout(() => {
-        console.log('🐍 Snake: Auto-advancing to results with score:', scoreRef.current);
-        if (onComplete) {
-          onComplete(scoreRef.current, 200);
-        } else {
-          console.error('🐍 Snake: onComplete is undefined!');
-        }
+        onComplete(scoreRef.current, 200);
       }, 2500);
-      return () => {
-        console.log('🐍 Snake: Auto-advance timer cancelled');
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
-  }, [gameOver]); // Only depend on gameOver, not onComplete
+  }, [gameOver]);
 
   useEffect(() => {
     if (shimmer > 0) {
