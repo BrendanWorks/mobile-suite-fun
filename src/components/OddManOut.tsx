@@ -26,6 +26,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
+  const onCompleteRef = React.useRef(props.onComplete);
+
+  // Keep onComplete ref up to date
+  React.useEffect(() => {
+    onCompleteRef.current = props.onComplete;
+  }, [props.onComplete]);
 
   const successMessages = [
     "Excellent! You found the odd ones out!",
@@ -58,7 +64,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         loadQuestionById(puzzleIds[nextIndex]);
       }
     }
-  }));
+  }), [score, gameState, currentPuzzleIndex, puzzleIds]);
 
   const fetchQuestions = async () => {
     try {
@@ -213,9 +219,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
         // Last question - auto-advance to results after showing feedback
+        console.log('OddManOut: Setting timeout for game completion (correct answer)');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-          if (props.onComplete) {
-            props.onComplete(newScore, MAX_QUESTIONS * 250);
+          console.log('OddManOut: Timeout fired, calling onComplete with score:', newScore);
+          const callback = onCompleteRef.current;
+          if (callback) {
+            callback(newScore, MAX_QUESTIONS * 250);
+          } else {
+            console.error('OddManOut: onComplete callback is undefined!');
           }
         }, 2500);
       } else {
@@ -236,9 +247,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
           // Last question - auto-advance to results after showing feedback
+          console.log('OddManOut: Setting timeout for game completion (wrong answer)');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-            if (props.onComplete) {
-              props.onComplete(score, MAX_QUESTIONS * 250);
+            console.log('OddManOut: Timeout fired, calling onComplete with score:', score);
+            const callback = onCompleteRef.current;
+            if (callback) {
+              callback(score, MAX_QUESTIONS * 250);
+            } else {
+              console.error('OddManOut: onComplete callback is undefined!');
             }
           }, 2500);
         } else {
