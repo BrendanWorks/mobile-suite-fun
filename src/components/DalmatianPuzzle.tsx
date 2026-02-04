@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } f
 import { Shapes } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+const MAX_SCORE = 1000;
+
 const DalmatianPuzzle = forwardRef((props: any, ref) => {
   const { onComplete } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,12 +19,15 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   const maxTimePerPuzzle = 60;
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: gameState === 'won' ? 100 : Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100),
-      maxScore: 100
-    }),
+    getGameScore: () => {
+      const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
+      const score = Math.round(percentComplete * MAX_SCORE);
+      return {
+        score: score,
+        maxScore: MAX_SCORE
+      };
+    },
     onGameEnd: () => {
-      console.log(`SnapShot ended: ${gameState}, ${gameStateRef.current.completedSlots}/${gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces`);
       if (resultTimeout) {
         clearTimeout(resultTimeout);
       }
@@ -70,8 +75,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     gameStateRef.current.cropX = cropX;
     gameStateRef.current.cropY = cropY;
     gameStateRef.current.cropSize = size;
-    
-    console.log('Center crop calculated:', { cropX, cropY, cropSize: size, imgWidth: img.width, imgHeight: img.height });
   };
 
   // Fetch puzzles from Supabase
@@ -164,16 +167,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const handleResize = () => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      console.log('Canvas not found in handleResize');
-      return;
-    }
+    if (!canvas) return;
 
     const container = canvas.parentElement;
-    if (!container) {
-      console.log('Canvas container not found in handleResize');
-      return;
-    }
+    if (!container) return;
 
     const size = Math.min(container.offsetWidth, window.innerHeight * 0.7);
     canvas.width = size;
@@ -181,8 +178,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     gameStateRef.current.canvasWidth = canvas.width;
     gameStateRef.current.canvasHeight = canvas.height;
     gameStateRef.current.pieceSize = gameStateRef.current.canvasWidth / gameStateRef.current.PUZZLE_COLS;
-
-    console.log('Canvas resized to:', size, 'pieceSize:', gameStateRef.current.pieceSize);
 
     if (isImageLoaded) {
       drawGame();
@@ -192,27 +187,18 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const drawDraggablePieces = () => {
     const container = draggableContainerRef.current;
-    if (!container) {
-      console.log('Container not found');
-      return;
-    }
+    if (!container) return;
 
     // Wait for container to have dimensions
     if (container.offsetWidth === 0) {
-      console.log('Container width is 0, waiting...');
       requestAnimationFrame(drawDraggablePieces);
       return;
     }
 
-    console.log('Drawing draggable pieces, container width:', container.offsetWidth, 'canvas width:', gameStateRef.current.canvasWidth);
-
     container.innerHTML = '';
 
     // If no pieces to draw, exit
-    if (gameStateRef.current.draggablePieces.length === 0) {
-      console.log('No draggable pieces to draw');
-      return;
-    }
+    if (gameStateRef.current.draggablePieces.length === 0) return;
 
     // Calculate piece size with a minimum of 60px
     let draggablePieceSize = Math.min(
@@ -228,8 +214,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       return;
     }
 
-    console.log('Draggable piece size:', draggablePieceSize, 'num pieces:', gameStateRef.current.draggablePieces.length);
-
     gameStateRef.current.draggablePieces.forEach((piece, index) => {
       const pieceCanvas = document.createElement('canvas');
       pieceCanvas.width = draggablePieceSize;
@@ -239,8 +223,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       pieceCanvas.style.minWidth = '60px';
       pieceCanvas.style.minHeight = '60px';
       pieceCanvas.style.display = 'block';
-
-      console.log(`Creating piece ${index} (id: ${piece.id}):`, pieceCanvas.width, 'x', pieceCanvas.height, 'source:', piece.sourceX, piece.sourceY);
 
       const pieceCtx = pieceCanvas.getContext('2d');
       if (pieceCtx) {
@@ -265,8 +247,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
       container.appendChild(pieceCanvas);
     });
-
-    console.log('Finished drawing pieces, container children:', container.children.length);
   };
 
   const drawGame = () => {
@@ -275,8 +255,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    console.log('Drawing game, dragging piece:', gameStateRef.current.draggingPiece);
     
     ctx.clearRect(0, 0, gameStateRef.current.canvasWidth, gameStateRef.current.canvasHeight);
     
@@ -306,7 +284,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     
     if (gameStateRef.current.draggingPiece) {
       const dragPiece = gameStateRef.current.draggingPiece;
-      console.log('Drawing dragging piece at:', dragPiece.dragX, dragPiece.dragY, 'piece size:', gameStateRef.current.pieceSize);
       
       // Draw with slight transparency and shadow effect
       ctx.globalAlpha = 0.8;
@@ -374,12 +351,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     if (target.tagName === 'CANVAS' && target.dataset.id) {
       const pieceId = parseInt(target.dataset.id, 10);
       const piece = gameStateRef.current.draggablePieces.find(p => p.id === pieceId);
-      if (!piece) {
-        console.log('Piece not found for ID:', pieceId);
-        return;
-      }
-      
-      console.log('Starting drag for piece:', pieceId);
+      if (!piece) return;
       
       // Create dragging piece
       gameStateRef.current.draggingPiece = {
@@ -410,11 +382,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         gameStateRef.current.draggingPiece.dragX = canvasX - gameStateRef.current.dragOffsetX;
         gameStateRef.current.draggingPiece.dragY = canvasY - gameStateRef.current.dragOffsetY;
         
-        console.log('Initial drag position:', gameStateRef.current.draggingPiece.dragX, gameStateRef.current.draggingPiece.dragY, 'canvas:', canvas.width, canvas.height);
-        console.log('Canvas rect:', canvasRect);
-        console.log('Client pos:', clientX, clientY);
-        console.log('Event type:', e.type);
-        
         // Force immediate redraw
         drawGame();
       }
@@ -444,8 +411,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     gameStateRef.current.draggingPiece.dragX = canvasX - gameStateRef.current.dragOffsetX;
     gameStateRef.current.draggingPiece.dragY = canvasY - gameStateRef.current.dragOffsetY;
     
-    console.log('Moving to:', gameStateRef.current.draggingPiece.dragX, gameStateRef.current.draggingPiece.dragY, 'event type:', e.type);
-    
     // Force a redraw
     drawGame();
   };
@@ -460,8 +425,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       e.stopPropagation();
     }
     
-    console.log('Ending drag at:', gameStateRef.current.draggingPiece.dragX, gameStateRef.current.draggingPiece.dragY);
-    
     const dragX = gameStateRef.current.draggingPiece.dragX || 0;
     const dragY = gameStateRef.current.draggingPiece.dragY || 0;
     const pieceSize = gameStateRef.current.pieceSize;
@@ -471,16 +434,12 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       const dx = (dragX + pieceSize / 2) - (slot.destX + pieceSize / 2);
       const dy = (dragY + pieceSize / 2) - (slot.destY + pieceSize / 2);
       const distance = Math.sqrt(dx * dx + dy * dy);
-      console.log('Distance to slot:', distance, 'threshold:', pieceSize * 0.6);
       return distance < pieceSize * 0.6;
     });
     
     if (closestEmptySlot) {
-      console.log('Found close slot:', closestEmptySlot);
-      
       // Check if it's the correct piece for this slot
       if (gameStateRef.current.draggingPiece.id === closestEmptySlot.id) {
-        console.log('Correct placement!');
         playSound(880); // Success sound
         
         // Mark slot as filled
@@ -511,15 +470,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
         // Check if puzzle is complete
         if (gameStateRef.current.completedSlots === gameStateRef.current.NUM_DRAGGABLE_PIECES) {
-          console.log('Puzzle complete! Setting state to won');
           setGameState('won');
-          // Call onComplete when puzzle is solved
-          if (onComplete) {
-            onComplete(100, 100);
-          }
         }
       } else {
-        console.log('Wrong placement');
         playSound(100); // Error sound
         
         // Restore piece opacity
@@ -532,8 +485,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         }
       }
     } else {
-      console.log('No close slot found');
-      
       // Restore piece opacity
       const container = draggableContainerRef.current;
       if (container) {
@@ -552,12 +503,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   const resetGame = () => {
     const currentPuzzle = getCurrentPuzzle();
-    if (!currentPuzzle) {
-      console.log('No current puzzle found');
-      return;
-    }
-
-    console.log('Resetting game with puzzle:', currentPuzzle.id);
+    if (!currentPuzzle) return;
 
     // Clear any pending result timeout
     if (resultTimeout) {
@@ -576,11 +522,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
     // Calculate center crop coordinates
     calculateCenterCrop();
-
-    console.log('Image dimensions:', gameStateRef.current.img.width, 'x', gameStateRef.current.img.height);
-    console.log('Canvas dimensions:', gameStateRef.current.canvasWidth, 'x', gameStateRef.current.canvasHeight);
-    console.log('Piece size:', gameStateRef.current.pieceSize);
-    console.log('Crop area:', gameStateRef.current.cropSize, 'x', gameStateRef.current.cropSize);
 
     const allPieces = [];
     const pieceWidth = gameStateRef.current.cropSize / gameStateRef.current.PUZZLE_COLS;
@@ -601,14 +542,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }
     }
 
-    console.log('Created', allPieces.length, 'pieces');
-
     const shuffledPieces = [...allPieces].sort(() => Math.random() - 0.5);
 
     // Take only 4 pieces as draggable (leaving 5 already in place)
     gameStateRef.current.draggablePieces = shuffledPieces.slice(0, gameStateRef.current.NUM_DRAGGABLE_PIECES);
-
-    console.log('Draggable pieces:', gameStateRef.current.draggablePieces.length);
 
     gameStateRef.current.puzzlePieces = [];
     gameStateRef.current.emptySlots = [];
@@ -624,11 +561,8 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }
     });
 
-    console.log('About to draw draggable pieces...');
     drawDraggablePieces();
-    console.log('About to draw game...');
     drawGame();
-    console.log('Reset complete');
   };
 
   // Timer effect - only starts when image is loaded and puzzle is ready
@@ -645,16 +579,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }, 1000);
       return () => clearInterval(timer);
     }
-    // Timer stops when gameState !== 'playing' or timeLeft <= 0 or image not loaded
   }, [gameState, timeLeft, isImageLoaded]);
 
-  // Handle puzzle completion - auto-advance to next puzzle
+  // Handle puzzle completion/timeout - call onComplete after delay
   useEffect(() => {
     if (gameState === 'won') {
-      console.log('Puzzle won, auto-advancing to next puzzle in 2 seconds');
-      // Auto-advance to next puzzle after 2 seconds
+      // Puzzle complete - wait 2s then call onComplete with full score
       const timeout = setTimeout(() => {
-        nextPuzzle();
+        if (onComplete) {
+          onComplete(MAX_SCORE, MAX_SCORE);
+        }
       }, 2000);
       setResultTimeout(timeout);
       
@@ -664,10 +598,13 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     }
     
     if (gameState === 'lost') {
-      console.log('Puzzle lost (time up), advancing to next puzzle in 2 seconds');
-      // Also auto-advance on loss
+      // Time ran out - wait 2s then call onComplete with partial score
       const timeout = setTimeout(() => {
-        nextPuzzle();
+        if (onComplete) {
+          const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
+          const score = Math.round(percentComplete * MAX_SCORE);
+          onComplete(score, MAX_SCORE);
+        }
       }, 2000);
       setResultTimeout(timeout);
       
@@ -685,12 +622,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   // Load image when puzzles change or current puzzle changes
   useEffect(() => {
     const currentPuzzle = getCurrentPuzzle();
-    if (!currentPuzzle || loading) {
-      console.log('No puzzle or still loading, skipping image load');
-      return;
-    }
-
-    console.log('Loading image for puzzle:', currentPuzzle.id, 'URL:', currentPuzzle.image_url);
+    if (!currentPuzzle || loading) return;
 
     // Reset image loaded state when starting to load new image
     setIsImageLoaded(false);
@@ -702,8 +634,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      console.log('Image loaded OK', img.width, '×', img.height);
-      // Just mark as loaded - handleResize/resetGame moved to separate effect
       setIsImageLoaded(true);
     };
 
@@ -712,25 +642,21 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       // Try fallback image
       const fallbackUrl = 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
       if (img.src !== fallbackUrl) {
-        console.log('Trying fallback image');
         img.crossOrigin = "anonymous";
         img.src = fallbackUrl;
       } else {
-        console.error('Fallback image also failed');
-        setIsImageLoaded(false); // permanent fail
+        setIsImageLoaded(false);
       }
     };
 
     // Set src last (after crossOrigin is set)
-    // If image is already loaded (cached), trigger onload manually
     if (img.complete && img.naturalWidth !== 0 && img.src === currentPuzzle.image_url) {
-      console.log('Image already cached, triggering onload');
       img.onload?.(new Event('load'));
     } else {
       img.src = currentPuzzle.image_url;
     }
 
-    // Cleanup: remove handlers when effect re-runs or unmounts
+    // Cleanup
     return () => {
       img.onload = null;
       img.onerror = null;
@@ -741,11 +667,9 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   useEffect(() => {
     if (!isImageLoaded || !canvasRef.current) return;
     
-    // Give browser one frame to render canvas element
     const timer = requestAnimationFrame(() => {
-      console.log('Post-load init: resizing + resetting game');
-      handleResize();     // sets canvas dimensions & pieceSize
-      resetGame();        // creates pieces, draws everything
+      handleResize();
+      resetGame();
     });
     
     return () => cancelAnimationFrame(timer);
@@ -753,8 +677,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
 
   // Handle resize
   useEffect(() => {
-    const img = gameStateRef.current.img;
-
     const handleResizeEvent = () => handleResize();
     window.addEventListener('resize', handleResizeEvent);
 
@@ -769,7 +691,7 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     
     if (!canvas || !container) return;
 
-    // Global event handlers for mouse
+    // Global event handlers
     const handleMouseMove = (e: MouseEvent) => {
       if (gameStateRef.current.isDragging) {
         handleMove(e);
@@ -780,8 +702,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
         handleEnd(e);
       }
     };
-    
-    // Global event handlers for touch
     const handleTouchMove = (e: TouchEvent) => {
       if (gameStateRef.current.isDragging) {
         handleMove(e);
@@ -793,28 +713,25 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       }
     };
     
-    // Local event handlers for starting drag
+    // Local event handlers
     const handleMouseDown = (e: MouseEvent) => handleStart(e);
     const handleTouchStart = (e: TouchEvent) => handleStart(e);
 
-    // Add global listeners for move and end events
+    // Add global listeners
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
 
-    // Add local listeners for start events
+    // Add local listeners
     container.addEventListener('mousedown', handleMouseDown);
     container.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     return () => {
-      // Remove global listeners
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
-
-      // Remove local listeners
       container.removeEventListener('mousedown', handleMouseDown);
       container.removeEventListener('touchstart', handleTouchStart);
     };
@@ -873,11 +790,14 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     );
   }
 
+  const percentComplete = (gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100;
+  const currentScore = Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE);
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-2 pt-4">
       <div className="text-center max-w-4xl w-full text-white">
       
-      {/* Header - Cleaned up */}
+      {/* Header */}
       <div className="mb-3 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-pink-400 mb-1 border-b border-pink-400 pb-1 flex items-center justify-center gap-2">
           <Shapes 
@@ -896,10 +816,13 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
           Piece it Together
         </p>
 
-        {/* Score only - removed timer and piece counter */}
-        <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        {/* Score */}
+        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
           <div className="text-pink-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * 100)}</strong>
+            Score: <strong className="text-yellow-400 tabular-nums">{currentScore}</strong>
+          </div>
+          <div className="text-pink-400">
+            {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
           </div>
         </div>
       </div>
@@ -933,8 +856,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
           </button>
         </div>
       </div>
-
-      {/* No modal - just auto-advance to next puzzle */}
       </div>
     </div>
   );
