@@ -59,6 +59,17 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  const scoreRef = useRef(0);
+
+  // Keep refs up to date
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   // Load all puzzle IDs on mount
   useEffect(() => {
@@ -119,6 +130,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         ...puzzleData,
         items: itemsData || []
       });
+      console.log('SplitDecision: Loaded puzzle with', itemsData?.length || 0, 'items');
       setCurrentItemIndex(0);
       setSelectedAnswer(null);
       setIsAnswered(false);
@@ -132,6 +144,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
   // Handle answer selection
   const handleAnswer = (category: string) => {
+    console.log('SplitDecision: handleAnswer called, currentItemIndex:', currentItemIndex, 'category:', category);
     if (isAnswered || !puzzle || !puzzle.items[currentItemIndex]) return;
 
     const currentItem = puzzle.items[currentItemIndex];
@@ -152,6 +165,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     if (isCorrect) {
       setScore(prev => {
         const newScore = prev + POINTS_PER_ITEM;
+        scoreRef.current = newScore; // Update ref immediately
         if (onScoreUpdate) {
           onScoreUpdate(newScore, MAX_SCORE);
         }
@@ -162,20 +176,31 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       if (onScoreUpdate) {
         onScoreUpdate(score, MAX_SCORE);
       }
+      // scoreRef.current is already up to date (no change)
     }
 
     // Check if this is the last item
     const isLastItem = currentItemIndex === puzzle.items.length - 1;
+    console.log('SplitDecision: Item', currentItemIndex + 1, 'of', puzzle.items.length, '- isLastItem:', isLastItem);
 
     // Auto-advance after 1.5 seconds
     autoAdvanceTimer.current = setTimeout(() => {
       if (isLastItem) {
-        // Puzzle complete - call onComplete
-        if (onComplete) {
-          onComplete(score + (isCorrect ? POINTS_PER_ITEM : 0), MAX_SCORE);
+        // Puzzle complete - call onComplete with latest score
+        const callback = onCompleteRef.current;
+        const finalScore = scoreRef.current;
+        console.log('SplitDecision: Last item timeout fired!');
+        console.log('SplitDecision: Puzzle complete, calling onComplete with score:', finalScore);
+        console.log('SplitDecision: onComplete callback exists:', !!callback);
+        if (callback) {
+          callback(finalScore, MAX_SCORE);
+          console.log('SplitDecision: onComplete called successfully');
+        } else {
+          console.error('SplitDecision: onComplete callback is undefined!');
         }
       } else {
         // More items - advance to next
+        console.log('SplitDecision: Advancing to next item');
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
@@ -200,8 +225,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
+      console.log('SplitDecision: onGameEnd called, clearing timer');
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
+        console.log('SplitDecision: Timer cleared');
       }
     },
     canSkipQuestion: false,
@@ -212,7 +239,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         fetchPuzzleById(puzzleIds[nextIndex]);
       }
     }
-  }));
+  }), [score, currentPuzzleIndex, puzzleIds]);
 
   // Early returns AFTER all hooks
   if (loading) {
