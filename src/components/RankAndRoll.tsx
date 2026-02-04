@@ -89,8 +89,14 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
+      console.log('Ranky: onGameEnd called (time ran out)');
       if (resultTimeout) {
         clearTimeout(resultTimeout);
+      }
+      // Time ran out - complete with current score
+      console.log('Ranky: Time up! Calling onComplete with score:', score);
+      if (props.onComplete) {
+        props.onComplete(score, MAX_SCORE);
       }
     },
     skipQuestion: () => {
