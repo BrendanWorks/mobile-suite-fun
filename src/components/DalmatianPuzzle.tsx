@@ -28,8 +28,16 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
       };
     },
     onGameEnd: () => {
+      console.log('SnapShot: onGameEnd called (time ran out)');
       if (resultTimeout) {
         clearTimeout(resultTimeout);
+      }
+      // Time ran out - complete with partial score based on pieces placed
+      const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
+      const partialScore = Math.round(percentComplete * MAX_SCORE);
+      console.log('SnapShot: Time up! Pieces placed:', gameStateRef.current.completedSlots, 'Score:', partialScore);
+      if (onComplete) {
+        onComplete(partialScore, MAX_SCORE);
       }
     },
     skipQuestion: () => nextPuzzle(),
