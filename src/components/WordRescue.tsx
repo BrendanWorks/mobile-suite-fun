@@ -120,6 +120,12 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   const audioBuffers = useRef(new Map());
   const audioInitialized = useRef(false);
   const roundEndTimeoutRef = useRef(null);
+  const onCompleteRef = useRef(props.onComplete);
+
+  // Keep onComplete ref up to date
+  useEffect(() => {
+    onCompleteRef.current = props.onComplete;
+  }, [props.onComplete]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -127,12 +133,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
+      console.log('WordSurge: onGameEnd called, clearing timeout');
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
+        console.log('WordSurge: Timeout cleared');
       }
     },
     canSkipQuestion: false
-  }));
+  }), [score]);
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
@@ -324,9 +332,15 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   // Auto-advance from roundEnd screen
   useEffect(() => {
     if (gameState === 'roundEnd') {
+      console.log('WordSurge: Setting auto-advance timeout for 2.5s');
       roundEndTimeoutRef.current = setTimeout(() => {
-        if (props.onComplete) {
-          props.onComplete(score, MAX_SCORE);
+        const callback = onCompleteRef.current;
+        console.log('WordSurge: Auto-advance timeout fired, calling onComplete with score:', score);
+        if (callback) {
+          callback(score, MAX_SCORE);
+          console.log('WordSurge: Auto-advance onComplete called successfully');
+        } else {
+          console.error('WordSurge: Auto-advance onComplete callback is undefined!');
         }
       }, 2500);
 
@@ -336,7 +350,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
         }
       };
     }
-  }, [gameState, score, props]);
+  }, [gameState, score]);
 
   const selectLetter = (letterId) => {
     if (selectedLetters.find(l => l.id === letterId)) return;
@@ -549,15 +563,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   }
 
   if (gameState === 'roundEnd') {
-    const handleNextGame = () => {
-      if (roundEndTimeoutRef.current) {
-        clearTimeout(roundEndTimeoutRef.current);
-      }
-      if (props.onComplete) {
-        props.onComplete(score, MAX_SCORE);
-      }
-    };
-
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
         <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
@@ -578,14 +583,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
               </div>
             </div>
           )}
-
-          <button
-            onClick={handleNextGame}
-            className="mt-4 bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-3 px-8 rounded-lg text-lg transition-all hover:bg-blue-400 hover:text-black active:scale-95"
-            style={{ textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}
-          >
-            Next Game
-          </button>
         </div>
       </div>
     );
