@@ -1,6 +1,9 @@
 /**
  * WordSurge - BRANDED EDITION
  * Type icon, blue theme, "Make Words" tagline
+ * - 90 second rounds
+ * - Score can exceed 1000 (maxScore = 1000 baseline)
+ * - Auto-advances after Round Complete screen
  */
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
@@ -8,7 +11,10 @@ import { Type } from 'lucide-react';
 
 interface WordRescueProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
+
+const MAX_SCORE = 1000;
 
 const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   // Word list for validation
@@ -64,7 +70,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     const consonantOnly = /^[bcdfghjklmnpqrstvwxyz]+$/i.test(cleanWord);
     const vowelOnly = /^[aeiou]+$/i.test(cleanWord);
     if (consonantOnly || vowelOnly) {
-      console.log(`Rejected obvious non-word: ${cleanWord}`);
       return false;
     }
     
@@ -85,26 +90,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
             data[0].meanings.length > 0 && data[0].meanings[0].definitions &&
             Array.isArray(data[0].meanings[0].definitions) && 
             data[0].meanings[0].definitions.length > 0) {
-          console.log(`API validated: ${cleanWord}`);
           return true;
-        } else {
-          console.log(`API returned incomplete data for: ${cleanWord}`);
         }
-      } else {
-        console.log(`API returned non-OK status for: ${cleanWord}`);
       }
     } catch (error) {
-      console.log(`API failed for ${cleanWord}, checking fallback:`, error.message);
+      // Fall through to fallback check
     }
     
-    const isInFallback = fallbackWords.has(cleanWord);
-    if (isInFallback) {
-      console.log(`Fallback validated: ${cleanWord}`);
-      return true;
-    } else {
-      console.log(`Word not found: ${cleanWord}`);
-      return false;
-    }
+    return fallbackWords.has(cleanWord);
   };
 
   const profanityWords = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'hell', 'cunt'];
@@ -126,83 +119,37 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   const audioContext = useRef(null);
   const audioBuffers = useRef(new Map());
   const audioInitialized = useRef(false);
+  const roundEndTimeoutRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: 1000
+      maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
-      console.log(`WordSurge ended with score: ${score} (${wordsFound.length} words)`);
+      if (roundEndTimeoutRef.current) {
+        clearTimeout(roundEndTimeoutRef.current);
+      }
     },
     canSkipQuestion: false
   }));
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
-  // [Audio functions remain the same - generateTone, playSound, initAudio, etc.]
   const initAudio = useCallback(async () => {
     if (audioInitialized.current) return;
     
     try {
       audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-      
-      const sounds = {
-        select: null,
-        success: null,
-        fail: null,
-        bonus: null,
-        ambient: null
-      };
-      
-      const loadPromises = Object.entries(sounds).map(async ([name, url]) => {
-        if (!url) return;
-        
-        try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            console.log(`Audio file not found: ${url} - using generated tone`);
-            return;
-          }
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await audioContext.current.decodeAudioData(arrayBuffer);
-          audioBuffers.current.set(name, audioBuffer);
-          console.log(`Loaded sound: ${name}`);
-        } catch (error) {
-          console.log(`Failed to load sound ${name}, using generated tone:`, error.message);
-        }
-      });
-      
-      await Promise.all(loadPromises);
       audioInitialized.current = true;
-      console.log('Audio system initialized (using generated tones)');
-      
     } catch (error) {
-      console.log('Audio system failed to initialize:', error.message);
+      console.log('Audio system failed to initialize');
     }
   }, []);
 
   const playSound = useCallback((soundName, volume = 0.3) => {
     if (!audioContext.current || !audioInitialized.current) return;
-    
-    const buffer = audioBuffers.current.get(soundName);
-    if (buffer) {
-      try {
-        const source = audioContext.current.createBufferSource();
-        const gainNode = audioContext.current.createGain();
-        
-        source.buffer = buffer;
-        gainNode.gain.value = Math.min(1, Math.max(0, volume));
-        
-        source.connect(gainNode);
-        gainNode.connect(audioContext.current.destination);
-        source.start();
-      } catch (error) {
-        console.log(`Failed to play sound ${soundName}:`, error.message);
-      }
-    } else {
-      generateTone(soundName, volume);
-    }
+    generateTone(soundName, volume);
   }, []);
 
   const generateTone = useCallback((soundName, volume = 0.3) => {
@@ -239,7 +186,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   const initAudioOnFirstTouch = useCallback(() => {
     if (!audioInitialized.current && audioContext.current) {
       audioContext.current.resume();
-      console.log('Audio context resumed on user interaction');
     }
     initAudio();
   }, [initAudio]);
@@ -259,6 +205,9 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     return () => {
       document.removeEventListener('touchstart', handleFirstInteraction);
       document.removeEventListener('click', handleFirstInteraction);
+      if (roundEndTimeoutRef.current) {
+        clearTimeout(roundEndTimeoutRef.current);
+      }
     };
   }, [initAudio, initAudioOnFirstTouch]);
 
@@ -367,12 +316,27 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     
     if (elapsedTime === 30) {
       setGameSpeed(prev => Math.max(2000, prev - 300));
-      console.log('Speed increased at 30 seconds');
     } else if (elapsedTime === 60) {
       setGameSpeed(prev => Math.max(1500, prev - 300));
-      console.log('Speed increased at 60 seconds');
     }
   }, [timeLeft, gameState, timerStarted]);
+
+  // Auto-advance from roundEnd screen
+  useEffect(() => {
+    if (gameState === 'roundEnd') {
+      roundEndTimeoutRef.current = setTimeout(() => {
+        if (props.onComplete) {
+          props.onComplete(score, MAX_SCORE);
+        }
+      }, 2500);
+
+      return () => {
+        if (roundEndTimeoutRef.current) {
+          clearTimeout(roundEndTimeoutRef.current);
+        }
+      };
+    }
+  }, [gameState, score, props]);
 
   const selectLetter = (letterId) => {
     if (selectedLetters.find(l => l.id === letterId)) return;
@@ -390,7 +354,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   const submitWord = async () => {
     if (submissionInProgress.current || selectedLetters.length === 0) {
-      console.log('Submission blocked - already in progress or no selection');
       return;
     }
     
@@ -398,10 +361,8 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setIsValidating(true);
     
     const word = selectedLetters.map(l => l.letter).join('').toLowerCase();
-    console.log('Submitting word:', word);
     
     if (word.length < 2) {
-      console.log('Word too short');
       clearSelection();
       submissionInProgress.current = false;
       return;
@@ -418,11 +379,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     try {
       const isValid = await validateWord(word);
       
-      console.log('Final validation result:', isValid);
-      
       if (isValid) {
-        console.log('Valid word found!');
-        
         const isProfanity = await checkProfanity(word);
         
         if (isProfanity) {
@@ -458,17 +415,15 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
           showTime: Date.now()
         }]);
         
-        console.log('Adding score:', wordScore);
         setScore(prev => {
           const newScore = prev + wordScore;
           if (props.onScoreUpdate) {
-            props.onScoreUpdate(newScore, newScore);
+            props.onScoreUpdate(newScore, MAX_SCORE);
           }
           return newScore;
         });
         setWordsFound(prev => [...prev, { word, score: wordScore }]);
       } else {
-        console.log('Invalid word, selection already cleared');
         playSound('fail', 0.3);
       }
     } finally {
@@ -499,7 +454,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     submissionInProgress.current = false;
 
     const profanityWord = profanityWords[Math.floor(Math.random() * profanityWords.length)];
-    console.log('Profanity word to guarantee:', profanityWord);
 
     const initialLetters = [];
     const screenHeight = 300;
@@ -543,6 +497,9 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setTimerStarted(false);
     setScoreNotifications([]);
     submissionInProgress.current = false;
+    if (roundEndTimeoutRef.current) {
+      clearTimeout(roundEndTimeoutRef.current);
+    }
   };
 
   const checkProfanity = async (word) => {
