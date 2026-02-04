@@ -7,7 +7,10 @@ import { audioManager } from '../lib/audioManager';
 interface OddManOutProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
+
+const MAX_QUESTIONS = 3;
 
 const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [questions, setQuestions] = useState([]);
@@ -35,10 +38,9 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: totalQuestions > 0 ? totalQuestions * 250 : 250
+      maxScore: MAX_QUESTIONS * 250
     }),
     onGameEnd: () => {
-      console.log(`OddManOut ended with score: ${score}/${totalQuestions * 250}`);
       if (autoAdvanceTimeoutRef.current) {
         clearTimeout(autoAdvanceTimeoutRef.current);
         autoAdvanceTimeoutRef.current = null;
@@ -48,6 +50,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       generateNewQuestion();
     },
     canSkipQuestion: true,
+    pauseTimer: gameState !== 'playing', // Pause when showing results or complete
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
       if (nextIndex < puzzleIds.length) {
@@ -188,7 +191,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       selectedItems.every(item => correctAnswer.includes(item));
 
     setIsCorrect(isAnswerCorrect);
-    setTotalQuestions(prev => prev + 1);
+    const newTotalQuestions = totalQuestions + 1;
+    setTotalQuestions(newTotalQuestions);
 
     if (props.onTimerPause) {
       props.onTimerPause(true);
@@ -196,33 +200,52 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
     if (isAnswerCorrect) {
       audioManager.play('oddman-win');
-      setScore(prev => {
-        const newScore = prev + 250;
-        const newTotal = totalQuestions + 1;
-        if (props.onScoreUpdate) {
-          props.onScoreUpdate(newScore, newTotal * 250);
-        }
-        return newScore;
-      });
+      const newScore = score + 250;
+      setScore(newScore);
+      
+      if (props.onScoreUpdate) {
+        props.onScoreUpdate(newScore, MAX_QUESTIONS * 250);
+      }
+      
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
 
-      autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-        generateNewQuestion();
-      }, 10000);
+      // Check if game is complete
+      if (newTotalQuestions >= MAX_QUESTIONS) {
+        setGameState('complete');
+        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+          if (props.onComplete) {
+            props.onComplete(newScore, MAX_QUESTIONS * 250);
+          }
+        }, 2500);
+      } else {
+        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+          generateNewQuestion();
+        }, 2500);
+      }
     } else {
       audioManager.play('oddman-fail');
-      const newTotal = totalQuestions + 1;
+      
       if (props.onScoreUpdate) {
-        props.onScoreUpdate(score, newTotal * 250);
+        props.onScoreUpdate(score, MAX_QUESTIONS * 250);
       }
 
       setTimeout(() => {
         setGameState('result');
 
-        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-          generateNewQuestion();
-        }, 10000);
+        // Check if game is complete
+        if (newTotalQuestions >= MAX_QUESTIONS) {
+          setGameState('complete');
+          autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+            if (props.onComplete) {
+              props.onComplete(score, MAX_QUESTIONS * 250);
+            }
+          }, 2500);
+        } else {
+          autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+            generateNewQuestion();
+          }, 2500);
+        }
       }, 800);
     }
   };
@@ -231,7 +254,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     const loadAudio = async () => {
       await audioManager.loadSound('oddman-select', '/sounds/ranky/select_optimized.mp3', 3);
       await audioManager.loadSound('oddman-win', '/sounds/global/win_optimized.mp3', 2);
-      await audioManager.loadSound('oddman-fail', '/sounds/ranky/failotimized.mp3', 2);
+      await audioManager.loadSound('oddman-fail', '/sounds/ranky/fail.mp3', 2);
     };
     loadAudio();
   }, []);
@@ -297,6 +320,33 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     );
   }
 
+  // Complete state - show before auto-advancing
+  if (gameState === 'complete') {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center text-white max-w-md">
+          <div className="mb-6">
+            <Sparkles 
+              className="w-16 h-16 mx-auto text-purple-400 animate-pulse" 
+              style={{ filter: 'drop-shadow(0 0 20px #a855f7)' }} 
+            />
+          </div>
+          <h2 className="text-3xl font-bold text-purple-400 mb-4" style={{ textShadow: '0 0 15px #a855f7' }}>
+            Round Complete!
+          </h2>
+          <div className="bg-black border-2 border-purple-400 rounded-lg p-4 mb-4" style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' }}>
+            <p className="text-lg text-purple-300 mb-2">
+              Final Score: <span className="text-yellow-400 font-bold text-2xl">{score}</span>
+            </p>
+            <p className="text-sm text-purple-400">
+              {totalQuestions} questions answered
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
@@ -341,10 +391,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           Spot the Oddballs
         </p>
 
-        {/* Score - left aligned like Zooma */}
-        <div className="flex justify-start items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        {/* Score & Progress */}
+        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
           <div className="text-purple-300">
             Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          </div>
+          <div className="text-purple-400">
+            Question {totalQuestions + 1} of {MAX_QUESTIONS}
           </div>
         </div>
       </div>
