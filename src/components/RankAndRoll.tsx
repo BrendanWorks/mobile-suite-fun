@@ -377,6 +377,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const submitFinalAnswer = () => {
     if (!currentPuzzle) return;
 
+    console.log('Ranky: submitFinalAnswer called for puzzle', puzzlesCompleted + 1);
+
     audioManager.initialize();
 
     // Check which items are in correct positions
@@ -394,6 +396,13 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     const earnedPoints = correctCount * POINTS_PER_ITEM;
     const isFullyCorrect = correctCount === currentPuzzle.items.length;
+
+    console.log('Ranky: Answer checked', {
+      correctCount,
+      totalItems: currentPuzzle.items.length,
+      earnedPoints,
+      isFullyCorrect
+    });
 
     setGameState('completed');
 
@@ -420,17 +429,28 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     const newPuzzlesCompleted = puzzlesCompleted + 1;
     setPuzzlesCompleted(newPuzzlesCompleted);
 
+    console.log('Ranky: Updated state', {
+      newScore,
+      newPuzzlesCompleted,
+      isLastPuzzle: newPuzzlesCompleted >= MAX_PUZZLES
+    });
+
     // Check if game is complete (2 puzzles done)
     if (newPuzzlesCompleted >= MAX_PUZZLES) {
-      // Last puzzle - auto-advance to results after showing feedback
+      // Last puzzle - auto-advance to results after showing feedback (3s)
+      console.log('Ranky: ✅ LAST PUZZLE - Setting 3s timeout to complete game with score:', newScore);
       const timeout = setTimeout(() => {
+        console.log('Ranky: ✅ Timeout fired, calling onComplete with score:', newScore);
         if (props.onComplete) {
           props.onComplete(newScore, MAX_SCORE);
+        } else {
+          console.error('Ranky: ❌ onComplete callback is undefined!');
         }
       }, 3000);
       setResultTimeout(timeout);
     } else {
       // More puzzles to go - advance to next puzzle
+      console.log('Ranky: Moving to puzzle', newPuzzlesCompleted + 1, 'after 3s');
       const timeout = setTimeout(() => {
         nextPuzzle();
       }, 3000);
@@ -503,6 +523,25 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
+      <style>{`
+        @keyframes pulse-twice {
+          0%, 100% {
+            opacity: 1;
+          }
+          25% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+          75% {
+            opacity: 0.5;
+          }
+        }
+        .animate-pulse-twice {
+          animation: pulse-twice 1s ease-in-out;
+        }
+      `}</style>
       <div className="max-w-md w-full text-white">
         
         {/* Header - Updated to match pattern */}
@@ -567,72 +606,119 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
         {/* Ranking List - Updated colors to green */}
         <div className="space-y-1.5 mb-2">
-          {playerOrder.map((item, index) => (
-            <div
-              key={item.id}
-              className={`relative bg-black border-2 border-green-400/30 rounded-lg p-2 transition-all ${
-                draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-green-400 hover:bg-green-400/10'
-              }`}
-              style={{ boxShadow: draggedIndex === index ? 'none' : '0 0 10px rgba(34, 197, 94, 0.2)' }}
-            >
-              {/* Rank Number - Green theme */}
-              <div className="absolute -left-1.5 -top-1.5 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold border-2 border-black text-black" style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }}>
-                {index + 1}
-              </div>
+          {playerOrder.map((item, index) => {
+            // Determine if this item is in the correct position (for completed state)
+            const isCorrectPosition = gameState === 'completed' && 
+              correctOrder.length > 0 && 
+              item.id === correctOrder[index]?.id;
+            
+            // Get border and styling based on game state
+            let borderClass = 'border-green-400/30';
+            let bgClass = 'bg-black';
+            let glowStyle = { boxShadow: '0 0 10px rgba(34, 197, 94, 0.2)' };
+            
+            if (gameState === 'completed') {
+              if (isCorrectPosition) {
+                // Correct position - green with pulse
+                borderClass = 'border-green-500 animate-pulse';
+                bgClass = 'bg-green-500/20';
+                glowStyle = { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' };
+              } else {
+                // Wrong position - red with double pulse
+                borderClass = 'border-red-500 animate-pulse-twice';
+                bgClass = 'bg-red-500/20';
+                glowStyle = { boxShadow: '0 0 20px rgba(239, 68, 68, 0.5)' };
+              }
+            } else if (draggedIndex === index) {
+              borderClass = 'border-green-400/30';
+              glowStyle = { boxShadow: 'none' };
+            } else {
+              borderClass = 'border-green-400/30 hover:border-green-400';
+              bgClass = 'hover:bg-green-400/10';
+            }
 
-              {/* Draggable Area (left side) */}
+            return (
               <div
-                className={`absolute left-0 top-0 w-3/4 h-full cursor-move select-none ${
-                  draggedIndex === index ? 'opacity-50' : ''
+                key={item.id}
+                className={`relative ${bgClass} border-2 ${borderClass} rounded-lg p-2 transition-all ${
+                  draggedIndex === index ? 'opacity-50 scale-95' : ''
                 }`}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, index)}
-                onTouchStart={(e) => handleTouchStart(e, index)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{
-                  touchAction: 'none',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none'
-                }}
-              />
-
-              {/* Item Content */}
-              <div className="flex items-center gap-2 ml-3 pointer-events-none">
-                <div className="text-xl">{item.image}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-green-400 text-sm truncate">{item.name}</div>
-                  <div className="text-xs text-green-300 truncate">{item.subtitle}</div>
+                style={glowStyle}
+              >
+                {/* Rank Number - Green or Red based on correctness */}
+                <div 
+                  className={`absolute -left-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-black text-black ${
+                    gameState === 'completed' 
+                      ? (isCorrectPosition ? 'bg-green-500' : 'bg-red-500')
+                      : 'bg-green-500'
+                  }`}
+                  style={{ 
+                    boxShadow: gameState === 'completed'
+                      ? (isCorrectPosition ? '0 0 10px rgba(34, 197, 94, 0.5)' : '0 0 10px rgba(239, 68, 68, 0.5)')
+                      : '0 0 10px rgba(34, 197, 94, 0.5)'
+                  }}
+                >
+                  {index + 1}
                 </div>
-              </div>
 
-              {/* Mobile Controls - Green theme */}
-              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-10">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveItem(index, 'up');
-                  }}
-                  disabled={index === 0 || gameState !== 'playing'}
-                  className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-                >
-                  <ArrowUp size={18} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveItem(index, 'down');
-                  }}
-                  disabled={index === playerOrder.length - 1 || gameState !== 'playing'}
-                  className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-                >
-                  <ArrowDown size={18} />
-                </button>
+                {/* Draggable Area (left side) - disabled when completed */}
+                {gameState !== 'completed' && (
+                  <div
+                    className={`absolute left-0 top-0 w-3/4 h-full cursor-move select-none ${
+                      draggedIndex === index ? 'opacity-50' : ''
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    style={{
+                      touchAction: 'none',
+                      WebkitUserSelect: 'none',
+                      userSelect: 'none'
+                    }}
+                  />
+                )}
+
+                {/* Item Content */}
+                <div className="flex items-center gap-2 ml-3 pointer-events-none">
+                  <div className="text-xl">{item.image}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-green-400 text-sm truncate">{item.name}</div>
+                    <div className="text-xs text-green-300 truncate">{item.subtitle}</div>
+                  </div>
+                </div>
+
+                {/* Mobile Controls - Only show when playing */}
+                {gameState !== 'completed' && (
+                  <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveItem(index, 'up');
+                      }}
+                      disabled={index === 0 || gameState !== 'playing'}
+                      className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                    >
+                      <ArrowUp size={18} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveItem(index, 'down');
+                      }}
+                      disabled={index === playerOrder.length - 1 || gameState !== 'playing'}
+                      className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                    >
+                      <ArrowDown size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Final Answer Button */}
@@ -648,63 +734,25 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           </div>
         )}
 
-        {/* Success/Failure Message */}
+        {/* Score Display - Shows after submission */}
         {gameState === 'completed' && (() => {
           const isFullyCorrect = correctCount === currentPuzzle.items.length;
           const earnedPoints = correctCount * POINTS_PER_ITEM;
 
-          if (isFullyCorrect) {
-            return (
-              <div className="text-center p-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400 rounded-xl">
-                <div className="text-3xl mb-1">🎉</div>
-                <div className="text-xl font-bold text-green-300 mb-1">Perfect!</div>
-                <div className="text-lg font-bold text-white">
-                  +{earnedPoints} points
-                </div>
-                <div className="text-xs text-green-300 mt-1">
-                  All {correctCount} items correct!
-                </div>
+          return (
+            <div className="text-center p-3 bg-black border-2 border-green-400/40 rounded-xl mb-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.2)' }}>
+              <div className="text-2xl mb-1">{isFullyCorrect ? '🎉' : earnedPoints > 0 ? '👍' : '😬'}</div>
+              <div className={`text-xl font-bold mb-1 ${isFullyCorrect ? 'text-green-400' : earnedPoints > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {isFullyCorrect ? 'Perfect!' : earnedPoints > 0 ? 'Good try!' : 'Not quite'}
               </div>
-            );
-          } else if (earnedPoints > 0) {
-            return (
-              <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-2 border-yellow-400 rounded-xl">
-                <div className="text-2xl mb-1">⚠️</div>
-                <div className="text-lg font-bold text-yellow-300 mb-1">Partial Credit</div>
-                <div className="text-base font-bold text-white mb-1">
-                  +{earnedPoints} points
-                </div>
-                <div className="text-xs text-yellow-300 mb-2">
-                  {correctCount} of {currentPuzzle.items.length} correct
-                </div>
-                <div className="text-xs font-bold text-white mb-1">Correct Order:</div>
-                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-0.5">
-                  {correctOrder.map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <span className="text-yellow-300 font-bold">{index + 1}.</span>
-                      <span className="text-base">{item.image}</span>
-                      <span className="text-white truncate flex-1">{item.name}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="text-lg font-bold text-white">
+                +{earnedPoints} points
               </div>
-            );
-          } else {
-            return (
-              <div className="text-center p-2 bg-gradient-to-r from-red-600/30 to-red-700/30 border-2 border-red-400 rounded-xl">
-                <div className="text-base font-bold text-red-300 mb-1.5">All Wrong - Here's the ranking:</div>
-                <div className="text-left bg-black/20 p-2 rounded-lg text-xs space-y-0.5">
-                  {correctOrder.map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <span className="text-yellow-300 font-bold">{index + 1}.</span>
-                      <span className="text-base">{item.image}</span>
-                      <span className="text-white truncate flex-1">{item.name}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="text-xs text-green-300 mt-1">
+                {correctCount} of {currentPuzzle.items.length} correct
               </div>
-            );
-          }
+            </div>
+          );
         })()}
       </div>
     </div>
