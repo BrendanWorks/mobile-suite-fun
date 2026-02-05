@@ -16,14 +16,7 @@ export default function GameWrapper({
   onScoreUpdate,
   children
 }: GameWrapperProps) {
-  // ┌──────────────────────────────────────────────────────────────┐
-  // │ ADJUST THIS VALUE to control how long the bar stays at zero  │
-  // │ before switching to results screen                           │
-  // │                                                              │
-  // │ 400–600 ms = quick but visible settle                        │
-  // │ 800–1200 ms = more dramatic "zoom complete" feel             │
-  // └──────────────────────────────────────────────────────────────┘
-  const POST_ZERO_LINGER_MS = 700;   // ← Tune this number!
+  const POST_ZERO_LINGER_MS = 700;   // ← Tune this (500–1000 ms usually feels best)
 
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
@@ -35,6 +28,7 @@ export default function GameWrapper({
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
+  const hasReportedCompletion = useRef(false);  // ← NEW safeguard against double-calls
 
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
@@ -48,26 +42,42 @@ export default function GameWrapper({
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
 
-    console.log('⏱️ Timer running:', { 
-      isActive, isFastCountdown, intervalTime, decrement, current: timeRemaining.toFixed(1) 
+    console.log('Timer interval started/updated', { 
+      isFastCountdown, intervalTime, decrement, currentTime: timeRemaining 
     });
 
     timerRef.current = window.setInterval(() => {
+      // Pause check only in normal mode
       if (!isFastCountdown) {
         const shouldPause = childrenRef.current?.pauseTimer !== false;
-        if (shouldPause) return;
+        if (shouldPause) {
+          console.log('Timer paused by child game');
+          return;
+        }
       }
 
       setTimeRemaining((prev) => {
+        if (prev <= 0) return 0;  // Already done, no-op
+
         const newTime = Math.max(0, prev - decrement);
 
-        if (newTime <= 0 && isFastCountdown) {
-          // Instead of calling onComplete immediately, start linger delay
-          console.log(`⏱️ Reached zero during fast countdown — lingering ${POST_ZERO_LINGER_MS}ms`);
-          if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
-          
+        // Trigger completion logic only once when we cross to zero in fast mode
+        if (newTime <= 0 && isFastCountdown && !hasReportedCompletion.current) {
+          console.log(`Fast countdown hit zero — starting ${POST_ZERO_LINGER_MS}ms linger`);
+
+          // Clear any existing linger to avoid multiples
+          if (lingerTimeoutRef.current) {
+            clearTimeout(lingerTimeoutRef.current);
+          }
+
           lingerTimeoutRef.current = window.setTimeout(() => {
-            console.log('⏱️ Linger complete → reporting final score');
+            if (hasReportedCompletion.current) {
+              console.log('Completion already reported during linger — skipping');
+              return;
+            }
+
+            console.log('Linger finished → reporting completion now');
+            hasReportedCompletion.current = true;
             handleEarlyCompletion();
           }, POST_ZERO_LINGER_MS);
         }
@@ -77,10 +87,11 @@ export default function GameWrapper({
     }, intervalTime);
 
     return () => {
+      console.log('Cleaning up timer + any pending linger');
       if (timerRef.current) clearInterval(timerRef.current);
       if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
     };
-  }, [isActive, isFastCountdown]);
+  }, [isActive, isFastCountdown]);  // ← REMOVED timeRemaining from deps → stable interval
 
   const handleEarlyCompletion = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -89,17 +100,23 @@ export default function GameWrapper({
 
     const final = finalScoreRef.current;
     if (final) {
+      console.log('Reporting early completion with stored score:', final);
       onComplete(final.score, final.maxScore, final.timeRemaining);
     } else {
+      console.warn('No final score stored — using fallback');
       onComplete(0, 100, 0);
     }
   };
 
   const handleTimeUp = () => {
-    console.log('⏰ Natural time up (no linger needed)');
+    console.log('Natural time up triggered');
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
+
+    if (hasReportedCompletion.current) return;
+
+    hasReportedCompletion.current = true;
 
     const final = finalScoreRef.current;
     if (final) {
@@ -134,26 +151,30 @@ export default function GameWrapper({
     gameCompletedRef.current = true;
 
     const effectiveRemaining = remaining ?? timeRemaining;
-    console.log('🎮 Game completed early:', { score, maxScore, effectiveRemaining, hideTimerBar });
+    console.log('handleGameComplete called (early finish):', { score, maxScore, effectiveRemaining });
 
     finalScoreRef.current = { score, maxScore, timeRemaining: effectiveRemaining };
 
     if (hideTimerBar) {
+      console.log('Hidden timer game → immediate complete');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
+      hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
       return;
     }
 
     if (effectiveRemaining > 1.5) {
-      console.log(`🎮 Starting FAST ZOOM from ${effectiveRemaining.toFixed(1)}s`);
+      console.log(`Starting fast zoom from ${effectiveRemaining.toFixed(1)}s`);
       setIsFastCountdown(true);
-      // Completion happens after zoom + linger (see timer logic)
+      // Completion handled by timer when it reaches 0 + linger
     } else {
+      console.log('Little time left → direct complete');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
+      hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
     }
   };
