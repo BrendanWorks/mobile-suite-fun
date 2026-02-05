@@ -33,9 +33,11 @@ export default function GameWrapper({
   }, [children]);
 
   useEffect(() => {
-    if (isActive && timeRemaining > 0) {
+    if (isActive) {
       const intervalTime = isFastCountdown ? 50 : 1000;
       const decrement = isFastCountdown ? 0.05 : 1;
+
+      console.log('⏱️  Timer effect running:', { isActive, isFastCountdown, intervalTime });
 
       timerRef.current = window.setInterval(() => {
         // Skip pause check during fast countdown
@@ -61,9 +63,12 @@ export default function GameWrapper({
     }
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        console.log('⏱️  Cleaning up timer interval');
+        clearInterval(timerRef.current);
+      }
     };
-  }, [isActive, timeRemaining, isFastCountdown]);
+  }, [isActive, isFastCountdown]);
 
   const handleTimeUp = () => {
     console.log('⏰ GameWrapper.handleTimeUp called');
@@ -131,8 +136,6 @@ export default function GameWrapper({
     // Normal timer games: fast countdown if time remains
     if (timeRemaining > 2) {
       console.log('🎮 Starting fast countdown with', timeRemaining, 'seconds remaining');
-      // Clear existing interval to ensure clean restart
-      if (timerRef.current) clearInterval(timerRef.current);
       setIsFastCountdown(true);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
