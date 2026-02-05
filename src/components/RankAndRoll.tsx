@@ -81,7 +81,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const [showValues, setShowValues] = useState(false);
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
+  const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -90,8 +90,8 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     }),
     onGameEnd: () => {
       console.log('Ranky: onGameEnd called (time ran out)');
-      if (resultTimeout) {
-        clearTimeout(resultTimeout);
+      if (resultTimeoutRef.current) {
+        clearTimeout(resultTimeoutRef.current);
       }
       // Time ran out - complete with current score
       console.log('Ranky: Time up! Calling onComplete with score:', score);
@@ -185,11 +185,11 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (resultTimeout) {
-        clearTimeout(resultTimeout);
+      if (resultTimeoutRef.current) {
+        clearTimeout(resultTimeoutRef.current);
       }
     };
-  }, [resultTimeout]);
+  }, []);
 
   // Load audio files
   useEffect(() => {
@@ -213,9 +213,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     if (!currentPuzzle) return;
 
     // Clear any pending result timeout
-    if (resultTimeout) {
-      clearTimeout(resultTimeout);
-      setResultTimeout(null);
+    if (resultTimeoutRef.current) {
+      clearTimeout(resultTimeoutRef.current);
+      resultTimeoutRef.current = null;
     }
 
     // Shuffle the items for the player to sort
@@ -439,7 +439,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     if (newPuzzlesCompleted >= MAX_PUZZLES) {
       // Last puzzle - auto-advance to results after showing feedback (3s)
       console.log('Ranky: ✅ LAST PUZZLE - Setting 3s timeout to complete game with score:', newScore);
-      const timeout = setTimeout(() => {
+      resultTimeoutRef.current = setTimeout(() => {
         console.log('Ranky: ✅ Timeout fired, calling onComplete with score:', newScore);
         if (props.onComplete) {
           props.onComplete(newScore, MAX_SCORE);
@@ -447,14 +447,12 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           console.error('Ranky: ❌ onComplete callback is undefined!');
         }
       }, 3000);
-      setResultTimeout(timeout);
     } else {
       // More puzzles to go - advance to next puzzle
       console.log('Ranky: Moving to puzzle', newPuzzlesCompleted + 1, 'after 3s');
-      const timeout = setTimeout(() => {
+      resultTimeoutRef.current = setTimeout(() => {
         nextPuzzle();
       }, 3000);
-      setResultTimeout(timeout);
     }
   };
 
