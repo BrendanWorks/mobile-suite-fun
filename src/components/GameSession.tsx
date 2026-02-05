@@ -22,7 +22,7 @@ import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
-import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore } from '../lib/scoringSystem';
+import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
 
 interface GameConfig {
   id: string;
@@ -307,6 +307,12 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         };
     }
 
+    // Apply time bonus if there's time remaining
+    if (timeRemaining > 0 && currentGame.duration > 0) {
+      normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
+      console.log(`⏱️ Time Bonus Applied: +${normalizedScore.timeBonus} (${timeRemaining}s / ${currentGame.duration}s)`);
+    }
+
     console.log(`Round ${currentRound} - ${currentGame.name}: ${Math.round(normalizedScore.normalizedScore)}/100 (${normalizedScore.grade})`);
     console.log('📊 Normalized Score Object:', normalizedScore);
     console.log('📊 Raw Score:', rawScore, 'Max Score:', maxScore);
@@ -320,7 +326,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         normalizedScore
       }];
       console.log('📊 All Round Scores:', newScores);
-      const total = newScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+      const total = newScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
       console.log('📊 Current Session Total:', total);
       return newScores;
     });
@@ -348,7 +354,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   };
 
   const handleQuitAndSave = async () => {
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     const completedRounds = roundScores.length;
     
     if (user?.id && sessionId) {
@@ -406,7 +412,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
   // Intro screen (round 1 only)
   if (gameState === 'intro') {
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
 
     // Wait for game to be selected
@@ -444,7 +450,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     }
 
     const lastRound = roundScores[roundScores.length - 1];
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     console.log('🏆 RESULTS SCREEN - Round:', currentRound, 'Last Round Score:', lastRound.normalizedScore.normalizedScore, 'Session Total:', currentSessionScore);
 
     return (

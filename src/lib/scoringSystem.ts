@@ -10,6 +10,8 @@ export interface GameScore {
   normalizedScore: number;
   grade: string;
   breakdown: string;
+  timeBonus?: number;
+  totalWithBonus?: number;
 }
 
 export interface SessionScore {
@@ -180,4 +182,33 @@ export const calculateSessionScore = (gameScores: GameScore[]): SessionScore => 
 
 export const getSessionGrade = (percentage: number): string => {
   return getGrade(percentage);
+};
+
+export const calculateTimeBonus = (
+  normalizedScore: number,
+  timeRemaining: number,
+  totalDuration: number
+): number => {
+  if (timeRemaining <= 0 || totalDuration <= 0) return 0;
+
+  const maxBonus = normalizedScore * 0.5;
+  const timeRatio = timeRemaining / totalDuration;
+
+  return Math.round(maxBonus * timeRatio);
+};
+
+export const applyTimeBonus = (
+  gameScore: GameScore,
+  timeRemaining: number,
+  totalDuration: number
+): GameScore => {
+  const timeBonus = calculateTimeBonus(gameScore.normalizedScore, timeRemaining, totalDuration);
+  const totalWithBonus = gameScore.normalizedScore + timeBonus;
+
+  return {
+    ...gameScore,
+    timeBonus,
+    totalWithBonus,
+    grade: getGrade(totalWithBonus)
+  };
 };

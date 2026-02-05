@@ -25,10 +25,13 @@ export default function RoundResults({
 }: RoundResultsProps) {
   const [animateRound, setAnimateRound] = useState(0);
   const [animateTotal, setAnimateTotal] = useState(0);
+  const [animateBonus, setAnimateBonus] = useState(0);
   const [showContent, setShowContent] = useState(false);
+  const [showBonus, setShowBonus] = useState(false);
 
   const roundPercentage = gameScore.normalizedScore;
   const totalPercentage = (totalSessionScore / maxSessionScore) * 100;
+  const hasTimeBonus = gameScore.timeBonus && gameScore.timeBonus > 0;
 
   useEffect(() => {
     setTimeout(() => setShowContent(true), 200);
@@ -43,6 +46,25 @@ export default function RoundResults({
       setAnimateRound(Math.min(gameScore.normalizedScore, roundStep * roundIncrement));
       if (roundStep >= roundSteps) {
         clearInterval(roundInterval);
+
+        // Start time bonus animation after round score completes
+        if (hasTimeBonus) {
+          setTimeout(() => {
+            setShowBonus(true);
+            const bonusDuration = 1000;
+            const bonusSteps = 40;
+            const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
+            let bonusStep = 0;
+
+            const bonusInterval = setInterval(() => {
+              bonusStep++;
+              setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
+              if (bonusStep >= bonusSteps) {
+                clearInterval(bonusInterval);
+              }
+            }, bonusDuration / bonusSteps);
+          }, 300);
+        }
       }
     }, roundDuration / roundSteps);
 
@@ -64,7 +86,7 @@ export default function RoundResults({
     }, 800);
 
     return () => clearInterval(roundInterval);
-  }, [gameScore.normalizedScore, totalSessionScore]);
+  }, [gameScore.normalizedScore, gameScore.timeBonus, totalSessionScore, hasTimeBonus]);
 
   const getGradeColor = (grade: string) => {
     switch(grade) {
@@ -121,6 +143,25 @@ export default function RoundResults({
               {Math.round(gameScore.normalizedScore)}/100 points
             </div>
           </div>
+
+          {/* Time Bonus - Animated */}
+          {hasTimeBonus && showBonus && (
+            <div className="mb-3 pb-3 border-b border-cyan-400/30 animate-fade-in">
+              <div className="text-center">
+                <div className="text-xs sm:text-sm text-yellow-300 mb-1" style={{ textShadow: '0 0 8px #fbbf24' }}>
+                  Speed Bonus
+                </div>
+                <div className="text-3xl sm:text-4xl font-bold text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>
+                  +{Math.round(animateBonus)}
+                </div>
+                {gameScore.totalWithBonus && (
+                  <div className="text-xs sm:text-sm text-cyan-400 mt-1">
+                    Total: {Math.round(gameScore.totalWithBonus)}/100
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Session Total - Compact */}
           <div className="mb-3 pb-3 border-b border-cyan-400/30">

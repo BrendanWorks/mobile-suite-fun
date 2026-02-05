@@ -67,15 +67,18 @@ export default function GameWrapper({
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
 
+    // Always check if we have a stored final score first (from early completion)
+    if (finalScoreRef.current) {
+      console.log('⏰ Using stored final score from early completion:', finalScoreRef.current);
+      if (!gameCompletedRef.current) {
+        gameCompletedRef.current = true;
+      }
+      onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore, finalScoreRef.current.timeRemaining);
+      return;
+    }
+
     if (!gameCompletedRef.current) {
       gameCompletedRef.current = true;
-
-      // Use stored final score if available (from early completion)
-      if (finalScoreRef.current) {
-        console.log('⏰ Using stored final score:', finalScoreRef.current);
-        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore, finalScoreRef.current.timeRemaining);
-        return;
-      }
 
       // Call onGameEnd if available to let game know it's ending
       // Note: onGameEnd might call onComplete/handleGameComplete, setting finalScoreRef
@@ -88,6 +91,7 @@ export default function GameWrapper({
       if (finalScoreRef.current) {
         // onGameEnd already triggered score reporting, we're done
         console.log('⏰ onGameEnd set finalScoreRef:', finalScoreRef.current);
+        onComplete(finalScoreRef.current.score, finalScoreRef.current.maxScore, finalScoreRef.current.timeRemaining);
         return;
       }
 
