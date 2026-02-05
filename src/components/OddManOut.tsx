@@ -207,6 +207,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     const newTotalQuestions = totalQuestions + 1;
     setTotalQuestions(newTotalQuestions);
 
+    console.log('OddManOut: Question answered', {
+      questionNum: newTotalQuestions,
+      isCorrect: isAnswerCorrect,
+      isLastQuestion: newTotalQuestions >= MAX_QUESTIONS
+    });
+
     if (props.onTimerPause) {
       props.onTimerPause(true);
     }
@@ -225,21 +231,22 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
       // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        // Last question - auto-advance to results after showing feedback
-        console.log('OddManOut: Setting timeout for game completion (correct answer)');
+        // Last question - auto-advance to results after showing feedback (3.5s for reading)
+        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Setting 3.5s timeout to complete game with score:', newScore);
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-          console.log('OddManOut: Timeout fired, calling onComplete with score:', newScore);
+          console.log('OddManOut: ✅ Timeout fired after last question, calling onComplete with score:', newScore);
           const callback = onCompleteRef.current;
           if (callback) {
             callback(newScore, MAX_QUESTIONS * 250);
           } else {
-            console.error('OddManOut: onComplete callback is undefined!');
+            console.error('OddManOut: ❌ onComplete callback is undefined!');
           }
-        }, 2500);
+        }, 3500); // Increased from 2500 to 3500 for reading explanation
       } else {
+        console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
-        }, 2500);
+        }, 3500); // Increased from 2500 to 3500 for reading explanation
       }
     } else {
       audioManager.play('oddman-fail');
@@ -253,21 +260,22 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
         // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          // Last question - auto-advance to results after showing feedback
-          console.log('OddManOut: Setting timeout for game completion (wrong answer)');
+          // Last question - auto-advance to results after showing feedback (3.5s for reading)
+          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Setting 3.5s timeout to complete game with score:', score);
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-            console.log('OddManOut: Timeout fired, calling onComplete with score:', score);
+            console.log('OddManOut: ❌ Timeout fired after last question, calling onComplete with score:', score);
             const callback = onCompleteRef.current;
             if (callback) {
               callback(score, MAX_QUESTIONS * 250);
             } else {
-              console.error('OddManOut: onComplete callback is undefined!');
+              console.error('OddManOut: ❌ onComplete callback is undefined!');
             }
-          }, 2500);
+          }, 3500); // Increased from 2500 to 3500 for reading explanation
         } else {
+          console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             generateNewQuestion();
-          }, 2500);
+          }, 3500); // Increased from 2500 to 3500 for reading explanation
         }
       }, 800);
     }
