@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { ArrowUp, ArrowDown, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { audioManager } from '../lib/audioManager';
