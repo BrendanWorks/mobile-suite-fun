@@ -61,6 +61,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
   const onCompleteRef = useRef(onComplete);
   const scoreRef = useRef(0);
+  const gameCompletedRef = useRef(false);
 
   // Keep refs up to date
   useEffect(() => {
@@ -183,30 +184,35 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     const isLastItem = currentItemIndex === puzzle.items.length - 1;
     console.log('SplitDecision: Item', currentItemIndex + 1, 'of', puzzle.items.length, '- isLastItem:', isLastItem);
 
-    // Auto-advance after 1.5 seconds
-    autoAdvanceTimer.current = setTimeout(() => {
-      if (isLastItem) {
-        // Puzzle complete - call onComplete with latest score
+    if (isLastItem) {
+      // Puzzle complete - immediately trigger fast countdown by calling onComplete
+      if (!gameCompletedRef.current) {
+        gameCompletedRef.current = true;
         const callback = onCompleteRef.current;
         const finalScore = scoreRef.current;
-        console.log('SplitDecision: Last item timeout fired!');
+        console.log('SplitDecision: Last item answered! Triggering fast countdown');
         console.log('SplitDecision: Puzzle complete, calling onComplete with score:', finalScore);
-        console.log('SplitDecision: onComplete callback exists:', !!callback);
         if (callback) {
           callback(finalScore, MAX_SCORE);
           console.log('SplitDecision: onComplete called successfully');
-        } else {
-          console.error('SplitDecision: onComplete callback is undefined!');
         }
-      } else {
-        // More items - advance to next
+      }
+
+      // Still show feedback for 1.5 seconds, but timer will count down fast
+      autoAdvanceTimer.current = setTimeout(() => {
+        // Just clear the feedback after delay, completion already triggered
+        console.log('SplitDecision: Feedback display complete');
+      }, 1500);
+    } else {
+      // More items - auto-advance after 1.5 seconds
+      autoAdvanceTimer.current = setTimeout(() => {
         console.log('SplitDecision: Advancing to next item');
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
         setFeedback(null);
-      }
-    }, 1500);
+      }, 1500);
+    }
   };
 
   // Cleanup timer on unmount
@@ -230,12 +236,17 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         clearTimeout(autoAdvanceTimer.current);
         console.log('SplitDecision: Timer cleared');
       }
-      // Time ran out - complete with current score
-      const callback = onCompleteRef.current;
-      const finalScore = scoreRef.current;
-      console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore);
-      if (callback) {
-        callback(finalScore, MAX_SCORE);
+      // Time ran out - complete with current score (if not already completed)
+      if (!gameCompletedRef.current) {
+        gameCompletedRef.current = true;
+        const callback = onCompleteRef.current;
+        const finalScore = scoreRef.current;
+        console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore);
+        if (callback) {
+          callback(finalScore, MAX_SCORE);
+        }
+      } else {
+        console.log('SplitDecision: Game already completed, skipping onComplete call');
       }
     },
     pauseTimer: false, // Always let GameWrapper timer run
