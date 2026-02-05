@@ -36,8 +36,8 @@ export default function GameWrapper({
   useEffect(() => {
     if (!isActive) return;
 
-    const intervalTime = isFastCountdown ? 25 : 1000;   // 25ms → very smooth fast drain
-    const decrement = isFastCountdown ? 3 : 1;          // ~0.8–1.2s total drain for most cases
+    const intervalTime = isFastCountdown ? 30 : 1000;   // 25ms → very smooth fast drain
+    const decrement = isFastCountdown ? 2 : 1;          // ~0.8–1.2s total drain for most cases
 
     console.log('⏱️ Timer running:', { 
       isActive, 
