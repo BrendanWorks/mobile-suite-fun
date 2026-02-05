@@ -26,7 +26,7 @@ export default function GameWrapper({
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
 
-  // Check if game wants to hide timer
+  // Check if game wants to hide timer (e.g. Snake)
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
       setHideTimerBar(true);
@@ -36,12 +36,19 @@ export default function GameWrapper({
   useEffect(() => {
     if (!isActive) return;
 
-    const intervalTime = isFastCountdown ? 30 : 1000; // faster ticks during zoom
-    const decrement = isFastCountdown ? 2.5 : 1;      // aggressive drain → ~0.6–1s for most cases
+    const intervalTime = isFastCountdown ? 25 : 1000;   // 25ms → very smooth fast drain
+    const decrement = isFastCountdown ? 3 : 1;          // ~0.8–1.2s total drain for most cases
 
-    console.log('⏱️ Timer effect running:', { isActive, isFastCountdown, intervalTime, decrement });
+    console.log('⏱️ Timer running:', { 
+      isActive, 
+      isFastCountdown, 
+      intervalTime, 
+      decrement, 
+      currentTime: timeRemaining.toFixed(1) 
+    });
 
     timerRef.current = window.setInterval(() => {
+      // Normal pause check only applies outside fast mode
       if (!isFastCountdown) {
         const shouldPause = childrenRef.current?.pauseTimer !== false;
         if (shouldPause) {
@@ -52,31 +59,50 @@ export default function GameWrapper({
 
       setTimeRemaining((prev) => {
         const newTime = Math.max(0, prev - decrement);
-        if (newTime <= 0) {
-          handleTimeUp();
+
+        // When we hit zero during fast countdown → trigger completion
+        if (newTime <= 0 && isFastCountdown) {
+          console.log('⏱️ Fast countdown reached zero → calling onComplete');
+          handleEarlyCompletion();
         }
+
         return newTime;
       });
     }, intervalTime);
 
     return () => {
       if (timerRef.current) {
-        console.log('⏱️ Cleaning up timer interval');
+        console.log('⏱️ Cleaning up timer');
         clearInterval(timerRef.current);
       }
     };
-  }, [isActive, isFastCountdown]);
+  }, [isActive, isFastCountdown, timeRemaining]); // ← added timeRemaining dep so it reacts to changes
 
-  const handleTimeUp = () => {
-    console.log('⏰ handleTimeUp called');
+  const handleEarlyCompletion = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
 
     const final = finalScoreRef.current;
     if (final) {
-      console.log('⏰ Using stored final score:', final);
+      console.log('⏰ Fast countdown done → reporting final score:', final);
       onComplete(final.score, final.maxScore, final.timeRemaining);
+    } else {
+      // Fallback (shouldn't happen)
+      console.warn('No final score stored during fast countdown');
+      onComplete(0, 100, 0);
+    }
+  };
+
+  const handleTimeUp = () => {
+    console.log('⏰ Natural time up');
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsActive(false);
+    setIsFastCountdown(false);
+
+    if (finalScoreRef.current) {
+      const f = finalScoreRef.current;
+      onComplete(f.score, f.maxScore, f.timeRemaining);
       return;
     }
 
@@ -84,7 +110,6 @@ export default function GameWrapper({
       gameCompletedRef.current = true;
 
       if (childrenRef.current?.onGameEnd) {
-        console.log('⏰ Calling onGameEnd');
         childrenRef.current.onGameEnd();
       }
 
@@ -108,12 +133,13 @@ export default function GameWrapper({
     gameCompletedRef.current = true;
 
     const effectiveRemaining = remaining ?? timeRemaining;
-    console.log('🎮 handleGameComplete:', { score, maxScore, effectiveRemaining, hideTimerBar });
+    console.log('🎮 Game completed early:', { score, maxScore, effectiveRemaining, hideTimerBar });
 
+    // Store final score + the time we had when completed (for bonus etc.)
     finalScoreRef.current = { score, maxScore, timeRemaining: effectiveRemaining };
 
     if (hideTimerBar) {
-      console.log('🎮 Hidden timer game → immediate complete');
+      console.log('🎮 Hidden timer → immediate advance');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
@@ -121,12 +147,14 @@ export default function GameWrapper({
       return;
     }
 
-    // Fast zoom if meaningful time left
+    // For normal games: fast zoom if time left
     if (effectiveRemaining > 1.5) {
-      console.log(`🎮 Starting FAST COUNTDOWN from ${effectiveRemaining.toFixed(1)}s`);
+      console.log(`🎮 Starting FAST ZOOM from ${effectiveRemaining.toFixed(1)}s`);
       setIsFastCountdown(true);
+      // Note: we do NOT call onComplete here anymore — wait until timer hits 0
     } else {
-      console.log('🎮 Little time left → immediate complete');
+      // Very little time left → just end normally
+      console.log('🎮 Little time left → immediate end');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
@@ -140,7 +168,7 @@ export default function GameWrapper({
       return React.cloneElement(children as React.ReactElement<any>, {
         ref: childrenRef,
         onScoreUpdate,
-        onComplete: handleGameComplete,   // ← now passes 3 args
+        onComplete: handleGameComplete,
         timeRemaining,
         duration,
       });
