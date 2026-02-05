@@ -15,7 +15,7 @@ import GameWrapper from './GameWrapper';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery.jsx';
 import RankAndRoll from './RankAndRoll';
-import DalmatianPuzzle from './DalmatianPuzzle';
+import SnapShot from './SnapShot';
 import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
@@ -36,7 +36,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60, instructions: "Select the 2 items that don't belong" },
   { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 45, instructions: 'Identify the photo as it zooms out' },
   { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 90, instructions: 'Arrange items in the correct order' },
-  { id: 'dalmatian-puzzle', name: 'SnapShot', component: DalmatianPuzzle, duration: 60, instructions: 'Drag 4 pieces to complete the puzzle' },
+  { id: 'snapshot', name: 'SnapShot', component: SnapShot, duration: 60, instructions: 'Drag 4 pieces to complete the puzzle' },
   { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60, instructions: 'Categorize items: A, B, or BOTH' },
   { id: 'word-rescue', name: 'WordSurge', component: WordRescue, duration: 90, instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
@@ -286,10 +286,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         normalizedScore = scoringSystem.zooma(rawScore);
         break;
 
-      case 'dalmatian-puzzle':
+      case 'snapshot':
         const completed = rawScore >= 50;
-        normalizedScore = scoringSystem.dalmatian(completed, timeRemaining, currentGame.duration);
-        console.log('🧩 Dalmatian scoring:', { completed, timeRemaining, duration: currentGame.duration, normalizedScore });
+        normalizedScore = scoringSystem.snapshot(completed, timeRemaining, currentGame.duration);
+        console.log('🧩 SnapShot scoring:', { completed, timeRemaining, duration: currentGame.duration, normalizedScore });
         break;
 
       case 'snake':

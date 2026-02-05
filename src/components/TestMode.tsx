@@ -3,7 +3,7 @@ import GameWrapper from './GameWrapper';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery.jsx';
 import RankAndRoll from './RankAndRoll';
-import DalmatianPuzzle from './DalmatianPuzzle';
+import SnapShot from './SnapShot';
 import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
@@ -19,7 +19,7 @@ const TEST_GAMES = [
   { id: 'odd-man-out', name: 'Odd Man Out', icon: '🔍', duration: 60, component: OddManOut },
   { id: 'photo-mystery', name: 'Zooma', icon: '📷', duration: 15, component: PhotoMystery },
   { id: 'rank-and-roll', name: 'Ranky', icon: '📊', duration: 30, component: RankAndRoll },
-  { id: 'dalmatian-puzzle', name: 'Dalmatian Puzzle', icon: '🧩', duration: 60, component: DalmatianPuzzle },
+  { id: 'snapshot', name: 'SnapShot', icon: '🧩', duration: 60, component: SnapShot },
   { id: 'split-decision', name: 'Split Decision', icon: '⚡', duration: 60, component: SplitDecision },
   { id: 'word-rescue', name: 'Pop', icon: '📝', duration: 90, component: WordRescue },
   { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },

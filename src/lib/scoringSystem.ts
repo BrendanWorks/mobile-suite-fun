@@ -118,8 +118,8 @@ export const scoringSystem = {
     };
   },
 
-  // Dalmatian: Time-based completion
-  dalmatian: (completed: boolean, timeRemaining: number, totalTime: number = 60): GameScore => {
+  // SnapShot: Time-based completion
+  snapshot: (completed: boolean, timeRemaining: number, totalTime: number = 60): GameScore => {
     let normalized = 0;
     let breakdown = '';
 
@@ -132,8 +132,8 @@ export const scoringSystem = {
     }
 
     return {
-      gameId: 'dalmatian-puzzle',
-      gameName: 'Dalmatian Puzzle',
+      gameId: 'snapshot',
+      gameName: 'SnapShot',
       rawScore: completed ? 100 : Math.round(normalized),
       normalizedScore: Math.min(100, normalized),
       grade: getGrade(Math.min(100, normalized)),

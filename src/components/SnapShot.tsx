@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 const MAX_SCORE = 1000;
 
-const DalmatianPuzzle = forwardRef((props: any, ref) => {
+const SnapShot = forwardRef((props: any, ref) => {
   const { onComplete } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
@@ -14,7 +14,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [resultTimeout, setResultTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const maxTimePerPuzzle = 60;
 
@@ -29,9 +28,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     },
     onGameEnd: () => {
       console.log('SnapShot: onGameEnd called (time ran out)');
-      if (resultTimeout) {
-        clearTimeout(resultTimeout);
-      }
       // Time ran out - complete with partial score based on pieces placed
       const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
       const partialScore = Math.round(percentComplete * MAX_SCORE);
@@ -44,10 +40,10 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     canSkipQuestion: true,
     loadNextPuzzle: () => nextPuzzle(),
     get pauseTimer() {
-      // Pause if image not loaded, still loading puzzles, or not in playing state
-      return !isImageLoaded || loading || gameState !== 'playing';
+      // Pause if image not loaded or still loading puzzles, but NOT if won/lost (let countdown continue)
+      return !isImageLoaded || loading;
     }
-  }), [isImageLoaded, loading, gameState, resultTimeout]);
+  }), [isImageLoaded, loading, gameState, onComplete]);
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -513,12 +509,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     const currentPuzzle = getCurrentPuzzle();
     if (!currentPuzzle) return;
 
-    // Clear any pending result timeout
-    if (resultTimeout) {
-      clearTimeout(resultTimeout);
-      setResultTimeout(null);
-    }
-
     // Update the image URL for the current puzzle
     gameStateRef.current.IMAGE_URL = currentPuzzle.image_url;
 
@@ -589,36 +579,24 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
     }
   }, [gameState, timeLeft, isImageLoaded]);
 
-  // Handle puzzle completion/timeout - call onComplete after delay
+  // Handle puzzle completion/timeout - call onComplete immediately
   useEffect(() => {
     if (gameState === 'won') {
-      // Puzzle complete - wait 2s then call onComplete with full score
-      const timeout = setTimeout(() => {
-        if (onComplete) {
-          onComplete(MAX_SCORE, MAX_SCORE);
-        }
-      }, 2000);
-      setResultTimeout(timeout);
-      
-      return () => {
-        if (timeout) clearTimeout(timeout);
-      };
+      // Puzzle complete - call onComplete immediately to trigger fast countdown
+      console.log('SnapShot: Puzzle complete! Calling onComplete immediately');
+      if (onComplete) {
+        onComplete(MAX_SCORE, MAX_SCORE);
+      }
     }
-    
+
     if (gameState === 'lost') {
-      // Time ran out - wait 2s then call onComplete with partial score
-      const timeout = setTimeout(() => {
-        if (onComplete) {
-          const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
-          const score = Math.round(percentComplete * MAX_SCORE);
-          onComplete(score, MAX_SCORE);
-        }
-      }, 2000);
-      setResultTimeout(timeout);
-      
-      return () => {
-        if (timeout) clearTimeout(timeout);
-      };
+      // Time ran out - call onComplete immediately with partial score
+      console.log('SnapShot: Time up! Calling onComplete immediately');
+      if (onComplete) {
+        const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
+        const score = Math.round(percentComplete * MAX_SCORE);
+        onComplete(score, MAX_SCORE);
+      }
     }
   }, [gameState, onComplete]);
 
@@ -899,6 +877,6 @@ const DalmatianPuzzle = forwardRef((props: any, ref) => {
   );
 });
 
-DalmatianPuzzle.displayName = 'DalmatianPuzzle';
+SnapShot.displayName = 'SnapShot';
 
-export default DalmatianPuzzle;
+export default SnapShot;

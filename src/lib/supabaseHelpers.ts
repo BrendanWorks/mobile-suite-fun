@@ -5,7 +5,7 @@ const GAME_SLUG_TO_ID: Record<string, number> = {
   'odd-man-out': 3,
   'photo-mystery': 4,
   'rank-and-roll': 5,
-  'dalmatian-puzzle': 6,
+  'snapshot': 6,
   'split-decision': 9,
   'word-rescue': 10,
   'shape-sequence': 11,
