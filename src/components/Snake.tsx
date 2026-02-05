@@ -31,7 +31,9 @@ interface Obstacle {
 
 interface SnakeProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const GRID_SIZE = 20;
@@ -41,7 +43,7 @@ const MAX_SPEED = 50;
 const POWERUP_CHANCE = 0.15;
 const SLOW_DURATION = 10000;
 
-const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete }, ref) => {
+const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -91,7 +93,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
     }),
     onGameEnd: () => {
       if (!gameOverRef.current && onComplete) {
-        onComplete(scoreRef.current, 200);
+        onComplete(scoreRef.current, 200, timeRemaining);
       }
     },
     canSkipQuestion: false,
@@ -367,11 +369,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete },
   useEffect(() => {
     if (gameOver && onComplete) {
       const timer = setTimeout(() => {
-        onComplete(scoreRef.current, 200);
+        onComplete(scoreRef.current, 200, timeRemaining);
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [gameOver]);
+  }, [gameOver, timeRemaining]);
 
   useEffect(() => {
     if (shimmer > 0) {

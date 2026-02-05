@@ -6,7 +6,9 @@ import { audioManager } from '../lib/audioManager';
 interface RankAndRollProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const MAX_PUZZLES = 2;
@@ -94,9 +96,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
         clearTimeout(resultTimeoutRef.current);
       }
       // Time ran out - complete with current score
-      console.log('Ranky: Time up! Calling onComplete with score:', score);
+      console.log('Ranky: Time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
       if (props.onComplete) {
-        props.onComplete(score, MAX_SCORE);
+        props.onComplete(score, MAX_SCORE, props.timeRemaining);
       }
     },
     skipQuestion: () => {
@@ -440,9 +442,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       // Last puzzle - auto-advance to results after showing feedback (3s)
       console.log('Ranky: ✅ LAST PUZZLE - Setting 3s timeout to complete game with score:', newScore);
       resultTimeoutRef.current = setTimeout(() => {
-        console.log('Ranky: ✅ Timeout fired, calling onComplete with score:', newScore);
+        console.log('Ranky: ✅ Timeout fired, calling onComplete with score:', newScore, 'timeRemaining:', props.timeRemaining);
         if (props.onComplete) {
-          props.onComplete(newScore, MAX_SCORE);
+          props.onComplete(newScore, MAX_SCORE, props.timeRemaining);
         } else {
           console.error('Ranky: ❌ onComplete callback is undefined!');
         }

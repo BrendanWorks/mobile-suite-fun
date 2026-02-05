@@ -3,7 +3,9 @@ import { Repeat } from 'lucide-react';
 
 interface ShapeSequenceProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const MAX_SCORE = 1000;
@@ -16,6 +18,9 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const [lives, setLives] = useState(3);
   const [showingIndex, setShowingIndex] = useState(0);
   const gameOverTimeoutRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
+  const scoreRef = useRef(0);
+  const sequenceTimeoutsRef = useRef<number[]>([]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -257,35 +262,50 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   };
 
   const showSequence = async () => {
+    if (!isMountedRef.current) return;
+
     setGameState('showing');
     gameStateRef.current.playerSequence = [];
     setShowingIndex(0);
-    
+
     const sequence = gameStateRef.current.sequence;
-    
+    if (!sequence || sequence.length === 0) return;
+
     for (let i = 0; i < sequence.length; i++) {
+      if (!isMountedRef.current) return;
+
       setShowingIndex(i);
-      
+
       // Animate the shape
       gameStateRef.current.animatingShape = sequence[i];
       gameStateRef.current.animationStartTime = Date.now();
-      
+
       // Play sound based on shape
       const frequencies = [440, 523, 659, 784, 880]; // C, C#, E, G, A
       playSound(frequencies[sequence[i]], 400);
-      
+
       // Start animation
       drawGame();
-      
+
       // Wait for animation to complete
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      await new Promise(resolve => {
+        const timeout = window.setTimeout(resolve, 800);
+        sequenceTimeoutsRef.current.push(timeout);
+      });
+
+      if (!isMountedRef.current) return;
+
       // Brief pause between shapes
       if (i < sequence.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => {
+          const timeout = window.setTimeout(resolve, 200);
+          sequenceTimeoutsRef.current.push(timeout);
+        });
       }
     }
-    
+
+    if (!isMountedRef.current) return;
+
     setShowingIndex(-1);
     setGameState('playing');
   };
@@ -323,6 +343,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         setTimeout(() => playSound(880, 300), 150);
         setScore(prev => {
           const newScore = prev + level * 10;
+          scoreRef.current = newScore;
           if (props.onScoreUpdate) {
             props.onScoreUpdate(newScore, MAX_SCORE);
           }
@@ -330,6 +351,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         });
 
         setTimeout(() => {
+          if (!isMountedRef.current) return;
           setLevel(prev => prev + 1);
           startNextRound();
         }, 1000);
@@ -346,16 +368,21 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         const newLives = prev - 1;
         if (newLives <= 0) {
           setTimeout(() => {
+            if (!isMountedRef.current) return;
             setGameState('gameover');
             // Auto-advance to results after 2.5 seconds
             gameOverTimeoutRef.current = window.setTimeout(() => {
+              if (!isMountedRef.current) return;
               if (props.onComplete) {
-                props.onComplete(score, MAX_SCORE);
+                props.onComplete(scoreRef.current, MAX_SCORE, props.timeRemaining);
               }
             }, 2500);
           }, 1000);
         } else {
-          setTimeout(() => showSequence(), 1000);
+          setTimeout(() => {
+            if (!isMountedRef.current) return;
+            showSequence();
+          }, 1000);
         }
         return newLives;
       });
@@ -385,9 +412,13 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   };
 
   const startNextRound = () => {
+    if (!isMountedRef.current) return;
     const sequenceLength = Math.min(3 + level - 1, 8); // Start with 3, max 8
     gameStateRef.current.sequence = generateSequence(sequenceLength);
-    setTimeout(() => showSequence(), 500);
+    setTimeout(() => {
+      if (!isMountedRef.current) return;
+      showSequence();
+    }, 500);
   };
 
   const startGame = () => {
@@ -402,6 +433,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     setGameState('waiting');
     setLevel(1);
     setScore(0);
+    scoreRef.current = 0;
     setLives(3);
     gameStateRef.current.playerSequence = [];
     gameStateRef.current.sequence = [];
@@ -411,21 +443,34 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
+    // Clear all sequence timeouts
+    sequenceTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    sequenceTimeoutsRef.current = [];
     drawGame();
   };
 
+  // Keep scoreRef in sync with score state
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
   // Initialize canvas and handle resize
   useEffect(() => {
+    isMountedRef.current = true;
     handleResize();
-    
+
     const handleResizeEvent = () => handleResize();
     window.addEventListener('resize', handleResizeEvent);
-    
+
     return () => {
+      isMountedRef.current = false;
       window.removeEventListener('resize', handleResizeEvent);
       if (gameOverTimeoutRef.current) {
         clearTimeout(gameOverTimeoutRef.current);
       }
+      // Clear all sequence timeouts
+      sequenceTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      sequenceTimeoutsRef.current = [];
     };
   }, []);
 
