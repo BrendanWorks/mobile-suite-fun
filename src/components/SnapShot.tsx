@@ -14,6 +14,7 @@ const SnapShot = forwardRef((props: any, ref) => {
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(60);
+  const hasCalledOnComplete = useRef(false);
 
   const maxTimePerPuzzle = 60;
 
@@ -515,6 +516,7 @@ const SnapShot = forwardRef((props: any, ref) => {
     gameStateRef.current.completedSlots = 0;
     gameStateRef.current.draggingPiece = null;
     gameStateRef.current.isDragging = false;
+    hasCalledOnComplete.current = false;
     setGameState('playing');
     setTimeLeft(maxTimePerPuzzle);
 
@@ -581,17 +583,19 @@ const SnapShot = forwardRef((props: any, ref) => {
 
   // Handle puzzle completion/timeout - call onComplete immediately
   useEffect(() => {
-    if (gameState === 'won') {
+    if (gameState === 'won' && !hasCalledOnComplete.current) {
       // Puzzle complete - call onComplete immediately to trigger fast countdown
       console.log('SnapShot: Puzzle complete! Calling onComplete immediately');
+      hasCalledOnComplete.current = true;
       if (onComplete) {
         onComplete(MAX_SCORE, MAX_SCORE);
       }
     }
 
-    if (gameState === 'lost') {
+    if (gameState === 'lost' && !hasCalledOnComplete.current) {
       // Time ran out - call onComplete immediately with partial score
       console.log('SnapShot: Time up! Calling onComplete immediately');
+      hasCalledOnComplete.current = true;
       if (onComplete) {
         const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
         const score = Math.round(percentComplete * MAX_SCORE);

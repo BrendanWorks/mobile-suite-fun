@@ -130,6 +130,9 @@ export default function GameWrapper({
 
     // Normal timer games: fast countdown if time remains
     if (timeRemaining > 2) {
+      console.log('🎮 Starting fast countdown with', timeRemaining, 'seconds remaining');
+      // Clear existing interval to ensure clean restart
+      if (timerRef.current) clearInterval(timerRef.current);
       setIsFastCountdown(true);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
