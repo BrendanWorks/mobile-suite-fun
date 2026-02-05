@@ -228,16 +228,17 @@ const PhotoMystery = forwardRef((props, ref) => {
       onScoreUpdateRef.current(score, totalMaxScore);
     }
 
-    resultTimerRef.current = setTimeout(() => {
-      if (currentPhotoNumber < totalPhotos) {
+    // Check if this was the last photo
+    if (currentPhotoNumber >= totalPhotos) {
+      console.log('Zooma: Last photo complete, calling completeGame immediately');
+      completeGame();
+    } else {
+      resultTimerRef.current = setTimeout(() => {
         console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
         setCurrentPhotoNumber(currentPhotoNumber + 1);
         generateNewQuestion();
-      } else {
-        console.log('Zooma: All photos complete, calling completeGame');
-        completeGame();
-      }
-    }, 2500);
+      }, 2500);
+    }
   };
 
   const handleAnswerSelect = (answer) => {
@@ -267,33 +268,35 @@ const PhotoMystery = forwardRef((props, ref) => {
     if (correct) {
       playSound('correct');
       setGameState('result');
-      
-      resultTimerRef.current = setTimeout(() => {
-        if (currentPhotoNumber < totalPhotos) {
+
+      // Check if this was the last photo
+      if (currentPhotoNumber >= totalPhotos) {
+        console.log('Zooma: Last photo complete (correct), calling completeGame immediately');
+        completeGame();
+      } else {
+        resultTimerRef.current = setTimeout(() => {
           console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
           setCurrentPhotoNumber(currentPhotoNumber + 1);
           generateNewQuestion();
-        } else {
-          console.log('Zooma: All photos complete, calling completeGame');
-          completeGame();
-        }
-      }, 2500);
+        }, 2500);
+      }
     } else {
       playSound('incorrect');
       
       setTimeout(() => {
         setGameState('result');
-        
-        resultTimerRef.current = setTimeout(() => {
-          if (currentPhotoNumber < totalPhotos) {
+
+        // Check if this was the last photo
+        if (currentPhotoNumber >= totalPhotos) {
+          console.log('Zooma: Last photo complete (incorrect), calling completeGame immediately');
+          completeGame();
+        } else {
+          resultTimerRef.current = setTimeout(() => {
             console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
             setCurrentPhotoNumber(currentPhotoNumber + 1);
             generateNewQuestion();
-          } else {
-            console.log('Zooma: All photos complete, calling completeGame');
-            completeGame();
-          }
-        }, 2500);
+          }, 2500);
+        }
       }, 800);
     }
   };

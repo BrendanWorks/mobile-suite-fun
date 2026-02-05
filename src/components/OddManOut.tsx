@@ -25,6 +25,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [shuffledItems, setShuffledItems] = useState([]);
   const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const [isGameComplete, setIsGameComplete] = useState(false);
   const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
   const onCompleteRef = React.useRef(props.onComplete);
 
@@ -63,7 +64,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       generateNewQuestion();
     },
     canSkipQuestion: true,
-    pauseTimer: gameState === 'result', // Pause when showing results
+    pauseTimer: gameState === 'result' && !isGameComplete, // Pause for intermediate results, not final
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
       if (nextIndex < puzzleIds.length) {
@@ -231,17 +232,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
       // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        // Last question - auto-advance to results after showing feedback (3.5s for reading)
-        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Setting 3.5s timeout to complete game with score:', newScore);
-        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-          console.log('OddManOut: ✅ Timeout fired after last question, calling onComplete with score:', newScore);
-          const callback = onCompleteRef.current;
-          if (callback) {
-            callback(newScore, MAX_QUESTIONS * 250);
-          } else {
-            console.error('OddManOut: ❌ onComplete callback is undefined!');
-          }
-        }, 3500); // Increased from 2500 to 3500 for reading explanation
+        // Last question - call onComplete immediately to trigger fast countdown
+        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete immediately with score:', newScore);
+        setIsGameComplete(true); // Don't pause timer for final result
+        const callback = onCompleteRef.current;
+        if (callback) {
+          callback(newScore, MAX_QUESTIONS * 250);
+        } else {
+          console.error('OddManOut: ❌ onComplete callback is undefined!');
+        }
       } else {
         console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
@@ -260,17 +259,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
         // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          // Last question - auto-advance to results after showing feedback (3.5s for reading)
-          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Setting 3.5s timeout to complete game with score:', score);
-          autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-            console.log('OddManOut: ❌ Timeout fired after last question, calling onComplete with score:', score);
-            const callback = onCompleteRef.current;
-            if (callback) {
-              callback(score, MAX_QUESTIONS * 250);
-            } else {
-              console.error('OddManOut: ❌ onComplete callback is undefined!');
-            }
-          }, 3500); // Increased from 2500 to 3500 for reading explanation
+          // Last question - call onComplete immediately to trigger fast countdown
+          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete immediately with score:', score);
+          setIsGameComplete(true); // Don't pause timer for final result
+          const callback = onCompleteRef.current;
+          if (callback) {
+            callback(score, MAX_QUESTIONS * 250);
+          } else {
+            console.error('OddManOut: ❌ onComplete callback is undefined!');
+          }
         } else {
           console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
