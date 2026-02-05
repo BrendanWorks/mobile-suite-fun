@@ -38,14 +38,17 @@ export default function GameWrapper({
       const decrement = isFastCountdown ? 0.05 : 1;
 
       timerRef.current = window.setInterval(() => {
-        // Pause by default if child not ready, only run when explicitly false
-        const shouldPause = childrenRef.current?.pauseTimer !== false;
-        
-        if (shouldPause) {
-          console.log('⏸️  Timer paused:', childrenRef.current?.pauseTimer);
-          return; // Skip this tick if paused or child not ready
+        // Skip pause check during fast countdown
+        if (!isFastCountdown) {
+          // Pause by default if child not ready, only run when explicitly false
+          const shouldPause = childrenRef.current?.pauseTimer !== false;
+
+          if (shouldPause) {
+            console.log('⏸️  Timer paused:', childrenRef.current?.pauseTimer);
+            return; // Skip this tick if paused or child not ready
+          }
         }
-        
+
         setTimeRemaining((prev) => {
           const newTime = prev - decrement;
           if (newTime <= 0) {

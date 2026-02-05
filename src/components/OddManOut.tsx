@@ -72,7 +72,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         loadQuestionById(puzzleIds[nextIndex]);
       }
     }
-  }), [score, gameState, currentPuzzleIndex, puzzleIds]);
+  }), [score, gameState, currentPuzzleIndex, puzzleIds, isGameComplete]);
 
   const fetchQuestions = async () => {
     try {
