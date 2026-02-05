@@ -107,7 +107,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     loadNextPuzzle: () => {
       nextPuzzle();
     }
-  }), [score, resultTimeout, gameState]);
+  }), [score, gameState]);
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
