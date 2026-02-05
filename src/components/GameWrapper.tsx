@@ -152,6 +152,8 @@ export default function GameWrapper({
         ref: childrenRef,
         onScoreUpdate,
         onComplete: handleGameComplete,
+        timeRemaining,
+        duration,
       });
     }
 

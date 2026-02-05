@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 const MAX_SCORE = 1000;
 
 const SnapShot = forwardRef((props: any, ref) => {
-  const { onComplete } = props;
+  const { onComplete, timeRemaining } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -32,9 +32,9 @@ const SnapShot = forwardRef((props: any, ref) => {
       // Time ran out - complete with partial score based on pieces placed
       const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
       const partialScore = Math.round(percentComplete * MAX_SCORE);
-      console.log('SnapShot: Time up! Pieces placed:', gameStateRef.current.completedSlots, 'Score:', partialScore);
+      console.log('SnapShot: Time up! Pieces placed:', gameStateRef.current.completedSlots, 'Score:', partialScore, 'timeRemaining:', timeRemaining);
       if (onComplete) {
-        onComplete(partialScore, MAX_SCORE);
+        onComplete(partialScore, MAX_SCORE, timeRemaining);
       }
     },
     skipQuestion: () => nextPuzzle(),
@@ -585,24 +585,24 @@ const SnapShot = forwardRef((props: any, ref) => {
   useEffect(() => {
     if (gameState === 'won' && !hasCalledOnComplete.current) {
       // Puzzle complete - call onComplete immediately to trigger fast countdown
-      console.log('SnapShot: Puzzle complete! Calling onComplete immediately');
+      console.log('SnapShot: Puzzle complete! Calling onComplete with timeRemaining:', timeRemaining);
       hasCalledOnComplete.current = true;
       if (onComplete) {
-        onComplete(MAX_SCORE, MAX_SCORE);
+        onComplete(MAX_SCORE, MAX_SCORE, timeRemaining);
       }
     }
 
     if (gameState === 'lost' && !hasCalledOnComplete.current) {
       // Time ran out - call onComplete immediately with partial score
-      console.log('SnapShot: Time up! Calling onComplete immediately');
+      console.log('SnapShot: Time up! Calling onComplete with timeRemaining:', timeRemaining);
       hasCalledOnComplete.current = true;
       if (onComplete) {
         const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
         const score = Math.round(percentComplete * MAX_SCORE);
-        onComplete(score, MAX_SCORE);
+        onComplete(score, MAX_SCORE, timeRemaining);
       }
     }
-  }, [gameState, onComplete]);
+  }, [gameState, onComplete, timeRemaining]);
 
   // Initialize puzzles
   useEffect(() => {

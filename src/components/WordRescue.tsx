@@ -11,7 +11,9 @@ import { Type } from 'lucide-react';
 
 interface WordRescueProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const MAX_SCORE = 1000;
@@ -141,14 +143,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       // Time ran out on GameWrapper timer - complete with current score
       // (WordSurge usually handles its own time-up via internal timer, but this is a fallback)
       const callback = onCompleteRef.current;
-      console.log('WordSurge: GameWrapper time up! Calling onComplete with score:', score);
+      console.log('WordSurge: GameWrapper time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
       if (callback) {
-        callback(score, MAX_SCORE);
+        callback(score, MAX_SCORE, props.timeRemaining);
       }
     },
     pauseTimer: gameState !== 'playing' || !timerStarted, // Pause when not playing or timer hasn't started
     canSkipQuestion: false
-  }), [score, gameState, timerStarted]);
+  }), [score, gameState, timerStarted, props.timeRemaining]);
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
@@ -343,9 +345,9 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       console.log('WordSurge: Setting auto-advance timeout for 2.5s');
       roundEndTimeoutRef.current = setTimeout(() => {
         const callback = onCompleteRef.current;
-        console.log('WordSurge: Auto-advance timeout fired, calling onComplete with score:', score);
+        console.log('WordSurge: Auto-advance timeout fired, calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
         if (callback) {
-          callback(score, MAX_SCORE);
+          callback(score, MAX_SCORE, props.timeRemaining);
           console.log('WordSurge: Auto-advance onComplete called successfully');
         } else {
           console.error('WordSurge: Auto-advance onComplete callback is undefined!');

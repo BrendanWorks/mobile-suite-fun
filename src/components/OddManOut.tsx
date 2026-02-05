@@ -7,7 +7,9 @@ import { audioManager } from '../lib/audioManager';
 interface OddManOutProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const MAX_QUESTIONS = 3;
@@ -57,7 +59,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       const callback = onCompleteRef.current;
       console.log('OddManOut: Time up! Calling onComplete with score:', score);
       if (callback) {
-        callback(score, MAX_QUESTIONS * 250);
+        callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
       }
     },
     skipQuestion: () => {
@@ -72,7 +74,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         loadQuestionById(puzzleIds[nextIndex]);
       }
     }
-  }), [score, gameState, currentPuzzleIndex, puzzleIds, isGameComplete]);
+  }), [score, gameState, currentPuzzleIndex, puzzleIds, isGameComplete, props.timeRemaining]);
 
   const fetchQuestions = async () => {
     try {
@@ -233,11 +235,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
         // Last question - call onComplete immediately to trigger fast countdown
-        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete immediately with score:', newScore);
+        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete with timeRemaining:', props.timeRemaining);
         setIsGameComplete(true); // Don't pause timer for final result
         const callback = onCompleteRef.current;
         if (callback) {
-          callback(newScore, MAX_QUESTIONS * 250);
+          callback(newScore, MAX_QUESTIONS * 250, props.timeRemaining);
         } else {
           console.error('OddManOut: ❌ onComplete callback is undefined!');
         }
@@ -260,11 +262,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
           // Last question - call onComplete immediately to trigger fast countdown
-          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete immediately with score:', score);
+          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete with timeRemaining:', props.timeRemaining);
           setIsGameComplete(true); // Don't pause timer for final result
           const callback = onCompleteRef.current;
           if (callback) {
-            callback(score, MAX_QUESTIONS * 250);
+            callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
           } else {
             console.error('OddManOut: ❌ onComplete callback is undefined!');
           }

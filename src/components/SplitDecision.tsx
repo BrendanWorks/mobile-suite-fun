@@ -42,13 +42,15 @@ interface SplitDecisionProps {
   roundNumber?: number;
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
 }
 
 const MAX_SCORE = 1000;
 const POINTS_PER_ITEM = Math.round(MAX_SCORE / 7); // ~143 points per item
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete }, ref) => {
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete, timeRemaining, duration }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -190,10 +192,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         gameCompletedRef.current = true;
         const callback = onCompleteRef.current;
         const finalScore = scoreRef.current;
-        console.log('SplitDecision: Last item answered! Triggering fast countdown');
+        console.log('SplitDecision: Last item answered! Triggering fast countdown with timeRemaining:', timeRemaining);
         console.log('SplitDecision: Puzzle complete, calling onComplete with score:', finalScore);
         if (callback) {
-          callback(finalScore, MAX_SCORE);
+          callback(finalScore, MAX_SCORE, timeRemaining);
           console.log('SplitDecision: onComplete called successfully');
         }
       }
@@ -241,9 +243,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         gameCompletedRef.current = true;
         const callback = onCompleteRef.current;
         const finalScore = scoreRef.current;
-        console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore);
+        console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore, 'timeRemaining:', timeRemaining);
         if (callback) {
-          callback(finalScore, MAX_SCORE);
+          callback(finalScore, MAX_SCORE, timeRemaining);
         }
       } else {
         console.log('SplitDecision: Game already completed, skipping onComplete call');
@@ -258,7 +260,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         fetchPuzzleById(puzzleIds[nextIndex]);
       }
     }
-  }), [score, currentPuzzleIndex, puzzleIds]);
+  }), [score, currentPuzzleIndex, puzzleIds, timeRemaining]);
 
   // Early returns AFTER all hooks
   if (loading) {
