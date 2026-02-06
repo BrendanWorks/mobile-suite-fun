@@ -28,8 +28,9 @@ export default function GameWrapper({
   const childrenRef = useRef<any>(null);
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
-  const hasReportedCompletion = useRef(false);  // ← NEW safeguard against double-calls
+  const hasReportedCompletion = useRef(false);
 
+  // Check if game wants to hide timer
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
       setHideTimerBar(true);
@@ -42,44 +43,56 @@ export default function GameWrapper({
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
 
-    console.log('Timer interval started/updated', { 
-      isFastCountdown, intervalTime, decrement, currentTime: timeRemaining 
+    console.log('Timer interval active:', { 
+      isFastCountdown, intervalTime, decrement, currentTime: timeRemaining.toFixed(1) 
     });
 
     timerRef.current = window.setInterval(() => {
-      // Pause check only in normal mode
-      if (!isFastCountdown) {
-        const shouldPause = childrenRef.current?.pauseTimer !== false;
-        if (shouldPause) {
-          console.log('Timer paused by child game');
-          return;
-        }
-      }
-
       setTimeRemaining((prev) => {
-        if (prev <= 0) return 0;  // Already done, no-op
+        let newTime = prev;
 
-        const newTime = Math.max(0, prev - decrement);
-
-        // Trigger completion logic only once when we cross to zero in fast mode
-        if (newTime <= 0 && isFastCountdown && !hasReportedCompletion.current) {
-          console.log(`Fast countdown hit zero — starting ${POST_ZERO_LINGER_MS}ms linger`);
-
-          // Clear any existing linger to avoid multiples
-          if (lingerTimeoutRef.current) {
-            clearTimeout(lingerTimeoutRef.current);
+        // Always check if we're already at/below zero
+        if (newTime <= 0) {
+          if (!hasReportedCompletion.current) {
+            console.log('Time already <=0 — triggering completion');
+            handleTimeUp();
           }
+          return 0;
+        }
 
-          lingerTimeoutRef.current = window.setTimeout(() => {
-            if (hasReportedCompletion.current) {
-              console.log('Completion already reported during linger — skipping');
-              return;
-            }
+        // Decrement only if allowed
+        if (isFastCountdown) {
+          // Fast mode always decrements (no pause)
+          newTime = Math.max(0, prev - decrement);
+        } else {
+          // Normal mode: respect child's pause request
+          const shouldPause = childrenRef.current?.pauseTimer !== false;
+          if (!shouldPause) {
+            newTime = Math.max(0, prev - decrement);
+          } else {
+            console.log('Timer tick skipped (paused by game)');
+          }
+        }
 
-            console.log('Linger finished → reporting completion now');
-            hasReportedCompletion.current = true;
-            handleEarlyCompletion();
-          }, POST_ZERO_LINGER_MS);
+        // Check if we crossed to zero this tick
+        if (newTime <= 0) {
+          if (isFastCountdown) {
+            console.log(`Fast countdown reached zero — lingering ${POST_ZERO_LINGER_MS}ms`);
+            if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
+
+            lingerTimeoutRef.current = window.setTimeout(() => {
+              if (hasReportedCompletion.current) {
+                console.log('Already completed during linger — skipping');
+                return;
+              }
+              console.log('Linger finished → final completion');
+              hasReportedCompletion.current = true;
+              handleEarlyCompletion();
+            }, POST_ZERO_LINGER_MS);
+          } else {
+            console.log('Natural time up → immediate completion');
+            handleTimeUp();
+          }
         }
 
         return newTime;
@@ -87,11 +100,11 @@ export default function GameWrapper({
     }, intervalTime);
 
     return () => {
-      console.log('Cleaning up timer + any pending linger');
+      console.log('Cleaning up timer interval');
       if (timerRef.current) clearInterval(timerRef.current);
       if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
     };
-  }, [isActive, isFastCountdown]);  // ← REMOVED timeRemaining from deps → stable interval
+  }, [isActive, isFastCountdown]);  // Stable deps — no timeRemaining here
 
   const handleEarlyCompletion = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -100,22 +113,21 @@ export default function GameWrapper({
 
     const final = finalScoreRef.current;
     if (final) {
-      console.log('Reporting early completion with stored score:', final);
+      console.log('handleEarlyCompletion: reporting stored final score', final);
       onComplete(final.score, final.maxScore, final.timeRemaining);
     } else {
-      console.warn('No final score stored — using fallback');
+      console.warn('No final score — fallback to 0/100');
       onComplete(0, 100, 0);
     }
   };
 
   const handleTimeUp = () => {
-    console.log('Natural time up triggered');
+    console.log('handleTimeUp triggered — ending game');
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
 
     if (hasReportedCompletion.current) return;
-
     hasReportedCompletion.current = true;
 
     const final = finalScoreRef.current;
@@ -128,6 +140,7 @@ export default function GameWrapper({
       gameCompletedRef.current = true;
 
       if (childrenRef.current?.onGameEnd) {
+        console.log('Calling child onGameEnd');
         childrenRef.current.onGameEnd();
       }
 
@@ -151,12 +164,12 @@ export default function GameWrapper({
     gameCompletedRef.current = true;
 
     const effectiveRemaining = remaining ?? timeRemaining;
-    console.log('handleGameComplete called (early finish):', { score, maxScore, effectiveRemaining });
+    console.log('handleGameComplete (early finish):', { score, maxScore, effectiveRemaining });
 
     finalScoreRef.current = { score, maxScore, timeRemaining: effectiveRemaining };
 
     if (hideTimerBar) {
-      console.log('Hidden timer game → immediate complete');
+      console.log('Hidden timer → immediate');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
@@ -168,9 +181,9 @@ export default function GameWrapper({
     if (effectiveRemaining > 1.5) {
       console.log(`Starting fast zoom from ${effectiveRemaining.toFixed(1)}s`);
       setIsFastCountdown(true);
-      // Completion handled by timer when it reaches 0 + linger
+      // Completion happens after zoom + linger
     } else {
-      console.log('Little time left → direct complete');
+      console.log('Low time left → direct complete');
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
