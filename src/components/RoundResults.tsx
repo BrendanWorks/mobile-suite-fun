@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, TrendingUp, Award } from 'lucide-react';
+import { Trophy, TrendingUp, Award, ChevronRight } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 
 interface RoundResultsProps {
@@ -144,31 +144,33 @@ export default function RoundResults({
             </div>
           </div>
 
-          {/* Time Bonus - Animated */}
-          {hasTimeBonus && showBonus && (
-            <div className="mb-3 pb-3 border-b border-cyan-400/30 animate-fade-in">
-              <div className="text-center">
-                <div className="text-xs sm:text-sm text-yellow-300 mb-1" style={{ textShadow: '0 0 8px #fbbf24' }}>
-                  Speed Bonus
-                </div>
-                <div className="text-3xl sm:text-4xl font-bold text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>
-                  +{Math.round(animateBonus)}
-                </div>
-                {gameScore.totalWithBonus && (
-                  <div className="text-xs sm:text-sm text-cyan-400 mt-1">
-                    Total: {Math.round(gameScore.totalWithBonus)}/100
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Session Total - Compact */}
+          {/* Time Bonus - Always visible to maintain layout */}
           <div className="mb-3 pb-3 border-b border-cyan-400/30">
+            <div className="text-center" style={{ minHeight: '120px' }}>
+              {hasTimeBonus && showBonus && (
+                <div className="animate-fade-in">
+                  <div className="text-xs sm:text-sm text-yellow-300 mb-1" style={{ textShadow: '0 0 8px #fbbf24' }}>
+                    Speed Bonus
+                  </div>
+                  <div className="text-3xl sm:text-4xl font-bold text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>
+                    +{Math.round(animateBonus)}
+                  </div>
+                  {gameScore.totalWithBonus && (
+                    <div className="text-xs sm:text-sm text-cyan-400 mt-1">
+                      Total: {Math.round(gameScore.totalWithBonus)}/100
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Game Total - Compact */}
+          <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }} />
-                <span className="text-xs sm:text-sm text-cyan-300">Session Total</span>
+                <span className="text-xs sm:text-sm text-cyan-300">Game Total</span>
               </div>
               <div className="text-xl sm:text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
                 {Math.round(totalPercentage)}%
@@ -178,32 +180,25 @@ export default function RoundResults({
               {totalSessionScore}/{maxSessionScore} points
             </div>
           </div>
-
-          {/* Game Breakdown - Compact List */}
-          {allRoundScores.length > 0 && (
-            <div>
-              <div className="text-xs text-cyan-400 mb-2">Games played:</div>
-              <div className="space-y-1">
-                {allRoundScores.map((round, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs bg-black border border-cyan-400/20 px-2 py-1.5 rounded">
-                    <span className="text-cyan-300 truncate">{idx + 1}. {round.gameName}</span>
-                    <span className={`font-bold text-sm ${getGradeColor(round.score.grade)} ml-2`} style={{ textShadow: getGradeShadow(round.score.grade) }}>
-                      {round.score.grade}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Continue Button - Always Visible */}
         <button
           onClick={onContinue}
-          className="w-full py-3 sm:py-4 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-lg text-base sm:text-lg transition-all active:scale-95"
+          className="w-full py-3 sm:py-4 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-lg text-base sm:text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
           style={{ textShadow: '0 0 10px #22c55e', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' }}
         >
-          {isLastRound ? '🏆 View Final Results' : '▶️ Next Round'}
+          {isLastRound ? (
+            <>
+              <Trophy className="w-5 h-5" />
+              <span>View Final Results</span>
+            </>
+          ) : (
+            <>
+              <span>Next Round</span>
+              <ChevronRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>
