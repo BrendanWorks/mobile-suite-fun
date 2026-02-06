@@ -269,7 +269,7 @@ const PhotoMystery = forwardRef((props, ref) => {
       playSound('correct');
       setGameState('result');
 
-      // Check if this was the last photo
+      // Check if this was the last photo - complete immediately, no next question
       if (currentPhotoNumber >= totalPhotos) {
         console.log('Zooma: Last photo complete (correct), calling completeGame immediately');
         completeGame();
@@ -286,7 +286,7 @@ const PhotoMystery = forwardRef((props, ref) => {
       setTimeout(() => {
         setGameState('result');
 
-        // Check if this was the last photo
+        // Check if this was the last photo - complete immediately, no next question
         if (currentPhotoNumber >= totalPhotos) {
           console.log('Zooma: Last photo complete (incorrect), calling completeGame immediately');
           completeGame();
