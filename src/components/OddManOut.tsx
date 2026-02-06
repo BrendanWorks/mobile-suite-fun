@@ -394,13 +394,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           Spot the Oddballs
         </p>
 
-        {/* Score & Progress */}
-        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        {/* Score */}
+        <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
           <div className="text-purple-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-          </div>
-          <div className="text-purple-400">
-            Question {totalQuestions + 1} of {MAX_QUESTIONS}
+            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
           </div>
         </div>
       </div>

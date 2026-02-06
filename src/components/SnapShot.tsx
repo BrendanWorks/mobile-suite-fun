@@ -807,12 +807,9 @@ const SnapShot = forwardRef((props: any, ref) => {
         </p>
 
         {/* Score */}
-        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
           <div className="text-pink-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{currentScore}</strong>
-          </div>
-          <div className="text-pink-400">
-            {gameStateRef.current.completedSlots} / {gameStateRef.current.NUM_DRAGGABLE_PIECES} pieces
+            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{currentScore}</strong>
           </div>
         </div>
       </div>

@@ -613,13 +613,13 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         </div>
 
         {/* Score and Lives */}
-        <div className="flex justify-between items-center text-xs sm:text-sm">
+        <div className="flex justify-between items-center text-sm sm:text-base">
           <div className="text-green-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
           </div>
           <div className="flex items-center gap-1">
             {[...Array(3)].map((_, i) => (
-              <span key={i} className={`text-sm sm:text-base ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
+              <span key={i} className={`text-2xl sm:text-3xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
                 {i < lives ? '❤️' : '🖤'}
               </span>
             ))}

@@ -361,13 +361,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           Think Fast
         </p>
 
-        {/* Score and Progress */}
-        <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+        {/* Score */}
+        <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
           <div className="text-yellow-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-          </div>
-          <div className="text-yellow-400">
-            Item {currentItemIndex + 1} of {puzzle.items.length}
+            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
           </div>
         </div>
       </div>

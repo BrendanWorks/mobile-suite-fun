@@ -618,9 +618,9 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
         </div>
         
         {/* Score left-aligned */}
-        <div className="flex justify-start items-center text-xs sm:text-sm">
+        <div className="flex justify-start items-center text-sm sm:text-base">
           <div className="text-blue-300">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
           </div>
         </div>
       </div>

@@ -563,13 +563,10 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
             Rank 'em!
           </p>
 
-          {/* Score and Progress */}
-          <div className="flex justify-between items-center mb-2 sm:mb-4 text-xs sm:text-sm">
+          {/* Score */}
+          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-green-300">
-              Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-            </div>
-            <div className="text-green-400">
-              Puzzle {puzzlesCompleted + 1} of {MAX_PUZZLES}
+              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
             </div>
           </div>
 
