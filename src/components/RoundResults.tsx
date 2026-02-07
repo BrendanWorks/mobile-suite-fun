@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, TrendingUp, Award, ChevronRight } from 'lucide-react';
+import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 
 interface RoundResultsProps {
@@ -23,70 +23,38 @@ export default function RoundResults({
   onContinue,
   isLastRound
 }: RoundResultsProps) {
-  const [animateRound, setAnimateRound] = useState(0);
-  const [animateTotal, setAnimateTotal] = useState(0);
   const [animateBonus, setAnimateBonus] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
 
-  const roundPercentage = gameScore.normalizedScore;
   const totalPercentage = (totalSessionScore / maxSessionScore) * 100;
   const hasTimeBonus = gameScore.timeBonus && gameScore.timeBonus > 0;
 
   useEffect(() => {
+    // Show content with fade-in
     setTimeout(() => setShowContent(true), 200);
 
-    const roundDuration = 1500;
-    const roundSteps = 60;
-    const roundIncrement = gameScore.normalizedScore / roundSteps;
-    let roundStep = 0;
+    // Animate time bonus if present
+    if (hasTimeBonus) {
+      setTimeout(() => {
+        setShowBonus(true);
+        const bonusDuration = 1000;
+        const bonusSteps = 40;
+        const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
+        let bonusStep = 0;
 
-    const roundInterval = setInterval(() => {
-      roundStep++;
-      setAnimateRound(Math.min(gameScore.normalizedScore, roundStep * roundIncrement));
-      if (roundStep >= roundSteps) {
-        clearInterval(roundInterval);
+        const bonusInterval = setInterval(() => {
+          bonusStep++;
+          setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
+          if (bonusStep >= bonusSteps) {
+            clearInterval(bonusInterval);
+          }
+        }, bonusDuration / bonusSteps);
 
-        // Start time bonus animation after round score completes
-        if (hasTimeBonus) {
-          setTimeout(() => {
-            setShowBonus(true);
-            const bonusDuration = 1000;
-            const bonusSteps = 40;
-            const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
-            let bonusStep = 0;
-
-            const bonusInterval = setInterval(() => {
-              bonusStep++;
-              setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
-              if (bonusStep >= bonusSteps) {
-                clearInterval(bonusInterval);
-              }
-            }, bonusDuration / bonusSteps);
-          }, 300);
-        }
-      }
-    }, roundDuration / roundSteps);
-
-    setTimeout(() => {
-      const totalDuration = 1500;
-      const totalSteps = 60;
-      const totalIncrement = totalSessionScore / totalSteps;
-      let totalStep = 0;
-
-      const totalInterval = setInterval(() => {
-        totalStep++;
-        setAnimateTotal(Math.min(totalSessionScore, totalStep * totalIncrement));
-        if (totalStep >= totalSteps) {
-          clearInterval(totalInterval);
-        }
-      }, totalDuration / totalSteps);
-
-      return () => clearInterval(totalInterval);
-    }, 800);
-
-    return () => clearInterval(roundInterval);
-  }, [gameScore.normalizedScore, gameScore.timeBonus, totalSessionScore, hasTimeBonus]);
+        return () => clearInterval(bonusInterval);
+      }, 800);
+    }
+  }, [gameScore.timeBonus, hasTimeBonus]);
 
   const getGradeColor = (grade: string) => {
     switch(grade) {
@@ -108,95 +76,91 @@ export default function RoundResults({
     }
   };
 
-  const getGradeBgColor = (grade: string) => {
-    switch(grade) {
-      case 'S': return 'from-yellow-400 to-yellow-500';
-      case 'A': return 'from-green-400 to-green-500';
-      case 'B': return 'from-cyan-400 to-cyan-500';
-      case 'C': return 'from-orange-400 to-orange-500';
-      default: return 'from-red-400 to-red-500';
-    }
+  const getGradeLabel = (score: number): string => {
+    if (score >= 90) return "Absolutely Crushed It";
+    if (score >= 80) return "Pretty Damn Good";
+    if (score >= 70) return "Solidly Mediocre";
+    if (score >= 60) return "Kinda Rough";
+    if (score >= 50) return "That Was Ugly";
+    if (score >= 40) return "Spectacularly Bad";
+    return "What Just Happened";
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col p-3 sm:p-6">
-      <div className={`max-w-2xl w-full mx-auto flex flex-col transition-all duration-700 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-        {/* Compact Header */}
-        <div className="text-center mb-3 sm:mb-4">
-          <Award className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 ${getGradeColor(gameScore.grade)}`} style={{ filter: `drop-shadow(${getGradeShadow(gameScore.grade)})` }} />
-          <h1 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 15px #00ffff' }}>Round {roundNumber} Complete!</h1>
-          <p className="text-sm sm:text-base text-cyan-300">{gameName}</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6">
+      <div className={`max-w-2xl w-full transition-all duration-700 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 20px #00ffff' }}>
+            Round {roundNumber} Complete
+          </h1>
+          <p className="text-base sm:text-lg text-cyan-300/80">{gameName}</p>
         </div>
 
-        {/* Compact Score Card */}
-        <div className="bg-black backdrop-blur rounded-xl p-3 sm:p-4 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
+        {/* Score Card */}
+        <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           {/* Round Score - Hero Element */}
-          <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" style={{ filter: 'drop-shadow(0 0 10px #fbbf24)' }} />
-              <span className="text-xs sm:text-sm text-cyan-300">Round Score</span>
-            </div>
-            <div className={`text-6xl sm:text-7xl font-bold ${getGradeColor(gameScore.grade)} mb-1`} style={{ textShadow: getGradeShadow(gameScore.grade) }}>
+          <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
+            <div className={`text-7xl sm:text-8xl font-bold ${getGradeColor(gameScore.grade)} mb-2`} style={{ textShadow: getGradeShadow(gameScore.grade) }}>
               {gameScore.grade}
             </div>
-            <div className="text-sm sm:text-base text-cyan-400">
+            <div className={`text-lg sm:text-xl font-bold ${getGradeColor(gameScore.grade)} mb-2 uppercase tracking-wider`} style={{ textShadow: getGradeShadow(gameScore.grade) }}>
+              {getGradeLabel(gameScore.normalizedScore)}
+            </div>
+            <div className="text-base sm:text-lg text-cyan-400 font-semibold">
               {Math.round(gameScore.normalizedScore)}/100 points
             </div>
           </div>
 
-          {/* Time Bonus - Always visible to maintain layout */}
-          <div className="mb-3 pb-3 border-b border-cyan-400/30">
-            <div className="text-center" style={{ minHeight: '120px' }}>
-              {hasTimeBonus && showBonus && (
-                <div className="animate-fade-in">
-                  <div className="text-xs sm:text-sm text-yellow-300 mb-1" style={{ textShadow: '0 0 8px #fbbf24' }}>
-                    Speed Bonus
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-bold text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>
-                    +{Math.round(animateBonus)}
-                  </div>
-                  {gameScore.totalWithBonus && (
-                    <div className="text-xs sm:text-sm text-cyan-400 mt-1">
-                      Total: {Math.round(gameScore.totalWithBonus)}/100
-                    </div>
-                  )}
+          {/* Time Bonus - Fixed height to prevent layout shift */}
+          <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
+            {hasTimeBonus && showBonus && (
+              <div className="text-center animate-fade-in">
+                <div className="text-sm text-yellow-300 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 8px #fbbf24' }}>
+                  Speed Bonus
                 </div>
-              )}
-            </div>
+                <div className="text-4xl sm:text-5xl font-bold text-yellow-400 mb-1" style={{ textShadow: '0 0 15px #fbbf24' }}>
+                  +{Math.round(animateBonus)}
+                </div>
+                {gameScore.totalWithBonus && (
+                  <div className="text-sm text-cyan-400">
+                    New Total: {Math.round(gameScore.totalWithBonus)}/100
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Game Total - Compact */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }} />
-                <span className="text-xs sm:text-sm text-cyan-300">Game Total</span>
-              </div>
-              <div className="text-xl sm:text-2xl font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
-                {Math.round(totalPercentage)}%
-              </div>
+          {/* Session Progress */}
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <TrendingUp className="w-5 h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }} />
+              <span className="text-sm text-cyan-300 uppercase tracking-wide">Session Progress</span>
             </div>
-            <div className="text-xs sm:text-sm text-cyan-400 text-center">
-              {totalSessionScore}/{maxSessionScore} points
+            <div className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2" style={{ textShadow: '0 0 10px #00ffff' }}>
+              {Math.round(totalPercentage)}%
+            </div>
+            <div className="text-sm text-cyan-400/80">
+              {totalSessionScore} / {maxSessionScore} points
             </div>
           </div>
         </div>
 
-        {/* Continue Button - Always Visible */}
+        {/* Continue Button */}
         <button
           onClick={onContinue}
-          className="w-full py-3 sm:py-4 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-lg text-base sm:text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
-          style={{ textShadow: '0 0 10px #22c55e', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' }}
+          className="w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wide"
+          style={{ textShadow: '0 0 15px #22c55e', boxShadow: '0 0 30px rgba(34, 197, 94, 0.4)' }}
         >
           {isLastRound ? (
             <>
-              <Trophy className="w-5 h-5" />
+              <Trophy className="w-6 h-6" />
               <span>View Final Results</span>
             </>
           ) : (
             <>
               <span>Next Round</span>
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-6 h-6" />
             </>
           )}
         </button>
