@@ -29,7 +29,7 @@ function getGrade(score: number): string {
 }
 
 export const scoringSystem = {
-  // OddManOut: Accuracy-based
+  // OddManOut: 3 puzzles, direct accuracy
   oddManOut: (correct: number, total: number): GameScore => {
     const accuracy = total > 0 ? (correct / total) * 100 : 0;
     return {
@@ -42,25 +42,25 @@ export const scoringSystem = {
     };
   },
 
-  // RankAndRoll: Component-based
-  rankAndRoll: (baseScore: number): GameScore => {
-    const normalized = Math.min(100, (baseScore / 500) * 100);
+  // RankAndRoll: 8 items, direct accuracy
+  rankAndRoll: (correct: number, total: number = 8): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
     return {
       gameId: 'rank-and-roll',
       gameName: 'Ranky',
-      rawScore: baseScore,
-      normalizedScore: normalized,
-      grade: getGrade(normalized),
-      breakdown: `${Math.round(baseScore)} base points`
+      rawScore: correct,
+      normalizedScore: accuracy,
+      grade: getGrade(accuracy),
+      breakdown: `${correct}/${total} correct (${Math.round(accuracy)}%)`
     };
   },
 
-  // ShapeSequence: Level-based
+  // ShapeSequence: Gentler curve - level 7 = 100
   shapeSequence: (levelReached: number): GameScore => {
-    const normalized = Math.min(100, (levelReached / 10) * 100);
+    const normalized = Math.min(100, (levelReached / 7) * 100);
     return {
       gameId: 'shape-sequence',
-      gameName: 'Shape Sequence',
+      gameName: 'Simple',
       rawScore: levelReached,
       normalizedScore: normalized,
       grade: getGrade(normalized),
@@ -68,7 +68,7 @@ export const scoringSystem = {
     };
   },
 
-  // SplitDecision: Binary scoring
+  // SplitDecision: 7 items, direct accuracy
   splitDecision: (correct: number, wrong: number): GameScore => {
     const total = correct + wrong;
     if (total === 0) {
@@ -77,7 +77,7 @@ export const scoringSystem = {
         gameName: 'Split Decision',
         rawScore: 0,
         normalizedScore: 0,
-        grade: 'D',
+        grade: '★☆☆☆☆',
         breakdown: 'No items answered'
       };
     }
@@ -85,19 +85,19 @@ export const scoringSystem = {
     return {
       gameId: 'split-decision',
       gameName: 'Split Decision',
-      rawScore: correct - wrong,
+      rawScore: correct,
       normalizedScore: percentage,
       grade: getGrade(percentage),
       breakdown: `${correct}/${total} correct (${Math.round(percentage)}%)`
     };
   },
 
-  // Pop (WordRescue): Length-squared
+  // WordSurge (WordRescue): 500 points = 100
   pop: (wordScore: number): GameScore => {
-    const normalized = Math.min(100, (wordScore / 1500) * 100);
+    const normalized = Math.min(100, (wordScore / 500) * 100);
     return {
       gameId: 'word-rescue',
-      gameName: 'Pop',
+      gameName: 'WordSurge',
       rawScore: wordScore,
       normalizedScore: normalized,
       grade: getGrade(normalized),
@@ -105,48 +105,12 @@ export const scoringSystem = {
     };
   },
 
-  // Zooma (PhotoMystery): Time-based
-  zooma: (score: number): GameScore => {
-    const normalized = Math.min(100, (score / 1000) * 100);
+  // Zooma (PhotoMystery): 3 puzzles, direct accuracy
+  zooma: (correct: number, total: number = 3): GameScore => {
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
     return {
       gameId: 'photo-mystery',
       gameName: 'Zooma',
-      rawScore: score,
-      normalizedScore: normalized,
-      grade: getGrade(normalized),
-      breakdown: `${score} points`
-    };
-  },
-
-  // SnapShot: Time-based completion
-  snapshot: (completed: boolean, timeRemaining: number, totalTime: number = 60): GameScore => {
-    let normalized = 0;
-    let breakdown = '';
-
-    if (completed) {
-      normalized = 50 + ((timeRemaining / totalTime) * 50);
-      breakdown = `Completed with ${timeRemaining}s remaining`;
-    } else {
-      normalized = (((totalTime - timeRemaining) / totalTime) * 50);
-      breakdown = `Incomplete after ${totalTime - timeRemaining}s`;
-    }
-
-    return {
-      gameId: 'snapshot',
-      gameName: 'SnapShot',
-      rawScore: completed ? 100 : Math.round(normalized),
-      normalizedScore: Math.min(100, normalized),
-      grade: getGrade(Math.min(100, normalized)),
-      breakdown
-    };
-  },
-
-  // EmojiMaster: Placeholder (adjust based on actual game)
-  emojiMaster: (correct: number, total: number): GameScore => {
-    const accuracy = total > 0 ? (correct / total) * 100 : 0;
-    return {
-      gameId: 'emoji-master',
-      gameName: 'Emoji Master',
       rawScore: correct,
       normalizedScore: accuracy,
       grade: getGrade(accuracy),
@@ -154,9 +118,37 @@ export const scoringSystem = {
     };
   },
 
-  // Snake: Score-based
+  // SnapShot: 40 base + 60 speed bonus
+  snapshot: (completed: boolean, timeRemaining: number, totalTime: number = 60): GameScore => {
+    let normalized = 0;
+    let breakdown = '';
+
+    if (completed) {
+      // 40 base points for completion + up to 60 for speed
+      const basePoints = 40;
+      const speedBonus = (timeRemaining / totalTime) * 60;
+      normalized = basePoints + speedBonus;
+      breakdown = `Completed with ${Math.round(timeRemaining)}s remaining`;
+    } else {
+      // Partial credit for progress (up to 40 points max)
+      const timeUsed = totalTime - timeRemaining;
+      normalized = Math.min(40, (timeUsed / totalTime) * 40);
+      breakdown = `Incomplete after ${Math.round(timeUsed)}s`;
+    }
+
+    return {
+      gameId: 'snapshot',
+      gameName: 'SnapShot',
+      rawScore: completed ? 100 : 0,
+      normalizedScore: Math.min(100, normalized),
+      grade: getGrade(Math.min(100, normalized)),
+      breakdown
+    };
+  },
+
+  // Snake: 300 points = 100 (rewards multiple lives)
   snake: (score: number): GameScore => {
-    const normalized = Math.min(100, (score / 200) * 100);
+    const normalized = Math.min(100, (score / 300) * 100);
     return {
       gameId: 'snake',
       gameName: 'Snake',
@@ -169,7 +161,7 @@ export const scoringSystem = {
 };
 
 export const calculateSessionScore = (gameScores: GameScore[]): SessionScore => {
-  const total = gameScores.reduce((sum, g) => sum + g.normalizedScore, 0);
+  const total = gameScores.reduce((sum, g) => sum + (g.totalWithBonus || g.normalizedScore), 0);
   const maxPossible = gameScores.length * 100;
   const percentage = (total / maxPossible) * 100;
 
@@ -189,12 +181,13 @@ export const calculateTimeBonus = (
   timeRemaining: number,
   totalDuration: number
 ): number => {
-  if (timeRemaining <= 0 || totalDuration <= 0) return 0;
+  if (timeRemaining <= 0 || totalDuration <= 0 || normalizedScore <= 0) return 0;
 
-  const maxBonus = normalizedScore * 0.5;
+  // Bonus = (Base Score × Time Remaining %) / 2
   const timeRatio = timeRemaining / totalDuration;
+  const bonus = (normalizedScore * timeRatio) / 2;
 
-  return Math.round(maxBonus * timeRatio);
+  return Math.round(bonus);
 };
 
 export const applyTimeBonus = (
