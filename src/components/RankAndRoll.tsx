@@ -360,34 +360,34 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             <span style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</span>
           </h2>
 
-          <p className="text-green-300 text-xs sm:text-sm mb-2 text-center">
+          <p className="text-green-300 text-xs sm:text-sm mb-1 text-center">
             Rank 'em!
           </p>
 
-          {/* Score + Hint Button Row */}
-          <div className="flex justify-between items-center mb-2 text-xs sm:text-sm">
-            <div className="text-green-300">
-              Score: <strong className="text-yellow-400 tabular-nums">{totalCorrectCount}</strong>
-            </div>
-            {gameState === 'playing' && (
-              <button
-                onClick={getHint}
-                disabled={hintsUsed >= MAX_HINTS}
-                className={`
-                  px-3 py-1 rounded text-xs font-semibold transition-all border-2
-                  ${hintsUsed >= MAX_HINTS
-                    ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
-                    : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
-                  }
-                `}
-                style={hintsUsed >= MAX_HINTS ? {} : {
-                  textShadow: '0 0 8px #fbbf24',
-                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
-                }}
-              >
-                💡 Hint ({remainingHints})
-              </button>
-            )}
+          {/* Hint Button - Centered */}
+          <div className="flex justify-center mb-2">
+            <button
+              onClick={getHint}
+              disabled={hintsUsed >= MAX_HINTS || gameState !== 'playing'}
+              className={`
+                px-3 py-1 rounded text-xs font-semibold transition-all border-2
+                ${hintsUsed >= MAX_HINTS || gameState !== 'playing'
+                  ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
+                  : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
+                }
+              `}
+              style={hintsUsed >= MAX_HINTS || gameState !== 'playing' ? {} : {
+                textShadow: '0 0 8px #fbbf24',
+                boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
+              }}
+            >
+              💡 Hint ({remainingHints})
+            </button>
+          </div>
+
+          {/* Score */}
+          <div className="text-green-300 text-xs sm:text-sm mb-2 text-center">
+            Score: <strong className="text-yellow-400 tabular-nums">{totalCorrectCount}</strong>
           </div>
         </div>
 
