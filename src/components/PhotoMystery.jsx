@@ -389,6 +389,34 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
   };
 
+  const handleTerryTest = () => {
+    if (resultTimerRef.current) {
+      clearTimeout(resultTimerRef.current);
+      resultTimerRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const nextIndex = (currentPuzzleIndex + 1) % questions.length;
+    setCurrentPuzzleIndex(nextIndex);
+
+    const nextQuestionData = questions[nextIndex];
+    if (!nextQuestionData.difficulty) {
+      nextQuestionData.difficulty = 'unknown';
+    }
+
+    setCurrentQuestion(nextQuestionData);
+    setSelectedAnswer(null);
+    setZoomLevel(maxZoom);
+    setPoints(maxPoints);
+    setElapsedTime(0);
+    setGameState('playing');
+
+    setTimeout(() => startGame(), 100);
+  };
+
   useEffect(() => {
     fetchQuestions();
 
@@ -555,10 +583,17 @@ const PhotoMystery = forwardRef((props, ref) => {
           </p>
 
           {/* Score - now shows correct count */}
-          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
+          <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-cyan-300">
               Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{correctCount}/{totalPhotos}</strong>
             </div>
+            <button
+              onClick={handleTerryTest}
+              className="px-3 py-1 text-xs bg-purple-600/20 border border-purple-400 text-purple-300 rounded hover:bg-purple-600/40 hover:border-purple-300 transition-all"
+              style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}
+            >
+              Terry Test
+            </button>
           </div>
         </div>
 
