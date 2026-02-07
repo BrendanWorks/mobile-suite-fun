@@ -42,10 +42,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const autoAdvanceTimeoutRef = useRef<number | null>(null);
   const onCompleteRef = useRef(props.onComplete);
   const totalCorrectRef = useRef(0);
+  const gameStateRef = useRef(gameState);
 
   const MAX_HINTS = 3;
   const HINT_PENALTY = 25;
 
+  // Keep refs in sync
   useEffect(() => {
     onCompleteRef.current = props.onComplete;
   }, [props.onComplete]);
@@ -54,6 +56,11 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     totalCorrectRef.current = totalCorrectCount;
   }, [totalCorrectCount]);
 
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  // Load audio
   useEffect(() => {
     const loadAudio = async () => {
       await audioManager.loadSound('ranky-select', '/sounds/ranky/select_optimized.mp3', 3);
@@ -85,11 +92,13 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       handleNextPuzzle();
     },
     canSkipQuestion: true,
-    pauseTimer: gameState === 'feedback',
+    get pauseTimer() {
+      return gameStateRef.current === 'feedback';
+    },
     loadNextPuzzle: () => {
       handleNextPuzzle();
     }
-  }), [gameState, props.timeRemaining]);
+  }), [props.timeRemaining]);
 
   const fetchPuzzles = async () => {
     try {
