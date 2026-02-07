@@ -23,6 +23,7 @@ import Snake from './Snake';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
+import { analytics } from '../lib/analytics';
 
 interface GameConfig {
   id: string;
@@ -181,6 +182,22 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         }))
       };
 
+      const isPerfectGame = session.percentage === 100;
+
+      analytics.gameCompleted(
+        'Game Session',
+        Math.round(session.totalScore),
+        isPerfectGame,
+        playtimeSeconds
+      );
+
+      analytics.sessionDuration(
+        'Game Session',
+        playtimeSeconds,
+        roundScores.length,
+        roundScores.length
+      );
+
       if (!user?.id) {
         setPendingSessionData(sessionData);
       } else if (sessionId) {
@@ -237,6 +254,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const startRound = () => {
     setCurrentGameScore({ score: 0, maxScore: 0 });
     setGameState('playing');
+
+    if (currentGame) {
+      analytics.gameStarted(currentGame.name, getGameId(currentGame.id), user?.id);
+    }
   };
 
   const handleScoreUpdate = (score: number, maxScore: number) => {
@@ -332,6 +353,35 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
       return newScores;
     });
 
+    const finalScore = normalizedScore.totalWithBonus || normalizedScore.normalizedScore;
+    const isPerfect = normalizedScore.grade === 'A';
+    const isSuccess = normalizedScore.grade !== 'D' && normalizedScore.grade !== 'F';
+
+    analytics.puzzleCompleted(
+      currentGame.name,
+      currentRound,
+      1,
+      Math.round(finalScore),
+      timeRemaining,
+      isPerfect
+    );
+
+    analytics.roundScore(
+      currentGame.name,
+      currentRound,
+      Math.round(finalScore),
+      100,
+      1
+    );
+
+    analytics.roundSuccess(
+      currentGame.name,
+      currentRound,
+      isSuccess,
+      Math.round(finalScore),
+      currentGame.duration - timeRemaining
+    );
+
     setGameState('results');
   };
 
@@ -357,15 +407,23 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const handleQuitAndSave = async () => {
     const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     const completedRounds = roundScores.length;
-    
+    const playtimeSeconds = sessionStartTimeRef.current
+      ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+      : 0;
+
+    analytics.gameAbandoned(
+      currentGame?.name || 'Unknown',
+      currentRound,
+      1,
+      Math.round(currentSessionScore),
+      playtimeSeconds
+    );
+
     if (user?.id && sessionId) {
       try {
         const avgScore = completedRounds > 0 ? currentSessionScore / completedRounds : 0;
         const percentage = avgScore;
         const grade = getSessionGrade(percentage);
-        const playtimeSeconds = sessionStartTimeRef.current
-          ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
-          : 0;
 
         await completeGameSession(
           sessionId,
@@ -393,7 +451,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         console.error('Error saving progress on quit:', error);
       }
     }
-    
+
     onExit();
   };
 

@@ -125,9 +125,9 @@ export const analytics = {
   // ============================================================================
 
   roundCompleted: (
-    gameName: string, 
-    roundNumber: number, 
-    totalScore: number, 
+    gameName: string,
+    roundNumber: number,
+    totalScore: number,
     perfectRound: boolean,
     averageTimePerPuzzle: number
   ) => {
@@ -172,6 +172,68 @@ export const analytics = {
         total_score: totalScore,
       });
     }
+  },
+
+  roundScore: (
+    gameName: string,
+    roundNumber: number,
+    score: number,
+    maxPossibleScore: number,
+    puzzlesCompleted: number
+  ) => {
+    const scorePercentage = Math.round((score / maxPossibleScore) * 100);
+
+    ReactGA.event({
+      category: 'Score',
+      action: 'round_score',
+      label: `${gameName} - Round ${roundNumber}`,
+      value: score,
+      game_name: gameName,
+      round_number: roundNumber,
+      score: score,
+      max_possible_score: maxPossibleScore,
+      score_percentage: scorePercentage,
+      puzzles_completed: puzzlesCompleted,
+    });
+
+    // Track score tiers for analysis
+    if (scorePercentage >= 90) {
+      ReactGA.event({
+        category: 'Score',
+        action: 'high_round_score',
+        label: gameName,
+        value: score,
+        round_number: roundNumber,
+      });
+    } else if (scorePercentage < 50) {
+      ReactGA.event({
+        category: 'Score',
+        action: 'low_round_score',
+        label: gameName,
+        value: score,
+        round_number: roundNumber,
+      });
+    }
+  },
+
+  roundSuccess: (
+    gameName: string,
+    roundNumber: number,
+    success: boolean,
+    score: number,
+    timeSpent: number
+  ) => {
+    ReactGA.event({
+      category: 'Game',
+      action: success ? 'round_success' : 'round_failure',
+      label: `${gameName} - Round ${roundNumber}`,
+      value: score,
+      game_name: gameName,
+      round_number: roundNumber,
+      success: success,
+      score: score,
+      time_spent: timeSpent,
+    });
   },
 
   // ============================================================================
@@ -357,6 +419,130 @@ export const analytics = {
       game_name: gameName,
       error_message: errorMessage,
       context: context,
+    });
+  },
+
+  // ============================================================================
+  // USABILITY & ENGAGEMENT TRACKING
+  // ============================================================================
+
+  puzzleTimeSpent: (
+    gameName: string,
+    roundNumber: number,
+    puzzleNumber: number,
+    timeSpentSeconds: number
+  ) => {
+    ReactGA.event({
+      category: 'Engagement',
+      action: 'puzzle_time_spent',
+      label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
+      value: Math.round(timeSpentSeconds),
+      game_name: gameName,
+      round_number: roundNumber,
+      puzzle_number: puzzleNumber,
+      time_spent: timeSpentSeconds,
+    });
+
+    // Track if puzzle took unusually long (potential confusion/difficulty)
+    if (timeSpentSeconds > 60) {
+      ReactGA.event({
+        category: 'Engagement',
+        action: 'puzzle_long_duration',
+        label: gameName,
+        value: Math.round(timeSpentSeconds),
+        round_number: roundNumber,
+        puzzle_number: puzzleNumber,
+      });
+    }
+  },
+
+  puzzleRetry: (
+    gameName: string,
+    roundNumber: number,
+    puzzleNumber: number,
+    attemptNumber: number
+  ) => {
+    ReactGA.event({
+      category: 'Engagement',
+      action: 'puzzle_retry',
+      label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
+      value: attemptNumber,
+      game_name: gameName,
+      round_number: roundNumber,
+      puzzle_number: puzzleNumber,
+      attempt_number: attemptNumber,
+    });
+  },
+
+  gameInteraction: (
+    gameName: string,
+    interactionType: string,
+    context?: string
+  ) => {
+    ReactGA.event({
+      category: 'Interaction',
+      action: interactionType,
+      label: `${gameName}${context ? ` - ${context}` : ''}`,
+      game_name: gameName,
+      interaction_type: interactionType,
+      context: context,
+    });
+  },
+
+  difficultyFeedback: (
+    gameName: string,
+    roundNumber: number,
+    perceivedDifficulty: 'easy' | 'medium' | 'hard'
+  ) => {
+    ReactGA.event({
+      category: 'Feedback',
+      action: 'difficulty_perception',
+      label: `${gameName} - ${perceivedDifficulty}`,
+      game_name: gameName,
+      round_number: roundNumber,
+      difficulty: perceivedDifficulty,
+    });
+  },
+
+  sessionDuration: (
+    gameName: string,
+    durationSeconds: number,
+    roundsCompleted: number,
+    puzzlesCompleted: number
+  ) => {
+    ReactGA.event({
+      category: 'Engagement',
+      action: 'session_duration',
+      label: gameName,
+      value: Math.round(durationSeconds),
+      game_name: gameName,
+      duration_seconds: durationSeconds,
+      rounds_completed: roundsCompleted,
+      puzzles_completed: puzzlesCompleted,
+    });
+
+    // Track engagement tiers
+    if (durationSeconds > 300) { // 5+ minutes
+      ReactGA.event({
+        category: 'Engagement',
+        action: 'high_engagement',
+        label: gameName,
+        value: Math.round(durationSeconds),
+      });
+    }
+  },
+
+  userProgressMilestone: (
+    userId: string,
+    milestone: string,
+    value: number
+  ) => {
+    ReactGA.event({
+      category: 'Progress',
+      action: 'milestone_reached',
+      label: milestone,
+      value: value,
+      milestone: milestone,
     });
   },
 
