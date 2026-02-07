@@ -55,9 +55,9 @@ export const scoringSystem = {
     };
   },
 
-  // ShapeSequence: Gentler curve - level 7 = 100
+  // ShapeSequence: Level 10 = 100
   shapeSequence: (levelReached: number): GameScore => {
-    const normalized = Math.min(100, (levelReached / 7) * 100);
+    const normalized = Math.min(100, (levelReached / 10) * 100);
     return {
       gameId: 'shape-sequence',
       gameName: 'Simple',
@@ -146,7 +146,7 @@ export const scoringSystem = {
     };
   },
 
-  // Snake: 300 points = 100 (rewards multiple lives)
+  // Snake: 300 points = 100 (rewards multiple lives) - NO TIME BONUS
   snake: (score: number): GameScore => {
     const normalized = Math.min(100, (score / 300) * 100);
     return {
