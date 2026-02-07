@@ -267,7 +267,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         break;
 
       case 'rank-and-roll':
-        normalizedScore = scoringSystem.rankAndRoll(rawScore);
+        normalizedScore = scoringSystem.rankAndRoll(rawScore, maxScore);
         break;
 
       case 'shape-sequence':
@@ -283,7 +283,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         break;
 
       case 'photo-mystery':
-        normalizedScore = scoringSystem.zooma(rawScore);
+        normalizedScore = scoringSystem.zooma(rawScore, maxScore);
         break;
 
       case 'snapshot':
@@ -294,6 +294,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
 
       case 'snake':
         normalizedScore = scoringSystem.snake(rawScore);
+        console.log('🐍 Snake scoring (no time bonus):', normalizedScore);
         break;
 
       default:
@@ -307,8 +308,8 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
         };
     }
 
-    // Apply time bonus if there's time remaining
-    if (timeRemaining > 0 && currentGame.duration > 0) {
+    // Apply time bonus if there's time remaining (but NOT for Snake)
+    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
       console.log(`⏱️ Time Bonus Applied: +${normalizedScore.timeBonus} (${timeRemaining}s / ${currentGame.duration}s)`);
     }
