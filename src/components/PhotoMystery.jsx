@@ -92,7 +92,8 @@ const PhotoMystery = forwardRef((props, ref) => {
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
-        .eq('game_id', 4);
+        .eq('game_id', 4)
+        .in('game_type', ['multiple_choice', 'photo_mystery']);
 
       if (error) {
         console.error('Supabase error:', error);
@@ -101,19 +102,48 @@ const PhotoMystery = forwardRef((props, ref) => {
       }
 
       if (!data || data.length === 0) {
-        console.error('No questions found');
+        console.error('No questions found for game_id 4');
         setGameState('error');
         return;
       }
 
-      console.log(`Loaded ${data.length} photo questions from Supabase`);
-      setQuestions(data);
+      console.log(`Found ${data.length} puzzles for Zooma`);
 
-      const ids = data.map(q => q.id);
+      const validQuestions = data.filter(q => {
+        const hasImageUrl = q.prompt && (q.prompt.startsWith('http://') || q.prompt.startsWith('https://'));
+        const hasOptions = q.metadata && (
+          (typeof q.metadata === 'object' && q.metadata.options && Array.isArray(q.metadata.options)) ||
+          (typeof q.metadata === 'string' && q.metadata.includes('options'))
+        );
+
+        if (!hasImageUrl) {
+          console.warn(`Puzzle ${q.id} skipped: prompt is not a valid image URL (got: "${q.prompt?.substring(0, 50)}...")`);
+        }
+        if (!hasOptions) {
+          console.warn(`Puzzle ${q.id} skipped: missing metadata.options (got: ${JSON.stringify(q.metadata)})`);
+        }
+
+        return hasImageUrl && hasOptions;
+      });
+
+      if (validQuestions.length === 0) {
+        console.error('No valid photo mystery puzzles found!');
+        console.error('Puzzles must have:');
+        console.error('1. prompt: Image URL (e.g., "https://...")');
+        console.error('2. metadata.options: Array of answer choices (e.g., ["Cat", "Dog", "Rabbit"])');
+        console.error('3. correct_answer: One of the options');
+        setGameState('error');
+        return;
+      }
+
+      console.log(`Loaded ${validQuestions.length} valid photo questions (${data.length - validQuestions.length} skipped)`);
+      setQuestions(validQuestions);
+
+      const ids = validQuestions.map(q => q.id);
       setPuzzleIds(ids);
 
-      if (data.length > 0) {
-        const firstQuestion = data[0];
+      if (validQuestions.length > 0) {
+        const firstQuestion = validQuestions[0];
         if (!firstQuestion.difficulty) {
           firstQuestion.difficulty = 'unknown';
         }
@@ -412,12 +442,22 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (gameState === 'error') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-white">
-        <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading questions</div>
-        <div className="text-sm text-cyan-300 mt-2">Check your Supabase connection</div>
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-white border-2 border-red-500" style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' }}>
+        <div className="text-lg text-red-400 font-bold mb-4" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error Loading Zooma Puzzles</div>
+        <div className="text-left text-sm text-cyan-300 bg-black/50 border border-cyan-400/30 rounded-lg p-4 mb-4">
+          <p className="font-bold text-yellow-400 mb-2">Check the browser console for details.</p>
+          <p className="mb-2">Puzzles must have:</p>
+          <ul className="list-disc list-inside space-y-1 text-xs">
+            <li><strong>prompt:</strong> Image URL (e.g., "https://...")</li>
+            <li><strong>metadata.options:</strong> Array of choices (e.g., ["Cat", "Dog", "Rabbit"])</li>
+            <li><strong>correct_answer:</strong> One of the options</li>
+            <li><strong>game_id:</strong> 4 (for Zooma)</li>
+            <li><strong>game_type:</strong> "multiple_choice" or "photo_mystery"</li>
+          </ul>
+        </div>
         <button
           onClick={fetchQuestions}
-          className="mt-4 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
+          className="mt-2 px-6 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-black transition-all"
           style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
         >
           Try Again
