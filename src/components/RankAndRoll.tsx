@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { ListOrdered } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
@@ -293,7 +293,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-green-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #22c55e' }}>
-            <ListOrdered className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
+            <BarChart3 className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
             Loading puzzles...
           </div>
           <div className="text-sm text-green-300 mt-2">Connecting to database</div>
@@ -334,11 +334,11 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           @keyframes hint-pulse {
             0%, 100% { 
               transform: scale(1);
-              opacity: 1;
+              filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
             }
             50% { 
-              transform: scale(1.2);
-              opacity: 0.8;
+              transform: scale(1.15);
+              filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.8));
             }
           }
           .hint-pulse {
@@ -349,7 +349,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         {/* Header */}
         <div className="mb-2">
           <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-1 border-b border-green-400 pb-1 flex items-center justify-center gap-2">
-            <ListOrdered
+            <BarChart3
               className="w-6 h-6 sm:w-7 sm:h-7"
               style={{
                 color: '#22c55e',
@@ -364,30 +364,35 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             Rank 'em!
           </p>
 
-          {/* Score + Hint Row */}
-          <div className="flex justify-between items-center mb-2 text-xs sm:text-sm">
+          {/* Score */}
+          <div className="flex justify-start items-center mb-2 text-xs sm:text-sm">
             <div className="text-green-300">
               Score: <strong className="text-yellow-400 tabular-nums">{totalCorrectCount}</strong>
             </div>
-            <button
-              onClick={getHint}
-              disabled={hintsUsed >= MAX_HINTS || gameState !== 'playing'}
-              className={`
-                px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-semibold transition-all border-2
-                ${hintsUsed >= MAX_HINTS || gameState !== 'playing'
-                  ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
-                  : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
-                }
-              `}
-              style={hintsUsed >= MAX_HINTS || gameState !== 'playing' ? {} : {
-                textShadow: '0 0 8px #fbbf24',
-                boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
-              }}
-            >
-              💡 Hint ({remainingHints})
-            </button>
           </div>
         </div>
+
+        {/* Hint Button - Centered */}
+        {gameState === 'playing' && (
+          <div className="flex justify-center mb-2">
+            <button
+              onClick={getHint}
+              disabled={hintsUsed >= MAX_HINTS}
+              className={`
+                transition-all
+                ${hintsUsed >= MAX_HINTS
+                  ? 'text-yellow-400/30 cursor-not-allowed'
+                  : 'text-yellow-400 hover:scale-110 active:scale-95'
+                }
+              `}
+              style={hintsUsed >= MAX_HINTS ? {} : {
+                filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))'
+              }}
+            >
+              <span className="text-2xl">💡</span>
+            </button>
+          </div>
+        )}
 
         {/* Puzzle Info */}
         <div className="text-center mb-2 bg-black/50 border-2 border-green-500 rounded-lg p-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
@@ -425,16 +430,20 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-black font-bold text-xs">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className="relative flex-shrink-0" style={{ width: '20px', height: '20px' }}>
+                      <span className="absolute -top-1 -left-1 text-green-400 font-bold text-xs" style={{ 
+                        textShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
+                        fontSize: '10px',
+                        lineHeight: '1'
+                      }}>
                         {index + 1}
                       </span>
                     </div>
                     {item.emoji && (
                       <span className="text-xl flex-shrink-0">{item.emoji}</span>
                     )}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left">
                       <div className="text-green-400 text-sm font-semibold truncate">
                         {item.name}
                       </div>
@@ -449,8 +458,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                   {gameState === 'playing' && (
                     <div className="flex flex-col gap-1 flex-shrink-0">
                       {hasHint && showHint?.direction === 'up' ? (
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <span className="text-2xl hint-pulse">⬆️</span>
+                        <div className="w-8 h-8 rounded border-2 border-yellow-400 bg-yellow-400/20 flex items-center justify-center hint-pulse text-yellow-400">
+                          ▲
                         </div>
                       ) : (
                         <button
@@ -468,8 +477,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                       )}
 
                       {hasHint && showHint?.direction === 'down' ? (
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <span className="text-2xl hint-pulse">⬇️</span>
+                        <div className="w-8 h-8 rounded border-2 border-yellow-400 bg-yellow-400/20 flex items-center justify-center hint-pulse text-yellow-400">
+                          ▼
                         </div>
                       ) : (
                         <button
