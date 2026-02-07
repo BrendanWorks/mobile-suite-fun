@@ -21,7 +21,6 @@ export interface SessionScore {
 }
 
 function getGrade(score: number): string {
-  if (score === 0) return '💩';
   if (score <= 20) return '★☆☆☆☆';
   if (score <= 40) return '★★☆☆☆';
   if (score <= 60) return '★★★☆☆';

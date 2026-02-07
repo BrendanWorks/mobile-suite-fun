@@ -514,7 +514,7 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
                 {roundScores.map((round, idx) => (
                   <div key={idx} className="flex items-center bg-black/50 border border-cyan-400/30 px-3 py-2 rounded text-xs sm:text-sm">
                     <span className="text-cyan-300 truncate flex-1 mr-3">{round.gameName}</span>
-                    <span className="text-cyan-400 font-bold w-12 text-left">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
+                    <span className="text-cyan-400 font-bold w-16 text-right">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
                     <span className="text-yellow-400 text-base ml-2" style={{ textShadow: '0 0 10px #fbbf24' }}>
                       {round.normalizedScore.grade}
                     </span>
