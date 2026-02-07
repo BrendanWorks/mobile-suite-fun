@@ -1,5 +1,5 @@
 /**
- * SplitDecision.tsx - UPDATED WITH BRANDING
+ * SplitDecision.tsx - UPDATED WITH BRANDING + WRONG SOUND
  *
  * Location: components/SplitDecision.tsx
  *
@@ -15,12 +15,14 @@
  * - Auto-advances after 1.5 seconds
  * - No timer pause - keeps moving fast
  * - No penalty for wrong answers
+ * - Wrong sound plays on incorrect answers
  */
 
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
+import { audioManager } from '../lib/audioManager';
 
 interface PuzzleItem {
   id: number;
@@ -73,6 +75,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  // Load audio on mount
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
+    };
+    loadAudio();
+  }, []);
 
   // Load all puzzle IDs on mount
   useEffect(() => {
@@ -175,7 +185,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         return newScore;
       });
     } else {
-      // Wrong answer: no points, no penalty
+      // Wrong answer: play wrong sound, no points, no penalty
+      audioManager.initialize();
+      audioManager.play('global-wrong', 0.3);
+      
       if (onScoreUpdate) {
         onScoreUpdate(score, MAX_SCORE);
       }
