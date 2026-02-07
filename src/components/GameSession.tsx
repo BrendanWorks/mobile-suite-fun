@@ -510,32 +510,21 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
                 </p>
               </div>
 
-              <div className="mb-3">
-                <p className="text-xs sm:text-sm text-cyan-400 mb-2 font-semibold">Game Breakdown:</p>
-                <div className="space-y-1">
-                  {roundScores.map((round, idx) => (
-                    <div key={idx} className="flex justify-between items-center bg-black/50 border border-cyan-400/30 px-2 py-1.5 rounded text-xs sm:text-sm">
-                      <span className="text-cyan-300 truncate flex-1 mr-2">{round.gameName}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-cyan-400 font-bold">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
-                        <span className="text-cyan-400 text-sm">
-                          {round.normalizedScore.grade}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-1.5">
+                {roundScores.map((round, idx) => (
+                  <div key={idx} className="flex items-center bg-black/50 border border-cyan-400/30 px-3 py-2 rounded text-xs sm:text-sm">
+                    <span className="text-cyan-300 truncate flex-1 mr-3">{round.gameName}</span>
+                    <span className="text-cyan-400 font-bold w-12 text-left">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
+                    <span className="text-yellow-400 text-base ml-2" style={{ textShadow: '0 0 10px #fbbf24' }}>
+                      {round.normalizedScore.grade}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               {sessionSaved && (
-                <div className="p-2 bg-green-500/20 border-2 border-green-500 rounded text-xs text-green-400">
+                <div className="p-2 bg-green-500/20 border-2 border-green-500 rounded text-xs text-green-400 mt-3">
                   ✅ Score saved
-                </div>
-              )}
-
-              {!user && !sessionSaved && (
-                <div className="p-2 bg-cyan-500/20 border-2 border-cyan-400 rounded text-xs text-cyan-300">
-                  Sign in to save your score!
                 </div>
               )}
             </div>
