@@ -34,10 +34,11 @@ export default function RoundResults({
     // Show content with fade-in
     setTimeout(() => setShowContent(true), 200);
 
-    // Animate time bonus if present
-    if (hasTimeBonus) {
-      setTimeout(() => {
-        setShowBonus(true);
+    // Animate time bonus if present, or show zero bonus after delay
+    setTimeout(() => {
+      setShowBonus(true);
+      
+      if (hasTimeBonus) {
         const bonusDuration = 1000;
         const bonusSteps = 40;
         const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
@@ -52,8 +53,8 @@ export default function RoundResults({
         }, bonusDuration / bonusSteps);
 
         return () => clearInterval(bonusInterval);
-      }, 800);
-    }
+      }
+    }, 800);
   }, [gameScore.timeBonus, hasTimeBonus]);
 
   const getGradeLabel = (score: number): string => {
@@ -68,6 +69,19 @@ export default function RoundResults({
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6">
+      <style>{`
+        @keyframes pulse-red {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        .pulse-red {
+          animation: pulse-red 2s ease-in-out infinite;
+        }
+      `}</style>
       <div className={`max-w-2xl w-full transition-all duration-700 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         {/* Header */}
         <div className="text-center mb-6">
@@ -92,17 +106,19 @@ export default function RoundResults({
             </div>
           </div>
 
-          {/* Time Bonus - Fixed height to prevent layout shift */}
+          {/* Time Bonus - Always shows, red pulsing if zero */}
           <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
-            {hasTimeBonus && showBonus && (
+            {showBonus && (
               <div className="text-center animate-fade-in">
-                <div className="text-sm text-yellow-300 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 8px #fbbf24' }}>
+                <div className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`} 
+                     style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}>
                   Speed Bonus
                 </div>
-                <div className="text-4xl sm:text-5xl font-bold text-yellow-400 mb-1" style={{ textShadow: '0 0 15px #fbbf24' }}>
-                  +{Math.round(animateBonus)}
+                <div className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 pulse-red'}`} 
+                     style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}>
+                  +{hasTimeBonus ? Math.round(animateBonus) : 0}
                 </div>
-                {gameScore.totalWithBonus && (
+                {gameScore.totalWithBonus && hasTimeBonus && (
                   <div className="text-sm text-cyan-400">
                     New Total: {Math.round(gameScore.totalWithBonus)}/100
                   </div>
