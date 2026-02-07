@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Shapes } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { audioManager } from '../lib/audioManager';
 
 const MAX_SCORE = 1000;
 
@@ -69,6 +70,15 @@ const SnapShot = forwardRef((props: any, ref) => {
     cropY: 0,
     cropSize: 0
   });
+
+  // Load audio on mount
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('snapshot-correct', '/sounds/global/win_optimized.mp3', 2);
+      await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
+    };
+    loadAudio();
+  }, []);
 
   // Calculate center crop coordinates for square aspect ratio
   const calculateCenterCrop = () => {
@@ -145,29 +155,6 @@ const SnapShot = forwardRef((props: any, ref) => {
   const nextPuzzle = () => {
     setCurrentPuzzleIndex(prev => (prev + 1) % puzzles.length);
     resetGame();
-  };
-
-  const playSound = (frequency = 440) => {
-    // Simple beep sound using Web Audio API
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.1);
-    } catch (error) {
-      console.log('Audio not supported');
-    }
   };
 
   const handleResize = () => {
@@ -445,7 +432,8 @@ const SnapShot = forwardRef((props: any, ref) => {
     if (closestEmptySlot) {
       // Check if it's the correct piece for this slot
       if (gameStateRef.current.draggingPiece.id === closestEmptySlot.id) {
-        playSound(880); // Success sound
+        audioManager.initialize();
+        audioManager.play('snapshot-correct', 0.4);
         
         // Mark slot as filled
         closestEmptySlot.isMissing = false;
@@ -478,7 +466,8 @@ const SnapShot = forwardRef((props: any, ref) => {
           setGameState('won');
         }
       } else {
-        playSound(100); // Error sound
+        audioManager.initialize();
+        audioManager.play('global-wrong', 0.3);
         
         // Restore piece opacity
         const container = draggableContainerRef.current;
