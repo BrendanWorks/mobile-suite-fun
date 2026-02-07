@@ -450,7 +450,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 flex-shrink-0" style={{ width: '32px' }}>
+                  <div className="flex flex-col gap-1 flex-shrink-0" style={{ width: '32px', minHeight: '68px' }}>
                     {gameState === 'playing' && (
                       <>
                         {hasHint && showHint?.direction === 'up' ? (
