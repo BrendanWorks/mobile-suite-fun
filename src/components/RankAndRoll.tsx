@@ -108,6 +108,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         .from('puzzles')
         .select('*')
         .eq('game_id', 4)
+        .eq('game_type', 'ranking')
         .limit(MAX_PUZZLES);
 
       if (error) {
