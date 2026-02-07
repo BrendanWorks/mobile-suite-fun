@@ -424,10 +424,18 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                              isWrong ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
                              { boxShadow: '0 0 10px rgba(34, 197, 94, 0.2)' };
 
+            const badgeColor = gameState === 'feedback'
+              ? (isCorrect ? 'bg-green-500' : 'bg-red-500')
+              : 'bg-green-500';
+
+            const badgeShadow = gameState === 'feedback'
+              ? (isCorrect ? '0 0 8px rgba(34, 197, 94, 0.6)' : '0 0 8px rgba(239, 68, 68, 0.6)')
+              : '0 0 8px rgba(34, 197, 94, 0.6)';
+
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 {/* Number Badge - Positioned on top-left corner */}
-                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 z-10" style={{ boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' }}>
+                <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${badgeColor} flex items-center justify-center flex-shrink-0 z-10`} style={{ boxShadow: badgeShadow }}>
                   <span className="text-black font-bold text-xs">
                     {index + 1}
                   </span>
