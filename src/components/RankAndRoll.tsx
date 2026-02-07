@@ -291,12 +291,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   if (gameState === 'loading') {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-orange-400">
-          <div className="text-lg" style={{ textShadow: '0 0 10px #fb923c' }}>
-            <ListOrdered className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.6))' }} />
+        <div className="text-center text-green-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #22c55e' }}>
+            <ListOrdered className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
             Loading puzzles...
           </div>
-          <div className="text-sm text-orange-300 mt-2">Connecting to database</div>
+          <div className="text-sm text-green-300 mt-2">Connecting to database</div>
         </div>
       </div>
     );
@@ -310,7 +310,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>
             ❌ No puzzles available
           </div>
-          <div className="text-sm text-orange-300 mt-2">Check your database</div>
+          <div className="text-sm text-green-300 mt-2">Check your database</div>
         </div>
       </div>
     );
@@ -348,34 +348,34 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         `}</style>
 
         <div className="mb-3 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-1 border-b border-orange-400 pb-1 flex items-center justify-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-1 border-b border-green-400 pb-1 flex items-center justify-center gap-2">
             <ListOrdered
               className="w-6 h-6 sm:w-7 sm:h-7"
               style={{
-                color: '#fb923c',
-                filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.6))',
+                color: '#22c55e',
+                filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))',
                 strokeWidth: 2
               }}
             />
-            <span style={{ textShadow: '0 0 10px #fb923c' }}>Ranky</span>
+            <span style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</span>
           </h2>
 
-          <p className="text-orange-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
-            Sort & Rank
+          <p className="text-green-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
+            Rank 'em!
           </p>
 
           <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
-            <div className="text-orange-300">
-              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalCorrectCount}/{TOTAL_ITEMS}</strong>
+            <div className="text-green-300">
+              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalCorrectCount}</strong>
             </div>
           </div>
         </div>
 
-        <div className="text-center mb-3 sm:mb-4">
-          <h3 className="text-base sm:text-xl font-bold text-orange-400 mb-1 break-words" style={{ textShadow: '0 0 15px #fb923c' }}>
+        <div className="text-center mb-3 sm:mb-4 bg-black/50 border-2 border-green-500 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
+          <h3 className="text-base sm:text-xl font-bold text-green-400 mb-1 break-words" style={{ textShadow: '0 0 15px #22c55e' }}>
             {currentPuzzle.title}
           </h3>
-          <p className="text-orange-300 text-xs sm:text-sm">
+          <p className="text-gray-300 text-xs sm:text-sm">
             {currentPuzzle.instruction}
           </p>
         </div>
@@ -395,35 +395,37 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                 cardClass += " border-red-500 bg-red-500/20 animate-pulse-twice";
               }
             } else {
-              cardClass += " border-orange-400/40 hover:border-orange-400";
+              cardClass += " border-green-500/60 hover:border-green-500";
             }
 
             const glowStyle = isCorrect ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
                              isWrong ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
-                             { boxShadow: '0 0 10px rgba(251, 146, 60, 0.2)' };
+                             { boxShadow: '0 0 10px rgba(34, 197, 94, 0.2)' };
 
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <span className="text-orange-400 font-bold text-base sm:text-lg w-6 flex-shrink-0">
-                      {index + 1}.
-                    </span>
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-black font-bold text-xs sm:text-sm">
+                        {index + 1}
+                      </span>
+                    </div>
                     {item.emoji && (
                       <span className="text-xl sm:text-2xl flex-shrink-0">{item.emoji}</span>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm sm:text-base font-semibold truncate">
+                      <div className="text-green-400 text-sm sm:text-base font-semibold truncate">
                         {item.name}
                       </div>
                       {item.subtitle && (
-                        <div className="text-orange-300/70 text-xs truncate">
+                        <div className="text-gray-300 text-xs truncate">
                           {item.subtitle}
                         </div>
                       )}
                     </div>
                     {item.display_value && (
-                      <div className="text-orange-400 text-xs sm:text-sm font-bold flex-shrink-0">
+                      <div className="text-green-400 text-xs sm:text-sm font-bold flex-shrink-0">
                         {item.display_value}
                       </div>
                     )}
@@ -440,11 +442,11 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                           onClick={() => moveItem(index, 'up')}
                           disabled={index === 0}
                           className={`w-8 h-8 rounded border-2 transition-all flex items-center justify-center
-                            ${index === 0 
-                              ? 'border-orange-400/20 text-orange-400/20 cursor-not-allowed' 
-                              : 'border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black active:scale-95'
+                            ${index === 0
+                              ? 'border-green-400/20 text-green-400/20 cursor-not-allowed'
+                              : 'border-green-400 text-green-400 hover:bg-green-400 hover:text-black active:scale-95'
                             }`}
-                          style={index === 0 ? {} : { boxShadow: '0 0 8px rgba(251, 146, 60, 0.3)' }}
+                          style={index === 0 ? {} : { boxShadow: '0 0 8px rgba(34, 197, 94, 0.3)' }}
                         >
                           ▲
                         </button>
@@ -460,10 +462,10 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                           disabled={index === items.length - 1}
                           className={`w-8 h-8 rounded border-2 transition-all flex items-center justify-center
                             ${index === items.length - 1
-                              ? 'border-orange-400/20 text-orange-400/20 cursor-not-allowed'
-                              : 'border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black active:scale-95'
+                              ? 'border-green-400/20 text-green-400/20 cursor-not-allowed'
+                              : 'border-green-400 text-green-400 hover:bg-green-400 hover:text-black active:scale-95'
                             }`}
-                          style={index === items.length - 1 ? {} : { boxShadow: '0 0 8px rgba(251, 146, 60, 0.3)' }}
+                          style={index === items.length - 1 ? {} : { boxShadow: '0 0 8px rgba(34, 197, 94, 0.3)' }}
                         >
                           ▼
                         </button>
@@ -485,24 +487,24 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                 className={`
                   w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all border-2
                   ${hintsUsed >= MAX_HINTS
-                    ? 'bg-black/50 border-orange-400/30 text-orange-400/40 cursor-not-allowed'
+                    ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
                     : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
                   }
                 `}
-                style={hintsUsed >= MAX_HINTS ? {} : { 
-                  textShadow: '0 0 8px #fbbf24', 
-                  boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)' 
+                style={hintsUsed >= MAX_HINTS ? {} : {
+                  textShadow: '0 0 8px #fbbf24',
+                  boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)'
                 }}
               >
-                💡 {hintsUsed >= MAX_HINTS ? 'No Hints Left' : `Hint (${remainingHints}/${MAX_HINTS}) -${HINT_PENALTY}pts`}
+                💡 {hintsUsed >= MAX_HINTS ? 'No Hints Left' : `Hint (${remainingHints})`}
               </button>
 
               <button
                 onClick={checkAnswer}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2 bg-transparent border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black active:scale-95"
-                style={{ textShadow: '0 0 8px #fb923c', boxShadow: '0 0 15px rgba(251, 146, 60, 0.3)' }}
+                className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2 bg-transparent border-green-500 text-green-400 hover:bg-green-500 hover:text-black active:scale-95"
+                style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
               >
-                ✨ Check Answer
+                📊 Final Answer
               </button>
             </>
           )}
@@ -512,17 +514,17 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
               p-2 sm:p-3 rounded-lg border-2
               ${correctCount === items.length
                 ? 'bg-green-500/20 text-green-400 border-green-500'
-                : 'bg-orange-500/20 text-orange-400 border-orange-500'
+                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500'
               }
             `}
             style={{
-              boxShadow: correctCount === items.length 
-                ? '0 0 20px rgba(34, 197, 94, 0.4)' 
-                : '0 0 20px rgba(251, 146, 60, 0.4)'
+              boxShadow: correctCount === items.length
+                ? '0 0 20px rgba(34, 197, 94, 0.4)'
+                : '0 0 20px rgba(251, 191, 36, 0.4)'
             }}>
               <div className="text-base sm:text-lg font-bold mb-1">
-                {correctCount === items.length 
-                  ? '🎉 Perfect!' 
+                {correctCount === items.length
+                  ? '🎉 Perfect!'
                   : `${correctCount}/${items.length} Correct`}
               </div>
               {hintPenalty > 0 && (
