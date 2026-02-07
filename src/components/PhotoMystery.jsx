@@ -10,7 +10,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(2.5);
   const [points, setPoints] = useState(333);
-  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
   const [puzzleIds, setPuzzleIds] = useState([]);
@@ -23,15 +23,14 @@ const PhotoMystery = forwardRef((props, ref) => {
   const startTimeRef = useRef(null);
   const onCompleteRef = useRef(onComplete);
   const onScoreUpdateRef = useRef(onScoreUpdate);
-  const scoreRef = useRef(0);
+  const correctCountRef = useRef(0);
 
-  const maxPoints = 333; // ~1000 points total across 3 photos
+  const maxPoints = 333; // Points per photo for display
   const minPoints = 0;
   const photoDuration = 15;
   const totalPhotos = 3;
   const maxZoom = 2.5;
   const minZoom = 1.0;
-  const totalMaxScore = 1000; // Normalized total score
 
   // Keep callback refs up to date
   useEffect(() => {
@@ -42,16 +41,16 @@ const PhotoMystery = forwardRef((props, ref) => {
     onScoreUpdateRef.current = onScoreUpdate;
   }, [onScoreUpdate]);
 
-  // Keep score ref in sync
+  // Keep correctCount ref in sync
   useEffect(() => {
-    scoreRef.current = score;
-  }, [score]);
+    correctCountRef.current = correctCount;
+  }, [correctCount]);
 
   useImperativeHandle(ref, () => ({
     hideTimer: true, // Zooma manages its own per-photo timers
     getGameScore: () => ({
-      score: scoreRef.current,
-      maxScore: totalMaxScore
+      score: correctCountRef.current,
+      maxScore: totalPhotos
     }),
     onGameEnd: () => {
       console.log('Zooma: onGameEnd called (GameWrapper timer hit 0)');
@@ -59,10 +58,10 @@ const PhotoMystery = forwardRef((props, ref) => {
       clearTimeout(resultTimerRef.current);
       // GameWrapper timer ran out - complete with current score
       const callback = onCompleteRef.current;
-      const finalScore = scoreRef.current;
-      console.log('Zooma: GameWrapper time up! Calling onComplete with score:', finalScore);
+      const finalCorrect = correctCountRef.current;
+      console.log('Zooma: GameWrapper time up! Calling onComplete with correct:', finalCorrect, 'out of', totalPhotos);
       if (callback) {
-        callback(finalScore, totalMaxScore);
+        callback(finalCorrect, totalPhotos);
       } else {
         console.error('Zooma: onComplete callback is undefined in onGameEnd!');
       }
@@ -222,10 +221,10 @@ const PhotoMystery = forwardRef((props, ref) => {
     setSelectedAnswer(null);
     setGameState('result');
 
-    console.log('Zooma: Time up on photo', currentPhotoNumber, 'current score:', score);
+    console.log('Zooma: Time up on photo', currentPhotoNumber, 'correct count:', correctCount);
     
     if (onScoreUpdateRef.current) {
-      onScoreUpdateRef.current(score, totalMaxScore);
+      onScoreUpdateRef.current(correctCount, totalPhotos);
     }
 
     // Check if this was the last photo
@@ -255,17 +254,16 @@ const PhotoMystery = forwardRef((props, ref) => {
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
 
-    const earnedPoints = correct ? Math.round(points) : 0;
-    const newScore = score + earnedPoints;
-    setScore(newScore);
-
-    console.log('Zooma: Photo', currentPhotoNumber, correct ? 'CORRECT' : 'WRONG', 'earned:', earnedPoints, 'new score:', newScore);
-
-    if (onScoreUpdateRef.current) {
-      onScoreUpdateRef.current(newScore, totalMaxScore);
-    }
-
+    // Track correct count instead of points
     if (correct) {
+      const newCorrectCount = correctCount + 1;
+      setCorrectCount(newCorrectCount);
+      console.log('Zooma: Photo', currentPhotoNumber, 'CORRECT!', 'total correct:', newCorrectCount);
+      
+      if (onScoreUpdateRef.current) {
+        onScoreUpdateRef.current(newCorrectCount, totalPhotos);
+      }
+
       playSound('correct');
       setGameState('result');
 
@@ -281,6 +279,12 @@ const PhotoMystery = forwardRef((props, ref) => {
         }, 2500);
       }
     } else {
+      console.log('Zooma: Photo', currentPhotoNumber, 'WRONG', 'total correct:', correctCount);
+      
+      if (onScoreUpdateRef.current) {
+        onScoreUpdateRef.current(correctCount, totalPhotos);
+      }
+
       playSound('incorrect');
       
       setTimeout(() => {
@@ -317,8 +321,8 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const completeGame = () => {
-    const finalScore = scoreRef.current;
-    console.log('Zooma: completeGame called, final score:', finalScore);
+    const finalCorrect = correctCountRef.current;
+    console.log('Zooma: completeGame called, final correct:', finalCorrect, 'out of', totalPhotos);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -329,9 +333,9 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
 
     const callback = onCompleteRef.current;
-    console.log('Zooma: Calling onComplete with score:', finalScore, 'max:', totalMaxScore);
+    console.log('Zooma: Calling onComplete with correct:', finalCorrect, 'max:', totalPhotos);
     if (callback) {
-      callback(finalScore, totalMaxScore);
+      callback(finalCorrect, totalPhotos);
     } else {
       console.error('Zooma: onComplete callback is undefined!');
     }
@@ -510,17 +514,17 @@ const PhotoMystery = forwardRef((props, ref) => {
             What's in the photo?
           </p>
 
-          {/* Score */}
+          {/* Score - now shows correct count */}
           <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-cyan-300">
-              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
+              Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{correctCount}/{totalPhotos}</strong>
             </div>
           </div>
         </div>
 
         {(gameState === 'playing' || gameState === 'result') && (
           <div className="space-y-3 sm:space-y-6">
-            {/* Points display */}
+            {/* Points display - keeps visual feedback */}
             <div className="flex justify-center items-center mb-2 sm:mb-4">
               <div className="flex items-center gap-1 sm:gap-2 text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
                 <Star size={16} className="sm:w-5 sm:h-5" />
