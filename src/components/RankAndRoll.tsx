@@ -12,8 +12,10 @@ interface RankAndRollProps {
 }
 
 const MAX_PUZZLES = 2;
-const POINTS_PER_ITEM = 75;
-const MAX_SCORE = MAX_PUZZLES * 4 * POINTS_PER_ITEM; // 2 puzzles × 4 items × 75 points = 600
+const ITEMS_PER_PUZZLE = 4;
+const TOTAL_ITEMS = MAX_PUZZLES * ITEMS_PER_PUZZLE; // 8 total items
+const MAX_HINTS = 3;
+const HINT_PENALTY = 25;
 
 const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
@@ -73,32 +75,38 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   // Game state
   const [playerOrder, setPlayerOrder] = useState([]);
   const [gameState, setGameState] = useState('playing'); // playing, completed, loading
-  const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [puzzlesCompleted, setPuzzlesCompleted] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [hintMessage, setHintMessage] = useState('');
+  const [hintItemId, setHintItemId] = useState(null);
+  const [hintDirection, setHintDirection] = useState(null);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [touchStartY, setTouchStartY] = useState(null);
   const [moves, setMoves] = useState(0);
-  const [showValues, setShowValues] = useState(false);
   const [touchStartIndex, setTouchStartIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [itemScores, setItemScores] = useState({});
   const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const correctCountRef = useRef(0);
+
+  useEffect(() => {
+    correctCountRef.current = correctCount;
+  }, [correctCount]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
-      score: score,
-      maxScore: MAX_SCORE
+      score: correctCountRef.current,
+      maxScore: TOTAL_ITEMS
     }),
     onGameEnd: () => {
       console.log('Ranky: onGameEnd called (time ran out)');
       if (resultTimeoutRef.current) {
         clearTimeout(resultTimeoutRef.current);
       }
-      // Time ran out - complete with current score
-      console.log('Ranky: Time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
+      // Time ran out - complete with current correct count
+      console.log('Ranky: Time up! Calling onComplete with correct:', correctCountRef.current, 'timeRemaining:', props.timeRemaining);
       if (props.onComplete) {
-        props.onComplete(score, MAX_SCORE, props.timeRemaining);
+        props.onComplete(correctCountRef.current, TOTAL_ITEMS, props.timeRemaining);
       }
     },
     skipQuestion: () => {
@@ -109,7 +117,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     loadNextPuzzle: () => {
       nextPuzzle();
     }
-  }), [score, gameState]);
+  }), [correctCount, gameState]);
 
   // Fetch puzzles from Supabase
   const fetchPuzzles = async () => {
@@ -225,9 +233,9 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     setPlayerOrder(shuffled);
     setGameState('playing');
     setMoves(0);
-    setShowValues(false);
-    setHintMessage('');
-    setHintsUsed(0);
+    setHintItemId(null);
+    setHintDirection(null);
+    setItemScores({});
 
     // Resume the timer for the new puzzle
     if (props.onTimerPause) {
@@ -329,14 +337,15 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     [newOrder[fromIndex], newOrder[toIndex]] = [newOrder[toIndex], newOrder[fromIndex]];
     setPlayerOrder(newOrder);
 
-    // Clear hint message when player makes a move
-    setHintMessage('');
+    // Clear hint when player makes a move
+    setHintItemId(null);
+    setHintDirection(null);
   };
 
   const getHint = () => {
     if (!currentPuzzle) return;
-
     if (playerOrder.length === 0) return;
+    if (hintsUsed >= MAX_HINTS) return;
 
     audioManager.initialize();
     audioManager.play('ranky-hint', 0.4);
@@ -353,8 +362,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     });
 
     if (wrongItems.length === 0) {
-      setHintMessage('🎉 All correct!');
-      return;
+      return; // All correct
     }
 
     // Pick a random wrong item
@@ -364,16 +372,20 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     let direction = '';
     if (currentIndex < correctIndex) {
-      direction = 'should be moved DOWN';
+      direction = 'down';
     } else {
-      direction = 'should be moved UP';
+      direction = 'up';
     }
 
-    setHintMessage(`💡 ${randomWrongItem.name} ${direction}`);
+    setHintItemId(randomWrongItem.id);
+    setHintDirection(direction);
     setHintsUsed(prev => prev + 1);
 
-    // Clear hint message after 5 seconds
-    setTimeout(() => setHintMessage(''), 5000);
+    // Clear hint after 3 seconds
+    setTimeout(() => {
+      setHintItemId(null);
+      setHintDirection(null);
+    }, 3000);
   };
 
   const submitFinalAnswer = () => {
@@ -388,25 +400,30 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
       ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
       : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
 
-    // Count correct positions for partial credit
-    let correctCount = 0;
+    // Count correct positions and store scores per item
+    let puzzleCorrectCount = 0;
+    const newItemScores = {};
+    
     playerOrder.forEach((item, index) => {
-      if (item.id === correctOrder[index].id) {
-        correctCount++;
+      const isCorrect = item.id === correctOrder[index].id;
+      if (isCorrect) {
+        puzzleCorrectCount++;
+        newItemScores[item.id] = true;
+      } else {
+        newItemScores[item.id] = false;
       }
     });
 
-    const earnedPoints = correctCount * POINTS_PER_ITEM;
-    const isFullyCorrect = correctCount === currentPuzzle.items.length;
+    const isFullyCorrect = puzzleCorrectCount === currentPuzzle.items.length;
 
     console.log('Ranky: Answer checked', {
-      correctCount,
+      puzzleCorrectCount,
       totalItems: currentPuzzle.items.length,
-      earnedPoints,
       isFullyCorrect
     });
 
     setGameState('completed');
+    setItemScores(newItemScores);
 
     // Pause the timer while showing feedback
     if (props.onTimerPause) {
@@ -415,36 +432,43 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
     if (isFullyCorrect) {
       audioManager.play('ranky-success', 0.5);
-    } else if (earnedPoints > 0) {
+    } else if (puzzleCorrectCount > 0) {
       audioManager.play('ranky-success', 0.3); // Quieter for partial credit
     } else {
       audioManager.play('ranky-fail', 0.3);
     }
 
-    const newScore = score + earnedPoints;
-    setScore(newScore);
+    // Apply hint penalty
+    const hintPenalty = hintsUsed * HINT_PENALTY;
+    const netCorrectCount = Math.max(0, puzzleCorrectCount - Math.floor(hintPenalty / 12.5)); // Each hint costs ~0.2 items worth
+    
+    const newCorrectCount = correctCount + puzzleCorrectCount;
+    setCorrectCount(newCorrectCount);
     
     if (props.onScoreUpdate) {
-      props.onScoreUpdate(newScore, MAX_SCORE);
+      props.onScoreUpdate(newCorrectCount, TOTAL_ITEMS);
     }
 
     const newPuzzlesCompleted = puzzlesCompleted + 1;
     setPuzzlesCompleted(newPuzzlesCompleted);
 
     console.log('Ranky: Updated state', {
-      newScore,
+      puzzleCorrectCount,
+      newCorrectCount,
       newPuzzlesCompleted,
+      hintsUsed,
+      hintPenalty,
       isLastPuzzle: newPuzzlesCompleted >= MAX_PUZZLES
     });
 
     // Check if game is complete (2 puzzles done)
     if (newPuzzlesCompleted >= MAX_PUZZLES) {
       // Last puzzle - auto-advance to results after showing feedback (3s)
-      console.log('Ranky: ✅ LAST PUZZLE - Setting 3s timeout to complete game with score:', newScore);
+      console.log('Ranky: ✅ LAST PUZZLE - Setting 3s timeout to complete game with correct:', newCorrectCount);
       resultTimeoutRef.current = setTimeout(() => {
-        console.log('Ranky: ✅ Timeout fired, calling onComplete with score:', newScore, 'timeRemaining:', props.timeRemaining);
+        console.log('Ranky: ✅ Timeout fired, calling onComplete with correct:', newCorrectCount, 'out of', TOTAL_ITEMS, 'timeRemaining:', props.timeRemaining);
         if (props.onComplete) {
-          props.onComplete(newScore, MAX_SCORE, props.timeRemaining);
+          props.onComplete(newCorrectCount, TOTAL_ITEMS, props.timeRemaining);
         } else {
           console.error('Ranky: ❌ onComplete callback is undefined!');
         }
@@ -464,6 +488,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
     const nextIndex = (currentPuzzleIndex + 1) % puzzles.length;
     setCurrentPuzzleIndex(nextIndex);
     setCurrentPuzzle(puzzles[nextIndex]);
+    setHintsUsed(0); // Reset hints for new puzzle
   };
 
   const formatValue = (value, unit) => {
@@ -511,15 +536,6 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
   const correctOrder = currentPuzzle.sortOrder === 'desc'
     ? [...currentPuzzle.items].sort((a, b) => b.value - a.value)
     : [...currentPuzzle.items].sort((a, b) => a.value - b.value);
-  
-  let correctCount = 0;
-  if (gameState === 'completed') {
-    playerOrder.forEach((item, index) => {
-      if (item.id === correctOrder[index].id) {
-        correctCount++;
-      }
-    });
-  }
 
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
@@ -540,6 +556,19 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
         }
         .animate-pulse-twice {
           animation: pulse-twice 1s ease-in-out;
+        }
+        @keyframes hint-pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.1);
+          }
+        }
+        .hint-arrow {
+          animation: hint-pulse 1s ease-in-out infinite;
         }
       `}</style>
       <div className="max-w-md w-full text-white">
@@ -566,7 +595,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           {/* Score */}
           <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-green-300">
-              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
+              Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{correctCount}/{TOTAL_ITEMS}</strong>
             </div>
           </div>
 
@@ -575,10 +604,15 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
             <div className="flex justify-center mb-2">
               <button
                 onClick={getHint}
-                className="px-3 py-1.5 bg-transparent border-2 border-yellow-400 text-yellow-400 rounded hover:bg-yellow-400 hover:text-black transition-all whitespace-nowrap text-xs"
-                style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}
+                disabled={hintsUsed >= MAX_HINTS}
+                className={`px-3 py-1.5 bg-transparent border-2 rounded transition-all whitespace-nowrap text-xs ${
+                  hintsUsed >= MAX_HINTS 
+                    ? 'border-gray-500 text-gray-500 cursor-not-allowed opacity-50' 
+                    : 'border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black'
+                }`}
+                style={hintsUsed < MAX_HINTS ? { boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' } : {}}
               >
-                💡 Hint ({hintsUsed})
+                💡 Hint ({hintsUsed}/{MAX_HINTS}) {hintsUsed > 0 && `-${hintsUsed * HINT_PENALTY}pts`}
               </button>
             </div>
           )}
@@ -594,20 +628,13 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
           </p>
         </div>
 
-        {/* Hint Message */}
-        {hintMessage && (
-          <div className="mb-2 p-2 bg-yellow-500/20 border-2 border-yellow-400 rounded-lg text-center text-yellow-300 text-sm" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}>
-            {hintMessage}
-          </div>
-        )}
-
         {/* Ranking List - Updated colors to green */}
         <div className="space-y-1.5 mb-2">
           {playerOrder.map((item, index) => {
             // Determine if this item is in the correct position (for completed state)
-            const isCorrectPosition = gameState === 'completed' && 
-              correctOrder.length > 0 && 
-              item.id === correctOrder[index]?.id;
+            const isCorrectPosition = gameState === 'completed' && itemScores[item.id] === true;
+            const isWrongPosition = gameState === 'completed' && itemScores[item.id] === false;
+            const showHint = gameState === 'playing' && hintItemId === item.id;
             
             // Get border and styling based on game state
             let borderClass = 'border-green-400/30';
@@ -620,7 +647,7 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                 borderClass = 'border-green-500 animate-pulse';
                 bgClass = 'bg-green-500/20';
                 glowStyle = { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' };
-              } else {
+              } else if (isWrongPosition) {
                 // Wrong position - red with double pulse
                 borderClass = 'border-red-500 animate-pulse-twice';
                 bgClass = 'bg-red-500/20';
@@ -688,29 +715,43 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
                   </div>
                 </div>
 
-                {/* Mobile Controls - Only show when playing */}
+                {/* Mobile Controls or Hint Arrow - Only show when playing */}
                 {gameState !== 'completed' && (
                   <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-10">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveItem(index, 'up');
-                      }}
-                      disabled={index === 0 || gameState !== 'playing'}
-                      className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-                    >
-                      <ArrowUp size={18} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveItem(index, 'down');
-                      }}
-                      disabled={index === playerOrder.length - 1 || gameState !== 'playing'}
-                      className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
-                    >
-                      <ArrowDown size={18} />
-                    </button>
+                    {showHint ? (
+                      // Show hint arrow
+                      <div className="hint-arrow">
+                        {hintDirection === 'up' ? (
+                          <ArrowUp size={24} className="text-yellow-400" style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))' }} />
+                        ) : (
+                          <ArrowDown size={24} className="text-yellow-400" style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))' }} />
+                        )}
+                      </div>
+                    ) : (
+                      // Show normal controls
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveItem(index, 'up');
+                          }}
+                          disabled={index === 0 || gameState !== 'playing'}
+                          className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                        >
+                          <ArrowUp size={18} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveItem(index, 'down');
+                          }}
+                          disabled={index === playerOrder.length - 1 || gameState !== 'playing'}
+                          className="text-green-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all"
+                        >
+                          <ArrowDown size={18} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -733,21 +774,23 @@ const RankAndRoll = forwardRef<any, RankAndRollProps>((props, ref) => {
 
         {/* Score Display - Shows after submission */}
         {gameState === 'completed' && (() => {
-          const isFullyCorrect = correctCount === currentPuzzle.items.length;
-          const earnedPoints = correctCount * POINTS_PER_ITEM;
+          const puzzleCorrectCount = Object.values(itemScores).filter(Boolean).length;
+          const isFullyCorrect = puzzleCorrectCount === currentPuzzle.items.length;
 
           return (
             <div className="text-center p-3 bg-black border-2 border-green-400/40 rounded-xl mb-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.2)' }}>
-              <div className="text-2xl mb-1">{isFullyCorrect ? '🎉' : earnedPoints > 0 ? '👍' : '😬'}</div>
-              <div className={`text-xl font-bold mb-1 ${isFullyCorrect ? 'text-green-400' : earnedPoints > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
-                {isFullyCorrect ? 'Perfect!' : earnedPoints > 0 ? 'Good try!' : 'Not quite'}
+              <div className="text-2xl mb-1">{isFullyCorrect ? '🎉' : puzzleCorrectCount > 0 ? '👍' : '😬'}</div>
+              <div className={`text-xl font-bold mb-1 ${isFullyCorrect ? 'text-green-400' : puzzleCorrectCount > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {isFullyCorrect ? 'Perfect!' : puzzleCorrectCount > 0 ? 'Good try!' : 'Not quite'}
               </div>
               <div className="text-lg font-bold text-white">
-                +{earnedPoints} points
+                {puzzleCorrectCount} of {currentPuzzle.items.length} correct
               </div>
-              <div className="text-xs text-green-300 mt-1">
-                {correctCount} of {currentPuzzle.items.length} correct
-              </div>
+              {hintsUsed > 0 && (
+                <div className="text-xs text-yellow-400 mt-1">
+                  -{hintsUsed * HINT_PENALTY} pts for hints
+                </div>
+              )}
             </div>
           );
         })()}
