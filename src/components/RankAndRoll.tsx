@@ -450,47 +450,49 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                     </div>
                   </div>
 
-                  {gameState === 'playing' && (
-                    <div className="flex flex-col gap-1 flex-shrink-0">
-                      {hasHint && showHint?.direction === 'up' ? (
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <span className="text-2xl hint-pulse text-yellow-400">▲</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => moveItem(index, 'up')}
-                          disabled={index === 0}
-                          className={`w-8 h-8 flex items-center justify-center transition-all
-                            ${index === 0
-                              ? 'text-green-400/20 cursor-not-allowed'
-                              : 'text-green-400 hover:scale-110 active:scale-95'
-                            }`}
-                          style={index === 0 ? {} : { filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))' }}
-                        >
-                          <span className="text-2xl">▲</span>
-                        </button>
-                      )}
+                  <div className="flex flex-col gap-1 flex-shrink-0" style={{ width: '32px' }}>
+                    {gameState === 'playing' && (
+                      <>
+                        {hasHint && showHint?.direction === 'up' ? (
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <span className="text-2xl hint-pulse text-yellow-400">▲</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => moveItem(index, 'up')}
+                            disabled={index === 0}
+                            className={`w-8 h-8 flex items-center justify-center transition-all
+                              ${index === 0
+                                ? 'text-green-400/20 cursor-not-allowed'
+                                : 'text-green-400 hover:scale-110 active:scale-95'
+                              }`}
+                            style={index === 0 ? {} : { filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))' }}
+                          >
+                            <span className="text-2xl">▲</span>
+                          </button>
+                        )}
 
-                      {hasHint && showHint?.direction === 'down' ? (
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <span className="text-2xl hint-pulse text-yellow-400">▼</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => moveItem(index, 'down')}
-                          disabled={index === items.length - 1}
-                          className={`w-8 h-8 flex items-center justify-center transition-all
-                            ${index === items.length - 1
-                              ? 'text-green-400/20 cursor-not-allowed'
-                              : 'text-green-400 hover:scale-110 active:scale-95'
-                            }`}
-                          style={index === items.length - 1 ? {} : { filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))' }}
-                        >
-                          <span className="text-2xl">▼</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                        {hasHint && showHint?.direction === 'down' ? (
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <span className="text-2xl hint-pulse text-yellow-400">▼</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => moveItem(index, 'down')}
+                            disabled={index === items.length - 1}
+                            className={`w-8 h-8 flex items-center justify-center transition-all
+                              ${index === items.length - 1
+                                ? 'text-green-400/20 cursor-not-allowed'
+                                : 'text-green-400 hover:scale-110 active:scale-95'
+                              }`}
+                            style={index === items.length - 1 ? {} : { filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))' }}
+                          >
+                            <span className="text-2xl">▼</span>
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );
