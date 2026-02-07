@@ -349,29 +349,35 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
         <div className="mb-3 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-1 border-b border-orange-400 pb-1 flex items-center justify-center gap-2">
-            <ListOrdered 
-              className="w-6 h-6 sm:w-7 sm:h-7" 
-              style={{ 
+            <ListOrdered
+              className="w-6 h-6 sm:w-7 sm:h-7"
+              style={{
                 color: '#fb923c',
                 filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.6))',
                 strokeWidth: 2
-              }} 
+              }}
             />
             <span style={{ textShadow: '0 0 10px #fb923c' }}>Ranky</span>
           </h2>
 
-          <p className="text-orange-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            {currentPuzzle.instruction}
+          <p className="text-orange-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
+            Sort & Rank
           </p>
 
-          <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
+          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-orange-300">
-              Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalCorrectCount}/{TOTAL_ITEMS}</strong>
-            </div>
-            <div className="text-orange-400">
-              Puzzle {currentPuzzleIndex + 1}/{MAX_PUZZLES}
+              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalCorrectCount}/{TOTAL_ITEMS}</strong>
             </div>
           </div>
+        </div>
+
+        <div className="text-center mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-xl font-bold text-orange-400 mb-1 break-words" style={{ textShadow: '0 0 15px #fb923c' }}>
+            {currentPuzzle.title}
+          </h3>
+          <p className="text-orange-300 text-xs sm:text-sm">
+            {currentPuzzle.instruction}
+          </p>
         </div>
 
         <div className="mb-2 sm:mb-4 space-y-2">
@@ -380,8 +386,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             const isWrong = gameState === 'feedback' && item.correct_position !== index + 1;
             const hasHint = showHint?.itemId === item.id;
 
-            let cardClass = "relative bg-black/50 border-2 rounded-lg p-2.5 sm:p-3 transition-all";
-            
+            let cardClass = "relative bg-black/50 border-2 rounded-lg p-3 sm:p-4 transition-all";
+
             if (gameState === 'feedback') {
               if (isCorrect) {
                 cardClass += " border-green-500 bg-green-500/20 animate-pulse";
@@ -389,7 +395,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                 cardClass += " border-red-500 bg-red-500/20 animate-pulse-twice";
               }
             } else {
-              cardClass += " border-orange-400/30 hover:border-orange-400";
+              cardClass += " border-orange-400/40 hover:border-orange-400";
             }
 
             const glowStyle = isCorrect ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
@@ -399,14 +405,28 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     <span className="text-orange-400 font-bold text-base sm:text-lg w-6 flex-shrink-0">
                       {index + 1}.
                     </span>
-                    <span className="text-white text-sm sm:text-base truncate">
-                      {item.emoji && <span className="mr-1">{item.emoji}</span>}
-                      {item.name}
-                    </span>
+                    {item.emoji && (
+                      <span className="text-xl sm:text-2xl flex-shrink-0">{item.emoji}</span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white text-sm sm:text-base font-semibold truncate">
+                        {item.name}
+                      </div>
+                      {item.subtitle && (
+                        <div className="text-orange-300/70 text-xs truncate">
+                          {item.subtitle}
+                        </div>
+                      )}
+                    </div>
+                    {item.display_value && (
+                      <div className="text-orange-400 text-xs sm:text-sm font-bold flex-shrink-0">
+                        {item.display_value}
+                      </div>
+                    )}
                   </div>
 
                   {gameState === 'playing' && (
