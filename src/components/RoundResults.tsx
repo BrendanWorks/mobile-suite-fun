@@ -28,34 +28,39 @@ export default function RoundResults({
   const [showBonus, setShowBonus] = useState(false);
 
   const totalPercentage = (totalSessionScore / maxSessionScore) * 100;
+  
+  // Check if this game has time bonus capability (undefined = no time bonus like Snake)
+  const isTimedGame = gameScore.timeBonus !== undefined;
   const hasTimeBonus = gameScore.timeBonus && gameScore.timeBonus > 0;
 
   useEffect(() => {
     // Show content with fade-in
     setTimeout(() => setShowContent(true), 200);
 
-    // Animate time bonus if present, or show zero bonus after delay
-    setTimeout(() => {
-      setShowBonus(true);
-      
-      if (hasTimeBonus) {
-        const bonusDuration = 1000;
-        const bonusSteps = 40;
-        const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
-        let bonusStep = 0;
+    // Only animate bonus for timed games
+    if (isTimedGame) {
+      setTimeout(() => {
+        setShowBonus(true);
+        
+        if (hasTimeBonus) {
+          const bonusDuration = 1000;
+          const bonusSteps = 40;
+          const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
+          let bonusStep = 0;
 
-        const bonusInterval = setInterval(() => {
-          bonusStep++;
-          setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
-          if (bonusStep >= bonusSteps) {
-            clearInterval(bonusInterval);
-          }
-        }, bonusDuration / bonusSteps);
+          const bonusInterval = setInterval(() => {
+            bonusStep++;
+            setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
+            if (bonusStep >= bonusSteps) {
+              clearInterval(bonusInterval);
+            }
+          }, bonusDuration / bonusSteps);
 
-        return () => clearInterval(bonusInterval);
-      }
-    }, 800);
-  }, [gameScore.timeBonus, hasTimeBonus]);
+          return () => clearInterval(bonusInterval);
+        }
+      }, 800);
+    }
+  }, [gameScore.timeBonus, hasTimeBonus, isTimedGame]);
 
   const getGradeLabel = (score: number): string => {
     if (score >= 90) return "Absolutely Crushed It!";
@@ -106,9 +111,10 @@ export default function RoundResults({
             </div>
           </div>
 
-          {/* Time Bonus - Always shows, red pulsing if zero */}
+          {/* Time Bonus - Fixed height area */}
           <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
-            {showBonus && (
+            {/* Only show bonus content for timed games */}
+            {isTimedGame && showBonus && (
               <div className="text-center animate-fade-in">
                 <div className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`} 
                      style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}>
@@ -125,6 +131,7 @@ export default function RoundResults({
                 )}
               </div>
             )}
+            {/* Blank space for non-timed games like Snake */}
           </div>
 
           {/* Session Progress */}
