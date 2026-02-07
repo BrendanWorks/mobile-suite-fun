@@ -316,7 +316,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     );
   }
 
-  const hintPenalty = hintsUsed * HINT_PENALTY;
   const remainingHints = MAX_HINTS - hintsUsed;
 
   return (
@@ -347,7 +346,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           }
         `}</style>
 
-        <div className="mb-3 sm:mb-6">
+        {/* Header */}
+        <div className="mb-2">
           <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-1 border-b border-green-400 pb-1 flex items-center justify-center gap-2">
             <ListOrdered
               className="w-6 h-6 sm:w-7 sm:h-7"
@@ -360,33 +360,53 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             <span style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</span>
           </h2>
 
-          <p className="text-green-300 text-xs sm:text-sm mb-2 sm:mb-4 text-center">
+          <p className="text-green-300 text-xs sm:text-sm mb-2 text-center">
             Rank 'em!
           </p>
 
-          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
+          {/* Score + Hint Row */}
+          <div className="flex justify-between items-center mb-2 text-xs sm:text-sm">
             <div className="text-green-300">
-              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalCorrectCount}</strong>
+              Score: <strong className="text-yellow-400 tabular-nums">{totalCorrectCount}</strong>
             </div>
+            <button
+              onClick={getHint}
+              disabled={hintsUsed >= MAX_HINTS || gameState !== 'playing'}
+              className={`
+                px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-semibold transition-all border-2
+                ${hintsUsed >= MAX_HINTS || gameState !== 'playing'
+                  ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
+                  : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
+                }
+              `}
+              style={hintsUsed >= MAX_HINTS || gameState !== 'playing' ? {} : {
+                textShadow: '0 0 8px #fbbf24',
+                boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
+              }}
+            >
+              💡 Hint ({remainingHints})
+            </button>
           </div>
         </div>
 
-        <div className="text-center mb-3 sm:mb-4 bg-black/50 border-2 border-green-500 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
-          <h3 className="text-base sm:text-xl font-bold text-green-400 mb-1 break-words" style={{ textShadow: '0 0 15px #22c55e' }}>
+        {/* Puzzle Info */}
+        <div className="text-center mb-2 bg-black/50 border-2 border-green-500 rounded-lg p-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
+          <h3 className="text-sm sm:text-base font-bold text-green-400 mb-0.5 break-words" style={{ textShadow: '0 0 10px #22c55e' }}>
             {currentPuzzle.title}
           </h3>
-          <p className="text-gray-300 text-xs sm:text-sm">
+          <p className="text-gray-300 text-xs">
             {currentPuzzle.instruction}
           </p>
         </div>
 
-        <div className="mb-2 sm:mb-4 space-y-2">
+        {/* Ranking Items */}
+        <div className="mb-2 space-y-1.5">
           {items.map((item, index) => {
             const isCorrect = gameState === 'feedback' && item.correct_position === index + 1;
             const isWrong = gameState === 'feedback' && item.correct_position !== index + 1;
             const hasHint = showHint?.itemId === item.id;
 
-            let cardClass = "relative bg-black/50 border-2 rounded-lg p-3 sm:p-4 transition-all";
+            let cardClass = "relative bg-black/50 border-2 rounded-lg p-2 transition-all";
 
             if (gameState === 'feedback') {
               if (isCorrect) {
@@ -405,17 +425,17 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-black font-bold text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-black font-bold text-xs">
                         {index + 1}
                       </span>
                     </div>
                     {item.emoji && (
-                      <span className="text-xl sm:text-2xl flex-shrink-0">{item.emoji}</span>
+                      <span className="text-xl flex-shrink-0">{item.emoji}</span>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-green-400 text-sm sm:text-base font-semibold truncate">
+                      <div className="text-green-400 text-sm font-semibold truncate">
                         {item.name}
                       </div>
                       {item.subtitle && (
@@ -424,11 +444,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                         </div>
                       )}
                     </div>
-                    {item.display_value && (
-                      <div className="text-green-400 text-xs sm:text-sm font-bold flex-shrink-0">
-                        {item.display_value}
-                      </div>
-                    )}
                   </div>
 
                   {gameState === 'playing' && (
@@ -478,60 +493,36 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           })}
         </div>
 
+        {/* Bottom Actions */}
         <div className="space-y-2">
           {gameState === 'playing' && (
-            <>
-              <button
-                onClick={getHint}
-                disabled={hintsUsed >= MAX_HINTS}
-                className={`
-                  w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all border-2
-                  ${hintsUsed >= MAX_HINTS
-                    ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
-                    : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
-                  }
-                `}
-                style={hintsUsed >= MAX_HINTS ? {} : {
-                  textShadow: '0 0 8px #fbbf24',
-                  boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)'
-                }}
-              >
-                💡 {hintsUsed >= MAX_HINTS ? 'No Hints Left' : `Hint (${remainingHints})`}
-              </button>
-
-              <button
-                onClick={checkAnswer}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2 bg-transparent border-green-500 text-green-400 hover:bg-green-500 hover:text-black active:scale-95"
-                style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
-              >
-                📊 Final Answer
-              </button>
-            </>
+            <button
+              onClick={checkAnswer}
+              className="w-full py-3 px-4 rounded-lg text-sm font-semibold transition-all border-2 bg-transparent border-green-500 text-green-400 hover:bg-green-500 hover:text-black active:scale-95"
+              style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
+            >
+              📊 Final Answer
+            </button>
           )}
 
           {gameState === 'feedback' && (
             <div className={`
-              p-2 sm:p-3 rounded-lg border-2
+              p-2 rounded-lg border-2
               ${correctCount === items.length
                 ? 'bg-green-500/20 text-green-400 border-green-500'
-                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500'
+                : 'bg-red-500/20 text-red-400 border-red-500'
               }
             `}
             style={{
               boxShadow: correctCount === items.length
                 ? '0 0 20px rgba(34, 197, 94, 0.4)'
-                : '0 0 20px rgba(251, 191, 36, 0.4)'
+                : '0 0 20px rgba(239, 68, 68, 0.4)'
             }}>
-              <div className="text-base sm:text-lg font-bold mb-1">
+              <div className="text-base font-bold">
                 {correctCount === items.length
                   ? '🎉 Perfect!'
                   : `${correctCount}/${items.length} Correct`}
               </div>
-              {hintPenalty > 0 && (
-                <div className="text-xs sm:text-sm text-red-400">
-                  Hint Penalty: -{hintPenalty} points
-                </div>
-              )}
             </div>
           )}
         </div>
