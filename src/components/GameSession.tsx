@@ -467,6 +467,16 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     );
   }
 
+  const getGradeLabel = (score: number): string => {
+    if (score >= 90) return "Absolutely Crushed It!";
+    if (score >= 80) return "Pretty Damn Good!";
+    if (score >= 70) return "Solidly Mediocre";
+    if (score >= 60) return "Kinda Rough";
+    if (score >= 50) return "That Was Ugly";
+    if (score >= 40) return "Spectacularly Bad!";
+    return "What Just Happened?";
+  };
+
   // Complete screen
   if (gameState === 'complete') {
     if (roundScores.length === 0) {
@@ -492,22 +502,12 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
           <div className="flex-1 overflow-y-auto mb-3">
             <div className="bg-black border-2 border-cyan-400 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
               <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
-                <div className="text-5xl sm:text-6xl font-bold text-yellow-400 mb-1" style={{ textShadow: '0 0 20px #fbbf24' }}>
-                  {sessionGrade}
+                <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 uppercase tracking-wider" style={{ textShadow: '0 0 15px #00ffff' }}>
+                  {getGradeLabel(sessionTotal.percentage)}
                 </div>
                 <p className="text-xl sm:text-2xl font-bold text-cyan-300 mb-1">
-                  {sessionTotal.totalScore}
+                  {sessionTotal.totalScore} / {sessionTotal.maxPossible}
                 </p>
-                <p className="text-xs sm:text-sm text-cyan-400">
-                  out of {sessionTotal.maxPossible} possible points
-                </p>
-              </div>
-
-              <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
-                <p className="text-xs sm:text-sm text-cyan-400 mb-1">Overall Performance</p>
-                <div className="text-xl sm:text-2xl font-bold text-cyan-300">
-                  {sessionTotal.percentage}%
-                </div>
               </div>
 
               <div className="mb-3">
@@ -515,16 +515,10 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
                 <div className="space-y-1">
                   {roundScores.map((round, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-black/50 border border-cyan-400/30 px-2 py-1.5 rounded text-xs sm:text-sm">
-                      <span className="text-cyan-300 truncate flex-1 mr-2">{idx + 1}. {round.gameName}</span>
+                      <span className="text-cyan-300 truncate flex-1 mr-2">{round.gameName}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-cyan-400 font-bold">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
-                        <span className={`font-bold w-6 sm:w-7 text-center rounded border-2 px-1 py-0.5 text-xs ${
-                          round.normalizedScore.grade === 'S' ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400' :
-                          round.normalizedScore.grade === 'A' ? 'bg-green-400/20 text-green-400 border-green-400' :
-                          round.normalizedScore.grade === 'B' ? 'bg-blue-400/20 text-blue-400 border-blue-400' :
-                          round.normalizedScore.grade === 'C' ? 'bg-orange-400/20 text-orange-400 border-orange-400' :
-                          'bg-red-400/20 text-red-400 border-red-400'
-                        }`}>
+                        <span className="text-cyan-400 text-sm">
                           {round.normalizedScore.grade}
                         </span>
                       </div>

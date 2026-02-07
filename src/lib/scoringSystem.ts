@@ -21,11 +21,12 @@ export interface SessionScore {
 }
 
 function getGrade(score: number): string {
-  if (score >= 90) return 'S';
-  if (score >= 75) return 'A';
-  if (score >= 60) return 'B';
-  if (score >= 40) return 'C';
-  return 'D';
+  if (score === 0) return '💩';
+  if (score <= 20) return '★☆☆☆☆';
+  if (score <= 40) return '★★☆☆☆';
+  if (score <= 60) return '★★★☆☆';
+  if (score <= 80) return '★★★★☆';
+  return '★★★★★';
 }
 
 export const scoringSystem = {

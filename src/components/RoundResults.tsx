@@ -56,34 +56,14 @@ export default function RoundResults({
     }
   }, [gameScore.timeBonus, hasTimeBonus]);
 
-  const getGradeColor = (grade: string) => {
-    switch(grade) {
-      case 'S': return 'text-yellow-400';
-      case 'A': return 'text-green-400';
-      case 'B': return 'text-cyan-400';
-      case 'C': return 'text-orange-400';
-      default: return 'text-red-400';
-    }
-  };
-
-  const getGradeShadow = (grade: string) => {
-    switch(grade) {
-      case 'S': return '0 0 20px #fbbf24';
-      case 'A': return '0 0 20px #22c55e';
-      case 'B': return '0 0 20px #00ffff';
-      case 'C': return '0 0 20px #fb923c';
-      default: return '0 0 20px #ff0066';
-    }
-  };
-
   const getGradeLabel = (score: number): string => {
-    if (score >= 90) return "Absolutely Crushed It";
-    if (score >= 80) return "Pretty Damn Good";
+    if (score >= 90) return "Absolutely Crushed It!";
+    if (score >= 80) return "Pretty Damn Good!";
     if (score >= 70) return "Solidly Mediocre";
     if (score >= 60) return "Kinda Rough";
     if (score >= 50) return "That Was Ugly";
-    if (score >= 40) return "Spectacularly Bad";
-    return "What Just Happened";
+    if (score >= 40) return "Spectacularly Bad!";
+    return "What Just Happened?";
   };
 
   return (
@@ -101,14 +81,14 @@ export default function RoundResults({
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           {/* Round Score - Hero Element */}
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
-            <div className={`text-7xl sm:text-8xl font-bold ${getGradeColor(gameScore.grade)} mb-2`} style={{ textShadow: getGradeShadow(gameScore.grade) }}>
+            <div className="text-6xl sm:text-7xl font-bold text-cyan-400 mb-3" style={{ textShadow: '0 0 20px #00ffff' }}>
               {gameScore.grade}
             </div>
-            <div className={`text-lg sm:text-xl font-bold ${getGradeColor(gameScore.grade)} mb-2 uppercase tracking-wider`} style={{ textShadow: getGradeShadow(gameScore.grade) }}>
+            <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-3 uppercase tracking-wider" style={{ textShadow: '0 0 15px #00ffff' }}>
               {getGradeLabel(gameScore.normalizedScore)}
             </div>
-            <div className="text-base sm:text-lg text-cyan-400 font-semibold">
-              {Math.round(gameScore.normalizedScore)}/100 points
+            <div className="text-lg sm:text-xl text-cyan-400 font-semibold">
+              {Math.round(gameScore.normalizedScore)}/100
             </div>
           </div>
 
