@@ -511,7 +511,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
           {gameState === 'feedback' && (
             <div className={`
-              w-2/3 mx-auto p-2 rounded-lg border-2
+              p-2 rounded-lg border-2
               ${correctCount === items.length
                 ? 'bg-green-500/20 text-green-400 border-green-500'
                 : 'bg-red-500/20 text-red-400 border-red-500'
@@ -522,7 +522,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                 ? '0 0 20px rgba(34, 197, 94, 0.4)'
                 : '0 0 20px rgba(239, 68, 68, 0.4)'
             }}>
-              <div className="text-base font-bold">
+              <div className="text-base font-bold text-center">
                 {correctCount === items.length
                   ? '🎉 Perfect!'
                   : `${correctCount}/${items.length} Correct`}
