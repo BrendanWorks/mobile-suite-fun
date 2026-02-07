@@ -247,10 +247,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
-        }, 3500); // Increased from 2500 to 3500 for reading explanation
+        }, 3500);
       }
     } else {
-      audioManager.play('oddman-fail');
+      audioManager.play('global-wrong');
       
       if (props.onScoreUpdate) {
         props.onScoreUpdate(score, MAX_QUESTIONS * 250);
@@ -274,7 +274,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             generateNewQuestion();
-          }, 3500); // Increased from 2500 to 3500 for reading explanation
+          }, 3500);
         }
       }, 800);
     }
@@ -284,7 +284,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     const loadAudio = async () => {
       await audioManager.loadSound('oddman-select', '/sounds/ranky/select_optimized.mp3', 3);
       await audioManager.loadSound('oddman-win', '/sounds/global/win_optimized.mp3', 2);
-      await audioManager.loadSound('oddman-fail', '/sounds/ranky/fail.mp3', 2);
+      await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
     };
     loadAudio();
   }, []);
