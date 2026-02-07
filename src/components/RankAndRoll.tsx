@@ -14,14 +14,19 @@ interface RankAndRollProps {
 
 interface RankItem {
   id: number;
-  item_text: string;
-  correct_rank: number;
+  name: string;
+  subtitle?: string;
+  value: number;
+  display_value?: string;
+  emoji?: string;
+  correct_position: number;
   item_order: number;
 }
 
 interface Puzzle {
   id: number;
-  prompt: string;
+  title: string;
+  instruction: string;
   items: RankItem[];
 }
 
@@ -105,10 +110,9 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       setGameState('loading');
 
       const { data, error } = await supabase
-        .from('puzzles')
+        .from('ranking_puzzles')
         .select('*')
-        .eq('game_id', 4)
-        .eq('game_type', 'ranking')
+        .eq('game_id', 5)
         .limit(MAX_PUZZLES);
 
       if (error) {
@@ -118,7 +122,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       }
 
       if (!data || data.length === 0) {
-        console.error('No puzzles found');
+        console.error('No ranking puzzles found');
         setGameState('playing');
         return;
       }
@@ -126,7 +130,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       const puzzlesWithItems = await Promise.all(
         data.map(async (puzzle) => {
           const { data: itemsData, error: itemsError } = await supabase
-            .from('puzzle_items')
+            .from('ranking_items')
             .select('*')
             .eq('puzzle_id', puzzle.id)
             .order('item_order', { ascending: true });
@@ -142,7 +146,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
       console.log(`Loaded ${puzzlesWithItems.length} puzzles from Supabase`);
       setPuzzles(puzzlesWithItems);
-      
+
       if (puzzlesWithItems.length > 0 && puzzlesWithItems[0].items.length > 0) {
         const shuffled = shuffleArray([...puzzlesWithItems[0].items]);
         setItems(shuffled);
@@ -194,12 +198,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const getHint = () => {
     if (hintsUsed >= MAX_HINTS || gameState !== 'playing') return;
 
-    const wrongItems = items.filter((item, index) => item.correct_rank !== index + 1);
+    const wrongItems = items.filter((item, index) => item.correct_position !== index + 1);
     if (wrongItems.length === 0) return;
 
     const randomWrongItem = wrongItems[Math.floor(Math.random() * wrongItems.length)];
     const currentIndex = items.findIndex(i => i.id === randomWrongItem.id);
-    const correctIndex = randomWrongItem.correct_rank - 1;
+    const correctIndex = randomWrongItem.correct_position - 1;
     const direction = currentIndex > correctIndex ? 'up' : 'down';
 
     setShowHint({ itemId: randomWrongItem.id, direction });
@@ -215,7 +219,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
     let correct = 0;
     items.forEach((item, index) => {
-      if (item.correct_rank === index + 1) {
+      if (item.correct_position === index + 1) {
         correct++;
       }
     });
@@ -357,7 +361,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           </h2>
 
           <p className="text-orange-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            Sort by {currentPuzzle.prompt}
+            {currentPuzzle.instruction}
           </p>
 
           <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
@@ -372,8 +376,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
         <div className="mb-2 sm:mb-4 space-y-2">
           {items.map((item, index) => {
-            const isCorrect = gameState === 'feedback' && item.correct_rank === index + 1;
-            const isWrong = gameState === 'feedback' && item.correct_rank !== index + 1;
+            const isCorrect = gameState === 'feedback' && item.correct_position === index + 1;
+            const isWrong = gameState === 'feedback' && item.correct_position !== index + 1;
             const hasHint = showHint?.itemId === item.id;
 
             let cardClass = "relative bg-black/50 border-2 rounded-lg p-2.5 sm:p-3 transition-all";
@@ -400,7 +404,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
                       {index + 1}.
                     </span>
                     <span className="text-white text-sm sm:text-base truncate">
-                      {item.item_text}
+                      {item.emoji && <span className="mr-1">{item.emoji}</span>}
+                      {item.name}
                     </span>
                   </div>
 
