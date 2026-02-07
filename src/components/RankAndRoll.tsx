@@ -426,17 +426,19 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
-                <div className="flex items-center justify-between gap-2">
+                {/* Number Badge - Positioned on top-left corner */}
+                <div className="absolute -top-2 -left-2 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 z-10" style={{ boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' }}>
+                  <span className="text-black font-bold text-sm">
+                    {index + 1}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pl-4">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-black font-bold text-sm">
-                        {index + 1}
-                      </span>
-                    </div>
                     {item.emoji && (
                       <span className="text-xl flex-shrink-0">{item.emoji}</span>
                     )}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left">
                       <div className="text-green-400 text-sm font-semibold truncate">
                         {item.name}
                       </div>
@@ -496,11 +498,11 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         </div>
 
         {/* Bottom Actions */}
-        <div className="space-y-2">
+        <div className="flex justify-center">
           {gameState === 'playing' && (
             <button
               onClick={checkAnswer}
-              className="w-full py-3 px-4 rounded-lg text-sm font-bold transition-all bg-green-500 text-black hover:bg-green-400 active:scale-95"
+              className="w-2/3 py-3 px-4 rounded-lg text-sm font-bold transition-all bg-green-500 text-black hover:bg-green-400 active:scale-95"
               style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }}
             >
               📊 Final Answer
@@ -509,7 +511,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
           {gameState === 'feedback' && (
             <div className={`
-              p-2 rounded-lg border-2
+              w-2/3 mx-auto p-2 rounded-lg border-2
               ${correctCount === items.length
                 ? 'bg-green-500/20 text-green-400 border-green-500'
                 : 'bg-red-500/20 text-red-400 border-red-500'
