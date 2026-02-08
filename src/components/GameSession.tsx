@@ -45,14 +45,14 @@ const AVAILABLE_GAMES: GameConfig[] = [
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
-  2: 'odd-man-out',
-  3: 'photo-mystery',
-  4: 'rank-and-roll',
-  5: 'snapshot',
-  6: 'split-decision',
-  7: 'word-rescue',
-  8: 'shape-sequence',
-  9: 'snake'
+  1: 'emoji-master',
+  3: 'odd-man-out',
+  4: 'photo-mystery',
+  5: 'rank-and-roll',
+  6: 'snapshot',
+  7: 'split-decision',
+  9: 'split-decision',
+  12: 'snake'
 };
 
 interface PlaylistRound {
@@ -365,19 +365,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
 
   const selectRandomGame = () => {
-    if (playlistId && playlistGames.length > 0) {
-      const nextGameIndex = playedGames.length;
-
-      if (nextGameIndex < playlistGames.length) {
-        const nextGameId = playlistGames[nextGameIndex];
-        const nextGame = AVAILABLE_GAMES.find(g => g.id === nextGameId);
-
-        if (nextGame) {
-          setCurrentGame(nextGame);
-          setPlayedGames(prev => [...prev, nextGame.id]);
-          console.log(`Playing playlist game ${nextGameIndex + 1}/${playlistGames.length}:`, nextGame.name);
-          return;
-        }
+    if (playlistId && currentGameSlug) {
+      const nextGame = AVAILABLE_GAMES.find(g => g.id === currentGameSlug);
+      if (nextGame) {
+        setCurrentGame(nextGame);
+        setPlayedGames(prev => [...prev, nextGame.id]);
+        console.log(`Playing playlist game (Round ${currentRound}):`, nextGame.name);
+        return;
+      } else {
+        console.error('Game not found for slug:', currentGameSlug);
       }
     }
 
@@ -530,8 +526,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     if (currentRound >= totalRounds) {
       setGameState('complete');
     } else {
-      setCurrentRound(prev => prev + 1);
-      // Skip intro for rounds 2+, go straight to playing
+      const nextRound = currentRound + 1;
+      setCurrentRound(nextRound);
+
+      if (playlistId && playlistRounds.length > 0) {
+        loadRound(nextRound, playlistRounds);
+      }
+
       selectRandomGame();
       setCurrentGameScore({ score: 0, maxScore: 0 });
       setGameState('playing');
@@ -601,7 +602,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     if (gameState === 'intro' && currentRound === 1 && !currentGame) {
       selectRandomGame();
     }
-  }, [gameState, currentRound, currentGame]);
+  }, [gameState, currentRound, currentGame, currentGameSlug]);
 
   useEffect(() => {
     if (gameState === 'intro' && currentRound === 1 && currentGame) {
