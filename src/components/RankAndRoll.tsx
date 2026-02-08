@@ -10,6 +10,8 @@ interface RankAndRollProps {
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
   duration?: number;
+  puzzleId?: number | null;
+  rankingPuzzleId?: number | null;
 }
 
 interface RankItem {
@@ -109,11 +111,18 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     try {
       setGameState('loading');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('ranking_puzzles')
         .select('*')
-        .eq('game_id', 5)
-        .limit(MAX_PUZZLES);
+        .eq('game_id', 5);
+
+      if (props.rankingPuzzleId) {
+        query = query.eq('id', props.rankingPuzzleId).limit(1);
+      } else {
+        query = query.limit(MAX_PUZZLES);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Supabase error:', error);

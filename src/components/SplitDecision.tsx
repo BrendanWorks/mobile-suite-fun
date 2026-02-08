@@ -47,6 +47,8 @@ interface SplitDecisionProps {
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
   duration?: number;
+  puzzleId?: number | null;
+  rankingPuzzleId?: number | null;
 }
 
 const MAX_SCORE = 1000;
@@ -88,6 +90,12 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     const loadPuzzleIds = async () => {
       try {
+        if (props.puzzleId) {
+          setPuzzleIds([props.puzzleId]);
+          fetchPuzzleById(props.puzzleId);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('puzzles')
           .select('id')
@@ -110,7 +118,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     };
 
     loadPuzzleIds();
-  }, []);
+  }, [props.puzzleId]);
 
   // Fetch puzzle and its items by ID
   const fetchPuzzleById = async (puzzleId: number) => {

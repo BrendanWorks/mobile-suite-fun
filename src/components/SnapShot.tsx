@@ -6,7 +6,7 @@ import { audioManager } from '../lib/audioManager';
 const MAX_SCORE = 1000;
 
 const SnapShot = forwardRef((props: any, ref) => {
-  const { onComplete, timeRemaining } = props;
+  const { onComplete, timeRemaining, puzzleId, rankingPuzzleId } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -96,12 +96,18 @@ const SnapShot = forwardRef((props: any, ref) => {
   const fetchPuzzles = async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
+
+      let query = supabase
         .from('puzzles')
         .select('*')
         .eq('game_id', 6); // SnapShot game ID
-      
+
+      if (puzzleId) {
+        query = query.eq('id', puzzleId);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.error('Supabase error:', error);
         // Fallback to default image if database fails
@@ -114,7 +120,7 @@ const SnapShot = forwardRef((props: any, ref) => {
         setLoading(false);
         return;
       }
-      
+
       if (!data || data.length === 0) {
         console.error('No puzzles found for SnapShot');
         // Fallback to default image
@@ -127,7 +133,7 @@ const SnapShot = forwardRef((props: any, ref) => {
         setLoading(false);
         return;
       }
-      
+
       console.log(`Loaded ${data.length} SnapShot puzzles from Supabase`);
       setPuzzles(data);
       setLoading(false);

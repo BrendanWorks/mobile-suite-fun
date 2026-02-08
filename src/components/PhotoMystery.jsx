@@ -3,7 +3,7 @@ import { Star, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
-  const { onScoreUpdate, onComplete } = props;
+  const { onScoreUpdate, onComplete, puzzleId, rankingPuzzleId } = props;
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState('loading');
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -89,11 +89,17 @@ const PhotoMystery = forwardRef((props, ref) => {
     try {
       setGameState('loading');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('puzzles')
         .select('*')
         .eq('game_id', 4)
         .in('game_type', ['multiple_choice', 'photo_mystery']);
+
+      if (puzzleId) {
+        query = query.eq('id', puzzleId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Supabase error:', error);

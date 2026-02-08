@@ -195,7 +195,9 @@ export default function GameWrapper({
   const cloneChildren = () => {
     if (!children) return null;
     if (React.isValidElement(children)) {
+      const childProps = (children as React.ReactElement<any>).props;
       return React.cloneElement(children as React.ReactElement<any>, {
+        ...childProps,
         ref: childrenRef,
         onScoreUpdate,
         onComplete: handleGameComplete,
