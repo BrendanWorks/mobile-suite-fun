@@ -93,7 +93,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [pendingSessionData, setPendingSessionData] = useState<any>(null);
   const [sevenSecondsElapsed, setSevenSecondsElapsed] = useState(false);
   const [playlistGames, setPlaylistGames] = useState<string[]>([]);
-  const [playlistLoading, setPlaylistLoading] = useState(false);
+  // Start loading true if playlist is provided to prevent race condition
+  const [playlistLoading, setPlaylistLoading] = useState(!!playlistId);
   const [playlistRounds, setPlaylistRounds] = useState<PlaylistRound[]>([]);
   const [playlistName, setPlaylistName] = useState<string>('');
   const [currentGameSlug, setCurrentGameSlug] = useState<string | null>(null);
@@ -634,20 +635,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   };
 
   // Select game when entering intro screen for any round
+  // CRITICAL: Don't select game while playlist is loading to avoid race condition
   useEffect(() => {
-    if (gameState === 'intro' && !currentGame) {
+    if (gameState === 'intro' && !currentGame && !playlistLoading) {
       console.log(`🎬 Intro screen: Selecting game for round ${currentRound}`);
       selectRandomGame();
     }
-  }, [gameState, currentRound, currentGame]);
+  }, [gameState, currentRound, currentGame, playlistLoading]);
 
   // Fallback: Select game when entering playing state without a game (shouldn't happen with playlist)
   useEffect(() => {
-    if (gameState === 'playing' && !currentGame) {
+    if (gameState === 'playing' && !currentGame && !playlistLoading) {
       console.log(`🎮 No game selected for round ${currentRound}, selecting now`);
       selectRandomGame();
     }
-  }, [gameState, currentGame]);
+  }, [gameState, currentGame, playlistLoading]);
 
   // Auto-advance from intro to playing after 4 seconds (works for all rounds in intro)
   useEffect(() => {
