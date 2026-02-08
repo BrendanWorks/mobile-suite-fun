@@ -34,6 +34,8 @@ interface SnakeProps {
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
   duration?: number;
+  puzzleId?: number | null;
+  rankingPuzzleId?: number | null;
 }
 
 const GRID_SIZE = 20;
@@ -43,7 +45,7 @@ const MAX_SPEED = 50;
 const POWERUP_CHANCE = 0.15;
 const SLOW_DURATION = 10000;
 
-const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining }, ref) => {
+const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining, puzzleId, rankingPuzzleId }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
