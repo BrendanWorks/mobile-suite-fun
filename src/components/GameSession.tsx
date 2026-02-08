@@ -44,6 +44,28 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
 ];
 
+const GAME_ID_TO_SLUG: { [key: number]: string } = {
+  2: 'odd-man-out',
+  3: 'photo-mystery',
+  4: 'rank-and-roll',
+  5: 'snapshot',
+  6: 'split-decision',
+  7: 'word-rescue',
+  8: 'shape-sequence',
+  9: 'snake'
+};
+
+interface PlaylistRound {
+  round_number: number;
+  game_id: number | null;
+  puzzle_id: number | null;
+  ranking_puzzle_id: number | null;
+  metadata: {
+    game_slug?: string;
+  };
+  game_name: string;
+}
+
 interface RoundData {
   gameId: string;
   gameName: string;
@@ -74,45 +96,104 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [sevenSecondsElapsed, setSevenSecondsElapsed] = useState(false);
   const [playlistGames, setPlaylistGames] = useState<string[]>([]);
   const [playlistLoading, setPlaylistLoading] = useState(false);
+  const [playlistRounds, setPlaylistRounds] = useState<PlaylistRound[]>([]);
+  const [playlistName, setPlaylistName] = useState<string>('');
+  const [currentGameSlug, setCurrentGameSlug] = useState<string | null>(null);
+  const [currentPuzzleId, setCurrentPuzzleId] = useState<number | null>(null);
+  const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
 
-  // Load playlist games if playlistId is provided
+  const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
+    const round = rounds.find(r => r.round_number === roundNumber);
+    if (!round) {
+      console.error('Round not found:', roundNumber);
+      return;
+    }
+
+    let gameSlug: string | null = null;
+
+    if (round.game_id) {
+      gameSlug = GAME_ID_TO_SLUG[round.game_id];
+    } else if (round.metadata?.game_slug) {
+      gameSlug = round.metadata.game_slug;
+    }
+
+    if (!gameSlug) {
+      console.error('Could not determine game slug for round:', round);
+      return;
+    }
+
+    console.log(`📍 Loading Round ${roundNumber}:`, {
+      gameSlug,
+      game_id: round.game_id,
+      puzzle_id: round.puzzle_id,
+      ranking_puzzle_id: round.ranking_puzzle_id,
+      game_name: round.game_name
+    });
+
+    setCurrentGameSlug(gameSlug);
+    setCurrentPuzzleId(round.puzzle_id);
+    setCurrentRankingPuzzleId(round.ranking_puzzle_id);
+  };
+
+  const loadPlaylist = async () => {
+    if (!playlistId) {
+      console.error('No playlist ID provided');
+      setGameState('complete');
+      return;
+    }
+
+    try {
+      const { data: playlist, error: playlistError } = await supabase
+        .from('playlists')
+        .select('id, name, description')
+        .eq('id', playlistId)
+        .single();
+
+      if (playlistError) throw playlistError;
+
+      setPlaylistName(playlist.name);
+
+      const { data: rounds, error: roundsError } = await supabase
+        .from('playlist_rounds')
+        .select('round_number, game_id, puzzle_id, ranking_puzzle_id, metadata')
+        .eq('playlist_id', playlistId)
+        .order('round_number');
+
+      if (roundsError) throw roundsError;
+
+      const gameIds = rounds
+        .map(r => r.game_id)
+        .filter(id => id !== null);
+
+      const { data: games } = await supabase
+        .from('games')
+        .select('id, name')
+        .in('id', gameIds);
+
+      const transformedRounds: PlaylistRound[] = rounds.map(r => ({
+        round_number: r.round_number,
+        game_id: r.game_id,
+        puzzle_id: r.puzzle_id,
+        ranking_puzzle_id: r.ranking_puzzle_id,
+        metadata: r.metadata || {},
+        game_name: games?.find(g => g.id === r.game_id)?.name || 'Procedural Game'
+      }));
+
+      setPlaylistRounds(transformedRounds);
+      console.log('✅ Playlist loaded:', playlist.name, transformedRounds.length, 'rounds');
+
+      loadRound(1, transformedRounds);
+      setGameState('intro');
+    } catch (error) {
+      console.error('Error loading playlist:', error);
+      setGameState('complete');
+    }
+  };
+
+  // Load playlist if playlistId is provided
   useEffect(() => {
     if (playlistId) {
-      const loadPlaylistGames = async () => {
-        setPlaylistLoading(true);
-        try {
-          const { data, error } = await supabase
-            .from('playlist_games')
-            .select('game_id, sequence_order')
-            .eq('playlist_id', playlistId)
-            .order('sequence_order');
-
-          if (error) throw error;
-
-          if (data && data.length > 0) {
-            const gameSlugMap: { [key: number]: string } = {
-              2: 'odd-man-out',
-              3: 'photo-mystery',
-              4: 'rank-and-roll',
-              5: 'snapshot',
-              6: 'split-decision',
-              7: 'word-rescue',
-              8: 'shape-sequence',
-              9: 'snake'
-            };
-
-            const gameIds = data.map(pg => gameSlugMap[pg.game_id]).filter(Boolean);
-            setPlaylistGames(gameIds);
-            console.log('Loaded playlist games:', gameIds);
-          }
-        } catch (error) {
-          console.error('Error loading playlist games:', error);
-        } finally {
-          setPlaylistLoading(false);
-        }
-      };
-
-      loadPlaylistGames();
+      loadPlaylist();
     }
   }, [playlistId]);
 
