@@ -1,3 +1,11 @@
+/**
+ * OddManOut.tsx - UPDATED FOR PLAYLIST SYSTEM
+ * 
+ * This component now supports two modes:
+ * 1. Playlist mode: When puzzleId is provided, loads specific puzzle
+ * 2. Random mode: When puzzleId is null, loads random puzzle (backwards compatibility)
+ */
+
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -5,6 +13,8 @@ import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 
 interface OddManOutProps {
+  puzzleId?: number | null;  // NEW: Specific puzzle ID from playlist
+  rankingPuzzleId?: number | null;
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
@@ -66,7 +76,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       generateNewQuestion();
     },
     canSkipQuestion: true,
-    pauseTimer: gameState === 'result' && !isGameComplete, // Pause for intermediate results, not final
+    pauseTimer: gameState === 'result' && !isGameComplete,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
       if (nextIndex < puzzleIds.length) {
@@ -76,39 +86,79 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   }), [score, gameState, currentPuzzleIndex, puzzleIds, isGameComplete, props.timeRemaining]);
 
+  // NEW: Load specific puzzle if puzzleId provided
   const fetchQuestions = async () => {
     try {
       setGameState('loading');
       
-      const { data, error } = await supabase
-        .from('puzzles')
-        .select('*')
-        .eq('game_id', 3);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        setGameState('error');
+      // PLAYLIST MODE: Load specific puzzle
+      if (props.puzzleId) {
+        console.log('🎯 OddManOut: Loading specific puzzle:', props.puzzleId);
+        
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('*')
+          .eq('id', props.puzzleId)
+          .single();
+        
+        if (error) {
+          console.error('Supabase error loading puzzle:', error);
+          // Fallback to random mode
+          await loadRandomPuzzles();
+          return;
+        }
+        
+        if (!data) {
+          console.error('No puzzle found with id:', props.puzzleId);
+          await loadRandomPuzzles();
+          return;
+        }
+        
+        console.log('✅ OddManOut: Loaded playlist puzzle:', data);
+        
+        // Use this single puzzle for all 3 questions
+        // (In playlist mode, same puzzle repeats - design choice)
+        setQuestions([data, data, data]);
+        setPuzzleIds([data.id, data.id, data.id]);
+        setGameState('playing');
         return;
       }
       
-      if (!data || data.length === 0) {
-        console.error('No questions found');
-        setGameState('error');
-        return;
-      }
-      
-      console.log(`Loaded ${data.length} questions from Supabase`);
-      setQuestions(data);
-      
-      const ids = data.map(q => q.id);
-      setPuzzleIds(ids);
-      
-      setGameState('playing');
+      // RANDOM MODE: Load random puzzles (backwards compatibility)
+      await loadRandomPuzzles();
       
     } catch (error) {
       console.error('Error fetching questions:', error);
       setGameState('error');
     }
+  };
+
+  // Random mode loading (original behavior)
+  const loadRandomPuzzles = async () => {
+    const { data, error } = await supabase
+      .from('puzzles')
+      .select('*')
+      .eq('game_id', 3);
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      setGameState('error');
+      return;
+    }
+    
+    if (!data || data.length === 0) {
+      console.error('No questions found');
+      setGameState('error');
+      return;
+    }
+    
+    console.log(`✅ OddManOut: Loaded ${data.length} random questions from Supabase`);
+    setQuestions(data);
+    
+    const ids = data.map(q => q.id);
+    setPuzzleIds(ids);
+    
+    setGameState('playing');
   };
 
   const loadQuestionById = (questionId: number) => {
@@ -213,7 +263,8 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     console.log('OddManOut: Question answered', {
       questionNum: newTotalQuestions,
       isCorrect: isAnswerCorrect,
-      isLastQuestion: newTotalQuestions >= MAX_QUESTIONS
+      isLastQuestion: newTotalQuestions >= MAX_QUESTIONS,
+      puzzleId: props.puzzleId || 'random'
     });
 
     if (props.onTimerPause) {
@@ -232,16 +283,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setMessage(successMessages[Math.floor(Math.random() * successMessages.length)]);
       setGameState('result');
 
-      // Check if game is complete
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        // Last question - call onComplete immediately to trigger fast countdown
-        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete with timeRemaining:', props.timeRemaining);
-        setIsGameComplete(true); // Don't pause timer for final result
+        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete');
+        setIsGameComplete(true);
         const callback = onCompleteRef.current;
         if (callback) {
           callback(newScore, MAX_QUESTIONS * 250, props.timeRemaining);
-        } else {
-          console.error('OddManOut: ❌ onComplete callback is undefined!');
         }
       } else {
         console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
@@ -259,16 +306,12 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setTimeout(() => {
         setGameState('result');
 
-        // Check if game is complete
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          // Last question - call onComplete immediately to trigger fast countdown
-          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete with timeRemaining:', props.timeRemaining);
-          setIsGameComplete(true); // Don't pause timer for final result
+          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete');
+          setIsGameComplete(true);
           const callback = onCompleteRef.current;
           if (callback) {
             callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
-          } else {
-            console.error('OddManOut: ❌ onComplete callback is undefined!');
           }
         } else {
           console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
@@ -297,7 +340,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         clearTimeout(autoAdvanceTimeoutRef.current);
       }
     };
-  }, []);
+  }, [props.puzzleId]); // Re-fetch if puzzleId changes
 
   useEffect(() => {
     if (questions.length > 0 && !currentQuestion && gameState === 'playing') {
@@ -311,9 +354,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         <div className="text-center text-purple-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
             <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
-            Loading questions...
+            Loading puzzle...
           </div>
-          <div className="text-sm text-purple-300 mt-2">Connecting to database</div>
+          {props.puzzleId && (
+            <div className="text-xs text-purple-300 mt-2">Puzzle ID: {props.puzzleId}</div>
+          )}
         </div>
       </div>
     );
@@ -323,7 +368,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
-          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading questions</div>
+          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading puzzle</div>
           <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchQuestions}
