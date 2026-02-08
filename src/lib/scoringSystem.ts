@@ -42,8 +42,8 @@ export const scoringSystem = {
     };
   },
 
-  // RankAndRoll: 8 items, direct accuracy
-  rankAndRoll: (correct: number, total: number = 8): GameScore => {
+  // RankAndRoll: Variable items (typically 4 per puzzle), direct accuracy
+  rankAndRoll: (correct: number, total: number): GameScore => {
     const accuracy = total > 0 ? (correct / total) * 100 : 0;
     return {
       gameId: 'rank-and-roll',
