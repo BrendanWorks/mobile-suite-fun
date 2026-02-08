@@ -55,9 +55,10 @@ interface RoundData {
 interface GameSessionProps {
   onExit: () => void;
   totalRounds?: number;
+  playlistId?: number;
 }
 
-export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProps) {
+export default function GameSession({ onExit, totalRounds = 5, playlistId }: GameSessionProps) {
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
@@ -71,6 +72,49 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingSessionData, setPendingSessionData] = useState<any>(null);
   const [sevenSecondsElapsed, setSevenSecondsElapsed] = useState(false);
+  const [playlistGames, setPlaylistGames] = useState<string[]>([]);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
+
+  // Load playlist games if playlistId is provided
+  useEffect(() => {
+    if (playlistId) {
+      const loadPlaylistGames = async () => {
+        setPlaylistLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('playlist_games')
+            .select('game_id, sequence_order')
+            .eq('playlist_id', playlistId)
+            .order('sequence_order');
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            const gameSlugMap: { [key: number]: string } = {
+              2: 'odd-man-out',
+              3: 'photo-mystery',
+              4: 'rank-and-roll',
+              5: 'snapshot',
+              6: 'split-decision',
+              7: 'word-rescue',
+              8: 'shape-sequence',
+              9: 'snake'
+            };
+
+            const gameIds = data.map(pg => gameSlugMap[pg.game_id]).filter(Boolean);
+            setPlaylistGames(gameIds);
+            console.log('Loaded playlist games:', gameIds);
+          }
+        } catch (error) {
+          console.error('Error loading playlist games:', error);
+        } finally {
+          setPlaylistLoading(false);
+        }
+      };
+
+      loadPlaylistGames();
+    }
+  }, [playlistId]);
 
   // Get current user on mount
   useEffect(() => {
@@ -240,6 +284,22 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
   }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
 
   const selectRandomGame = () => {
+    if (playlistId && playlistGames.length > 0) {
+      const nextGameIndex = playedGames.length;
+
+      if (nextGameIndex < playlistGames.length) {
+        const nextGameId = playlistGames[nextGameIndex];
+        const nextGame = AVAILABLE_GAMES.find(g => g.id === nextGameId);
+
+        if (nextGame) {
+          setCurrentGame(nextGame);
+          setPlayedGames(prev => [...prev, nextGame.id]);
+          console.log(`Playing playlist game ${nextGameIndex + 1}/${playlistGames.length}:`, nextGame.name);
+          return;
+        }
+      }
+    }
+
     const availableGames = AVAILABLE_GAMES.filter(
       game => !playedGames.includes(game.id)
     );
@@ -474,11 +534,14 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
     const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
 
-    // Wait for game to be selected
-    if (!currentGame) {
+    // Wait for game to be selected or playlist to load
+    if (!currentGame || playlistLoading) {
       return (
         <div className="h-screen w-screen bg-black flex items-center justify-center">
-          <Star className="w-16 h-16 text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
+          <div className="text-center">
+            <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
+            {playlistLoading && <p className="text-cyan-300 text-sm">Loading playlist...</p>}
+          </div>
         </div>
       );
     }
@@ -489,6 +552,13 @@ export default function GameSession({ onExit, totalRounds = 5 }: GameSessionProp
           <div className="mb-6 sm:mb-8">
             <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
           </div>
+          {playlistId && (
+            <div className="mb-2">
+              <span className="inline-block px-3 py-1 text-xs bg-yellow-400/20 border border-yellow-400 text-yellow-300 rounded-full font-semibold" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}>
+                🧪 PLAYLIST MODE
+              </span>
+            </div>
+          )}
           <h1 className="text-4xl sm:text-6xl font-bold text-cyan-400 mb-3 sm:mb-4" style={{ textShadow: '0 0 20px #00ffff' }}>Round {currentRound}</h1>
           <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 mb-4" style={{ textShadow: '0 0 15px #ec4899' }}>{currentGame.name}</h2>
           <p className="text-lg sm:text-xl text-cyan-300 mb-6 sm:mb-8">{currentGame.instructions}</p>

@@ -6,6 +6,7 @@ import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 import TestMode from './components/TestMode';
 import AdminTools from './components/AdminTools';
+import PlaylistSelector from './components/PlaylistSelector';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -14,6 +15,8 @@ export default function App() {
   const [testMode, setTestMode] = useState(false);
   const [testGameId, setTestGameId] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showPlaylistTest, setShowPlaylistTest] = useState(false);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
 
   // Initialize analytics on mount
   useEffect(() => {
@@ -92,6 +95,32 @@ export default function App() {
         }}
         selectedGameId={testGameId}
         onSelectGame={setTestGameId}
+      />
+    );
+  }
+
+  if (showPlaylistTest && !selectedPlaylistId) {
+    return (
+      <PlaylistSelector
+        onSelectPlaylist={(id) => setSelectedPlaylistId(id)}
+        onBack={() => {
+          setShowPlaylistTest(false);
+          trackPageView('/menu');
+        }}
+      />
+    );
+  }
+
+  if (selectedPlaylistId) {
+    return (
+      <GameSession
+        playlistId={selectedPlaylistId}
+        onExit={() => {
+          setSelectedPlaylistId(null);
+          setShowPlaylistTest(false);
+          trackPageView('/menu');
+        }}
+        totalRounds={5}
       />
     );
   }
@@ -182,6 +211,22 @@ export default function App() {
               <div className="flex items-center justify-between text-sm sm:text-base">
                 <span className="text-cyan-400">5 rounds • ~15 minutes</span>
                 <span className="text-xl sm:text-2xl text-cyan-400">→</span>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setShowPlaylistTest(true)}
+              className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-yellow-400/40 hover:border-yellow-400 cursor-pointer transition-all active:scale-[0.98] touch-manipulation"
+              style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
+            >
+              <div className="text-4xl sm:text-5xl mb-3">🧪</div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={{ textShadow: '0 0 10px #fbbf24' }}>Test Playlists</h2>
+              <p className="text-sm sm:text-base text-yellow-300 mb-4">
+                Try out curated game playlists. Test different difficulty levels and sequences!
+              </p>
+              <div className="flex items-center justify-between text-sm sm:text-base">
+                <span className="text-yellow-400">5 rounds • Custom sequences</span>
+                <span className="text-xl sm:text-2xl text-yellow-400">→</span>
               </div>
             </div>
 
