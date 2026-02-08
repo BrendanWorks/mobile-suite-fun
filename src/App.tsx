@@ -25,7 +25,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Session error:', error.message);
+        if (error.message.includes('refresh_token_not_found')) {
+          console.log('🧹 Clearing invalid session');
+          await supabase.auth.signOut();
+        }
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setLoading(false);
 
@@ -37,15 +48,17 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state changed:', event);
+
       setSession(session);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('User logged in:', session.user.email);
+        console.log('✅ User logged in:', session.user.email);
         analytics.signedIn('email', session.user.id);
       }
 
       if (event === 'SIGNED_OUT') {
-        console.log('User logged out');
+        console.log('👋 User logged out');
         analytics.signedOut();
         setShowGames(false);
       }

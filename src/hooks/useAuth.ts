@@ -8,23 +8,65 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    // Listen for auth changes
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('❌ Session error:', error.message);
+          await supabase.auth.signOut();
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('❌ Auth initialization error:', err);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth event:', event);
+
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('✅ Token refreshed successfully');
+      } else if (event === 'SIGNED_OUT') {
+        console.log('👋 User signed out');
+      } else if (event === 'USER_DELETED') {
+        console.log('🗑️ User deleted');
+        await supabase.auth.signOut();
+      }
+
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
@@ -44,8 +86,37 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      localStorage.removeItem('supabase.auth.token');
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      return { error };
+    } catch (error) {
+      console.error('Sign out error:', error);
+      return { error };
+    }
+  };
+
+  const clearSession = async () => {
+    console.log('🧹 Clearing stale session data');
+    await supabase.auth.signOut();
+
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    setSession(null);
+    setUser(null);
   };
 
   return {
@@ -55,5 +126,6 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    clearSession,
   };
 }
