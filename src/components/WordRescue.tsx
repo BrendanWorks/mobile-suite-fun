@@ -110,7 +110,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
-  const [gameSpeed, setGameSpeed] = useState(2500);
+  const [gameSpeed, setGameSpeed] = useState(1800);
   const [nextId, setNextId] = useState(0);
   const [timeLeft, setTimeLeft] = useState(90);
   const [wordsFound, setWordsFound] = useState([]);
@@ -235,11 +235,11 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   const createLetters = useCallback(() => {
     const letters = [];
-    const shouldCluster = Math.random() < 0.6;
+    const shouldCluster = Math.random() < 0.7;
     const maxWidth = 650;
 
     if (shouldCluster) {
-      const clusterSize = Math.floor(Math.random() * 2) + 2;
+      const clusterSize = Math.floor(Math.random() * 3) + 3;
       const baseX = Math.random() * (maxWidth - 100) + 50;
       const baseY = -70;
 
@@ -247,21 +247,24 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
         letters.push({
           id: nextId + i,
           letter: getRandomLetter(),
-          x: Math.max(5, Math.min(maxWidth - 5, baseX + (Math.random() - 0.5) * 150)),
+          x: Math.max(5, Math.min(maxWidth - 5, baseX + (Math.random() - 0.5) * 160)),
           y: baseY - (i * 70) - (Math.random() * 40),
           selected: false
         });
       }
       setNextId(prev => prev + clusterSize);
     } else {
-      letters.push({
-        id: nextId,
-        letter: getRandomLetter(),
-        x: Math.random() * (maxWidth - 10) + 5,
-        y: -70,
-        selected: false
-      });
-      setNextId(prev => prev + 1);
+      const singleCount = Math.random() < 0.6 ? 2 : 1;
+      for (let i = 0; i < singleCount; i++) {
+        letters.push({
+          id: nextId + i,
+          letter: getRandomLetter(),
+          x: Math.random() * (maxWidth - 10) + 5,
+          y: -70 - (i * 80),
+          selected: false
+        });
+      }
+      setNextId(prev => prev + singleCount);
     }
 
     return letters;
@@ -331,11 +334,11 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     if (gameState !== 'playing' || !timerStarted) return;
 
     const elapsedTime = 90 - timeLeft;
-    
+
     if (elapsedTime === 30) {
-      setGameSpeed(prev => Math.max(2000, prev - 300));
+      setGameSpeed(prev => Math.max(1500, prev - 200));
     } else if (elapsedTime === 60) {
-      setGameSpeed(prev => Math.max(1500, prev - 300));
+      setGameSpeed(prev => Math.max(1200, prev - 200));
     }
   }, [timeLeft, gameState, timerStarted]);
 
@@ -470,7 +473,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setSelectedLetters([]);
     setScore(0);
     setLevel(1);
-    setGameSpeed(2500);
+    setGameSpeed(1800);
     setWordsFound([]);
     setIsValidating(false);
     setTimerStarted(false);
@@ -482,14 +485,14 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     const initialLetters = [];
     const screenHeight = 300;
     const maxWidth = 650;
-    const topZoneHeight = screenHeight * 0.25;
-    const numInitialLetters = 18;
+    const topZoneHeight = screenHeight * 0.4;
+    const numInitialLetters = 28;
 
     const profanityLetters = profanityWord.split('').map((letter, index) => ({
       id: index,
       letter: letter.toUpperCase(),
       x: Math.random() * (maxWidth - 10) + 5,
-      y: Math.random() * (topZoneHeight + 70) - 70,
+      y: Math.random() * (topZoneHeight + 100) - 70,
       selected: false
     }));
 
@@ -498,7 +501,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       id: profanityLetters.length + index,
       letter: getRandomLetter(),
       x: Math.random() * (maxWidth - 10) + 5,
-      y: Math.random() * (topZoneHeight + 70) - 70,
+      y: Math.random() * (topZoneHeight + 100) - 70,
       selected: false
     }));
 
