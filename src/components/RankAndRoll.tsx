@@ -44,6 +44,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const correctCountRef = useRef(0);
   const gameStateRef = useRef(gameState);
   const itemCountRef = useRef(0);
+  const hasCompletedRef = useRef(false);
 
   const MAX_HINTS = 3;
   const HINT_PENALTY = 25;
@@ -79,6 +80,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     }),
     onGameEnd: () => {
       console.log('RankAndRoll: onGameEnd called (time ran out)');
+      if (hasCompletedRef.current) {
+        console.log('RankAndRoll: Already completed, ignoring onGameEnd');
+        return;
+      }
+      hasCompletedRef.current = true;
+
       if (feedbackTimeoutRef.current) {
         clearTimeout(feedbackTimeoutRef.current);
         feedbackTimeoutRef.current = null;
@@ -92,9 +99,20 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       }
     },
     skipQuestion: () => {
-      // Complete immediately with current score
+      if (hasCompletedRef.current) {
+        console.log('RankAndRoll: Already completed, ignoring skipQuestion');
+        return;
+      }
+      hasCompletedRef.current = true;
+
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+        feedbackTimeoutRef.current = null;
+      }
+
       const callback = onCompleteRef.current;
       if (callback) {
+        console.log('RankAndRoll: Skipping with current score:', correctCountRef.current, '/', itemCountRef.current);
         callback(correctCountRef.current, itemCountRef.current, props.timeRemaining);
       }
     },
@@ -193,6 +211,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   };
 
   useEffect(() => {
+    hasCompletedRef.current = false;
     fetchPuzzle();
 
     return () => {
@@ -285,6 +304,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     // Show feedback for FEEDBACK_DISPLAY_TIME, then complete
     console.log(`RankAndRoll: Showing feedback for ${FEEDBACK_DISPLAY_TIME}ms, then completing round`);
     feedbackTimeoutRef.current = window.setTimeout(() => {
+      if (hasCompletedRef.current) {
+        console.log('RankAndRoll: Already completed, ignoring feedback timeout');
+        return;
+      }
+      hasCompletedRef.current = true;
+
       console.log('RankAndRoll: ✅ Feedback complete - Calling onComplete');
       const callback = onCompleteRef.current;
       if (callback) {

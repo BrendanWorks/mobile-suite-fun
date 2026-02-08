@@ -54,7 +54,7 @@ interface SplitDecisionProps {
 const MAX_SCORE = 1000;
 const POINTS_PER_ITEM = Math.round(MAX_SCORE / 7); // ~143 points per item
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete, timeRemaining, duration }, ref) => {
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete, timeRemaining, duration, puzzleId, rankingPuzzleId }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -90,9 +90,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     const loadPuzzleIds = async () => {
       try {
-        if (props.puzzleId) {
-          setPuzzleIds([props.puzzleId]);
-          fetchPuzzleById(props.puzzleId);
+        if (puzzleId) {
+          setPuzzleIds([puzzleId]);
+          fetchPuzzleById(puzzleId);
           return;
         }
 
@@ -118,7 +118,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     };
 
     loadPuzzleIds();
-  }, [props.puzzleId]);
+  }, [puzzleId]);
 
   // Fetch puzzle and its items by ID
   const fetchPuzzleById = async (puzzleId: number) => {
