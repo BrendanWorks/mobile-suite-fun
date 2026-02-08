@@ -45,13 +45,11 @@ const AVAILABLE_GAMES: GameConfig[] = [
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
-  1: 'emoji-master',
   3: 'odd-man-out',
   4: 'photo-mystery',
   5: 'rank-and-roll',
   6: 'snapshot',
   7: 'split-decision',
-  9: 'split-decision',
   12: 'snake'
 };
 
@@ -105,7 +103,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
     const round = rounds.find(r => r.round_number === roundNumber);
     if (!round) {
-      console.error('Round not found:', roundNumber);
+      console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
+      setPlaylistLoading(false);
       return;
     }
 
@@ -113,12 +112,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     if (round.game_id) {
       gameSlug = GAME_ID_TO_SLUG[round.game_id];
+      if (!gameSlug) {
+        console.error('❌ No mapping found for game_id:', round.game_id, 'Available mappings:', Object.keys(GAME_ID_TO_SLUG));
+      }
     } else if (round.metadata?.game_slug) {
       gameSlug = round.metadata.game_slug;
     }
 
     if (!gameSlug) {
-      console.error('Could not determine game slug for round:', round);
+      console.error('❌ Could not determine game slug for round:', {
+        round_number: roundNumber,
+        game_id: round.game_id,
+        game_name: round.game_name,
+        metadata: round.metadata
+      });
+      setPlaylistLoading(false);
       return;
     }
 
@@ -133,14 +141,18 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     setCurrentGameSlug(gameSlug);
     setCurrentPuzzleId(round.puzzle_id);
     setCurrentRankingPuzzleId(round.ranking_puzzle_id);
+    setPlaylistLoading(false);
   };
 
   const loadPlaylist = async () => {
     if (!playlistId) {
-      console.error('No playlist ID provided');
+      console.error('❌ No playlist ID provided');
       setGameState('complete');
       return;
     }
+
+    setPlaylistLoading(true);
+    console.log('🎮 Loading playlist:', playlistId);
 
     try {
       const { data: playlist, error: playlistError } = await supabase
@@ -149,9 +161,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         .eq('id', playlistId)
         .single();
 
-      if (playlistError) throw playlistError;
+      if (playlistError) {
+        console.error('❌ Playlist query error:', playlistError);
+        throw playlistError;
+      }
 
       setPlaylistName(playlist.name);
+      console.log('✅ Playlist found:', playlist.name);
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
@@ -159,7 +175,17 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         .eq('playlist_id', playlistId)
         .order('round_number');
 
-      if (roundsError) throw roundsError;
+      if (roundsError) {
+        console.error('❌ Playlist rounds query error:', roundsError);
+        throw roundsError;
+      }
+
+      if (!rounds || rounds.length === 0) {
+        console.error('❌ No rounds found for playlist:', playlistId);
+        throw new Error('No rounds found for playlist');
+      }
+
+      console.log('✅ Found', rounds.length, 'rounds');
 
       const gameIds = rounds
         .map(r => r.game_id)
@@ -169,6 +195,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         .from('games')
         .select('id, name')
         .in('id', gameIds);
+
+      console.log('✅ Loaded game names for', games?.length || 0, 'games');
 
       const transformedRounds: PlaylistRound[] = rounds.map(r => ({
         round_number: r.round_number,
@@ -185,7 +213,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       loadRound(1, transformedRounds);
       setGameState('intro');
     } catch (error) {
-      console.error('Error loading playlist:', error);
+      console.error('❌ Error loading playlist:', error);
+      setPlaylistLoading(false);
       setGameState('complete');
     }
   };
