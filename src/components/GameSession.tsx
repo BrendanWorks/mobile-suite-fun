@@ -395,17 +395,20 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
   const selectRandomGame = () => {
     if (playlistId && currentGameSlug) {
+      console.log(`🎯 Looking for playlist game with slug: "${currentGameSlug}"`);
       const nextGame = AVAILABLE_GAMES.find(g => g.id === currentGameSlug);
       if (nextGame) {
         setCurrentGame(nextGame);
         setPlayedGames(prev => [...prev, nextGame.id]);
-        console.log(`Playing playlist game (Round ${currentRound}):`, nextGame.name);
+        console.log(`✅ Playing playlist game (Round ${currentRound}):`, nextGame.name, `(${nextGame.id})`);
         return;
       } else {
-        console.error('Game not found for slug:', currentGameSlug);
+        console.error('❌ Game not found for slug:', currentGameSlug);
+        console.log('Available game IDs:', AVAILABLE_GAMES.map(g => g.id));
       }
     }
 
+    console.log(`🎲 Selecting random game for round ${currentRound}`);
     const availableGames = AVAILABLE_GAMES.filter(
       game => !playedGames.includes(game.id)
     );
@@ -415,6 +418,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     setCurrentGame(randomGame);
     setPlayedGames(prev => [...prev, randomGame.id]);
+    console.log(`✅ Selected random game:`, randomGame.name, `(${randomGame.id})`);
   };
 
   const startRound = () => {
@@ -556,14 +560,16 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       setGameState('complete');
     } else {
       const nextRound = currentRound + 1;
+      console.log(`⏭️  Moving to round ${nextRound}`);
       setCurrentRound(nextRound);
+      setCurrentGame(null);
+      setCurrentGameScore({ score: 0, maxScore: 0 });
 
       if (playlistId && playlistRounds.length > 0) {
+        console.log(`📋 Loading playlist round ${nextRound}`);
         loadRound(nextRound, playlistRounds);
       }
 
-      selectRandomGame();
-      setCurrentGameScore({ score: 0, maxScore: 0 });
       setGameState('playing');
     }
   };
@@ -632,6 +638,14 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       selectRandomGame();
     }
   }, [gameState, currentRound, currentGame, currentGameSlug]);
+
+  // Select game when starting rounds 2+ in playlist mode
+  useEffect(() => {
+    if (gameState === 'playing' && !currentGame && currentRound > 1) {
+      console.log(`🎮 Selecting game for round ${currentRound}, currentGameSlug:`, currentGameSlug);
+      selectRandomGame();
+    }
+  }, [gameState, currentGame, currentRound, currentGameSlug]);
 
   useEffect(() => {
     if (gameState === 'intro' && currentRound === 1 && currentGame) {
@@ -797,6 +811,18 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             setPendingSessionData(null);
           }}
         />
+      </div>
+    );
+  }
+
+  // Loading screen between rounds
+  if (gameState === 'playing' && !currentGame) {
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.5)' }}></div>
+          <p className="text-cyan-400 text-base" style={{ textShadow: '0 0 10px #00ffff' }}>Loading Round {currentRound}...</p>
+        </div>
       </div>
     );
   }
