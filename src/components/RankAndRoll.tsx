@@ -32,27 +32,22 @@ interface Puzzle {
   items: RankItem[];
 }
 
-const MAX_PUZZLES = 2;
-const ITEMS_PER_PUZZLE = 4;
-const TOTAL_ITEMS = MAX_PUZZLES * ITEMS_PER_PUZZLE; // 8 items total
-
 const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
-  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
-  const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [items, setItems] = useState<RankItem[]>([]);
   const [gameState, setGameState] = useState<'loading' | 'playing' | 'feedback'>('loading');
   const [correctCount, setCorrectCount] = useState(0);
-  const [totalCorrectCount, setTotalCorrectCount] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showHint, setShowHint] = useState<{ itemId: number; direction: 'up' | 'down' } | null>(null);
-  const [completedPuzzles, setCompletedPuzzles] = useState(0);
-  const autoAdvanceTimeoutRef = useRef<number | null>(null);
+  const feedbackTimeoutRef = useRef<number | null>(null);
   const onCompleteRef = useRef(props.onComplete);
-  const totalCorrectRef = useRef(0);
+  const correctCountRef = useRef(0);
   const gameStateRef = useRef(gameState);
+  const itemCountRef = useRef(0);
 
   const MAX_HINTS = 3;
   const HINT_PENALTY = 25;
+  const FEEDBACK_DISPLAY_TIME = 3500; // Time to show feedback before completing
 
   // Keep refs in sync
   useEffect(() => {
@@ -60,8 +55,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   }, [props.onComplete]);
 
   useEffect(() => {
-    totalCorrectRef.current = totalCorrectCount;
-  }, [totalCorrectCount]);
+    correctCountRef.current = correctCount;
+  }, [correctCount]);
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -79,104 +74,133 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
-      score: totalCorrectRef.current,
-      maxScore: TOTAL_ITEMS
+      score: correctCountRef.current,
+      maxScore: itemCountRef.current
     }),
     onGameEnd: () => {
       console.log('RankAndRoll: onGameEnd called (time ran out)');
-      if (autoAdvanceTimeoutRef.current) {
-        clearTimeout(autoAdvanceTimeoutRef.current);
-        autoAdvanceTimeoutRef.current = null;
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+        feedbackTimeoutRef.current = null;
       }
       const callback = onCompleteRef.current;
-      const finalCorrect = totalCorrectRef.current;
-      console.log('RankAndRoll: Time up! Calling onComplete with correct:', finalCorrect);
+      const finalCorrect = correctCountRef.current;
+      const totalItems = itemCountRef.current;
+      console.log('RankAndRoll: Time up! Calling onComplete with correct:', finalCorrect, 'out of', totalItems);
       if (callback) {
-        callback(finalCorrect, TOTAL_ITEMS, props.timeRemaining);
+        callback(finalCorrect, totalItems, props.timeRemaining);
       }
     },
     skipQuestion: () => {
-      handleNextPuzzle();
+      // Complete immediately with current score
+      const callback = onCompleteRef.current;
+      if (callback) {
+        callback(correctCountRef.current, itemCountRef.current, props.timeRemaining);
+      }
     },
     canSkipQuestion: true,
     get pauseTimer() {
       return gameStateRef.current === 'feedback';
-    },
-    loadNextPuzzle: () => {
-      handleNextPuzzle();
     }
   }), [props.timeRemaining]);
 
-  const fetchPuzzles = async () => {
+  const fetchPuzzle = async () => {
     try {
       setGameState('loading');
 
-      let query = supabase
-        .from('ranking_puzzles')
-        .select('*')
-        .eq('game_id', 5);
-
+      // Check if rankingPuzzleId is provided (playlist mode)
       if (props.rankingPuzzleId) {
-        query = query.eq('id', props.rankingPuzzleId).limit(1);
+        console.log('🎯 Ranky: Loading specific puzzle ID:', props.rankingPuzzleId);
+        
+        const { data: puzzleData, error: puzzleError } = await supabase
+          .from('ranking_puzzles')
+          .select('*')
+          .eq('id', props.rankingPuzzleId)
+          .single();
+
+        if (puzzleError) {
+          console.error('Supabase error loading ranking puzzle:', puzzleError);
+          setGameState('playing');
+          return;
+        }
+
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('ranking_items')
+          .select('*')
+          .eq('puzzle_id', puzzleData.id)
+          .order('item_order', { ascending: true });
+
+        if (itemsError) {
+          console.error('Error fetching ranking items:', itemsError);
+          setGameState('playing');
+          return;
+        }
+
+        const loadedPuzzle = { ...puzzleData, items: itemsData || [] };
+        console.log('✅ Ranky: Loaded puzzle with', loadedPuzzle.items.length, 'items');
+        
+        setPuzzle(loadedPuzzle);
+        itemCountRef.current = loadedPuzzle.items.length;
+        
+        if (loadedPuzzle.items.length > 0) {
+          const shuffled = shuffleArray([...loadedPuzzle.items]);
+          setItems(shuffled);
+        }
+
+        setGameState('playing');
       } else {
-        query = query.limit(MAX_PUZZLES);
-      }
+        // Fallback: random puzzle (backwards compatibility)
+        console.log('🎲 Ranky: No rankingPuzzleId provided, loading random puzzle');
+        
+        const { data, error } = await supabase
+          .from('ranking_puzzles')
+          .select('*')
+          .eq('game_id', 5)
+          .limit(1);
 
-      const { data, error } = await query;
+        if (error || !data || data.length === 0) {
+          console.error('Supabase error:', error);
+          setGameState('playing');
+          return;
+        }
 
-      if (error) {
-        console.error('Supabase error:', error);
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('ranking_items')
+          .select('*')
+          .eq('puzzle_id', data[0].id)
+          .order('item_order', { ascending: true });
+
+        if (itemsError) {
+          console.error('Error fetching items:', itemsError);
+          return;
+        }
+
+        const loadedPuzzle = { ...data[0], items: itemsData || [] };
+        setPuzzle(loadedPuzzle);
+        itemCountRef.current = loadedPuzzle.items.length;
+
+        if (loadedPuzzle.items.length > 0) {
+          const shuffled = shuffleArray([...loadedPuzzle.items]);
+          setItems(shuffled);
+        }
+
         setGameState('playing');
-        return;
       }
-
-      if (!data || data.length === 0) {
-        console.error('No ranking puzzles found');
-        setGameState('playing');
-        return;
-      }
-
-      const puzzlesWithItems = await Promise.all(
-        data.map(async (puzzle) => {
-          const { data: itemsData, error: itemsError } = await supabase
-            .from('ranking_items')
-            .select('*')
-            .eq('puzzle_id', puzzle.id)
-            .order('item_order', { ascending: true });
-
-          if (itemsError) {
-            console.error('Error fetching items:', itemsError);
-            return { ...puzzle, items: [] };
-          }
-
-          return { ...puzzle, items: itemsData || [] };
-        })
-      );
-
-      console.log(`Loaded ${puzzlesWithItems.length} puzzles from Supabase`);
-      setPuzzles(puzzlesWithItems);
-
-      if (puzzlesWithItems.length > 0 && puzzlesWithItems[0].items.length > 0) {
-        const shuffled = shuffleArray([...puzzlesWithItems[0].items]);
-        setItems(shuffled);
-      }
-
-      setGameState('playing');
     } catch (error) {
-      console.error('Error fetching puzzles:', error);
+      console.error('Error fetching puzzle:', error);
       setGameState('playing');
     }
   };
 
   useEffect(() => {
-    fetchPuzzles();
+    fetchPuzzle();
 
     return () => {
-      if (autoAdvanceTimeoutRef.current) {
-        clearTimeout(autoAdvanceTimeoutRef.current);
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
       }
     };
-  }, []);
+  }, [props.rankingPuzzleId]);
 
   const shuffleArray = (array: any[]) => {
     const shuffled = [...array];
@@ -234,13 +258,10 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     });
 
     setCorrectCount(correct);
-    
-    const newTotalCorrect = totalCorrectCount + correct;
-    setTotalCorrectCount(newTotalCorrect);
-    totalCorrectRef.current = newTotalCorrect;
+    correctCountRef.current = correct;
 
     if (props.onScoreUpdate) {
-      props.onScoreUpdate(newTotalCorrect, TOTAL_ITEMS);
+      props.onScoreUpdate(correct, items.length);
     }
 
     if (props.onTimerPause) {
@@ -255,46 +276,21 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
     setGameState('feedback');
 
-    const newCompletedPuzzles = completedPuzzles + 1;
-    setCompletedPuzzles(newCompletedPuzzles);
-
     console.log('RankAndRoll: Puzzle completed', {
-      puzzleNum: newCompletedPuzzles,
       correct,
       total: items.length,
-      isLastPuzzle: newCompletedPuzzles >= MAX_PUZZLES
+      timeRemaining: props.timeRemaining
     });
 
-    if (newCompletedPuzzles >= MAX_PUZZLES) {
-      console.log('RankAndRoll: ✅ LAST PUZZLE - Calling onComplete with timeRemaining:', props.timeRemaining);
+    // Show feedback for FEEDBACK_DISPLAY_TIME, then complete
+    console.log(`RankAndRoll: Showing feedback for ${FEEDBACK_DISPLAY_TIME}ms, then completing round`);
+    feedbackTimeoutRef.current = window.setTimeout(() => {
+      console.log('RankAndRoll: ✅ Feedback complete - Calling onComplete');
       const callback = onCompleteRef.current;
-      const finalCorrect = totalCorrectRef.current;
       if (callback) {
-        callback(finalCorrect, TOTAL_ITEMS, props.timeRemaining);
+        callback(correct, items.length, props.timeRemaining);
       }
-    } else {
-      console.log('RankAndRoll: Moving to next puzzle after 3.5s');
-      autoAdvanceTimeoutRef.current = window.setTimeout(() => {
-        handleNextPuzzle();
-      }, 3500);
-    }
-  };
-
-  const handleNextPuzzle = () => {
-    const nextIndex = currentPuzzleIndex + 1;
-    if (nextIndex < puzzles.length && puzzles[nextIndex].items.length > 0) {
-      const shuffled = shuffleArray([...puzzles[nextIndex].items]);
-      setItems(shuffled);
-      setCurrentPuzzleIndex(nextIndex);
-      setCorrectCount(0);
-      setHintsUsed(0);
-      setShowHint(null);
-      setGameState('playing');
-
-      if (props.onTimerPause) {
-        props.onTimerPause(false);
-      }
-    }
+    }, FEEDBACK_DISPLAY_TIME);
   };
 
   if (gameState === 'loading') {
@@ -303,7 +299,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         <div className="text-center text-green-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #22c55e' }}>
             <BarChart3 className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
-            Loading puzzles...
+            Loading puzzle...
           </div>
           <div className="text-sm text-green-300 mt-2">Connecting to database</div>
         </div>
@@ -311,13 +307,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     );
   }
 
-  const currentPuzzle = puzzles[currentPuzzleIndex];
-  if (!currentPuzzle) {
+  if (!puzzle) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
           <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>
-            ❌ No puzzles available
+            ❌ No puzzle available
           </div>
           <div className="text-sm text-green-300 mt-2">Check your database</div>
         </div>
@@ -396,17 +391,17 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
           {/* Score */}
           <div className="text-green-300 text-xs sm:text-sm mb-1 text-center">
-            Score: <strong className="text-yellow-400 tabular-nums">{totalCorrectCount}</strong>
+            Score: <strong className="text-yellow-400 tabular-nums">{correctCount}/{items.length}</strong>
           </div>
         </div>
 
         {/* Puzzle Info */}
         <div className="text-center mb-1.5 bg-black/50 border-2 border-green-500 rounded-lg p-1.5" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
           <h3 className="text-sm sm:text-base font-bold text-green-400 mb-0 break-words" style={{ textShadow: '0 0 10px #22c55e' }}>
-            {currentPuzzle.title}
+            {puzzle.title}
           </h3>
           <p className="text-gray-300 text-xs">
-            {currentPuzzle.instruction}
+            {puzzle.instruction}
           </p>
         </div>
 
@@ -443,7 +438,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
-                {/* Number Badge - Positioned on top-left corner */}
+                {/* Number Badge */}
                 <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${badgeColor} flex items-center justify-center flex-shrink-0 z-10`} style={{ boxShadow: badgeShadow }}>
                   <span className="text-black font-bold text-xs">
                     {index + 1}
@@ -533,7 +528,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
               className="w-2/3 py-2 px-4 rounded-lg text-sm font-bold transition-all bg-green-500 text-black hover:bg-green-400 active:scale-95"
               style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }}
             >
-              �� Final Answer
+              ✅ Final Answer
             </button>
           ) : (
             <div className={`
