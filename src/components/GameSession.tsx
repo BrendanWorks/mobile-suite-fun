@@ -568,9 +568,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       if (playlistId && playlistRounds.length > 0) {
         console.log(`📋 Loading playlist round ${nextRound}`);
         loadRound(nextRound, playlistRounds);
+        setGameState('intro');
+      } else {
+        setGameState('playing');
       }
-
-      setGameState('playing');
     }
   };
 
@@ -632,29 +633,32 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     onExit();
   };
 
-  // Select game for round 1 intro, then auto-advance after 4 seconds
+  // Select game when entering intro screen for any round
   useEffect(() => {
-    if (gameState === 'intro' && currentRound === 1 && !currentGame) {
+    if (gameState === 'intro' && !currentGame) {
+      console.log(`🎬 Intro screen: Selecting game for round ${currentRound}`);
       selectRandomGame();
-    }
-  }, [gameState, currentRound, currentGame, currentGameSlug]);
-
-  // Select game when starting rounds 2+ in playlist mode
-  useEffect(() => {
-    if (gameState === 'playing' && !currentGame && currentRound > 1) {
-      console.log(`🎮 Selecting game for round ${currentRound}, currentGameSlug:`, currentGameSlug);
-      selectRandomGame();
-    }
-  }, [gameState, currentGame, currentRound, currentGameSlug]);
-
-  useEffect(() => {
-    if (gameState === 'intro' && currentRound === 1 && currentGame) {
-      const timer = setTimeout(() => startRound(), 4000);
-      return () => clearTimeout(timer);
     }
   }, [gameState, currentRound, currentGame]);
 
-  // Intro screen (round 1 only)
+  // Fallback: Select game when entering playing state without a game (shouldn't happen with playlist)
+  useEffect(() => {
+    if (gameState === 'playing' && !currentGame) {
+      console.log(`🎮 No game selected for round ${currentRound}, selecting now`);
+      selectRandomGame();
+    }
+  }, [gameState, currentGame]);
+
+  // Auto-advance from intro to playing after 4 seconds (works for all rounds in intro)
+  useEffect(() => {
+    if (gameState === 'intro' && currentGame) {
+      console.log(`⏱️ Starting ${currentGame.name} in 4 seconds...`);
+      const timer = setTimeout(() => startRound(), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, currentGame]);
+
+  // Intro screen (shows before each round in playlist mode)
   if (gameState === 'intro') {
     const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
@@ -666,6 +670,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           <div className="text-center">
             <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
             {playlistLoading && <p className="text-cyan-300 text-sm">Loading playlist...</p>}
+            {!playlistLoading && <p className="text-cyan-300 text-sm">Loading round...</p>}
           </div>
         </div>
       );
@@ -677,16 +682,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           <div className="mb-6 sm:mb-8">
             <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
           </div>
-          {playlistId && (
+          {playlistId && playlistName && (
             <div className="mb-2">
               <span className="inline-block px-3 py-1 text-xs bg-yellow-400/20 border border-yellow-400 text-yellow-300 rounded-full font-semibold" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}>
-                🧪 PLAYLIST MODE
+                {playlistName}
               </span>
             </div>
           )}
           <h1 className="text-4xl sm:text-6xl font-bold text-cyan-400 mb-3 sm:mb-4" style={{ textShadow: '0 0 20px #00ffff' }}>Round {currentRound}</h1>
           <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 mb-4" style={{ textShadow: '0 0 15px #ec4899' }}>{currentGame.name}</h2>
           <p className="text-lg sm:text-xl text-cyan-300 mb-6 sm:mb-8">{currentGame.instructions}</p>
+          {currentSessionScore > 0 && (
+            <div className="mb-4">
+              <p className="text-sm text-cyan-400">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}</span></p>
+            </div>
+          )}
           <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-6 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
             <p className="text-xs sm:text-sm text-cyan-400">Starting in a moment...</p>
           </div>
