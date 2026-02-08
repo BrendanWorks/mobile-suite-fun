@@ -157,6 +157,12 @@ const SnapShot = forwardRef((props: any, ref) => {
     resetGame();
   };
 
+  // Terry Test - skip to next puzzle for testing
+  const handleTerryTest = () => {
+    // Simply call nextPuzzle which handles everything
+    nextPuzzle();
+  };
+
   const handleResize = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -796,10 +802,17 @@ const SnapShot = forwardRef((props: any, ref) => {
         </p>
 
         {/* Score */}
-        <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
+        <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
           <div className="text-pink-300">
             Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{currentScore}</strong>
           </div>
+          <button
+            onClick={handleTerryTest}
+            className="px-3 py-1 text-xs bg-purple-600/20 border border-purple-400 text-purple-300 rounded hover:bg-purple-600/40 hover:border-purple-300 transition-all"
+            style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}
+          >
+            Terry Test
+          </button>
         </div>
       </div>
 
