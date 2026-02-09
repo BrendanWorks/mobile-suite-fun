@@ -79,6 +79,7 @@ interface GameSessionProps {
 }
 
 export default function GameSession({ onExit, totalRounds = 5, playlistId }: GameSessionProps) {
+  const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
