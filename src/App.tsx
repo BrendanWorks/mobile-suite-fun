@@ -7,6 +7,7 @@ import GameSession from './components/GameSession';
 import TestMode from './components/TestMode';
 import AdminTools from './components/AdminTools';
 import PlaylistSelector from './components/PlaylistSelector';
+import { useUserStats } from './hooks/useUserStats';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -17,6 +18,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showPlaylistTest, setShowPlaylistTest] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
+  const userStats = useUserStats(session?.user?.id);
 
   // Initialize analytics on mount
   useEffect(() => {
@@ -243,44 +245,49 @@ export default function App() {
               </div>
             </div>
 
-            <div className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)' }}>
+            <div className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-yellow-400/40" style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)' }}>
               <div className="text-4xl sm:text-5xl mb-3">📊</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-3" style={{ textShadow: '0 0 10px #00ffff' }}>Your Stats</h2>
-              <div className="space-y-2.5 text-sm sm:text-base text-cyan-300">
-                <div className="flex justify-between">
-                  <span>Total Games Played:</span>
-                  <span className="font-bold text-cyan-400" style={{ textShadow: '0 0 8px #00ffff' }}>0</span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-3" style={{ textShadow: '0 0 10px #fbbf24' }}>Your Stats</h2>
+              {userStats.loading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-yellow-400"></div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Best Score:</span>
-                  <span className="font-bold text-green-400" style={{ textShadow: '0 0 8px #22c55e' }}>--</span>
+              ) : userStats.totalGamesPlayed === 0 ? (
+                <div>
+                  <div className="space-y-2.5 text-sm sm:text-base text-yellow-300 opacity-50">
+                    <div className="flex justify-between">
+                      <span>Total Games Played:</span>
+                      <span className="font-bold text-yellow-400">0</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Best Score:</span>
+                      <span className="font-bold text-green-400">--</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Average Grade:</span>
+                      <span className="font-bold text-cyan-400">--</span>
+                    </div>
+                  </div>
+                  <p className="text-xs sm:text-sm text-yellow-500 mt-4">
+                    Stats will appear here after your first game!
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span>Average Grade:</span>
-                  <span className="font-bold text-yellow-400" style={{ textShadow: '0 0 8px #fbbf24' }}>--</span>
+              ) : (
+                <div className="space-y-2.5 text-sm sm:text-base text-yellow-300">
+                  <div className="flex justify-between">
+                    <span>Total Games Played:</span>
+                    <span className="font-bold text-yellow-400" style={{ textShadow: '0 0 8px #fbbf24' }}>{userStats.totalGamesPlayed}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Best Score:</span>
+                    <span className="font-bold text-green-400" style={{ textShadow: '0 0 8px #22c55e' }}>{userStats.bestScore}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Average Grade:</span>
+                    <span className="font-bold text-cyan-400" style={{ textShadow: '0 0 8px #06b6d4' }}>{userStats.averageGrade}</span>
+                  </div>
                 </div>
-              </div>
-              <p className="text-xs sm:text-sm text-cyan-500 mt-4">
-                Stats will appear here after your first game!
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 pb-6">
-            <div className="bg-cyan-500/10 border-2 border-cyan-500/40 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.2)' }}>
-              <p className="text-xs sm:text-sm text-cyan-300">
-                <span className="font-bold">💡 Tip:</span> Each game tests different skills. Play all 5 to get your session score!
-              </p>
-            </div>
-            <div className="bg-green-500/10 border-2 border-green-500/40 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.2)' }}>
-              <p className="text-xs sm:text-sm text-green-300">
-                <span className="font-bold">✨ Feature:</span> Your scores are saved automatically. Track your progress over time.
-              </p>
-            </div>
-            <div className="bg-yellow-500/10 border-2 border-yellow-500/40 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)' }}>
-              <p className="text-xs sm:text-sm text-yellow-300">
-                <span className="font-bold">🏆 Goal:</span> Earn grades from D to S. Can you hit all S's?
-              </p>
+              )}
             </div>
           </div>
         </div>
