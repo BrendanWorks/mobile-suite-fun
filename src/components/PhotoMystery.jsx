@@ -3,7 +3,7 @@ import { Star, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const PhotoMystery = forwardRef((props, ref) => {
-  const { onScoreUpdate, onComplete, puzzleId, rankingPuzzleId } = props;
+  const { onScoreUpdate, onComplete, puzzleId, puzzleIds, rankingPuzzleId } = props;
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState('loading');
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -13,7 +13,6 @@ const PhotoMystery = forwardRef((props, ref) => {
   const [correctCount, setCorrectCount] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [puzzleIds, setPuzzleIds] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [currentPhotoNumber, setCurrentPhotoNumber] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -25,14 +24,13 @@ const PhotoMystery = forwardRef((props, ref) => {
   const onScoreUpdateRef = useRef(onScoreUpdate);
   const correctCountRef = useRef(0);
 
-  const maxPoints = 333; // Points per photo for display
+  const maxPoints = 333;
   const minPoints = 0;
   const photoDuration = 15;
   const totalPhotos = 3;
   const maxZoom = 2.5;
   const minZoom = 1.0;
 
-  // Keep callback refs up to date
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
@@ -41,13 +39,12 @@ const PhotoMystery = forwardRef((props, ref) => {
     onScoreUpdateRef.current = onScoreUpdate;
   }, [onScoreUpdate]);
 
-  // Keep correctCount ref in sync
   useEffect(() => {
     correctCountRef.current = correctCount;
   }, [correctCount]);
 
   useImperativeHandle(ref, () => ({
-    hideTimer: true, // Zooma manages its own per-photo timers
+    hideTimer: true,
     getGameScore: () => ({
       score: correctCountRef.current,
       maxScore: totalPhotos
@@ -56,7 +53,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       console.log('Zooma: onGameEnd called (GameWrapper timer hit 0)');
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
-      // GameWrapper timer ran out - complete with current score
       const callback = onCompleteRef.current;
       const finalCorrect = correctCountRef.current;
       console.log('Zooma: GameWrapper time up! Calling onComplete with correct:', finalCorrect, 'out of', totalPhotos);
@@ -72,9 +68,9 @@ const PhotoMystery = forwardRef((props, ref) => {
     canSkipQuestion: true,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
-      if (nextIndex < puzzleIds.length) {
+      if (nextIndex < questions.length) {
         setCurrentPuzzleIndex(nextIndex);
-        loadQuestionById(puzzleIds[nextIndex]);
+        loadQuestionById(questions[nextIndex].id);
       }
     },
     startPlaying: () => {
@@ -89,15 +85,120 @@ const PhotoMystery = forwardRef((props, ref) => {
     try {
       setGameState('loading');
 
+      // NEW: Check for multiple puzzle IDs first (playlist mode with array)
+      if (puzzleIds && Array.isArray(puzzleIds) && puzzleIds.length > 0) {
+        console.log('🎯 Zooma: Loading specific puzzles from array:', puzzleIds);
+        
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('*')
+          .in('id', puzzleIds)
+          .in('game_type', ['multiple_choice', 'photo_mystery']);
+
+        if (error) {
+          console.error('Supabase error loading puzzles:', error);
+          setGameState('error');
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.error('No puzzles found with ids:', puzzleIds);
+          setGameState('error');
+          return;
+        }
+
+        console.log(`✅ Zooma: Loaded ${data.length} playlist puzzles`);
+        
+        const validQuestions = data.filter(q => {
+          const hasImageUrl = q.prompt && (q.prompt.startsWith('http://') || q.prompt.startsWith('https://'));
+          const hasOptions = q.metadata && (
+            (typeof q.metadata === 'object' && q.metadata.options && Array.isArray(q.metadata.options)) ||
+            (typeof q.metadata === 'string' && q.metadata.includes('options'))
+          );
+
+          if (!hasImageUrl) {
+            console.warn(`Puzzle ${q.id} skipped: prompt is not a valid image URL`);
+          }
+          if (!hasOptions) {
+            console.warn(`Puzzle ${q.id} skipped: missing metadata.options`);
+          }
+
+          return hasImageUrl && hasOptions;
+        });
+
+        if (validQuestions.length === 0) {
+          console.error('No valid puzzles in provided puzzle_ids!');
+          setGameState('error');
+          return;
+        }
+
+        setQuestions(validQuestions);
+        
+        const firstQuestion = validQuestions[0];
+        if (!firstQuestion.difficulty) {
+          firstQuestion.difficulty = 'unknown';
+        }
+        setCurrentQuestion(firstQuestion);
+        setUsedQuestions([firstQuestion.id]);
+        setSelectedAnswer(null);
+        setZoomLevel(maxZoom);
+        setPoints(maxPoints);
+        setElapsedTime(0);
+        setCurrentPhotoNumber(1);
+
+        setGameState('playing');
+        setTimeout(() => startGame(), 100);
+        return;
+      }
+
+      // SINGLE PUZZLE MODE (old behavior - repeats 3x)
+      if (puzzleId) {
+        console.log('🎯 Zooma: Loading single puzzle:', puzzleId);
+        
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('*')
+          .eq('id', puzzleId)
+          .single();
+
+        if (error) {
+          console.error('Supabase error loading puzzle:', error);
+          setGameState('error');
+          return;
+        }
+
+        if (!data) {
+          console.error('No puzzle found with id:', puzzleId);
+          setGameState('error');
+          return;
+        }
+
+        console.log('✅ Zooma: Loaded single playlist puzzle (will repeat 3x):', data);
+        setQuestions([data, data, data]);
+        
+        const firstQuestion = data;
+        if (!firstQuestion.difficulty) {
+          firstQuestion.difficulty = 'unknown';
+        }
+        setCurrentQuestion(firstQuestion);
+        setUsedQuestions([firstQuestion.id]);
+        setSelectedAnswer(null);
+        setZoomLevel(maxZoom);
+        setPoints(maxPoints);
+        setElapsedTime(0);
+        setCurrentPhotoNumber(1);
+
+        setGameState('playing');
+        setTimeout(() => startGame(), 100);
+        return;
+      }
+
+      // RANDOM MODE (no puzzle ID provided)
       let query = supabase
         .from('puzzles')
         .select('*')
         .eq('game_id', 4)
         .in('game_type', ['multiple_choice', 'photo_mystery']);
-
-      if (puzzleId) {
-        query = query.eq('id', puzzleId);
-      }
 
       const { data, error } = await query;
 
@@ -144,9 +245,6 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       console.log(`Loaded ${validQuestions.length} valid photo questions (${data.length - validQuestions.length} skipped)`);
       setQuestions(validQuestions);
-
-      const ids = validQuestions.map(q => q.id);
-      setPuzzleIds(ids);
 
       if (validQuestions.length > 0) {
         const firstQuestion = validQuestions[0];
@@ -263,7 +361,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       onScoreUpdateRef.current(correctCount, totalPhotos);
     }
 
-    // Check if this was the last photo
     if (currentPhotoNumber >= totalPhotos) {
       console.log('Zooma: Last photo complete, calling completeGame immediately');
       completeGame();
@@ -290,7 +387,6 @@ const PhotoMystery = forwardRef((props, ref) => {
     const correct = answer === currentQuestion.correct_answer;
     setIsCorrect(correct);
 
-    // Track correct count instead of points
     if (correct) {
       const newCorrectCount = correctCount + 1;
       setCorrectCount(newCorrectCount);
@@ -303,7 +399,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       playSound('correct');
       setGameState('result');
 
-      // Check if this was the last photo - complete immediately, no next question
       if (currentPhotoNumber >= totalPhotos) {
         console.log('Zooma: Last photo complete (correct), calling completeGame immediately');
         completeGame();
@@ -326,7 +421,6 @@ const PhotoMystery = forwardRef((props, ref) => {
       setTimeout(() => {
         setGameState('result');
 
-        // Check if this was the last photo - complete immediately, no next question
         if (currentPhotoNumber >= totalPhotos) {
           console.log('Zooma: Last photo complete (incorrect), calling completeGame immediately');
           completeGame();
@@ -434,7 +528,7 @@ const PhotoMystery = forwardRef((props, ref) => {
         clearTimeout(resultTimerRef.current);
       }
     };
-  }, []);
+  }, [puzzleId, puzzleIds]);
 
   const getAnswerOptions = () => {
     if (!currentQuestion) return [];
@@ -537,7 +631,6 @@ const PhotoMystery = forwardRef((props, ref) => {
         }
       `}</style>
 
-      {/* Timer bar - cyan neon */}
       {gameState === 'playing' && (
         <div 
           style={{ 
@@ -568,10 +661,8 @@ const PhotoMystery = forwardRef((props, ref) => {
         </div>
       )}
 
-      {/* Game content */}
       <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-black rounded-lg text-white" style={{ border: '2px solid #00ffff40' }}>
         <div className="mb-3 sm:mb-6">
-          {/* Icon + Title with neon glow */}
           <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
             <Search 
               className="w-6 h-6 sm:w-7 sm:h-7" 
@@ -588,7 +679,6 @@ const PhotoMystery = forwardRef((props, ref) => {
             What's in the photo?
           </p>
 
-          {/* Score - now shows correct count */}
           <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
             <div className="text-cyan-300">
               Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{correctCount}/{totalPhotos}</strong>
@@ -605,7 +695,6 @@ const PhotoMystery = forwardRef((props, ref) => {
 
         {(gameState === 'playing' || gameState === 'result') && (
           <div className="space-y-3 sm:space-y-6">
-            {/* Points display - keeps visual feedback */}
             <div className="flex justify-center items-center mb-2 sm:mb-4">
               <div className="flex items-center gap-1 sm:gap-2 text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
                 <Star size={16} className="sm:w-5 sm:h-5" />
@@ -614,7 +703,6 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            {/* Image */}
             <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' }}>
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
@@ -626,7 +714,6 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            {/* Answer buttons */}
             <div className="grid gap-2 sm:gap-3">
               {answerOptions.map((option, index) => {
                 const isCorrectAnswer = option === currentQuestion.correct_answer;
