@@ -904,7 +904,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             gameName={currentGame.name}
             onScoreUpdate={handleScoreUpdate}
           >
-            <GameComponent puzzleId={currentPuzzleId} rankingPuzzleId={currentRankingPuzzleId} />
+            <<GameComponent 
+  puzzleId={currentPuzzleId} 
+  puzzleIds={currentPuzzleIds}
+  rankingPuzzleId={currentRankingPuzzleId} 
+/>
           </GameWrapper>
         </div>
       </div>
