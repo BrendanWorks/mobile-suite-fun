@@ -79,7 +79,6 @@ interface GameSessionProps {
 }
 
 export default function GameSession({ onExit, totalRounds = 5, playlistId }: GameSessionProps) {
-  const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
@@ -100,6 +99,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [playlistName, setPlaylistName] = useState<string>('');
   const [currentGameSlug, setCurrentGameSlug] = useState<string | null>(null);
   const [currentPuzzleId, setCurrentPuzzleId] = useState<number | null>(null);
+  const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
 
   const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
@@ -137,11 +137,22 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       game_id: round.game_id,
       puzzle_id: round.puzzle_id,
       ranking_puzzle_id: round.ranking_puzzle_id,
-      game_name: round.game_name
+      game_name: round.game_name,
+      metadata: round.metadata
     });
 
     setCurrentGameSlug(gameSlug);
-    setCurrentPuzzleId(round.puzzle_id);
+
+    // NEW: Check for multiple puzzle IDs in metadata first
+    if (round.metadata?.puzzle_ids && Array.isArray(round.metadata.puzzle_ids)) {
+      console.log(`✅ Found ${round.metadata.puzzle_ids.length} puzzle IDs in metadata:`, round.metadata.puzzle_ids);
+      setCurrentPuzzleIds(round.metadata.puzzle_ids);
+      setCurrentPuzzleId(null);  // Clear single puzzle_id
+    } else {
+      setCurrentPuzzleId(round.puzzle_id);
+      setCurrentPuzzleIds(null);  // Clear array
+    }
+
     setCurrentRankingPuzzleId(round.ranking_puzzle_id);
     setPlaylistLoading(false);
   };
