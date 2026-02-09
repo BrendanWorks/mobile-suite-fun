@@ -5,28 +5,25 @@ interface UserStats {
   totalGamesPlayed: number;
   bestScore: number;
   averageGrade: string;
-  averageScore: number;
   loading: boolean;
 }
 
+const DEFAULT_STATS: UserStats = {
+  totalGamesPlayed: 0,
+  bestScore: 0,
+  averageGrade: '--',
+  loading: false,
+};
+
 export function useUserStats(userId: string | undefined): UserStats {
   const [stats, setStats] = useState<UserStats>({
-    totalGamesPlayed: 0,
-    bestScore: 0,
-    averageGrade: '--',
-    averageScore: 0,
+    ...DEFAULT_STATS,
     loading: true,
   });
 
   useEffect(() => {
     if (!userId) {
-      setStats({
-        totalGamesPlayed: 0,
-        bestScore: 0,
-        averageGrade: '--',
-        averageScore: 0,
-        loading: false,
-      });
+      setStats(DEFAULT_STATS);
       return;
     }
 
@@ -41,26 +38,17 @@ export function useUserStats(userId: string | undefined): UserStats {
 
         if (error) {
           console.error('Error fetching user stats:', error);
-          setStats(prev => ({ ...prev, loading: false }));
+          setStats({ ...DEFAULT_STATS });
           return;
         }
 
         if (!sessions || sessions.length === 0) {
-          setStats({
-            totalGamesPlayed: 0,
-            bestScore: 0,
-            averageGrade: '--',
-            averageScore: 0,
-            loading: false,
-          });
+          setStats({ ...DEFAULT_STATS });
           return;
         }
 
         const totalGames = sessions.length;
         const bestScore = Math.max(...sessions.map(s => s.total_score || 0));
-        const avgScore = Math.round(
-          sessions.reduce((sum, s) => sum + (s.total_score || 0), 0) / totalGames
-        );
 
         const gradeOrder = ['D', 'C', 'B', 'A', 'S'];
         const gradesWithValues = sessions
@@ -79,12 +67,11 @@ export function useUserStats(userId: string | undefined): UserStats {
           totalGamesPlayed: totalGames,
           bestScore,
           averageGrade,
-          averageScore: avgScore,
           loading: false,
         });
       } catch (error) {
         console.error('Error calculating stats:', error);
-        setStats(prev => ({ ...prev, loading: false }));
+        setStats({ ...DEFAULT_STATS });
       }
     };
 

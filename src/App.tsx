@@ -9,6 +9,28 @@ import AdminTools from './components/AdminTools';
 import PlaylistSelector from './components/PlaylistSelector';
 import { useUserStats } from './hooks/useUserStats';
 
+const GLOW_STYLES = {
+  cyan: {
+    textShadow: '0 0 10px #00ffff',
+    boxShadow: '0 0 15px rgba(0, 255, 255, 0.4)',
+  },
+  yellow: {
+    textShadow: '0 0 10px #fbbf24',
+    boxShadow: '0 0 15px rgba(251, 191, 36, 0.4)',
+  },
+  red: {
+    textShadow: '0 0 8px #ff0066',
+    boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)',
+  },
+  purple: {
+    textShadow: '0 0 8px #c084fc',
+    boxShadow: '0 0 15px rgba(192, 132, 252, 0.4)',
+  },
+  green: {
+    textShadow: '0 0 8px #22c55e',
+  },
+};
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,19 +175,16 @@ export default function App() {
   }
 
   const handlePlayAsGuest = () => {
-    console.log('Analytics: Guest play started');
     trackPageView('/game-session');
     setShowGames(true);
   };
 
   const handleTestMode = () => {
-    console.log('Analytics: Test mode entered');
     trackPageView('/test-mode');
     setTestMode(true);
   };
 
   const handlePlayGames = () => {
-    console.log('Analytics: Authenticated play started');
     trackPageView('/game-session');
     setShowGames(true);
   };
@@ -177,14 +196,14 @@ export default function App() {
         <button
           onClick={handleTestMode}
           className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-semibold rounded-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
-          style={{ textShadow: '0 0 8px #fbbf24', boxShadow: '0 0 15px rgba(251, 191, 36, 0.4)' }}
+          style={GLOW_STYLES.yellow}
         >
           🧪 Test Mode
         </button>
         <button
           onClick={() => setShowAdmin(true)}
           className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-semibold rounded-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
-          style={{ textShadow: '0 0 8px #c084fc', boxShadow: '0 0 15px rgba(192, 132, 252, 0.4)' }}
+          style={GLOW_STYLES.purple}
         >
           🔧 Admin
         </button>
@@ -206,7 +225,7 @@ export default function App() {
             <button
               onClick={handleLogout}
               className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-semibold rounded-lg transition-all text-sm sm:text-base touch-manipulation"
-              style={{ textShadow: '0 0 8px #ff0066', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' }}
+              style={GLOW_STYLES.red}
             >
               Sign Out
             </button>
@@ -219,7 +238,7 @@ export default function App() {
               style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}
             >
               <div className="text-4xl sm:text-5xl mb-3">🚀</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2" style={{ textShadow: '0 0 10px #00ffff' }}>Play Games</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2" style={GLOW_STYLES.cyan}>Play Games</h2>
               <p className="text-sm sm:text-base text-cyan-300 mb-4">
                 Challenge yourself with 5 different mini-games. Test your skills, earn points, and climb the leaderboard!
               </p>
@@ -235,7 +254,7 @@ export default function App() {
               style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
             >
               <div className="text-4xl sm:text-5xl mb-3">🧪</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={{ textShadow: '0 0 10px #fbbf24' }}>Test Playlists</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={GLOW_STYLES.yellow}>Test Playlists</h2>
               <p className="text-sm sm:text-base text-yellow-300 mb-4">
                 Try out curated game playlists. Test different difficulty levels and sequences!
               </p>
@@ -247,7 +266,7 @@ export default function App() {
 
             <div className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-yellow-400/40" style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)' }}>
               <div className="text-4xl sm:text-5xl mb-3">📊</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-3" style={{ textShadow: '0 0 10px #fbbf24' }}>Your Stats</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-3" style={GLOW_STYLES.yellow}>Your Stats</h2>
               {userStats.loading ? (
                 <div className="flex items-center justify-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-yellow-400"></div>
@@ -276,15 +295,15 @@ export default function App() {
                 <div className="space-y-2.5 text-sm sm:text-base text-yellow-300">
                   <div className="flex justify-between">
                     <span>Total Games Played:</span>
-                    <span className="font-bold text-yellow-400" style={{ textShadow: '0 0 8px #fbbf24' }}>{userStats.totalGamesPlayed}</span>
+                    <span className="font-bold text-yellow-400" style={GLOW_STYLES.yellow}>{userStats.totalGamesPlayed}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Best Score:</span>
-                    <span className="font-bold text-green-400" style={{ textShadow: '0 0 8px #22c55e' }}>{userStats.bestScore}</span>
+                    <span className="font-bold text-green-400" style={GLOW_STYLES.green}>{userStats.bestScore}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average Grade:</span>
-                    <span className="font-bold text-cyan-400" style={{ textShadow: '0 0 8px #06b6d4' }}>{userStats.averageGrade}</span>
+                    <span className="font-bold text-cyan-400" style={GLOW_STYLES.cyan}>{userStats.averageGrade}</span>
                   </div>
                 </div>
               )}
