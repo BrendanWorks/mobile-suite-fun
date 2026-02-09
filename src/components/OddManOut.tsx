@@ -1,9 +1,5 @@
 /**
- * OddManOut.tsx - UPDATED FOR PLAYLIST SYSTEM
- * 
- * This component now supports two modes:
- * 1. Playlist mode: When puzzleId is provided, loads specific puzzle
- * 2. Random mode: When puzzleId is null, loads random puzzle (backwards compatibility)
+ * OddManOut.tsx - UPDATED FOR PLAYLIST SYSTEM with Multi-Puzzle Support
  */
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -13,7 +9,8 @@ import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 
 interface OddManOutProps {
-  puzzleId?: number | null;  // NEW: Specific puzzle ID from playlist
+  puzzleId?: number | null;
+  puzzleIds?: number[] | null;  // NEW: Array of puzzle IDs
   rankingPuzzleId?: number | null;
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onTimerPause?: (paused: boolean) => void;
@@ -35,13 +32,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [shuffledItems, setShuffledItems] = useState([]);
-  const [puzzleIds, setPuzzleIds] = useState<number[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
   const onCompleteRef = React.useRef(props.onComplete);
 
-  // Keep onComplete ref up to date
   React.useEffect(() => {
     onCompleteRef.current = props.onComplete;
   }, [props.onComplete]);
@@ -65,7 +60,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         clearTimeout(autoAdvanceTimeoutRef.current);
         autoAdvanceTimeoutRef.current = null;
       }
-      // Time ran out - complete with current score
       const callback = onCompleteRef.current;
       console.log('OddManOut: Time up! Calling onComplete with score:', score);
       if (callback) {
@@ -79,21 +73,47 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     pauseTimer: gameState === 'result' && !isGameComplete,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;
-      if (nextIndex < puzzleIds.length) {
+      if (nextIndex < questions.length) {
         setCurrentPuzzleIndex(nextIndex);
-        loadQuestionById(puzzleIds[nextIndex]);
+        loadQuestionById(questions[nextIndex].id);
       }
     }
-  }), [score, gameState, currentPuzzleIndex, puzzleIds, isGameComplete, props.timeRemaining]);
+  }), [score, gameState, currentPuzzleIndex, questions, isGameComplete, props.timeRemaining]);
 
-  // NEW: Load specific puzzle if puzzleId provided
   const fetchQuestions = async () => {
     try {
       setGameState('loading');
       
-      // PLAYLIST MODE: Load specific puzzle
+      // NEW: Multiple puzzle IDs mode (playlist with array)
+      if (props.puzzleIds && Array.isArray(props.puzzleIds) && props.puzzleIds.length > 0) {
+        console.log('🎯 OddManOut: Loading specific puzzles from array:', props.puzzleIds);
+        
+        const { data, error } = await supabase
+          .from('puzzles')
+          .select('*')
+          .in('id', props.puzzleIds);
+        
+        if (error) {
+          console.error('Supabase error loading puzzles:', error);
+          await loadRandomPuzzles();
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          console.error('No puzzles found with ids:', props.puzzleIds);
+          await loadRandomPuzzles();
+          return;
+        }
+        
+        console.log(`✅ OddManOut: Loaded ${data.length} playlist puzzles`);
+        setQuestions(data);
+        setGameState('playing');
+        return;
+      }
+      
+      // SINGLE PUZZLE MODE (old behavior - repeats 3x)
       if (props.puzzleId) {
-        console.log('🎯 OddManOut: Loading specific puzzle:', props.puzzleId);
+        console.log('🎯 OddManOut: Loading single puzzle:', props.puzzleId);
         
         const { data, error } = await supabase
           .from('puzzles')
@@ -103,7 +123,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         
         if (error) {
           console.error('Supabase error loading puzzle:', error);
-          // Fallback to random mode
           await loadRandomPuzzles();
           return;
         }
@@ -114,17 +133,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           return;
         }
         
-        console.log('✅ OddManOut: Loaded playlist puzzle:', data);
-        
-        // Use this single puzzle for all 3 questions
-        // (In playlist mode, same puzzle repeats - design choice)
+        console.log('✅ OddManOut: Loaded single playlist puzzle (will repeat 3x):', data);
         setQuestions([data, data, data]);
-        setPuzzleIds([data.id, data.id, data.id]);
         setGameState('playing');
         return;
       }
       
-      // RANDOM MODE: Load random puzzles (backwards compatibility)
+      // RANDOM MODE (backwards compatibility)
       await loadRandomPuzzles();
       
     } catch (error) {
@@ -133,7 +148,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   };
 
-  // Random mode loading (original behavior)
   const loadRandomPuzzles = async () => {
     const { data, error } = await supabase
       .from('puzzles')
@@ -154,10 +168,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     
     console.log(`✅ OddManOut: Loaded ${data.length} random questions from Supabase`);
     setQuestions(data);
-    
-    const ids = data.map(q => q.id);
-    setPuzzleIds(ids);
-    
     setGameState('playing');
   };
 
@@ -264,7 +274,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       questionNum: newTotalQuestions,
       isCorrect: isAnswerCorrect,
       isLastQuestion: newTotalQuestions >= MAX_QUESTIONS,
-      puzzleId: props.puzzleId || 'random'
+      puzzleId: props.puzzleId || props.puzzleIds || 'random'
     });
 
     if (props.onTimerPause) {
@@ -340,7 +350,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         clearTimeout(autoAdvanceTimeoutRef.current);
       }
     };
-  }, [props.puzzleId]); // Re-fetch if puzzleId changes
+  }, [props.puzzleId, props.puzzleIds]);
 
   useEffect(() => {
     if (questions.length > 0 && !currentQuestion && gameState === 'playing') {
@@ -356,8 +366,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
             Loading puzzle...
           </div>
-          {props.puzzleId && (
-            <div className="text-xs text-purple-300 mt-2">Puzzle ID: {props.puzzleId}</div>
+          {(props.puzzleId || props.puzzleIds) && (
+            <div className="text-xs text-purple-300 mt-2">
+              {props.puzzleIds ? `Loading ${props.puzzleIds.length} puzzles` : `Puzzle ID: ${props.puzzleId}`}
+            </div>
           )}
         </div>
       </div>
@@ -421,7 +433,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       `}</style>
 
       <div className="mb-3 sm:mb-6">
-        {/* Header with Sparkles icon */}
         <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-1 border-b border-purple-400 pb-1 flex items-center justify-center gap-2">
           <Sparkles 
             className="w-6 h-6 sm:w-7 sm:h-7" 
@@ -434,12 +445,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           <span style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</span>
         </h2>
         
-        {/* Updated tagline */}
         <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
           Spot the Oddballs
         </p>
 
-        {/* Score */}
         <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
           <div className="text-purple-300">
             Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
@@ -447,7 +456,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Items grid */}
       <div className="mb-2 sm:mb-4">
         <div className="grid grid-cols-1 gap-2">
           {shuffledItems.map((item, index) => {
@@ -498,7 +506,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Your Answer */}
       <div className="mb-2 sm:mb-4">
         <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1">Your Answer:</h4>
         <div className="min-h-10 sm:min-h-12 bg-black/80 border-2 border-purple-400/50 rounded-lg p-2 sm:p-3" style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}>
@@ -517,7 +524,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         </div>
       </div>
 
-      {/* Button/Feedback container */}
       <div>
         {gameState === 'playing' && (
           <button
