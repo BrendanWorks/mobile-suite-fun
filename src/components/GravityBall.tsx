@@ -29,16 +29,18 @@ const GravityBall = forwardRef((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'gameOver'>('idle');
   const [score, setScore] = useState(0);
+  const [displayLives, setDisplayLives] = useState(3);
 
   // --- Refs for High-Performance Logic ---
-  const ballRef = useRef({ 
-    x: 200, y: 300, vx: 0, vy: 0, 
+  const ballRef = useRef({
+    x: 200, y: 300, vx: 0, vy: 0,
     scaleX: 1, scaleY: 1 // For Squash & Stretch
   });
   const platformsRef = useRef<Platform[]>([]);
   const starsRef = useRef<Star[]>([]);
   const tiltRef = useRef(0);
   const scoreRef = useRef(0);
+  const livesRef = useRef(3);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: scoreRef.current, maxScore: 1000 }),
@@ -69,11 +71,29 @@ const GravityBall = forwardRef((props, ref) => {
     tiltRef.current = tilt / 25; 
   };
 
+  const resetBall = () => {
+    ballRef.current = { x: 200, y: 300, vx: 0, vy: 0, scaleX: 1, scaleY: 1 };
+
+    // Regenerate platforms
+    const startPlatforms: Platform[] = [];
+    for (let i = 0; i < 7; i++) {
+      startPlatforms.push({
+        x: i === 0 ? 160 : Math.random() * (CANVAS_WIDTH - PLATFORM_WIDTH),
+        y: i * 90 + 100,
+        id: Math.random(),
+        type: 'normal'
+      });
+    }
+    platformsRef.current = startPlatforms;
+  };
+
   const initGame = () => {
     scoreRef.current = 0;
     setScore(0);
+    livesRef.current = 3;
+    setDisplayLives(3);
     ballRef.current = { x: 200, y: 300, vx: 0, vy: 0, scaleX: 1, scaleY: 1 };
-    
+
     // Generate Stars for Parallax
     starsRef.current = Array.from({ length: STAR_COUNT }).map(() => ({
       x: Math.random() * CANVAS_WIDTH,
@@ -183,8 +203,17 @@ const GravityBall = forwardRef((props, ref) => {
         });
       }
 
-      // 5. Game Over
-      if (b.y > CANVAS_HEIGHT + 100) setGameState('gameOver');
+      // 5. Life Lost or Game Over
+      if (b.y > CANVAS_HEIGHT + 100) {
+        livesRef.current -= 1;
+        setDisplayLives(livesRef.current);
+
+        if (livesRef.current <= 0) {
+          setGameState('gameOver');
+        } else {
+          resetBall();
+        }
+      }
 
       // 6. Draw Everything
       if (ctx) {
@@ -242,10 +271,17 @@ const GravityBall = forwardRef((props, ref) => {
 
   return (
     <div className="flex flex-col h-full bg-slate-900 items-center justify-center select-none overflow-hidden touch-none font-sans">
-      <div className="absolute top-6 flex flex-col items-center z-10">
+      <div className="absolute top-6 flex flex-col items-center z-10 gap-2">
         <span className="text-cyan-400 font-mono text-2xl font-bold tracking-widest uppercase">
           Altitude: {score}m
         </span>
+        <div className="flex gap-1">
+          {Array.from({length: 3}).map((_, i) => (
+            <span key={i} className={i < displayLives ? "grayscale-0" : "grayscale opacity-20"}>
+              ❤️
+            </span>
+          ))}
+        </div>
       </div>
 
       <canvas 

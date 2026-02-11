@@ -20,6 +20,7 @@ import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
+import GravityBall from './GravityBall';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -42,6 +43,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'word-rescue', name: 'WordSurge', component: WordRescue, duration: 90, instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
   { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
+  { id: 'gravity-ball', name: 'Gravity Ball', component: GravityBall, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
@@ -501,6 +503,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         console.log('🐍 Snake scoring (no time bonus):', normalizedScore);
         break;
 
+      case 'gravity-ball':
+        normalizedScore = scoringSystem.gravityBall(rawScore);
+        console.log('🌍 Gravity Ball scoring (no time bonus):', normalizedScore);
+        break;
+
       default:
         normalizedScore = {
           gameId: '',
@@ -512,8 +519,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         };
     }
 
-    // Apply time bonus if there's time remaining (but NOT for Snake)
-    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake') {
+    // Apply time bonus if there's time remaining (but NOT for Snake or Gravity Ball)
+    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
       console.log(`⏱️ Time Bonus Applied: +${normalizedScore.timeBonus} (${timeRemaining}s / ${currentGame.duration}s)`);
     }

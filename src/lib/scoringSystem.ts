@@ -157,6 +157,19 @@ export const scoringSystem = {
       grade: getGrade(normalized),
       breakdown: `${score} points`
     };
+  },
+
+  // Gravity Ball: 1000 altitude = 100 (rewards survival with 3 lives) - NO TIME BONUS
+  gravityBall: (altitude: number): GameScore => {
+    const normalized = Math.min(100, (altitude / 1000) * 100);
+    return {
+      gameId: 'gravity-ball',
+      gameName: 'Gravity Ball',
+      rawScore: altitude,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${altitude}m altitude`
+    };
   }
 };
 
