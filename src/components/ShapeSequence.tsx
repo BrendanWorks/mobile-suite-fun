@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Repeat } from 'lucide-react';
 
 interface ShapeSequenceProps {
@@ -8,38 +8,71 @@ interface ShapeSequenceProps {
   duration?: number;
 }
 
+interface GameShape {
+  id: number;
+  type: string;
+  color: string;
+  x: number;
+  y: number;
+  size: number;
+  actualX?: number;
+  actualY?: number;
+  actualSize?: number;
+}
+
+interface GameState {
+  canvasWidth: number;
+  canvasHeight: number;
+  shapes: GameShape[];
+  sequence: number[];
+  playerSequence: number[];
+  showingSequence: boolean;
+  sequenceIndex: number;
+  lastClickTime: number;
+  animatingShape: number | null;
+  animationStartTime: number;
+  feedbackStartTime: number;
+  feedbackType: 'correct' | 'wrong' | null;
+}
+
 const MAX_SCORE = 1000;
+const MAX_LIVES = 3;
+const INITIAL_SEQUENCE_LENGTH = 3;
+const MAX_SEQUENCE_LENGTH = 10;
+const SHAPE_ANIMATION_DURATION = 600;
+const FEEDBACK_DURATION = 800;
+
+const SHAPES: GameShape[] = [
+  { id: 0, type: 'circle', color: '#ef4444', x: 0.25, y: 0.25, size: 75 },    // Red
+  { id: 1, type: 'square', color: '#3b82f6', x: 0.75, y: 0.25, size: 75 },    // Blue
+  { id: 2, type: 'triangle', color: '#10b981', x: 0.25, y: 0.75, size: 75 },  // Green
+  { id: 3, type: 'diamond', color: '#f59e0b', x: 0.75, y: 0.75, size: 75 },   // Yellow
+  { id: 4, type: 'star', color: '#8b5cf6', x: 0.5, y: 0.5, size: 75 },        // Purple
+];
+
+const SHAPE_FREQUENCIES = [440, 523.25, 659.25, 783.99, 880]; // Musical notes
 
 const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameState, setGameState] = useState<'waiting' | 'showing' | 'playing' | 'correct' | 'wrong' | 'gameover'>('waiting');
+  const animationFrameRef = useRef<number>();
+  const gameOverTimeoutRef = useRef<number | null>(null);
+  const sequenceTimeoutsRef = useRef<number[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  
+  const [gameState, setGameState] = useState<'idle' | 'showing' | 'playing' | 'correct' | 'wrong' | 'gameover'>('idle');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [showingIndex, setShowingIndex] = useState(0);
-  const gameOverTimeoutRef = useRef<number | null>(null);
-  const isMountedRef = useRef(true);
-  const scoreRef = useRef(0);
-  const sequenceTimeoutsRef = useRef<number[]>([]);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [showingIndex, setShowingIndex] = useState(-1);
+  const [highScore, setHighScore] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem('simonHighScore') || '0');
+    } catch {
+      return 0;
+    }
+  });
 
-  useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: score,
-      maxScore: MAX_SCORE
-    }),
-    onGameEnd: () => {
-      // Lives-based game - only ends when lives run out, not by timer
-      if (gameOverTimeoutRef.current) {
-        clearTimeout(gameOverTimeoutRef.current);
-        gameOverTimeoutRef.current = null;
-      }
-    },
-    canSkipQuestion: false,
-    hideTimer: true // Lives-based game, no timer needed
-  }));
-
-  // Game state variables (using refs to maintain state across renders)
-  const gameStateRef = useRef({
+  const gameStateRef = useRef<GameState>({
     canvasWidth: 0,
     canvasHeight: 0,
     shapes: [],
@@ -51,94 +84,100 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     animatingShape: null,
     animationStartTime: 0,
     feedbackStartTime: 0,
-    feedbackType: null
+    feedbackType: null,
   });
 
-  const SHAPES = [
-    { id: 0, type: 'circle', color: '#ef4444', x: 0.2, y: 0.3, size: 80 },      // Brighter red
-    { id: 1, type: 'square', color: '#06b6d4', x: 0.8, y: 0.3, size: 80 },      // Brighter cyan
-    { id: 2, type: 'triangle', color: '#22d3ee', x: 0.2, y: 0.7, size: 80 },    // Bright cyan/blue
-    { id: 3, type: 'diamond', color: '#fbbf24', x: 0.8, y: 0.7, size: 80 },     // Brighter yellow
-    { id: 4, type: 'star', color: '#a855f7', x: 0.5, y: 0.5, size: 80 }         // Brighter purple
-  ];
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({ score, maxScore: MAX_SCORE }),
+    onGameEnd: () => {
+      cleanupTimeouts();
+    },
+    canSkipQuestion: false,
+    hideTimer: true,
+  }));
 
-  const playSound = (frequency = 440, duration = 150) => {
+  // Initialize audio context on user interaction
+  const initAudio = useCallback(() => {
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (error) {
+        console.warn('Audio not supported');
+      }
+    }
+  }, []);
+
+  const playSound = useCallback((frequency: number, duration: number = 150) => {
+    if (!audioContextRef.current) return;
+    
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
       
       oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(audioContextRef.current.destination);
       
-      oscillator.frequency.value = frequency;
+      oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
       oscillator.type = 'sine';
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+      gainNode.gain.setValueAtTime(0.2, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + duration / 1000);
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration / 1000);
+      oscillator.start(audioContextRef.current.currentTime);
+      oscillator.stop(audioContextRef.current.currentTime + duration / 1000);
     } catch (error) {
-      console.log('Audio not supported');
+      console.warn('Failed to play sound');
     }
-  };
+  }, []);
 
-  const handleResize = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const cleanupTimeouts = useCallback(() => {
+    sequenceTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    sequenceTimeoutsRef.current = [];
+    
+    if (gameOverTimeoutRef.current) {
+      clearTimeout(gameOverTimeoutRef.current);
+      gameOverTimeoutRef.current = null;
+    }
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  }, []);
 
-    const container = canvas.parentElement;
-    if (!container) return;
-
-    const size = Math.min(container.offsetWidth, window.innerHeight * 0.6);
-    canvas.width = size;
-    canvas.height = size;
-    gameStateRef.current.canvasWidth = canvas.width;
-    gameStateRef.current.canvasHeight = canvas.height;
-
-    // Update shape positions based on canvas size
-    gameStateRef.current.shapes = SHAPES.map(shape => ({
-      ...shape,
-      actualX: shape.x * canvas.width,
-      actualY: shape.y * canvas.height,
-      actualSize: shape.size * (canvas.width / 400) // Scale size based on canvas
-    }));
-
-    drawGame();
-  };
-
-  const drawShape = (ctx, shape, isHighlighted = false, alpha = 1) => {
+  const drawShape = useCallback((ctx: CanvasRenderingContext2D, shape: GameShape, isHighlighted = false, alpha = 1) => {
+    const x = shape.actualX!;
+    const y = shape.actualY!;
+    const size = shape.actualSize!;
+    
     ctx.save();
     ctx.globalAlpha = alpha;
     
-    const x = shape.actualX;
-    const y = shape.actualY;
-    const size = shape.actualSize;
-    
-    // Add glow effect when highlighted
+    // Glow effect for highlighted shapes
     if (isHighlighted) {
       ctx.shadowColor = shape.color;
-      ctx.shadowBlur = 20;
-      ctx.fillStyle = shape.color;
-    } else {
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = shape.color;
+      ctx.shadowBlur = 25;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
     }
-
+    
+    ctx.fillStyle = shape.color;
+    ctx.lineWidth = isHighlighted ? 3 : 1.5;
+    ctx.strokeStyle = isHighlighted ? '#ffffff' : '#ffffff30';
+    
     ctx.beginPath();
     
     switch (shape.type) {
       case 'circle':
-        ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
         break;
       case 'square':
         ctx.rect(x - size / 2, y - size / 2, size, size);
         break;
       case 'triangle':
-        ctx.moveTo(x, y - size / 2);
-        ctx.lineTo(x - size / 2, y + size / 2);
-        ctx.lineTo(x + size / 2, y + size / 2);
+        const triangleHeight = (Math.sqrt(3) / 2) * size;
+        ctx.moveTo(x, y - triangleHeight / 2);
+        ctx.lineTo(x - size / 2, y + triangleHeight / 2);
+        ctx.lineTo(x + size / 2, y + triangleHeight / 2);
         ctx.closePath();
         break;
       case 'diamond':
@@ -152,451 +191,525 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         const spikes = 5;
         const outerRadius = size / 2;
         const innerRadius = outerRadius * 0.4;
-        let rot = Math.PI / 2 * 3;
-        let cx = x;
-        let cy = y;
-        const step = Math.PI / spikes;
-
-        ctx.moveTo(cx, cy - outerRadius);
+        let rotation = (Math.PI / 2) * 3;
+        
+        ctx.moveTo(x, y - outerRadius);
         for (let i = 0; i < spikes; i++) {
-          cx = x + Math.cos(rot) * outerRadius;
-          cy = y + Math.sin(rot) * outerRadius;
-          ctx.lineTo(cx, cy);
-          rot += step;
-
-          cx = x + Math.cos(rot) * innerRadius;
-          cy = y + Math.sin(rot) * innerRadius;
-          ctx.lineTo(cx, cy);
-          rot += step;
+          ctx.lineTo(
+            x + Math.cos(rotation) * outerRadius,
+            y + Math.sin(rotation) * outerRadius
+          );
+          rotation += Math.PI / spikes;
+          
+          ctx.lineTo(
+            x + Math.cos(rotation) * innerRadius,
+            y + Math.sin(rotation) * innerRadius
+          );
+          rotation += Math.PI / spikes;
         }
-        ctx.lineTo(x, y - outerRadius);
         ctx.closePath();
         break;
     }
     
     ctx.fill();
-    
-    // Add border
-    ctx.strokeStyle = isHighlighted ? '#ffffff' : '#ffffff40';
-    ctx.lineWidth = isHighlighted ? 4 : 2;
     ctx.stroke();
-    
     ctx.restore();
-  };
+  }, []);
 
-  const drawGame = () => {
+  const drawGame = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Clear canvas with pure black background
-    ctx.fillStyle = '#000000';
+    
+    // Clear with gradient background
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#0a0a0a');
+    gradient.addColorStop(1, '#1a1a1a');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    
     const currentTime = Date.now();
+    const state = gameStateRef.current;
     
     // Draw all shapes
-    gameStateRef.current.shapes.forEach(shape => {
+    state.shapes.forEach(shape => {
       let isHighlighted = false;
       let alpha = 1;
-
-      // Check if this shape is currently being animated
-      if (gameStateRef.current.animatingShape === shape.id) {
-        const animationProgress = (currentTime - gameStateRef.current.animationStartTime) / 600;
+      
+      // Animation for currently highlighted shape
+      if (state.animatingShape === shape.id) {
+        const animationProgress = (currentTime - state.animationStartTime) / SHAPE_ANIMATION_DURATION;
         if (animationProgress < 1) {
-          // Pulsing animation
-          const pulseIntensity = Math.sin(animationProgress * Math.PI * 4) * 0.5 + 0.5;
-          isHighlighted = pulseIntensity > 0.3;
-          alpha = 0.7 + (pulseIntensity * 0.3);
+          const pulse = Math.sin(animationProgress * Math.PI * 6) * 0.5 + 0.5;
+          isHighlighted = pulse > 0.3;
+          alpha = 0.8 + pulse * 0.2;
         } else {
-          gameStateRef.current.animatingShape = null;
+          state.animatingShape = null;
         }
       }
-
-      // Dim shapes when not playing
-      if (gameState === 'showing' || gameState === 'waiting') {
-        alpha *= 0.6;
+      
+      // Dim shapes during sequence display
+      if (gameState === 'showing' && shape.id !== state.sequence[showingIndex]) {
+        alpha *= 0.4;
       }
-
+      
       drawShape(ctx, shape, isHighlighted, alpha);
     });
-
+    
     // Draw feedback overlay
-    if (gameStateRef.current.feedbackType && gameStateRef.current.feedbackStartTime) {
-      const feedbackProgress = (currentTime - gameStateRef.current.feedbackStartTime) / 800;
+    if (state.feedbackType && state.feedbackStartTime) {
+      const feedbackProgress = (currentTime - state.feedbackStartTime) / FEEDBACK_DURATION;
       if (feedbackProgress < 1) {
         ctx.save();
-        ctx.globalAlpha = (1 - feedbackProgress) * 0.3;
-        ctx.fillStyle = gameStateRef.current.feedbackType === 'correct' ? '#4ade80' : '#ef4444';
+        ctx.globalAlpha = (1 - feedbackProgress) * 0.4;
+        ctx.fillStyle = state.feedbackType === 'correct' ? '#10b981' : '#ef4444';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
       } else {
-        gameStateRef.current.feedbackType = null;
+        state.feedbackType = null;
       }
     }
-
-    // Continue animation loop if needed
-    if (gameStateRef.current.animatingShape !== null || gameStateRef.current.feedbackType) {
-      requestAnimationFrame(drawGame);
+    
+    // Continue animation if needed
+    if (state.animatingShape !== null || state.feedbackType) {
+      animationFrameRef.current = requestAnimationFrame(drawGame);
     }
-  };
+  }, [gameState, showingIndex, drawShape]);
 
-  const getClickedShape = (x, y) => {
-    return gameStateRef.current.shapes.find(shape => {
-      const dx = x - shape.actualX;
-      const dy = y - shape.actualY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      return distance <= shape.actualSize / 2;
-    });
-  };
+  const handleResize = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const container = canvas.parentElement;
+    if (!container) return;
+    
+    const size = Math.min(container.offsetWidth - 32, 500);
+    canvas.width = size;
+    canvas.height = size;
+    
+    const state = gameStateRef.current;
+    state.canvasWidth = size;
+    state.canvasHeight = size;
+    
+    // Calculate actual positions
+    state.shapes = SHAPES.map(shape => ({
+      ...shape,
+      actualX: shape.x * size,
+      actualY: shape.y * size,
+      actualSize: shape.size * (size / 400),
+    }));
+    
+    drawGame();
+  }, [drawGame]);
 
-  const generateSequence = (length) => {
-    const sequence = [];
-    for (let i = 0; i < length; i++) {
-      const availableShapes = level <= 3 ? SHAPES.slice(0, 4) : SHAPES; // Start with 4 shapes, add 5th at level 4
-      sequence.push(availableShapes[Math.floor(Math.random() * availableShapes.length)].id);
-    }
-    return sequence;
-  };
+  const generateSequence = useCallback((length: number): number[] => {
+    const availableShapes = level <= 3 ? SHAPES.slice(0, 4) : SHAPES;
+    return Array.from({ length }, () => 
+      availableShapes[Math.floor(Math.random() * availableShapes.length)].id
+    );
+  }, [level]);
 
-  const showSequence = async () => {
-    if (!isMountedRef.current) return;
-
+  const showSequence = useCallback(async () => {
     setGameState('showing');
     gameStateRef.current.playerSequence = [];
-    setShowingIndex(0);
-
+    setShowingIndex(-1);
+    
     const sequence = gameStateRef.current.sequence;
-    if (!sequence || sequence.length === 0) return;
-
+    
+    // Brief pause before starting
+    await new Promise(resolve => {
+      const timeout = window.setTimeout(resolve, 500);
+      sequenceTimeoutsRef.current.push(timeout);
+    });
+    
     for (let i = 0; i < sequence.length; i++) {
-      if (!isMountedRef.current) return;
-
       setShowingIndex(i);
-
-      // Animate the shape
+      
+      // Animate shape
       gameStateRef.current.animatingShape = sequence[i];
       gameStateRef.current.animationStartTime = Date.now();
-
-      // Play sound based on shape
-      const frequencies = [440, 523, 659, 784, 880]; // C, C#, E, G, A
-      playSound(frequencies[sequence[i]], 400);
-
-      // Start animation
       drawGame();
-
-      // Wait for animation to complete
+      
+      // Play corresponding sound
+      playSound(SHAPE_FREQUENCIES[sequence[i]], 400);
+      
+      // Wait for animation
       await new Promise(resolve => {
         const timeout = window.setTimeout(resolve, 800);
         sequenceTimeoutsRef.current.push(timeout);
       });
-
-      if (!isMountedRef.current) return;
-
-      // Brief pause between shapes
+      
+      // Pause between shapes
       if (i < sequence.length - 1) {
         await new Promise(resolve => {
-          const timeout = window.setTimeout(resolve, 200);
+          const timeout = window.setTimeout(resolve, 150);
           sequenceTimeoutsRef.current.push(timeout);
         });
       }
     }
-
-    if (!isMountedRef.current) return;
-
+    
     setShowingIndex(-1);
     setGameState('playing');
-  };
+  }, [drawGame, playSound]);
 
-  const handleShapeClick = (shapeId) => {
+  const handleShapeClick = useCallback((shapeId: number) => {
     if (gameState !== 'playing') return;
     
     const currentTime = Date.now();
-    if (currentTime - gameStateRef.current.lastClickTime < 200) return; // Debounce
+    if (currentTime - gameStateRef.current.lastClickTime < 150) return;
     gameStateRef.current.lastClickTime = currentTime;
-
+    
     // Animate clicked shape
     gameStateRef.current.animatingShape = shapeId;
     gameStateRef.current.animationStartTime = Date.now();
     drawGame();
-
+    
     // Play sound
-    const frequencies = [440, 523, 659, 784, 880];
-    playSound(frequencies[shapeId], 200);
-
-    gameStateRef.current.playerSequence.push(shapeId);
-    const currentIndex = gameStateRef.current.playerSequence.length - 1;
-    const expectedId = gameStateRef.current.sequence[currentIndex];
-
+    playSound(SHAPE_FREQUENCIES[shapeId], 200);
+    
+    const state = gameStateRef.current;
+    state.playerSequence.push(shapeId);
+    const currentIndex = state.playerSequence.length - 1;
+    const expectedId = state.sequence[currentIndex];
+    
     if (shapeId === expectedId) {
-      // Correct so far
-      if (gameStateRef.current.playerSequence.length === gameStateRef.current.sequence.length) {
-        // Sequence complete!
+      // Correct
+      if (state.playerSequence.length === state.sequence.length) {
+        // Sequence complete
         setGameState('correct');
-        gameStateRef.current.feedbackType = 'correct';
-        gameStateRef.current.feedbackStartTime = Date.now();
+        state.feedbackType = 'correct';
+        state.feedbackStartTime = Date.now();
         drawGame();
         
-        // Brief delay before success sound to let shape sound finish
-        setTimeout(() => playSound(880, 300), 150);
+        // Success sound
+        setTimeout(() => playSound(987.77, 300), 100);
+        
+        // Calculate and update score
+        const points = level * 15 + state.sequence.length * 5;
         setScore(prev => {
-          const newScore = prev + level * 10;
-          scoreRef.current = newScore;
-          if (props.onScoreUpdate) {
-            props.onScoreUpdate(newScore, MAX_SCORE);
+          const newScore = prev + points;
+          props.onScoreUpdate?.(newScore, MAX_SCORE);
+          
+          // Update high score
+          if (newScore > highScore) {
+            setHighScore(newScore);
+            try {
+              localStorage.setItem('simonHighScore', newScore.toString());
+            } catch {}
           }
+          
           return newScore;
         });
-
+        
+        // Move to next level
         setTimeout(() => {
-          if (!isMountedRef.current) return;
           setLevel(prev => prev + 1);
           startNextRound();
         }, 1000);
       }
     } else {
-      // Wrong!
+      // Wrong
       setGameState('wrong');
-      gameStateRef.current.feedbackType = 'wrong';
-      gameStateRef.current.feedbackStartTime = Date.now();
+      state.feedbackType = 'wrong';
+      state.feedbackStartTime = Date.now();
       drawGame();
       
-      playSound(200, 500); // Error sound
+      playSound(200, 500);
+      
       setLives(prev => {
         const newLives = prev - 1;
+        
         if (newLives <= 0) {
+          // Game over
           setTimeout(() => {
-            if (!isMountedRef.current) return;
             setGameState('gameover');
-            // Auto-advance to results after 2.5 seconds
             gameOverTimeoutRef.current = window.setTimeout(() => {
-              if (!isMountedRef.current) return;
-              if (props.onComplete) {
-                props.onComplete(scoreRef.current, MAX_SCORE, props.timeRemaining);
-              }
+              props.onComplete?.(score, MAX_SCORE);
             }, 2500);
           }, 1000);
         } else {
+          // Try again
           setTimeout(() => {
-            if (!isMountedRef.current) return;
             showSequence();
           }, 1000);
         }
+        
         return newLives;
       });
     }
-  };
+  }, [gameState, level, score, highScore, drawGame, playSound, showSequence, props]);
 
-  const handleCanvasClick = (e) => {
-    if (gameState !== 'playing') return;
-
+  const handleCanvasClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+    
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
     const x = (clientX - rect.left) * scaleX;
     const y = (clientY - rect.top) * scaleY;
-
-    const clickedShape = getClickedShape(x, y);
+    
+    // Find clicked shape
+    const clickedShape = gameStateRef.current.shapes.find(shape => {
+      const dx = x - shape.actualX!;
+      const dy = y - shape.actualY!;
+      return Math.sqrt(dx * dx + dy * dy) <= shape.actualSize! / 2;
+    });
+    
     if (clickedShape) {
       handleShapeClick(clickedShape.id);
     }
-  };
+  }, [handleShapeClick]);
 
-  const startNextRound = () => {
-    if (!isMountedRef.current) return;
-    const sequenceLength = Math.min(3 + level - 1, 8); // Start with 3, max 8
+  const startNextRound = useCallback(() => {
+    const sequenceLength = Math.min(INITIAL_SEQUENCE_LENGTH + level - 1, MAX_SEQUENCE_LENGTH);
     gameStateRef.current.sequence = generateSequence(sequenceLength);
+    
     setTimeout(() => {
-      if (!isMountedRef.current) return;
       showSequence();
     }, 500);
-  };
+  }, [level, generateSequence, showSequence]);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
+    initAudio();
+    cleanupTimeouts();
+    
     setLevel(1);
     setScore(0);
-    setLives(3);
-    setGameState('waiting');
-    startNextRound();
-  };
+    setLives(MAX_LIVES);
+    setGameState('showing');
+    
+    setTimeout(() => {
+      startNextRound();
+    }, 300);
+  }, [initAudio, cleanupTimeouts, startNextRound]);
 
-  const resetGame = () => {
-    setGameState('waiting');
+  const resetGame = useCallback(() => {
+    cleanupTimeouts();
+    setGameState('idle');
     setLevel(1);
     setScore(0);
-    scoreRef.current = 0;
-    setLives(3);
-    gameStateRef.current.playerSequence = [];
-    gameStateRef.current.sequence = [];
-    gameStateRef.current.animatingShape = null;
-    gameStateRef.current.feedbackType = null;
-    if (gameOverTimeoutRef.current) {
-      clearTimeout(gameOverTimeoutRef.current);
-      gameOverTimeoutRef.current = null;
-    }
-    // Clear all sequence timeouts
-    sequenceTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-    sequenceTimeoutsRef.current = [];
+    setLives(MAX_LIVES);
+    setShowingIndex(-1);
+    
+    gameStateRef.current = {
+      ...gameStateRef.current,
+      sequence: [],
+      playerSequence: [],
+      animatingShape: null,
+      feedbackType: null,
+    };
+    
     drawGame();
-  };
+  }, [cleanupTimeouts, drawGame]);
 
-  // Keep scoreRef in sync with score state
+  // Initialize and cleanup
   useEffect(() => {
-    scoreRef.current = score;
-  }, [score]);
-
-  // Initialize canvas and handle resize
-  useEffect(() => {
-    isMountedRef.current = true;
     handleResize();
-
+    
     const handleResizeEvent = () => handleResize();
     window.addEventListener('resize', handleResizeEvent);
-
+    
+    // Initialize on first click
+    const initOnClick = () => {
+      initAudio();
+      document.removeEventListener('click', initOnClick);
+    };
+    document.addEventListener('click', initOnClick);
+    
     return () => {
-      isMountedRef.current = false;
+      cleanupTimeouts();
       window.removeEventListener('resize', handleResizeEvent);
-      if (gameOverTimeoutRef.current) {
-        clearTimeout(gameOverTimeoutRef.current);
+      document.removeEventListener('click', initOnClick);
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
-      // Clear all sequence timeouts
-      sequenceTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      sequenceTimeoutsRef.current = [];
     };
-  }, []);
-
-  // Handle canvas events
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const handleMouseDown = (e) => handleCanvasClick(e);
-    const handleTouchStart = (e) => {
-      e.preventDefault();
-      handleCanvasClick(e);
-    };
-
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-
-    return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('touchstart', handleTouchStart);
-    };
-  }, [gameState]);
+  }, [handleResize, initAudio, cleanupTimeouts]);
 
   return (
-    <div className="bg-black flex items-start justify-center p-2 pt-2">
-      <div className="text-center max-w-4xl w-full text-white">
-      
-      {/* Header - Updated to match pattern */}
-      <div className="mb-2 sm:mb-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-1 border-b border-orange-400 pb-1 flex items-center justify-center gap-2">
-          <Repeat 
-            className="w-6 h-6 sm:w-7 sm:h-7" 
-            style={{ 
-              color: '#f97316',
-              filter: 'drop-shadow(0 0 8px rgba(249, 115, 22, 0.6))',
-              strokeWidth: 2
-            }} 
-          />
-          <span style={{ textShadow: '0 0 10px #f97316' }}>Simple</span>
-        </h2>
-        
-        {/* Tagline */}
-        <p className="text-orange-300 text-xs sm:text-sm mb-1 sm:mb-2">
-          Repeat the Pattern
-        </p>
-
-        {/* Stats - Score left, Lives right */}
-        <div className="flex justify-between items-center text-sm sm:text-base">
-          <div className="text-orange-300">
-            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Repeat className="w-10 h-10 text-orange-400 animate-pulse" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
+              Memory Shapes
+            </h1>
           </div>
-          <div className="text-orange-300 text-2xl sm:text-3xl">
-            <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
-          </div>
+          <p className="text-gray-300 mb-4">Watch and repeat the pattern!</p>
         </div>
-      </div>
 
-      {/* Game Status */}
-      <div className="mb-2 sm:mb-4 min-h-[24px] sm:min-h-[28px]">
-        {gameState === 'showing' && (
-          <div className="text-sm sm:text-lg text-orange-400" style={{ textShadow: '0 0 10px #f97316' }}>
-            Watch the sequence... ({showingIndex + 1}/{gameStateRef.current.sequence?.length || 0})
+        {/* Stats Bar */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-700">
+            <div className="text-sm text-gray-400 mb-1">Score</div>
+            <div className="text-2xl font-bold text-yellow-400">{score}</div>
           </div>
-        )}
-        {gameState === 'playing' && (
-          <div className="text-sm sm:text-lg text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>
-            Repeat the sequence! ({gameStateRef.current.playerSequence?.length || 0}/{gameStateRef.current.sequence?.length || 0})
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-700">
+            <div className="text-sm text-gray-400 mb-1">Level</div>
+            <div className="text-2xl font-bold text-green-400">{level}</div>
           </div>
-        )}
-        {gameState === 'correct' && (
-          <div className="text-sm sm:text-lg text-green-400 animate-pulse" style={{ textShadow: '0 0 15px #22c55e' }}>Correct! ✨</div>
-        )}
-        {gameState === 'wrong' && (
-          <div className="text-sm sm:text-lg text-red-400 animate-pulse" style={{ textShadow: '0 0 15px #ff0066' }}>Wrong! Try again...</div>
-        )}
-      </div>
-
-      {/* Game Canvas - Updated border to orange */}
-      <div className="w-full flex justify-center mb-2 sm:mb-4">
-        <div className="w-full max-w-md bg-black rounded-xl p-2 sm:p-3 border-2 border-orange-400/40" style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full border-2 border-orange-500 rounded-lg cursor-pointer"
-            style={{ touchAction: 'none', aspectRatio: '1', boxShadow: '0 0 15px rgba(249, 115, 22, 0.3)' }}
-          />
-        </div>
-      </div>
-
-      {/* Controls - Updated button styling */}
-      <div className="flex justify-center gap-2 sm:gap-4">
-        {gameState === 'waiting' && (
-          <button
-            onClick={startGame}
-            className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border-2 border-orange-500 text-orange-400 font-bold rounded-lg hover:bg-orange-500 hover:text-black transition-all text-base sm:text-lg"
-            style={{ textShadow: '0 0 10px #f97316', boxShadow: '0 0 15px rgba(249, 115, 22, 0.3)' }}
-          >
-            Start
-          </button>
-        )}
-
-        {(gameState === 'playing' || gameState === 'showing' || gameState === 'correct' || gameState === 'wrong') && gameState !== 'gameover' && (
-          <button
-            onClick={resetGame}
-            className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-orange-400 text-orange-400 text-sm sm:text-base font-bold rounded-lg hover:bg-orange-400 hover:text-black transition-all"
-            style={{ textShadow: '0 0 8px #f97316', boxShadow: '0 0 15px rgba(249, 115, 22, 0.3)' }}
-          >
-            🔄 Reset Game
-          </button>
-        )}
-      </div>
-
-      {/* Game Over Screen - Updated to show auto-advance message */}
-      {gameState === 'gameover' && (
-        <div className="mt-3 sm:mt-6 p-3 sm:p-6 bg-black border-2 border-red-500 rounded-xl" style={{ boxShadow: '0 0 25px rgba(239, 68, 68, 0.4)' }}>
-          <div className="text-center">
-            <h3 className="text-2xl sm:text-3xl font-bold text-red-500 mb-2 sm:mb-4" style={{ textShadow: '0 0 15px #ff0066' }}>
-              💀 Game Over!
-            </h3>
-            <div className="text-base sm:text-lg text-orange-300 mb-2">
-              <div>Final Score: <strong className="text-yellow-400">{score}</strong></div>
-              <div>Level Reached: <strong className="text-orange-400">{level}</strong></div>
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 text-center border border-gray-700">
+            <div className="text-sm text-gray-400 mb-1">Lives</div>
+            <div className="text-2xl font-bold text-red-400">
+              {'♥'.repeat(lives)}{'♡'.repeat(MAX_LIVES - lives)}
             </div>
           </div>
         </div>
-      )}
+
+        {/* High Score */}
+        <div className="text-center mb-4">
+          <div className="inline-block bg-gray-800/30 px-4 py-2 rounded-full">
+            <span className="text-gray-400">High Score: </span>
+            <span className="font-bold text-orange-300">{highScore}</span>
+          </div>
+        </div>
+
+        {/* Game Status */}
+        <div className="text-center mb-4 min-h-[40px]">
+          {gameState === 'showing' && (
+            <div className="text-lg text-orange-300 animate-pulse">
+              Watch carefully... {showingIndex + 1}/{gameStateRef.current.sequence.length}
+            </div>
+          )}
+          {gameState === 'playing' && (
+            <div className="text-lg text-green-400 font-bold">
+              Your turn! ({gameStateRef.current.playerSequence.length}/{gameStateRef.current.sequence.length})
+            </div>
+          )}
+          {gameState === 'correct' && (
+            <div className="text-lg text-green-400 animate-bounce">Perfect! 🎉</div>
+          )}
+          {gameState === 'wrong' && (
+            <div className="text-lg text-red-400 animate-pulse">Wrong pattern! 😔</div>
+          )}
+        </div>
+
+        {/* Game Canvas */}
+        <div className="flex justify-center mb-8">
+          <div className="relative w-full max-w-md">
+            <canvas
+              ref={canvasRef}
+              onClick={handleCanvasClick}
+              onTouchStart={handleCanvasClick}
+              className="w-full aspect-square rounded-2xl border-4 border-gray-700 shadow-2xl cursor-pointer touch-none"
+              style={{
+                background: 'radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%)',
+              }}
+            />
+            
+            {/* Center indicator */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <div className="w-16 h-16 rounded-full border-2 border-gray-600/50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400/20 to-transparent animate-spin-slow" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex justify-center gap-4 mb-8">
+          {gameState === 'idle' || gameState === 'gameover' ? (
+            <button
+              onClick={startGame}
+              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-black font-bold rounded-xl text-lg hover:from-orange-600 hover:to-yellow-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+            >
+              {gameState === 'gameover' ? 'Play Again' : 'Start Game'}
+            </button>
+          ) : (
+            <button
+              onClick={resetGame}
+              className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-bold rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all border border-gray-600"
+            >
+              Reset Game
+            </button>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-8">
+          <h3 className="text-xl font-bold mb-3 text-center text-gray-300">How to Play</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">👁️</span>
+              </div>
+              <div className="font-semibold mb-1">Watch</div>
+              <p className="text-sm text-gray-400">Memorize the sequence of shapes</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">👆</span>
+              </div>
+              <div className="font-semibold mb-1">Repeat</div>
+              <p className="text-sm text-gray-400">Click shapes in the same order</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">🏆</span>
+              </div>
+              <div className="font-semibold mb-1">Progress</div>
+              <p className="text-sm text-gray-400">Longer sequences = more points</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Game Over Screen */}
+        {gameState === 'gameover' && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gradient-to-b from-gray-900 to-black rounded-2xl p-8 max-w-md w-full border border-red-500/30 shadow-2xl">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🎮</div>
+                <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                  Game Over!
+                </h2>
+                
+                <div className="space-y-4 my-6">
+                  <div>
+                    <div className="text-gray-400">Final Score</div>
+                    <div className="text-4xl font-bold text-yellow-400">{score}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-gray-400">Level Reached</div>
+                      <div className="text-2xl font-bold text-green-400">{level}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">High Score</div>
+                      <div className="text-2xl font-bold text-orange-400">{Math.max(score, highScore)}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-gray-400 text-sm mt-4">
+                  Auto-advancing in 2 seconds...
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      
+      {/* Add custom animation */}
+      <style jsx>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 });
