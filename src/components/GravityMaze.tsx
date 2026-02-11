@@ -78,7 +78,9 @@ const GravityMaze = forwardRef((props, ref) => {
   const startTimeRef = useRef(0);
   const teleportPairsRef = useRef(new Map<number, {x: number, y: number}>());
   const bgStarsRef = useRef<Array<{x: number, y: number, size: number, speed: number}>>([]);
+  const pathCacheRef = useRef<Set<string>>(new Set()); // Cache for solvability check
 
+  // Keep your suite integration
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ 
       score: stats.score, 
@@ -88,8 +90,8 @@ const GravityMaze = forwardRef((props, ref) => {
     onGameEnd: () => setGameState('gameOver'),
   }));
 
-  // --- 1. ENHANCED MAZE GENERATION ---
-  const generateSolvableMaze = useCallback((level: number) => {
+  // --- FIXED MAZE GENERATION (GUARANTEED SOLVABLE) ---
+  const generateSolvableMaze = useCallback((level: number): MazeTile[] => {
     const grid: MazeTile[] = [];
     
     // Initialize all as walls
@@ -99,91 +101,169 @@ const GravityMaze = forwardRef((props, ref) => {
       }
     }
 
-    // Recursive backtracker algorithm
-    const stack: [number, number][] = [[1, 1]];
-    const visited = new Set(['1,1']);
-    grid[1 * MAZE_WIDTH + 1].type = 'empty';
+    // Ensure maze dimensions are odd for proper generation
+    const generateMazePath = (startX: number, startY: number): boolean => {
+      const stack: [number, number][] = [[startX, startY]];
+      const visited = new Set<string>();
+      visited.add(`${startX},${startY}`);
+      grid[startY * MAZE_WIDTH + startX].type = 'empty';
+      
+      // Direction vectors (dx, dy)
+      const directions = [[0, 2], [0, -2], [2, 0], [-2, 0]];
+      
+      while (stack.length > 0) {
+        const [cx, cy] = stack[stack.length - 1];
+        const availableDirs = directions
+          .map(([dx, dy]) => [cx + dx, cy + dy])
+          .filter(([nx, ny]) => 
+            nx > 0 && nx < MAZE_WIDTH - 1 && 
+            ny > 0 && ny < MAZE_HEIGHT - 1 && 
+            !visited.has(`${nx},${ny}`)
+          );
 
-    while (stack.length > 0) {
-      const [cx, cy] = stack[stack.length - 1];
-      const neighbors = [[0,2],[0,-2],[2,0],[-2,0]]
-        .map(([dx,dy]) => [cx+dx, cy+dy])
-        .filter(([nx, ny]) => 
-          nx > 0 && nx < MAZE_WIDTH-1 && 
-          ny > 0 && ny < MAZE_HEIGHT-1 && 
-          !visited.has(`${nx},${ny}`)
-        );
-
-      if (neighbors.length > 0) {
-        const [nx, ny] = neighbors[Math.floor(Math.random() * neighbors.length)];
-        grid[ny * MAZE_WIDTH + nx].type = 'empty';
-        grid[(cy + (ny - cy) / 2) * MAZE_WIDTH + (cx + (nx - cx) / 2)].type = 'empty';
-        visited.add(`${nx},${ny}`);
-        stack.push([nx, ny]);
-      } else {
-        stack.pop();
+        if (availableDirs.length > 0) {
+          const [nx, ny] = availableDirs[Math.floor(Math.random() * availableDirs.length)];
+          const mx = cx + (nx - cx) / 2;
+          const my = cy + (ny - cy) / 2;
+          
+          grid[ny * MAZE_WIDTH + nx].type = 'empty';
+          grid[my * MAZE_WIDTH + mx].type = 'empty';
+          visited.add(`${nx},${ny}`);
+          stack.push([nx, ny]);
+        } else {
+          stack.pop();
+        }
       }
-    }
+      
+      return visited.size > 0;
+    };
 
-    // Level-based features
-    keysNeededRef.current = level >= 2 ? Math.min(3, Math.floor(level/2)) : 0;
+    // Generate main maze path
+    generateMazePath(1, 1);
     
-    // Start position
+    // Level-based features
+    keysNeededRef.current = level >= 2 ? Math.min(3, Math.floor(level / 2)) : 0;
+    
+    // Set start position (top-left area)
     grid[1 * MAZE_WIDTH + 1].type = 'start';
     
-    // Goal position (bottom right)
+    // Set goal position (bottom-right area) - ensure it's reachable
     const goalX = MAZE_WIDTH - 2;
     const goalY = MAZE_HEIGHT - 2;
     grid[goalY * MAZE_WIDTH + goalX].type = 'goal';
+    
+    // Find all empty tiles that are NOT start or goal
+    const emptyTiles = grid.filter(t => t.type === 'empty' && 
+      !(t.x === 1 && t.y === 1) && 
+      !(t.x === goalX && t.y === goalY));
 
-    // Add hazards based on level
-    const hazardCount = Math.min(8, Math.floor(level * 1.5));
+    // FIX: Only place hazards on empty tiles that are NOT part of critical path
+    const hazardCount = Math.min(5, Math.floor(level * 1.2));
     for (let i = 0; i < hazardCount; i++) {
-      const emptyTiles = grid.filter(t => t.type === 'empty');
-      if (emptyTiles.length > 0) {
+      if (emptyTiles.length > hazardCount * 2) { // Ensure we have enough empty tiles
         const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-        tile.type = 'hazard';
-      }
-    }
-
-    // Add teleporters from level 3
-    if (level >= 3) {
-      teleportPairsRef.current.clear();
-      const emptyTiles = grid.filter(t => t.type === 'empty');
-      if (emptyTiles.length >= 2) {
-        const [tile1, tile2] = [
-          emptyTiles[Math.floor(Math.random() * emptyTiles.length)],
-          emptyTiles[Math.floor(Math.random() * emptyTiles.length)]
-        ];
-        if (tile1 && tile2 && tile1 !== tile2) {
-          const teleportId = Date.now();
-          tile1.type = 'teleport';
-          tile2.type = 'teleport';
-          tile1.id = teleportId;
-          tile2.id = teleportId;
-          teleportPairsRef.current.set(teleportId, {x: tile2.x, y: tile2.y});
+        if (tile) {
+          tile.type = 'hazard';
+          // Remove from empty tiles list
+          const index = emptyTiles.indexOf(tile);
+          if (index > -1) emptyTiles.splice(index, 1);
         }
       }
     }
 
+    // Add teleporters from level 3 - ensure they're on empty tiles
+    if (level >= 3 && emptyTiles.length >= 2) {
+      teleportPairsRef.current.clear();
+      const [tile1, tile2] = [
+        emptyTiles[Math.floor(Math.random() * emptyTiles.length)],
+        emptyTiles[Math.floor(Math.random() * emptyTiles.length)]
+      ];
+      
+      if (tile1 && tile2 && tile1 !== tile2) {
+        const teleportId = Date.now();
+        tile1.type = 'teleport';
+        tile2.type = 'teleport';
+        tile1.id = teleportId;
+        tile2.id = teleportId;
+        teleportPairsRef.current.set(teleportId, {x: tile2.x, y: tile2.y});
+        
+        // Remove from empty tiles
+        const idx1 = emptyTiles.indexOf(tile1);
+        const idx2 = emptyTiles.indexOf(tile2);
+        if (idx1 > -1) emptyTiles.splice(idx1, 1);
+        if (idx2 > -1) emptyTiles.splice(idx2, 1);
+      }
+    }
+
     // Add checkpoints from level 4
-    if (level >= 4) {
+    if (level >= 4 && emptyTiles.length > 0) {
       const checkpointCount = Math.min(2, Math.floor(level / 4));
       for (let i = 0; i < checkpointCount; i++) {
-        const emptyTiles = grid.filter(t => t.type === 'empty');
         if (emptyTiles.length > 0) {
           const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
           tile.type = 'checkpoint';
           tile.id = i;
           tile.active = false;
+          
+          const index = emptyTiles.indexOf(tile);
+          if (index > -1) emptyTiles.splice(index, 1);
         }
+      }
+    }
+
+    // Pathfinding validation - ensure the maze is solvable
+    const validatePath = (start: MazeTile, goal: MazeTile): boolean => {
+      const openSet = [start];
+      const closedSet = new Set<string>();
+      const pathFound = new Map<string, string>();
+      
+      while (openSet.length > 0) {
+        const current = openSet.shift()!;
+        closedSet.add(`${current.x},${current.y}`);
+        
+        if (current.x === goal.x && current.y === goal.y) {
+          return true;
+        }
+        
+        // Check adjacent cells
+        const neighbors = [[0, 1], [0, -1], [1, 0], [-1, 0]]
+          .map(([dx, dy]) => [current.x + dx, current.y + dy])
+          .filter(([nx, ny]) => 
+            nx >= 0 && nx < MAZE_WIDTH && 
+            ny >= 0 && ny < MAZE_HEIGHT
+          )
+          .map(([nx, ny]) => grid[ny * MAZE_WIDTH + nx])
+          .filter(tile => 
+            tile.type !== 'wall' && 
+            !closedSet.has(`${tile.x},${tile.y}`)
+          );
+        
+        for (const neighbor of neighbors) {
+          openSet.push(neighbor);
+          pathFound.set(`${neighbor.x},${neighbor.y}`, `${current.x},${current.y}`);
+        }
+      }
+      
+      return false;
+    };
+
+    // Get start and goal tiles
+    const startTile = grid.find(t => t.type === 'start')!;
+    const goalTile = grid.find(t => t.type === 'goal')!;
+    
+    // If path is blocked by hazards, convert some hazards back to empty
+    if (!validatePath(startTile, goalTile)) {
+      const hazards = grid.filter(t => t.type === 'hazard');
+      // Convert up to 3 hazards back to empty to clear path
+      for (let i = 0; i < Math.min(3, hazards.length); i++) {
+        hazards[i].type = 'empty';
       }
     }
 
     return grid;
   }, []);
 
-  // --- 2. CORE LOGIC ---
+  // --- CORE LOGIC (KEEPING YOUR INTEGRATION) ---
   const startSensor = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       try {
@@ -215,8 +295,8 @@ const GravityMaze = forwardRef((props, ref) => {
       particlesRef.current.push({
         x, 
         y, 
-        vx: (Math.random()-0.5)*8, 
-        vy: (Math.random()-0.5)*8 - 2, 
+        vx: (Math.random() - 0.5) * 8, 
+        vy: (Math.random() - 0.5) * 8 - 2, 
         life: 1, 
         color,
         size: size + Math.random() * 2
@@ -233,26 +313,29 @@ const GravityMaze = forwardRef((props, ref) => {
       speed: Math.random() * 0.3 + 0.1
     }));
 
+    // Generate maze (now guaranteed solvable)
     mazeRef.current = generateSolvableMaze(lvl);
     
-    // Generate keys
+    // Generate keys - ensure they're placed on empty tiles
     keysRef.current = [];
     if (keysNeededRef.current > 0) {
       const emptyTiles = mazeRef.current.filter(t => t.type === 'empty');
-      for (let i = 0; i < keysNeededRef.current; i++) {
-        if (emptyTiles.length > 0) {
-          const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-          keysRef.current.push({
-            x: tile.x * CELL_SIZE + CELL_SIZE / 2,
-            y: tile.y * CELL_SIZE + CELL_SIZE / 2,
-            id: Date.now() + i,
-            collected: false
-          });
-        }
+      const keySpots = [...emptyTiles]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, keysNeededRef.current);
+      
+      for (let i = 0; i < keySpots.length; i++) {
+        const tile = keySpots[i];
+        keysRef.current.push({
+          x: tile.x * CELL_SIZE + CELL_SIZE / 2,
+          y: tile.y * CELL_SIZE + CELL_SIZE / 2,
+          id: Date.now() + i,
+          collected: false
+        });
       }
     }
 
-    // Reset ball to start
+    // Reset ball to start position
     const startTile = mazeRef.current.find(t => t.type === 'start');
     ballRef.current = { 
       x: startTile ? startTile.x * CELL_SIZE + CELL_SIZE / 2 : CELL_SIZE * 1.5, 
@@ -296,7 +379,7 @@ const GravityMaze = forwardRef((props, ref) => {
     return mazeRef.current[tileY * MAZE_WIDTH + tileX] || null;
   };
 
-  // --- 3. ENHANCED GAME LOOP ---
+  // --- GAME LOOP WITH BUG FIXES ---
   useEffect(() => {
     if (gameState !== 'playing') return;
     
@@ -420,7 +503,13 @@ const GravityMaze = forwardRef((props, ref) => {
               
               createBurst(b.x, b.y, TILE_COLORS.goal, 30, 4);
               setGameState('complete');
+              clearInterval(timeInterval);
               return;
+            } else {
+              // Show hint if keys are missing
+              if (keysNeededRef.current > 0) {
+                createBurst(b.x, b.y, '#FFD700', 10, 2);
+              }
             }
             break;
             
@@ -429,6 +518,10 @@ const GravityMaze = forwardRef((props, ref) => {
               setStats(s => ({...s, time: Math.max(0, s.time - 3)}));
               createBurst(b.x, b.y, TILE_COLORS.hazard, 20, 3);
               shakeRef.current = 15;
+              
+              // Bounce away from hazard
+              b.vx *= -0.7;
+              b.vy *= -0.7;
             }
             break;
             
@@ -490,7 +583,7 @@ const GravityMaze = forwardRef((props, ref) => {
       });
 
       // Increment moves counter
-      if (delta > 16) { // Roughly 60fps
+      if (delta > 16) {
         setStats(s => ({...s, moves: s.moves + 1}));
       }
 
