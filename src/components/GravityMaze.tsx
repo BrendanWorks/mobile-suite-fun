@@ -137,13 +137,54 @@ const GravityMaze = forwardRef((props, ref) => {
     const goalY = MAZE_HEIGHT - 2;
     grid[goalY * MAZE_WIDTH + goalX].type = 'goal';
 
-    // Add hazards based on level
+    // Helper: Check if path exists from start to goal
+    const pathExists = () => {
+      const visited = new Set<string>();
+      const queue: [number, number][] = [[1, 1]];
+      visited.add('1,1');
+
+      while (queue.length > 0) {
+        const [x, y] = queue.shift()!;
+
+        if (x === goalX && y === goalY) return true;
+
+        [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
+          const nx = x + dx;
+          const ny = y + dy;
+          const key = `${nx},${ny}`;
+
+          if (nx >= 0 && nx < MAZE_WIDTH && ny >= 0 && ny < MAZE_HEIGHT && !visited.has(key)) {
+            const tile = grid[ny * MAZE_WIDTH + nx];
+            if (tile.type !== 'wall' && tile.type !== 'hazard') {
+              visited.add(key);
+              queue.push([nx, ny]);
+            }
+          }
+        });
+      }
+      return false;
+    };
+
+    // Add hazards based on level - only if they don't block the path
     const hazardCount = Math.min(6, Math.floor(level * 1.2));
-    for (let i = 0; i < hazardCount; i++) {
+    let hazardsPlaced = 0;
+    let attempts = 0;
+
+    while (hazardsPlaced < hazardCount && attempts < 50) {
+      attempts++;
       const emptyTiles = grid.filter(t => t.type === 'empty');
-      if (emptyTiles.length > 0) {
-        const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-        tile.type = 'hazard';
+      if (emptyTiles.length === 0) break;
+
+      const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+      const originalType = tile.type;
+      tile.type = 'hazard';
+
+      // Check if path still exists
+      if (pathExists()) {
+        hazardsPlaced++;
+      } else {
+        // Revert if it blocks the path
+        tile.type = originalType;
       }
     }
 
