@@ -84,11 +84,25 @@ const GravityBall = forwardRef((props, ref) => {
   const gameSpeedRef = useRef(1);
   const powerUpEndTimeRef = useRef(0);
   const shakeRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // High score persistence
   useEffect(() => {
     const saved = localStorage.getItem('gravityBallHighScore');
     if (saved) setHighScore(parseInt(saved));
+  }, []);
+
+  // Initialize audio context once
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext)) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -98,18 +112,19 @@ const GravityBall = forwardRef((props, ref) => {
 
   // --- Audio Effects ---
   const playSound = useCallback((type: 'jump' | 'spring' | 'break' | 'powerup' | 'death') => {
-    // Simple Web Audio implementation - consider using Howler.js for production
-    if (typeof window !== 'undefined' && window.AudioContext) {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = audioContextRef.current;
+    if (!audioContext) return;
+
+    try {
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       let frequency = 440;
       let duration = 0.1;
-      
+
       switch(type) {
         case 'jump': frequency = 523.25; break;
         case 'spring': frequency = 659.25; duration = 0.2; break;
@@ -117,13 +132,15 @@ const GravityBall = forwardRef((props, ref) => {
         case 'powerup': frequency = 880; duration = 0.3; break;
         case 'death': frequency = 110; duration = 0.5; break;
       }
-      
+
       oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-      
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + duration);
+    } catch (e) {
+      console.warn('Audio playback failed:', e);
     }
   }, []);
 
