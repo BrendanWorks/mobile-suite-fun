@@ -3,106 +3,65 @@ import { TrendingUp } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: string;
-}
-
-interface PowerUp {
-  x: number;
-  y: number;
-  type: 'gold' | 'ice';
-  spawnTime: number;
-}
-
-interface Obstacle {
-  x: number;
-  y: number;
-}
+interface Position { x: number; y: number; }
+interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; }
+interface PowerUp { x: number; y: number; type: 'gold' | 'ice'; spawnTime: number; }
+interface Obstacle { x: number; y: number; }
 
 interface SnakeProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
-  duration?: number;
-  puzzleId?: number | null;
-  rankingPuzzleId?: number | null;
 }
 
 const GRID_SIZE = 20;
-const INITIAL_SPEED = 200;
+const CANVAS_SIZE = 400;
+const INITIAL_SPEED = 180;
 const SPEED_INCREMENT = 5;
-const MAX_SPEED = 50;
+const MAX_SPEED = 60;
 const POWERUP_CHANCE = 0.15;
 const SLOW_DURATION = 10000;
 
-const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining, puzzleId, rankingPuzzleId }, ref) => {
+const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [gameOver, setGameOver] = useState(false);
-  const [direction, setDirection] = useState<Position>({ x: 0, y: 0 });
-  const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
-  const [food, setFood] = useState<Position>({ x: 15, y: 15 });
-  const [gameStarted, setGameStarted] = useState(false);
-  const [speed, setSpeed] = useState(INITIAL_SPEED);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
-  const [obstacles, setObstacles] = useState<Obstacle[]>([]);
-  const [screenShake, setScreenShake] = useState(0);
-  const [shimmer, setShimmer] = useState(0);
-  const [slowedUntil, setSlowedUntil] = useState(0);
-  const [backgroundHue, setBackgroundHue] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(true);
-
-  const directionRef = useRef(direction);
-  const snakeRef = useRef(snake);
-  const foodRef = useRef(food);
-  const gameOverRef = useRef(false);
+  
+  // Game State Refs (Source of Truth for the loop)
+  const snakeRef = useRef<Position[]>([{ x: 10, y: 10 }]);
+  const directionRef = useRef<Position>({ x: 0, y: 0 });
+  const inputQueueRef = useRef<Position[]>([]); // Input Buffer
+  const foodRef = useRef<Position>({ x: 15, y: 15 });
+  const obstaclesRef = useRef<Obstacle[]>([]);
+  const powerUpRef = useRef<PowerUp | null>(null);
   const scoreRef = useRef(0);
   const livesRef = useRef(3);
-  const particlesRef = useRef<Particle[]>([]);
-  const powerUpRef = useRef<PowerUp | null>(null);
-  const obstaclesRef = useRef<Obstacle[]>([]);
+  const gameOverRef = useRef(false);
   const slowedUntilRef = useRef(0);
+  const particlesRef = useRef<Particle[]>([]);
+  const touchStartRef = useRef<Position | null>(null);
 
-  useEffect(() => {
-    directionRef.current = direction;
-    snakeRef.current = snake;
-    foodRef.current = food;
-    gameOverRef.current = gameOver;
-    scoreRef.current = score;
-    livesRef.current = lives;
-    particlesRef.current = particles;
-    powerUpRef.current = powerUp;
-    obstaclesRef.current = obstacles;
-    slowedUntilRef.current = slowedUntil;
-  }, [direction, snake, food, gameOver, score, lives, particles, powerUp, obstacles, slowedUntil]);
+  // UI State
+  const [displayScore, setDisplayScore] = useState(0);
+  const [displayLives, setDisplayLives] = useState(3);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [activeEffects, setActiveEffects] = useState<{slow: boolean}>({ slow: false });
+
+  // Visual Effects State
+  const [screenShake, setScreenShake] = useState(0);
+  const [shimmer, setShimmer] = useState(0);
+  const [backgroundHue, setBackgroundHue] = useState(0);
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: scoreRef.current,
-      maxScore: 200
-    }),
+    getGameScore: () => ({ score: scoreRef.current, maxScore: 200 }),
     onGameEnd: () => {
-      if (!gameOverRef.current && onComplete) {
-        onComplete(scoreRef.current, 200, timeRemaining);
-      }
+      if (!gameOverRef.current && onComplete) onComplete(scoreRef.current, 200, timeRemaining);
     },
     canSkipQuestion: false,
     hideTimer: true
   }));
 
-  // --- AUDIO: background load on mount, cleanup ticktock on unmount ---
+  // Initialize Audio
   useEffect(() => {
     const loadAudio = async () => {
       await audioManager.loadSound('snake_eat', '/sounds/snake/short_success.mp3', 3);
@@ -112,73 +71,32 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_ticktock', '/sounds/snake/ticktock.mp3', 1);
     };
     loadAudio();
-
-    return () => {
-      audioManager.stopMusic('snake_ticktock');
-    };
+    return () => audioManager.stopMusic('snake_ticktock');
   }, []);
 
-  const createFood = (currentSnake: Position[], currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Position => {
-    let newFood: Position;
-    do {
-      newFood = {
-        x: Math.floor(Math.random() * 20),
-        y: Math.floor(Math.random() * 20)
-      };
-    } while (
-      currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y) ||
-      currentObstacles.some(obs => obs.x === newFood.x && obs.y === newFood.y) ||
-      (currentPowerUp && currentPowerUp.x === newFood.x && currentPowerUp.y === newFood.y)
-    );
+  // Utility: Vibration for mobile "Juice"
+  const triggerHaptic = (ms = 50) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
+
+  const createFood = (): Position => {
+    let newFood;
+    while (true) {
+      newFood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) };
+      const onSnake = snakeRef.current.some(s => s.x === newFood.x && s.y === newFood.y);
+      const onObs = obstaclesRef.current.some(o => o.x === newFood.x && o.y === newFood.y);
+      if (!onSnake && !onObs) break;
+    }
     return newFood;
   };
 
-  const createPowerUp = (currentSnake: Position[], currentFood: Position, currentObstacles: Obstacle[]): PowerUp | null => {
-    if (Math.random() > POWERUP_CHANCE) return null;
-
-    let position: Position;
-    do {
-      position = {
-        x: Math.floor(Math.random() * 20),
-        y: Math.floor(Math.random() * 20)
-      };
-    } while (
-      currentSnake.some(segment => segment.x === position.x && segment.y === position.y) ||
-      (position.x === currentFood.x && position.y === currentFood.y) ||
-      currentObstacles.some(obs => obs.x === position.x && obs.y === position.y)
-    );
-
-    return {
-      x: position.x,
-      y: position.y,
-      type: Math.random() > 0.5 ? 'gold' : 'ice',
-      spawnTime: Date.now()
-    };
-  };
-
-  const createObstacle = (currentSnake: Position[], currentFood: Position, currentObstacles: Obstacle[], currentPowerUp: PowerUp | null): Obstacle => {
-    let position: Position;
-    do {
-      position = {
-        x: Math.floor(Math.random() * 20),
-        y: Math.floor(Math.random() * 20)
-      };
-    } while (
-      currentSnake.some(segment => segment.x === position.x && segment.y === position.y) ||
-      (position.x === currentFood.x && position.y === currentFood.y) ||
-      currentObstacles.some(obs => obs.x === position.x && obs.y === position.y) ||
-      (currentPowerUp && position.x === currentPowerUp.x && position.y === currentPowerUp.y)
-    );
-
-    return position;
-  };
-
   const createParticleBurst = (x: number, y: number, color: string) => {
-    const newParticles: Particle[] = [];
-    for (let i = 0; i < 10; i++) {
-      const angle = (Math.PI * 2 * i) / 10;
-      const speed = 2 + Math.random() * 2;
-      newParticles.push({
+    for (let i = 0; i < 12; i++) {
+      const angle = (Math.PI * 2 * i) / 12;
+      const speed = 1.5 + Math.random() * 2;
+      particlesRef.current.push({
         x: x * GRID_SIZE + GRID_SIZE / 2,
         y: y * GRID_SIZE + GRID_SIZE / 2,
         vx: Math.cos(angle) * speed,
@@ -187,59 +105,43 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         color
       });
     }
-    setParticles(prev => [...prev, ...newParticles]);
-  };
-
-  const triggerScreenShake = () => {
-    setScreenShake(10);
-  };
-
-  const triggerShimmer = () => {
-    setShimmer(1);
-  };
-
-  const checkCollision = (head: Position, body: Position[], currentObstacles: Obstacle[]): boolean => {
-    if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) return true;
-
-    for (let i = 1; i < body.length; i++) {
-      if (head.x === body[i].x && head.y === body[i].y) return true;
-    }
-
-    if (currentObstacles.some(obs => obs.x === head.x && obs.y === head.y)) return true;
-
-    return false;
   };
 
   const resetSnake = () => {
-    const newSnake = [{ x: 10, y: 10 }];
-    setSnake(newSnake);
-    snakeRef.current = newSnake;
-    setDirection({ x: 0, y: 0 });
+    snakeRef.current = [{ x: 10, y: 10 }];
     directionRef.current = { x: 0, y: 0 };
-    setSpeed(INITIAL_SPEED);
+    inputQueueRef.current = [];
   };
 
   const gameLoop = () => {
-    if (gameOverRef.current || directionRef.current.x === 0 && directionRef.current.y === 0) return;
+    if (gameOverRef.current) return;
 
-    const currentSnake = [...snakeRef.current];
-    const head = {
-      x: currentSnake[0].x + directionRef.current.x,
-      y: currentSnake[0].y + directionRef.current.y
-    };
+    // Apply next movement from buffer
+    if (inputQueueRef.current.length > 0) {
+      directionRef.current = inputQueueRef.current.shift()!;
+    }
 
-    // --- AUDIO: collision → stop ticktock, then play die or gameover ---
-    if (checkCollision(head, currentSnake, obstaclesRef.current)) {
+    const dir = directionRef.current;
+    if (dir.x === 0 && dir.y === 0) return;
+
+    const head = { x: snakeRef.current[0].x + dir.x, y: snakeRef.current[0].y + dir.y };
+
+    // Collision Check
+    const hitWall = head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20;
+    const hitBody = snakeRef.current.some(seg => seg.x === head.x && seg.y === head.y);
+    const hitObs = obstaclesRef.current.some(obs => obs.x === head.x && obs.y === head.y);
+
+    if (hitWall || hitBody || hitObs) {
       audioManager.stopMusic('snake_ticktock');
-      triggerScreenShake();
-      const newLives = livesRef.current - 1;
-      setLives(newLives);
-      livesRef.current = newLives;
+      triggerHaptic(100);
+      setScreenShake(10);
+      livesRef.current -= 1;
+      setDisplayLives(livesRef.current);
 
-      if (newLives <= 0) {
+      if (livesRef.current <= 0) {
         audioManager.play('snake_gameover', 0.7);
-        setGameOver(true);
         gameOverRef.current = true;
+        setIsGameOver(true);
       } else {
         audioManager.play('snake_die', 0.5);
         resetSnake();
@@ -247,483 +149,268 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       return;
     }
 
-    const newSnake = [head, ...currentSnake];
-    let ateFood = false;
-    let pointsGained = 0;
-
-    // --- AUDIO: ate food → short success ---
+    const newSnake = [head, ...snakeRef.current];
+    
+    // Check Food
     if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
-      ateFood = true;
-      pointsGained = 10;
       audioManager.play('snake_eat', 0.5);
+      triggerHaptic(40);
+      scoreRef.current += 10;
+      setDisplayScore(scoreRef.current);
+      if (onScoreUpdate) onScoreUpdate(scoreRef.current, 200);
+      
+      foodRef.current = createFood();
       createParticleBurst(head.x, head.y, '#ef4444');
-      triggerShimmer();
+      setShimmer(1);
 
-      const newScore = scoreRef.current + pointsGained;
-      setScore(newScore);
-      scoreRef.current = newScore;
-
-      if (onScoreUpdate) {
-        onScoreUpdate(newScore, 200);
+      // Procedural Obstacles
+      if (scoreRef.current % 50 === 0) {
+        obstaclesRef.current.push(createFood());
+        setBackgroundHue(h => (h + 40) % 360);
       }
 
-      const newFood = createFood(newSnake, obstaclesRef.current, powerUpRef.current);
-      setFood(newFood);
-      foodRef.current = newFood;
-
-      const maybePowerUp = createPowerUp(newSnake, newFood, obstaclesRef.current);
-      if (maybePowerUp) {
-        setPowerUp(maybePowerUp);
-        powerUpRef.current = maybePowerUp;
+      // Roll for Powerup
+      if (Math.random() < POWERUP_CHANCE && !powerUpRef.current) {
+        powerUpRef.current = { ...createFood(), type: Math.random() > 0.5 ? 'gold' : 'ice', spawnTime: Date.now() };
       }
-
-      if (newScore % 100 === 0 && newScore > 0) {
-        const newObstacle = createObstacle(newSnake, newFood, obstaclesRef.current, maybePowerUp);
-        setObstacles(prev => [...prev, newObstacle]);
-        obstaclesRef.current = [...obstaclesRef.current, newObstacle];
-
-        setBackgroundHue(prev => (prev + 30) % 360);
-      }
-
-      const isSlowed = Date.now() < slowedUntilRef.current;
-      const newSpeed = isSlowed
-        ? Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(newScore / 50) * SPEED_INCREMENT) * 1.5
-        : Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(newScore / 50) * SPEED_INCREMENT);
-      setSpeed(newSpeed);
-    }
-
-    // --- AUDIO: power-up → gobble for both gold and ice ---
-    if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
-      const currentPowerUp = powerUpRef.current;
-
-      if (currentPowerUp.type === 'gold') {
-        audioManager.play('snake_gobble', 0.5);
-        pointsGained = 50;
+    } else if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
+      // Handle Powerup
+      audioManager.play('snake_gobble', 0.6);
+      triggerHaptic(60);
+      if (powerUpRef.current.type === 'gold') {
+        scoreRef.current += 50;
+        setDisplayScore(scoreRef.current);
         createParticleBurst(head.x, head.y, '#fbbf24');
-        triggerShimmer();
-
-        const newScore = scoreRef.current + pointsGained;
-        setScore(newScore);
-        scoreRef.current = newScore;
-
-        if (onScoreUpdate) {
-          onScoreUpdate(newScore, 200);
-        }
-      } else if (currentPowerUp.type === 'ice') {
-        audioManager.play('snake_gobble', 0.5);
-        setSlowedUntil(Date.now() + SLOW_DURATION);
+      } else {
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
+        setActiveEffects({ slow: true });
         createParticleBurst(head.x, head.y, '#60a5fa');
-        triggerShimmer();
-
-        const newSpeed = Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT) * 1.5;
-        setSpeed(newSpeed);
       }
-
-      setPowerUp(null);
       powerUpRef.current = null;
-    }
-
-    if (ateFood || pointsGained > 0) {
-      setSnake(newSnake);
-      snakeRef.current = newSnake;
     } else {
       newSnake.pop();
-      setSnake(newSnake);
-      snakeRef.current = newSnake;
+    }
+
+    snakeRef.current = newSnake;
+  };
+
+  // Input Handling (Buffer Strategy)
+  const updateDirection = (newDir: Position) => {
+    if (gameOverRef.current) return;
+    
+    if (!gameStarted) {
+      setGameStarted(true);
+      setShowInstructions(false);
+      audioManager.playMusic('snake_ticktock');
+    }
+
+    const lastQueued = inputQueueRef.current.length > 0 
+      ? inputQueueRef.current[inputQueueRef.current.length - 1] 
+      : directionRef.current;
+
+    // Prevent 180-degree turns
+    if (newDir.x !== 0 && lastQueued.x !== 0) return;
+    if (newDir.y !== 0 && lastQueued.y !== 0) return;
+
+    if (inputQueueRef.current.length < 3) {
+      inputQueueRef.current.push(newDir);
     }
   };
 
+  // Keyboard and Swipe Listeners
   useEffect(() => {
-    if (!gameStarted || gameOver) return;
+    const handleKey = (e: KeyboardEvent) => {
+      const keys: Record<string, Position> = {
+        ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }
+      };
+      if (keys[e.key]) updateDirection(keys[e.key]);
+    };
 
-    const interval = setInterval(gameLoop, speed);
-    return () => clearInterval(interval);
-  }, [gameStarted, speed, gameOver]);
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
 
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (Math.abs(dx) > 30) updateDirection({ x: dx > 0 ? 1 : -1, y: 0 });
+      } else {
+        if (Math.abs(dy) > 30) updateDirection({ x: 0, y: dy > 0 ? 1 : -1 });
+      }
+      touchStartRef.current = null;
+    };
+
+    window.addEventListener('keydown', handleKey);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [gameStarted]);
+
+  // Main Ticker
   useEffect(() => {
-    const particleInterval = setInterval(() => {
-      setParticles(prev => {
-        return prev
-          .map(p => ({
-            ...p,
-            x: p.x + p.vx,
-            y: p.y + p.vy,
-            life: p.life - 0.02
-          }))
-          .filter(p => p.life > 0);
-      });
-    }, 16);
+    if (!gameStarted || isGameOver) return;
+    const ticker = setInterval(() => {
+      gameLoop();
+      // Particles update
+      particlesRef.current = particlesRef.current
+        .map(p => ({ ...p, x: p.x + p.vx, y: p.y + p.vy, life: p.life - 0.05 }))
+        .filter(p => p.life > 0);
+      
+      if (Date.now() > slowedUntilRef.current && activeEffects.slow) {
+        setActiveEffects({ slow: false });
+      }
+    }, activeEffects.slow ? INITIAL_SPEED * 1.5 : Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT));
 
-    return () => clearInterval(particleInterval);
-  }, []);
+    return () => clearInterval(ticker);
+  }, [gameStarted, isGameOver, activeEffects.slow]);
 
-  useEffect(() => {
-    if (screenShake > 0) {
-      const timer = setTimeout(() => {
-        setScreenShake(prev => Math.max(0, prev - 1));
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [screenShake]);
-
-  // Auto-advance to results screen after game over
-  useEffect(() => {
-    if (gameOver && onComplete) {
-      const timer = setTimeout(() => {
-        onComplete(scoreRef.current, 200, timeRemaining);
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [gameOver, timeRemaining]);
-
-  useEffect(() => {
-    if (shimmer > 0) {
-      const timer = setTimeout(() => {
-        setShimmer(prev => Math.max(0, prev - 0.05));
-      }, 30);
-      return () => clearTimeout(timer);
-    }
-  }, [shimmer]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowInstructions(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    let animFrame: number;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const draw = () => {
+      ctx.fillStyle = `hsl(${backgroundHue}, 15%, 5%)`;
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    let animationFrameId: number;
+      // Draw Particles
+      particlesRef.current.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      });
+      ctx.globalAlpha = 1;
 
-    const render = () => {
-      const bgColor = `hsl(${backgroundHue}, 20%, 4%)`;
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const time = Date.now() / 1000;
-      const pulse = Math.sin(time * 3) * 0.3 + 0.7;
-      const foodSize = (GRID_SIZE - 2) * pulse;
-      const foodOffset = ((GRID_SIZE - 2) - foodSize) / 2;
-
+      // Draw Food
+      const pulse = Math.sin(Date.now() / 200) * 2;
       ctx.fillStyle = '#ef4444';
+      ctx.shadowBlur = 10;
       ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 15 * pulse;
-      ctx.fillRect(
-        food.x * GRID_SIZE + foodOffset,
-        food.y * GRID_SIZE + foodOffset,
-        foodSize,
-        foodSize
-      );
-      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(foodRef.current.x * 20 + 10, foodRef.current.y * 20 + 10, 7 + pulse, 0, Math.PI * 2);
+      ctx.fill();
 
-      obstaclesRef.current.forEach(obs => {
-        ctx.fillStyle = '#78716c';
-        ctx.shadowColor = '#78716c';
-        ctx.shadowBlur = 8;
-        ctx.fillRect(obs.x * GRID_SIZE, obs.y * GRID_SIZE, GRID_SIZE - 2, GRID_SIZE - 2);
-        ctx.shadowBlur = 0;
-      });
-
+      // Draw Powerups
       if (powerUpRef.current) {
-        const powerUpAge = Date.now() - powerUpRef.current.spawnTime;
-        const flash = Math.sin(powerUpAge / 200) * 0.5 + 0.5;
-
-        if (powerUpRef.current.type === 'gold') {
-          ctx.fillStyle = `rgba(251, 191, 36, ${0.5 + flash * 0.5})`;
-          ctx.shadowColor = '#fbbf24';
-          ctx.shadowBlur = 20;
-        } else {
-          ctx.fillStyle = `rgba(96, 165, 250, ${0.5 + flash * 0.5})`;
-          ctx.shadowColor = '#60a5fa';
-          ctx.shadowBlur = 20;
-        }
-        ctx.fillRect(powerUpRef.current.x * GRID_SIZE, powerUpRef.current.y * GRID_SIZE, GRID_SIZE - 2, GRID_SIZE - 2);
-        ctx.shadowBlur = 0;
+        ctx.fillStyle = powerUpRef.current.type === 'gold' ? '#fbbf24' : '#60a5fa';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.fillRect(powerUpRef.current.x * 20 + 2, powerUpRef.current.y * 20 + 2, 16, 16);
       }
 
-      snake.forEach((segment, index) => {
-        const gradient = ctx.createLinearGradient(
-          segment.x * GRID_SIZE, segment.y * GRID_SIZE,
-          (segment.x + 1) * GRID_SIZE, (segment.y + 1) * GRID_SIZE
-        );
+      // Draw Obstacles
+      ctx.fillStyle = '#444';
+      ctx.shadowBlur = 0;
+      obstaclesRef.current.forEach(o => ctx.fillRect(o.x * 20, o.y * 20, 18, 18));
 
-        if (index === 0) {
-          gradient.addColorStop(0, '#22d3ee');
-          gradient.addColorStop(1, '#06b6d4');
-          ctx.shadowColor = '#22d3ee';
-          ctx.shadowBlur = 20;
-
-          const headSize = GRID_SIZE - 1;
-          const headOffset = -0.5;
-          ctx.fillStyle = gradient;
-          ctx.fillRect(
-            segment.x * GRID_SIZE + headOffset,
-            segment.y * GRID_SIZE + headOffset,
-            headSize,
-            headSize
-          );
-        } else {
-          gradient.addColorStop(0, '#10b981');
-          gradient.addColorStop(1, '#059669');
-          ctx.shadowColor = '#10b981';
-          ctx.shadowBlur = 10;
-
-          ctx.fillStyle = gradient;
-          ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE - 2, GRID_SIZE - 2);
-        }
-        ctx.shadowBlur = 0;
+      // Draw Snake (Smooth Connection)
+      snakeRef.current.forEach((seg, i) => {
+        ctx.fillStyle = i === 0 ? '#22d3ee' : '#10b981';
+        ctx.shadowBlur = i === 0 ? 15 : 0;
+        ctx.shadowColor = '#22d3ee';
+        
+        // Slightly rounded segments
+        const r = 4;
+        const x = seg.x * 20;
+        const y = seg.y * 20;
+        const s = 18;
+        ctx.beginPath();
+        ctx.roundRect(x, y, s, s, r);
+        ctx.fill();
       });
 
-      particlesRef.current.forEach(particle => {
-        ctx.fillStyle = particle.color;
-        ctx.globalAlpha = particle.life;
-        ctx.shadowColor = particle.color;
-        ctx.shadowBlur = 10;
-        ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-      });
-
+      // Shimmer Effect
       if (shimmer > 0) {
-        const shimmerIntensity = Math.sin(shimmer * Math.PI * 3) * shimmer;
-        const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient1.addColorStop(0, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
-        gradient1.addColorStop(0.5, `rgba(34, 197, 94, 0)`);
-        gradient1.addColorStop(1, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
-        
-        ctx.fillStyle = gradient1;
-        ctx.fillRect(0, 0, canvas.width, 10);
-        ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
-
-        const gradient2 = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient2.addColorStop(0, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
-        gradient2.addColorStop(0.5, `rgba(34, 197, 94, 0)`);
-        gradient2.addColorStop(1, `rgba(34, 197, 94, ${shimmerIntensity * 0.5})`);
-        
-        ctx.fillStyle = gradient2;
-        ctx.fillRect(0, 0, 10, canvas.height);
-        ctx.fillRect(canvas.width - 10, 0, 10, canvas.height);
+        ctx.strokeStyle = `rgba(34, 197, 94, ${shimmer})`;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        setShimmer(s => Math.max(0, s - 0.02));
       }
 
-      animationFrameId = requestAnimationFrame(render);
+      animFrame = requestAnimationFrame(draw);
     };
+    draw();
+    return () => cancelAnimationFrame(animFrame);
+  }, [backgroundHue, shimmer]);
 
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [snake, food, backgroundHue, shimmer]);
-
-  // --- AUDIO: start ticktock when snake goes from stationary to moving ---
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (gameOver) return;
-
-    const { x, y } = directionRef.current;
-    const wasStationary = x === 0 && y === 0;
-    let moved = false;
-
-    if (!gameStarted) {
-      setGameStarted(true);
-      setShowInstructions(false);
-    }
-
-    switch (e.key) {
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        if (x !== 1) { setDirection({ x: -1, y: 0 }); moved = true; }
-        break;
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        if (x !== -1) { setDirection({ x: 1, y: 0 }); moved = true; }
-        break;
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        if (y !== 1) { setDirection({ x: 0, y: -1 }); moved = true; }
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (y !== -1) { setDirection({ x: 0, y: 1 }); moved = true; }
-        break;
-    }
-
-    if (wasStationary && moved) {
-      audioManager.playMusic('snake_ticktock');
-    }
-  };
-
+  // Shake Cleanup
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver, gameStarted]);
-
-  // --- AUDIO: same ticktock logic for touch buttons ---
-  const handleDirectionButton = (newDirection: Position) => {
-    if (gameOver) return;
-
-    const { x, y } = directionRef.current;
-    const wasStationary = x === 0 && y === 0;
-    let moved = false;
-
-    if (!gameStarted) {
-      setGameStarted(true);
-      setShowInstructions(false);
+    if (screenShake > 0) {
+      const t = setTimeout(() => setScreenShake(s => Math.max(0, s - 1)), 50);
+      return () => clearTimeout(t);
     }
-
-    if (newDirection.x === -1 && x !== 1) { setDirection(newDirection); moved = true; }
-    else if (newDirection.x === 1 && x !== -1) { setDirection(newDirection); moved = true; }
-    else if (newDirection.y === -1 && y !== 1) { setDirection(newDirection); moved = true; }
-    else if (newDirection.y === 1 && y !== -1) { setDirection(newDirection); moved = true; }
-
-    if (wasStationary && moved) {
-      audioManager.playMusic('snake_ticktock');
-    }
-  };
+  }, [screenShake]);
 
   return (
-    <div className="flex flex-col h-full bg-black">
-      {/* Header - Branded */}
-      <div className="px-3 sm:px-6 py-2 sm:py-3">
-        <div className="mb-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-1 border-b border-green-400 pb-1 flex items-center justify-center gap-2">
-            <TrendingUp 
-              className="w-6 h-6 sm:w-7 sm:h-7" 
-              style={{ 
-                color: '#22c55e',
-                filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))',
-                strokeWidth: 2
-              }} 
-            />
-            <span style={{ textShadow: '0 0 10px #22c55e' }}>Snake</span>
-          </h2>
-          
-          {/* Tagline */}
-          <p className="text-green-300 text-xs sm:text-sm text-center mb-2">
-            Thrive and Survive
-          </p>
-        </div>
-
-        {/* Score and Lives */}
-        <div className="flex justify-between items-center text-sm sm:text-base">
-          <div className="text-green-300">
-            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
-          </div>
-          <div className="flex items-center gap-1">
-            {[...Array(3)].map((_, i) => (
-              <span key={i} className={`text-2xl sm:text-3xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>
-                {i < lives ? '❤️' : '🖤'}
-              </span>
+    <div className="flex flex-col h-full bg-black select-none overflow-hidden touch-none">
+      <div className="px-6 py-4">
+        <h2 className="text-2xl font-bold text-green-400 border-b border-green-900 pb-2 flex items-center justify-center gap-2">
+          <TrendingUp className="w-6 h-6" />
+          <span style={{ textShadow: '0 0 10px #22c55e' }}>NEO-SNAKE</span>
+        </h2>
+        <div className="flex justify-between mt-2 font-mono">
+          <div className="text-green-300">SCORE: <span className="text-yellow-400">{displayScore}</span></div>
+          <div className="flex gap-1">
+            {Array.from({length: 3}).map((_, i) => (
+              <span key={i} className={i < displayLives ? "grayscale-0" : "grayscale opacity-20"}>❤️</span>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center px-3 py-2">
-        {/* Fixed-size canvas container */}
-        <div className="relative mb-3" style={{
-          transform: `translate(${(Math.random() - 0.5) * screenShake}px, ${(Math.random() - 0.5) * screenShake}px)`,
-          width: '340px',
-          height: '340px'
-        }}>
-          {/* Power-up indicators - overlaid at top */}
-          <div className="absolute -top-10 left-0 right-0 flex gap-2 flex-wrap justify-center z-20">
-            {Date.now() < slowedUntil && (
-              <div className="bg-blue-500/20 border-2 border-blue-500 rounded-lg px-3 py-1 text-blue-300 text-xs font-semibold" style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>
-                ❄️ Slowed! {Math.ceil((slowedUntil - Date.now()) / 1000)}s
-              </div>
-            )}
-            {obstacles.length > 0 && (
-              <div className="bg-gray-500/20 border-2 border-gray-500 rounded-lg px-3 py-1 text-gray-300 text-xs font-semibold" style={{ boxShadow: '0 0 10px rgba(107, 114, 128, 0.4)' }}>
-                ⚠️ Obstacles: {obstacles.length}
-              </div>
-            )}
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div 
+          className="relative border-4 border-green-900 rounded-xl overflow-hidden bg-black"
+          style={{ 
+            width: '340px', height: '340px',
+            transform: `translate(${(Math.random()-0.5)*screenShake}px, ${(Math.random()-0.5)*screenShake}px)`,
+            boxShadow: '0 0 40px rgba(0,0,0,0.5)'
+          }}
+        >
+          <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ width: '100%', height: '100%' }} />
 
-          <canvas
-            ref={canvasRef}
-            width={400}
-            height={400}
-            className="border-4 border-green-500 rounded-lg bg-black"
-            style={{ width: '340px', height: '340px', boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }}
-          />
-
-          {/* Instructions overlay */}
           {showInstructions && (
-            <div 
-              className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center transition-opacity duration-500 z-20"
-            >
-              <div className="text-center px-4">
-                <p className="text-green-300 text-sm sm:text-base mb-2">
-                  Eat the red food. Avoid walls and yourself!
-                </p>
-                <p className="text-green-400 text-xs sm:text-sm mb-3">
-                  🟡 Gold: +50pts | ❄️ Blue Ice: Slow down | ⚫ Gray: Death
-                </p>
-                <p className="text-green-400 text-xs sm:text-sm font-bold" style={{ textShadow: '0 0 10px #22c55e' }}>
-                  Press any arrow to start!
-                </p>
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-center p-6">
+              <div className="text-green-400 animate-pulse">
+                <p className="mb-2 font-bold">SWIPE or KEYS TO MOVE</p>
+                <p className="text-xs text-green-200 opacity-80">Avoid obstacles and yourself.<br/>Collect gold for big points!</p>
               </div>
             </div>
           )}
 
-          {gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/95 rounded-lg z-30">
-              <div className="text-center">
-                <p className="text-6xl sm:text-8xl mb-4" style={{ filter: 'drop-shadow(0 0 20px #ef4444)' }}>💀</p>
-                <p className="text-red-500 text-2xl sm:text-4xl font-bold mb-2" style={{ textShadow: '0 0 15px #ef4444' }}>Game Over!</p>
-                <p className="text-yellow-400 text-lg sm:text-2xl" style={{ textShadow: '0 0 10px #fbbf24' }}>Final Score: {score}</p>
-              </div>
+          {isGameOver && (
+            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center">
+              <span className="text-6xl mb-4">💀</span>
+              <h3 className="text-red-500 text-3xl font-black">CRASHED</h3>
+              <p className="text-yellow-500 font-mono text-xl">FINAL: {scoreRef.current}</p>
+            </div>
+          )}
+          
+          {activeEffects.slow && (
+            <div className="absolute top-2 left-2 bg-blue-500/80 text-white text-[10px] px-2 py-1 rounded-full animate-bounce">
+              ❄️ SLOW MOTION
             </div>
           )}
         </div>
 
-        {/* Fixed control buttons */}
-        <div className="grid grid-cols-3 gap-2 w-40 sm:w-48 mt-3">
-          <div></div>
-          <button
-            onClick={() => handleDirectionButton({ x: 0, y: -1 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
-            disabled={gameOver}
-          >
-            ↑
-          </button>
-          <div></div>
-          <button
-            onClick={() => handleDirectionButton({ x: -1, y: 0 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
-            disabled={gameOver}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => handleDirectionButton({ x: 0, y: 1 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
-            disabled={gameOver}
-          >
-            ↓
-          </button>
-          <button
-            onClick={() => handleDirectionButton({ x: 1, y: 0 })}
-            className="bg-transparent border-2 border-green-400 hover:bg-green-400 hover:text-black active:bg-green-500 text-green-400 font-bold py-2 px-3 rounded-lg transition-all text-xl disabled:opacity-30"
-            style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
-            disabled={gameOver}
-          >
-            →
-          </button>
+        {/* DPAD for Non-Swipe users */}
+        <div className="grid grid-cols-3 gap-2 mt-8 w-44 sm:hidden">
+          <div />
+          <button onClick={() => updateDirection({x:0, y:-1})} className="h-12 bg-green-900/30 border border-green-500 rounded-lg text-white">↑</button>
+          <div />
+          <button onClick={() => updateDirection({x:-1, y:0})} className="h-12 bg-green-900/30 border border-green-500 rounded-lg text-white">←</button>
+          <button onClick={() => updateDirection({x:0, y:1})} className="h-12 bg-green-900/30 border border-green-500 rounded-lg text-white">↓</button>
+          <button onClick={() => updateDirection({x:1, y:0})} className="h-12 bg-green-900/30 border border-green-500 rounded-lg text-white">→</button>
         </div>
       </div>
     </div>
@@ -731,5 +418,4 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 });
 
 Snake.displayName = 'Snake';
-
 export default Snake;
