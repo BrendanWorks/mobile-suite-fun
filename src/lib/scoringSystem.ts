@@ -170,6 +170,19 @@ export const scoringSystem = {
       grade: getGrade(normalized),
       breakdown: `${altitude}m altitude`
     };
+  },
+
+  // Gravity Maze: 5000 points = 100 (level progression + time bonuses) - NO TIME BONUS
+  gravityMaze: (score: number, level: number): GameScore => {
+    const normalized = Math.min(100, (score / 5000) * 100);
+    return {
+      gameId: 'gravity-maze',
+      gameName: 'Gravity Maze',
+      rawScore: score,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${score} points (Level ${level})`
+    };
   }
 };
 

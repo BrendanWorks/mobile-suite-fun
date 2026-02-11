@@ -21,6 +21,7 @@ import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
 import GravityBall from './GravityBall';
+import GravityMaze from './GravityMaze';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -44,6 +45,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
   { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
   { id: 'gravity-ball', name: 'Gravity Ball', component: GravityBall, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
+  { id: 'gravity-maze', name: 'Gravity Maze', component: GravityMaze, duration: 90, instructions: 'Tilt to navigate procedurally generated mazes' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
