@@ -89,10 +89,10 @@ const GravityMaze = forwardRef((props, ref) => {
     onGameEnd: () => setGameState('gameOver'),
   }));
 
-  // --- FIXED MAZE GENERATION (SAFE PATH GUARANTEE) ---
-  const generateSolvableMaze = useCallback((level: number): MazeTile[] => {
+  // --- MAZE GENERATION ---
+  const generateSolvableMaze = useCallback((level: number) => {
     const grid: MazeTile[] = [];
-    
+
     // Initialize all as walls
     for (let y = 0; y < MAZE_HEIGHT; y++) {
       for (let x = 0; x < MAZE_WIDTH; x++) {
@@ -100,224 +100,85 @@ const GravityMaze = forwardRef((props, ref) => {
       }
     }
 
-    // Generate main path using recursive backtracking
-    const generateMazePath = () => {
-      const stack: [number, number][] = [[1, 1]];
-      const visited = new Set<string>();
-      visited.add(`1,1`);
-      grid[1 * MAZE_WIDTH + 1].type = 'empty';
-      
-      // Direction vectors (dx, dy)
-      const directions = [[0, 2], [0, -2], [2, 0], [-2, 0]];
-      
-      while (stack.length > 0) {
-        const [cx, cy] = stack[stack.length - 1];
-        const availableDirs = directions
-          .map(([dx, dy]) => [cx + dx, cy + dy])
-          .filter(([nx, ny]) => 
-            nx > 0 && nx < MAZE_WIDTH - 1 && 
-            ny > 0 && ny < MAZE_HEIGHT - 1 && 
-            !visited.has(`${nx},${ny}`)
-          );
+    // Recursive backtracker algorithm
+    const stack: [number, number][] = [[1, 1]];
+    const visited = new Set(['1,1']);
+    grid[1 * MAZE_WIDTH + 1].type = 'empty';
 
-        if (availableDirs.length > 0) {
-          const [nx, ny] = availableDirs[Math.floor(Math.random() * availableDirs.length)];
-          const mx = cx + (nx - cx) / 2;
-          const my = cy + (ny - cy) / 2;
-          
-          grid[ny * MAZE_WIDTH + nx].type = 'empty';
-          grid[my * MAZE_WIDTH + mx].type = 'empty';
-          visited.add(`${nx},${ny}`);
-          stack.push([nx, ny]);
-        } else {
-          stack.pop();
-        }
-      }
-      
-      return Array.from(visited).map(str => {
-        const [x, y] = str.split(',').map(Number);
-        return { x, y };
-      });
-    };
-
-    // Generate main path and get all path coordinates
-    const pathCells = generateMazePath();
-    
-    // Level-based features
-    keysNeededRef.current = level >= 2 ? Math.min(3, Math.floor(level / 2)) : 0;
-    
-    // Set start position
-    grid[1 * MAZE_WIDTH + 1].type = 'start';
-    
-    // Set goal position - ensure it's on the path and at least 10 cells from start
-    let goalCell = pathCells[pathCells.length - 1]; // Use the last cell of the generated path
-    if (Math.abs(goalCell.x - 1) + Math.abs(goalCell.y - 1) < 10) {
-      // Find a cell further away if goal is too close to start
-      goalCell = pathCells.reduce((farthest, cell) => {
-        const currentDist = Math.abs(cell.x - 1) + Math.abs(cell.y - 1);
-        const farthestDist = Math.abs(farthest.x - 1) + Math.abs(farthest.y - 1);
-        return currentDist > farthestDist ? cell : farthest;
-      });
-    }
-    grid[goalCell.y * MAZE_WIDTH + goalCell.x].type = 'goal';
-    
-    // Remove goal from path cells to avoid placing hazards on it
-    const pathCellsWithoutGoal = pathCells.filter(cell => 
-      !(cell.x === goalCell.x && cell.y === goalCell.y) &&
-      !(cell.x === 1 && cell.y === 1) // Also remove start
-    );
-
-    // Find safe cells for hazards - only on side branches, not main critical path
-    const getCriticalPath = (start: {x: number, y: number}, goal: {x: number, y: number}) => {
-      const openSet = [start];
-      const cameFrom = new Map<string, string>();
-      const gScore = new Map<string, number>();
-      const fScore = new Map<string, number>();
-      
-      gScore.set(`${start.x},${start.y}`, 0);
-      fScore.set(`${start.x},${start.y}`, 
-        Math.abs(start.x - goal.x) + Math.abs(start.y - goal.y));
-      
-      while (openSet.length > 0) {
-        openSet.sort((a, b) => 
-          (fScore.get(`${a.x},${a.y}`) || Infinity) - (fScore.get(`${b.x},${b.y}`) || Infinity)
+    while (stack.length > 0) {
+      const [cx, cy] = stack[stack.length - 1];
+      const neighbors = [[0,2],[0,-2],[2,0],[-2,0]]
+        .map(([dx,dy]) => [cx+dx, cy+dy])
+        .filter(([nx, ny]) =>
+          nx > 0 && nx < MAZE_WIDTH-1 &&
+          ny > 0 && ny < MAZE_HEIGHT-1 &&
+          !visited.has(`${nx},${ny}`)
         );
-        
-        const current = openSet.shift()!;
-        
-        if (current.x === goal.x && current.y === goal.y) {
-          // Reconstruct path
-          const path: {x: number, y: number}[] = [current];
-          let currentKey = `${current.x},${current.y}`;
-          while (cameFrom.has(currentKey)) {
-            const [px, py] = cameFrom.get(currentKey)!.split(',').map(Number);
-            path.unshift({x: px, y: py});
-            currentKey = `${px},${py}`;
-          }
-          return path;
-        }
-        
-        // Check neighbors
-        const neighbors = [[0, 1], [0, -1], [1, 0], [-1, 0]]
-          .map(([dx, dy]) => ({x: current.x + dx, y: current.y + dy}))
-          .filter(({x, y}) => 
-            x >= 0 && x < MAZE_WIDTH && 
-            y >= 0 && y < MAZE_HEIGHT &&
-            grid[y * MAZE_WIDTH + x].type !== 'wall'
-          );
-        
-        for (const neighbor of neighbors) {
-          const tentativeGScore = (gScore.get(`${current.x},${current.y}`) || 0) + 1;
-          const neighborKey = `${neighbor.x},${neighbor.y}`;
-          
-          if (tentativeGScore < (gScore.get(neighborKey) || Infinity)) {
-            cameFrom.set(neighborKey, `${current.x},${current.y}`);
-            gScore.set(neighborKey, tentativeGScore);
-            fScore.set(neighborKey, 
-              tentativeGScore + Math.abs(neighbor.x - goal.x) + Math.abs(neighbor.y - goal.y));
-            
-            if (!openSet.some(cell => cell.x === neighbor.x && cell.y === neighbor.y)) {
-              openSet.push(neighbor);
-            }
-          }
-        }
+
+      if (neighbors.length > 0) {
+        const [nx, ny] = neighbors[Math.floor(Math.random() * neighbors.length)];
+        grid[ny * MAZE_WIDTH + nx].type = 'empty';
+        grid[(cy + (ny - cy) / 2) * MAZE_WIDTH + (cx + (nx - cx) / 2)].type = 'empty';
+        visited.add(`${nx},${ny}`);
+        stack.push([nx, ny]);
+      } else {
+        stack.pop();
       }
-      
-      return [];
-    };
-
-    // Get critical path from start to goal
-    const criticalPath = getCriticalPath({x: 1, y: 1}, goalCell);
-    const criticalPathSet = new Set(criticalPath.map(cell => `${cell.x},${cell.y}`));
-    
-    // Find cells that are NOT on the critical path for hazard placement
-    const safeCellsForHazards = pathCellsWithoutGoal.filter(cell => 
-      !criticalPathSet.has(`${cell.x},${cell.y}`)
-    );
-
-    // Place hazards only on safe cells
-    const hazardCount = Math.min(4, Math.floor(level * 0.8));
-    for (let i = 0; i < hazardCount && safeCellsForHazards.length > 0; i++) {
-      const randomIndex = Math.floor(Math.random() * safeCellsForHazards.length);
-      const cell = safeCellsForHazards[randomIndex];
-      grid[cell.y * MAZE_WIDTH + cell.x].type = 'hazard';
-      safeCellsForHazards.splice(randomIndex, 1);
     }
 
-    // Get all empty cells (after hazard placement)
-    const emptyCells = grid.filter(t => t.type === 'empty' && 
-      !(t.x === 1 && t.y === 1) && 
-      !(t.x === goalCell.x && t.y === goalCell.y));
+    // Level-based features
+    keysNeededRef.current = level >= 2 ? Math.min(3, Math.floor(level/2)) : 0;
 
-    // Shuffle empty cells
-    const shuffledEmpty = [...emptyCells].sort(() => Math.random() - 0.5);
+    // Start position
+    grid[1 * MAZE_WIDTH + 1].type = 'start';
+
+    // Goal position (bottom right area)
+    const goalX = MAZE_WIDTH - 2;
+    const goalY = MAZE_HEIGHT - 2;
+    grid[goalY * MAZE_WIDTH + goalX].type = 'goal';
+
+    // Add hazards based on level
+    const hazardCount = Math.min(6, Math.floor(level * 1.2));
+    for (let i = 0; i < hazardCount; i++) {
+      const emptyTiles = grid.filter(t => t.type === 'empty');
+      if (emptyTiles.length > 0) {
+        const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+        tile.type = 'hazard';
+      }
+    }
 
     // Add teleporters from level 3
-    if (level >= 3 && shuffledEmpty.length >= 2) {
+    if (level >= 3) {
       teleportPairsRef.current.clear();
-      const [tile1, tile2] = [shuffledEmpty[0], shuffledEmpty[1]];
-      
-      const teleportId = Date.now();
-      tile1.type = 'teleport';
-      tile2.type = 'teleport';
-      tile1.id = teleportId;
-      tile2.id = teleportId;
-      teleportPairsRef.current.set(teleportId, {x: tile2.x, y: tile2.y});
-      
-      // Remove from empty list
-      shuffledEmpty.splice(0, 2);
+      const emptyTiles = grid.filter(t => t.type === 'empty');
+      if (emptyTiles.length >= 2) {
+        const [tile1, tile2] = [
+          emptyTiles[Math.floor(Math.random() * emptyTiles.length)],
+          emptyTiles[Math.floor(Math.random() * emptyTiles.length)]
+        ];
+        if (tile1 && tile2 && tile1 !== tile2) {
+          const teleportId = Date.now();
+          tile1.type = 'teleport';
+          tile2.type = 'teleport';
+          tile1.id = teleportId;
+          tile2.id = teleportId;
+          teleportPairsRef.current.set(teleportId, {x: tile2.x, y: tile2.y});
+        }
+      }
     }
 
     // Add checkpoints from level 4
-    if (level >= 4 && shuffledEmpty.length > 0) {
+    if (level >= 4) {
       const checkpointCount = Math.min(2, Math.floor(level / 4));
-      for (let i = 0; i < checkpointCount && shuffledEmpty.length > 0; i++) {
-        const tile = shuffledEmpty.shift()!;
-        tile.type = 'checkpoint';
-        tile.id = i;
-        tile.active = false;
-      }
-    }
-
-    // Final validation - ensure at least one path exists
-    const validatePathExists = () => {
-      const startTile = grid.find(t => t.type === 'start')!;
-      const goalTile = grid.find(t => t.type === 'goal')!;
-      
-      const visited = new Set<string>();
-      const stack = [startTile];
-      
-      while (stack.length > 0) {
-        const current = stack.pop()!;
-        visited.add(`${current.x},${current.y}`);
-        
-        if (current.x === goalTile.x && current.y === goalTile.y) {
-          return true;
+      for (let i = 0; i < checkpointCount; i++) {
+        const emptyTiles = grid.filter(t => t.type === 'empty');
+        if (emptyTiles.length > 0) {
+          const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+          tile.type = 'checkpoint';
+          tile.id = i;
+          tile.active = false;
         }
-        
-        const neighbors = [[0, 1], [0, -1], [1, 0], [-1, 0]]
-          .map(([dx, dy]) => ({x: current.x + dx, y: current.y + dy}))
-          .filter(({x, y}) => 
-            x >= 0 && x < MAZE_WIDTH && 
-            y >= 0 && y < MAZE_HEIGHT
-          )
-          .map(({x, y}) => grid[y * MAZE_WIDTH + x])
-          .filter(tile => 
-            (tile.type === 'empty' || tile.type === 'start' || tile.type === 'goal' || 
-             tile.type === 'teleport' || tile.type === 'checkpoint' || tile.type === 'key') &&
-            !visited.has(`${tile.x},${tile.y}`)
-          );
-        
-        stack.push(...neighbors);
       }
-      
-      return false;
-    };
-
-    // If path doesn't exist, regenerate (should be extremely rare now)
-    if (!validatePathExists()) {
-      console.warn("Path validation failed, regenerating...");
-      return generateSolvableMaze(level);
     }
 
     return grid;
@@ -366,7 +227,7 @@ const GravityMaze = forwardRef((props, ref) => {
   const initLevel = (lvl: number) => {
     // Reset completion flag
     completedRef.current = false;
-    
+
     // Generate background stars
     bgStarsRef.current = Array.from({ length: 50 }).map(() => ({
       x: Math.random() * CANVAS_WIDTH,
@@ -375,54 +236,38 @@ const GravityMaze = forwardRef((props, ref) => {
       speed: Math.random() * 0.3 + 0.1
     }));
 
-    // Generate maze (now with safe paths)
     mazeRef.current = generateSolvableMaze(lvl);
-    
-    // Generate keys - place on empty tiles that aren't on critical path
+
+    // Generate keys
     keysRef.current = [];
     if (keysNeededRef.current > 0) {
       const emptyTiles = mazeRef.current.filter(t => t.type === 'empty');
-      // Don't place keys on critical path if possible
-      const nonCriticalTiles = emptyTiles.filter(tile => {
-        // Simple heuristic: avoid tiles too close to start or goal
-        const start = mazeRef.current.find(t => t.type === 'start')!;
-        const goal = mazeRef.current.find(t => t.type === 'goal')!;
-        const distToStart = Math.abs(tile.x - start.x) + Math.abs(tile.y - start.y);
-        const distToGoal = Math.abs(tile.x - goal.x) + Math.abs(tile.y - goal.y);
-        return distToStart > 3 && distToGoal > 3;
-      });
-      
-      const tilesToUse = nonCriticalTiles.length >= keysNeededRef.current ? 
-        nonCriticalTiles : emptyTiles;
-      
-      const keySpots = [...tilesToUse]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, keysNeededRef.current);
-      
-      for (let i = 0; i < keySpots.length; i++) {
-        const tile = keySpots[i];
-        keysRef.current.push({
-          x: tile.x * CELL_SIZE + CELL_SIZE / 2,
-          y: tile.y * CELL_SIZE + CELL_SIZE / 2,
-          id: Date.now() + i,
-          collected: false
-        });
+      for (let i = 0; i < keysNeededRef.current; i++) {
+        if (emptyTiles.length > 0) {
+          const tile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+          keysRef.current.push({
+            x: tile.x * CELL_SIZE + CELL_SIZE / 2,
+            y: tile.y * CELL_SIZE + CELL_SIZE / 2,
+            id: Date.now() + i,
+            collected: false
+          });
+        }
       }
     }
 
-    // Reset ball to start position
+    // Reset ball to start
     const startTile = mazeRef.current.find(t => t.type === 'start');
-    ballRef.current = { 
-      x: startTile ? startTile.x * CELL_SIZE + CELL_SIZE / 2 : CELL_SIZE * 1.5, 
-      y: startTile ? startTile.y * CELL_SIZE + CELL_SIZE / 2 : CELL_SIZE * 1.5, 
-      vx: 0, 
-      vy: 0, 
+    ballRef.current = {
+      x: startTile ? startTile.x * CELL_SIZE + CELL_SIZE / 2 : CELL_SIZE * 1.5,
+      y: startTile ? startTile.y * CELL_SIZE + CELL_SIZE / 2 : CELL_SIZE * 1.5,
+      vx: 0,
+      vy: 0,
       trail: [],
       isTeleporting: false,
       hasShield: false,
       lastTeleport: 0,
     };
-    
+
     // Initialize trail
     ballRef.current.trail = Array.from({ length: 15 }).map(() => ({
       x: ballRef.current.x,
@@ -432,13 +277,13 @@ const GravityMaze = forwardRef((props, ref) => {
 
     particlesRef.current = [];
     startTimeRef.current = Date.now();
-    
-    setStats(s => ({ 
-      ...s, 
-      level: lvl, 
-      time: 60 + lvl * 5, 
-      keys: 0, 
-      moves: 0 
+
+    setStats(s => ({
+      ...s,
+      level: lvl,
+      time: 60 + lvl * 5,
+      keys: 0,
+      moves: 0
     }));
     setGameState('playing');
   };
@@ -454,29 +299,7 @@ const GravityMaze = forwardRef((props, ref) => {
     return mazeRef.current[tileY * MAZE_WIDTH + tileX] || null;
   };
 
-  // FIXED: Handle goal completion
-  const handleGoalReached = useCallback(() => {
-    if (completedRef.current) return; // Prevent multiple triggers
-    
-    completedRef.current = true;
-    const levelTime = Date.now() - startTimeRef.current;
-    const timeBonus = Math.max(0, 30000 - levelTime) / 100;
-    
-    setStats(s => ({
-      ...s,
-      score: s.score + 1000 + Math.floor(timeBonus),
-      bestTime: Math.min(s.bestTime || Infinity, levelTime)
-    }));
-    
-    createBurst(ballRef.current.x, ballRef.current.y, TILE_COLORS.goal, 30, 4);
-    
-    // Use requestAnimationFrame to ensure state updates happen after current render
-    requestAnimationFrame(() => {
-      setGameState('complete');
-    });
-  }, []);
-
-  // --- GAME LOOP WITH FIXED GOAL HANDLING ---
+  // --- GAME LOOP ---
   useEffect(() => {
     if (gameState !== 'playing') return;
     
@@ -583,68 +406,67 @@ const GravityMaze = forwardRef((props, ref) => {
       b.x = Math.max(BALL_RADIUS, Math.min(CANVAS_WIDTH - BALL_RADIUS, b.x));
       b.y = Math.max(BALL_RADIUS, Math.min(CANVAS_HEIGHT - BALL_RADIUS, b.y));
 
-      // FIXED: Check current tile for goal BEFORE other tile interactions
+      // Special tile interactions
       const currentTile = checkTileCollision(b.x, b.y);
       if (currentTile) {
-        // FIXED: Handle goal FIRST to prevent race conditions
-        if (currentTile.type === 'goal') {
-          if (stats.keys >= keysNeededRef.current && !completedRef.current) {
-            handleGoalReached();
-            clearInterval(timeInterval);
-            cancelAnimationFrame(frameId);
-            return;
-          } else if (!completedRef.current) {
-            // Show hint if keys are missing (but don't trigger completion)
-            createBurst(b.x, b.y, '#FFD700', 8, 2);
-          }
-        }
-        // Only process other tiles if not on goal
-        else {
-          switch(currentTile.type) {
-            case 'hazard':
-              if (!ballRef.current.hasShield && !completedRef.current) {
-                setStats(s => ({...s, time: Math.max(0, s.time - 3)}));
-                createBurst(b.x, b.y, TILE_COLORS.hazard, 20, 3);
-                shakeRef.current = 15;
-                
-                // Bounce away from hazard
-                b.vx *= -0.7;
-                b.vy *= -0.7;
+        switch(currentTile.type) {
+          case 'goal':
+            if (stats.keys >= keysNeededRef.current && !completedRef.current) {
+              completedRef.current = true;
+              const levelTime = Date.now() - startTimeRef.current;
+              const timeBonus = Math.max(0, 30000 - levelTime) / 100;
+
+              setStats(s => ({
+                ...s,
+                score: s.score + 1000 + Math.floor(timeBonus),
+                bestTime: Math.min(s.bestTime || Infinity, levelTime)
+              }));
+
+              createBurst(b.x, b.y, TILE_COLORS.goal, 30, 4);
+              setGameState('complete');
+              return;
+            }
+            break;
+
+          case 'hazard':
+            if (!ballRef.current.hasShield) {
+              setStats(s => ({...s, time: Math.max(0, s.time - 3)}));
+              createBurst(b.x, b.y, TILE_COLORS.hazard, 20, 3);
+              shakeRef.current = 15;
+            }
+            break;
+
+          case 'teleport':
+            if (!b.isTeleporting && currentTile.id) {
+              const target = teleportPairsRef.current.get(currentTile.id);
+              if (target && Date.now() - b.lastTeleport > 1000) {
+                b.isTeleporting = true;
+                b.lastTeleport = Date.now();
+                b.x = target.x * CELL_SIZE + CELL_SIZE / 2;
+                b.y = target.y * CELL_SIZE + CELL_SIZE / 2;
+                createBurst(b.x, b.y, TILE_COLORS.teleport, 25, 3);
+                setTimeout(() => { ballRef.current.isTeleporting = false; }, 300);
               }
-              break;
-              
-            case 'teleport':
-              if (!b.isTeleporting && currentTile.id && !completedRef.current) {
-                const target = teleportPairsRef.current.get(currentTile.id);
-                if (target && Date.now() - b.lastTeleport > 1000) {
-                  b.isTeleporting = true;
-                  b.lastTeleport = Date.now();
-                  b.x = target.x * CELL_SIZE + CELL_SIZE / 2;
-                  b.y = target.y * CELL_SIZE + CELL_SIZE / 2;
-                  createBurst(b.x, b.y, TILE_COLORS.teleport, 25, 3);
-                  setTimeout(() => { ballRef.current.isTeleporting = false; }, 300);
-                }
-              }
-              break;
-              
-            case 'checkpoint':
-              if (currentTile.id !== undefined && !currentTile.active && !completedRef.current) {
-                currentTile.active = true;
-                createBurst(b.x, b.y, TILE_COLORS.checkpoint, 15, 3);
-                setStats(s => ({...s, score: s.score + 250}));
-              }
-              break;
-          }
+            }
+            break;
+
+          case 'checkpoint':
+            if (currentTile.id !== undefined && !currentTile.active) {
+              currentTile.active = true;
+              createBurst(b.x, b.y, TILE_COLORS.checkpoint, 15, 3);
+              setStats(s => ({...s, score: s.score + 250}));
+            }
+            break;
         }
       }
 
       // Check key collection
       keysRef.current.forEach(key => {
-        if (!key.collected && !completedRef.current) {
+        if (!key.collected) {
           const dx = key.x - b.x;
           const dy = key.y - b.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (distance < BALL_RADIUS + 10) {
             key.collected = true;
             setStats(s => ({...s, keys: s.keys + 1, score: s.score + 500}));
@@ -672,7 +494,7 @@ const GravityMaze = forwardRef((props, ref) => {
       });
 
       // Increment moves counter
-      if (delta > 16 && !completedRef.current) {
+      if (delta > 16) {
         setStats(s => ({...s, moves: s.moves + 1}));
       }
 
@@ -833,7 +655,7 @@ const GravityMaze = forwardRef((props, ref) => {
       clearInterval(timeInterval);
       cancelAnimationFrame(frameId);
     };
-  }, [gameState, stats.keys, handleGoalReached]);
+  }, [gameState, stats.keys]);
 
   const resetBall = () => {
     const startTile = mazeRef.current.find(t => t.type === 'start');
