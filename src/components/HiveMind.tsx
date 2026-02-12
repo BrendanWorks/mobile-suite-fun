@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase'; // Adjust import based on your config
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Choice {
@@ -35,17 +35,22 @@ const HiveMind: React.FC<HiveMindProps> = ({
   // Load Data
   useEffect(() => {
     const fetchPuzzle = async () => {
-      let query = supabase.from('puzzles').select('*').eq('game_type', 'hive_mind');
-      
+      let query = supabase
+        .from('puzzles')
+        .select('*')
+        .eq('game_type', 'hive_mind')
+        .eq('is_playable', true);
+
       if (puzzleId) {
         query = query.eq('id', puzzleId);
       }
-      
-      const { data, error } = await query.limit(1).single();
-      
-      if (data && !error) {
-        // Assuming metadata contains the questions array
+
+      const { data, error } = await query.limit(1).maybeSingle();
+
+      if (data && !error && data.metadata?.questions) {
         setQuestions(data.metadata.questions);
+      } else if (error) {
+        console.error('Error loading Hive Mind puzzle:', error);
       }
       setLoading(false);
     };

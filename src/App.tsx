@@ -19,7 +19,8 @@ export type GameId =
   | 'shape-sequence'
   | 'snake'
   | 'gravity-ball'
-  | 'fake-out';
+  | 'fake-out'
+  | 'hive-mind';
 
 const GLOW_STYLES = {
   cyan: {

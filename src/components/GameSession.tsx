@@ -22,6 +22,7 @@ import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
 import GravityBall from './GravityBall';
 import FakeOut from './FakeOut';
+import HiveMind from './HiveMind';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -46,6 +47,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
   { id: 'gravity-ball', name: 'Gravity Ball', component: GravityBall, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
   { id: 'fake-out', name: 'Fake Out', component: FakeOut, duration: 60, instructions: 'Identify if the photo is real or AI-generated' },
+  { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {

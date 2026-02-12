@@ -16,7 +16,8 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     { id: 6, name: 'Split Decision', slug: 'split-decision', description: 'Rapid categorization' },
     { id: 7, name: 'Pop', slug: 'word-rescue', description: 'Make words from falling letters' },
     { id: 8, name: 'Shape Sequence', slug: 'shape-sequence', description: 'Remember the pattern' },
-    { id: 9, name: 'Fake Out', slug: 'fake-out', description: 'Real photo or AI fake?' }
+    { id: 9, name: 'Fake Out', slug: 'fake-out', description: 'Real photo or AI fake?' },
+    { id: 10, name: 'Hive Mind', slug: 'hive-mind', description: 'Guess what most people chose' }
   ];
 
   const gameIcons = {
@@ -27,7 +28,8 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     'split-decision': '⚡',
     'word-rescue': '📝',
     'shape-sequence': '🔷',
-    'fake-out': '🎭'
+    'fake-out': '🎭',
+    'hive-mind': '🐝'
   };
 
   const handleGameClick = (gameId: GameId, gameName: string, numericId: number) => {
