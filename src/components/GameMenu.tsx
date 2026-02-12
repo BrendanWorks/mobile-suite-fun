@@ -15,7 +15,8 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     { id: 5, name: 'SnapShot', slug: 'snapshot', description: 'Complete the jigsaw' },
     { id: 6, name: 'Split Decision', slug: 'split-decision', description: 'Rapid categorization' },
     { id: 7, name: 'Pop', slug: 'word-rescue', description: 'Make words from falling letters' },
-    { id: 8, name: 'Shape Sequence', slug: 'shape-sequence', description: 'Remember the pattern' }
+    { id: 8, name: 'Shape Sequence', slug: 'shape-sequence', description: 'Remember the pattern' },
+    { id: 9, name: 'Fake Out', slug: 'fake-out', description: 'Real photo or AI fake?' }
   ];
 
   const gameIcons = {
@@ -25,7 +26,8 @@ export default function GameMenu({ onGameSelect }: GameMenuProps) {
     'snapshot': '🧩',
     'split-decision': '⚡',
     'word-rescue': '📝',
-    'shape-sequence': '🔷'
+    'shape-sequence': '🔷',
+    'fake-out': '🎭'
   };
 
   const handleGameClick = (gameId: GameId, gameName: string, numericId: number) => {

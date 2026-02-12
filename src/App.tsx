@@ -9,6 +9,18 @@ import AdminTools from './components/AdminTools';
 import PlaylistSelector from './components/PlaylistSelector';
 import { useUserStats } from './hooks/useUserStats';
 
+export type GameId =
+  | 'odd-man-out'
+  | 'photo-mystery'
+  | 'rank-and-roll'
+  | 'snapshot'
+  | 'split-decision'
+  | 'word-rescue'
+  | 'shape-sequence'
+  | 'snake'
+  | 'gravity-ball'
+  | 'fake-out';
+
 const GLOW_STYLES = {
   cyan: {
     textShadow: '0 0 10px #00ffff',

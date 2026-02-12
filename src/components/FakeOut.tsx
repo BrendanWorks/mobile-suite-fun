@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js'; // Assuming supabase client is initialized elsewhere
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { supabase } from '../lib/supabase';
 
-// Types for the Puzzle Data
 interface PuzzleMetadata {
   source: "midjourney" | "dall-e" | "stable-diffusion" | "photograph";
   description: string;
@@ -16,11 +15,11 @@ interface Puzzle {
 }
 
 interface FakeOutProps {
-  onScoreUpdate: (currentScore: number, maxPossibleScore: number) => void;
-  onComplete: (finalScore: number, maxScore: number) => void;
-  duration: number;
-  timeRemaining: number;
-  puzzleId?: string; // Optional specific set
+  onScoreUpdate?: (currentScore: number, maxPossibleScore: number) => void;
+  onComplete?: (finalScore: number, maxScore: number) => void;
+  duration?: number;
+  timeRemaining?: number;
+  puzzleId?: string;
 }
 
 // Neon Styles Constant for reuse
@@ -36,19 +35,27 @@ const MAX_IMAGES = 10;
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
 
-export default function FakeOut({ onScoreUpdate, onComplete, duration, timeRemaining, puzzleId }: FakeOutProps) {
+const FakeOut = forwardRef((props: FakeOutProps, ref) => {
+  const { onScoreUpdate, onComplete, duration, timeRemaining, puzzleId } = props;
+
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [status, setStatus] = useState<'loading' | 'playing' | 'feedback' | 'finished'>('loading');
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
+  const scoreRef = useRef(0);
+  const maxScoreRef = useRef(MAX_IMAGES * (BASE_POINTS + STREAK_BONUS));
 
-  // Supabase Client (Placeholder - should ideally be imported from your config)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: scoreRef.current,
+      maxScore: maxScoreRef.current
+    }),
+    onGameEnd: () => {
+      console.log('FakeOut game ended');
+    }
+  }));
 
   // 1. Load Data
   useEffect(() => {
@@ -101,11 +108,16 @@ export default function FakeOut({ onScoreUpdate, onComplete, duration, timeRemai
     }
 
     const newScore = score + pointsGained;
-    const maxScore = MAX_IMAGES * (BASE_POINTS + STREAK_BONUS); // Rough estimate
+    const maxScore = MAX_IMAGES * (BASE_POINTS + STREAK_BONUS);
 
     setScore(newScore);
     setStreak(newStreak);
-    onScoreUpdate(newScore, maxScore);
+    scoreRef.current = newScore;
+    maxScoreRef.current = maxScore;
+
+    if (onScoreUpdate) {
+      onScoreUpdate(newScore, maxScore);
+    }
 
     // Feedback Reveal
     const sourceLabel = currentPuzzle.correct_answer === 'fake' 
@@ -119,7 +131,9 @@ export default function FakeOut({ onScoreUpdate, onComplete, duration, timeRemai
     setTimeout(() => {
       if (currentIndex === puzzles.length - 1) {
         setStatus('finished');
-        onComplete(newScore, maxScore);
+        if (onComplete) {
+          onComplete(newScore, maxScore);
+        }
       } else {
         setCurrentIndex(prev => prev + 1);
         setStatus('playing');
@@ -236,4 +250,8 @@ export default function FakeOut({ onScoreUpdate, onComplete, duration, timeRemai
       </div>
     </div>
   );
-}
+});
+
+FakeOut.displayName = 'FakeOut';
+
+export default FakeOut;

@@ -10,6 +10,7 @@ const GAME_SLUG_TO_ID: Record<string, number> = {
   'word-rescue': 10,
   'shape-sequence': 11,
   'snake': 12,
+  'fake-out': 13,
 };
 
 export function getGameId(slug: string): number {

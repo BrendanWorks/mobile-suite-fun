@@ -9,6 +9,7 @@ import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
 import GravityBall from './GravityBall';
+import FakeOut from './FakeOut';
 
 interface TestModeProps {
   onExit: () => void;
@@ -26,6 +27,7 @@ const TEST_GAMES = [
   { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },
   { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
   { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: GravityBall },
+  { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
