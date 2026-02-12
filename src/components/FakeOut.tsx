@@ -35,6 +35,39 @@ const MAX_IMAGES = 10;
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
 
+const FALLBACK_PUZZLES: Puzzle[] = [
+  {
+    id: 'demo-1',
+    image_url: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'Mountain Landscape', difficulty: 'easy' }
+  },
+  {
+    id: 'demo-2',
+    image_url: 'https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'City Street', difficulty: 'medium' }
+  },
+  {
+    id: 'demo-3',
+    image_url: 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'Forest Path', difficulty: 'easy' }
+  },
+  {
+    id: 'demo-4',
+    image_url: 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'Sunset Beach', difficulty: 'medium' }
+  },
+  {
+    id: 'demo-5',
+    image_url: 'https://images.pexels.com/photos/1179229/pexels-photo-1179229.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'Desert Dunes', difficulty: 'hard' }
+  }
+];
+
 const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const { onScoreUpdate, onComplete, duration, timeRemaining, puzzleId } = props;
 
@@ -45,7 +78,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const [status, setStatus] = useState<'loading' | 'playing' | 'feedback' | 'finished'>('loading');
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const scoreRef = useRef(0);
-  const maxScoreRef = useRef(MAX_IMAGES * (BASE_POINTS + STREAK_BONUS));
+  const maxScoreRef = useRef(0);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -74,10 +107,23 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
       if (error) {
         console.error("Error fetching puzzles:", error);
+        console.log("Using fallback puzzles");
+        setPuzzles(FALLBACK_PUZZLES);
+        maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
+        setStatus('playing');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log("No puzzles found in database, using fallback puzzles");
+        setPuzzles(FALLBACK_PUZZLES);
+        maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
+        setStatus('playing');
         return;
       }
 
       setPuzzles(data as Puzzle[]);
+      maxScoreRef.current = data.length * (BASE_POINTS + STREAK_BONUS);
       setStatus('playing');
     }
 
@@ -108,15 +154,13 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     }
 
     const newScore = score + pointsGained;
-    const maxScore = MAX_IMAGES * (BASE_POINTS + STREAK_BONUS);
 
     setScore(newScore);
     setStreak(newStreak);
     scoreRef.current = newScore;
-    maxScoreRef.current = maxScore;
 
     if (onScoreUpdate) {
-      onScoreUpdate(newScore, maxScore);
+      onScoreUpdate(newScore, maxScoreRef.current);
     }
 
     // Feedback Reveal
@@ -132,7 +176,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
       if (currentIndex === puzzles.length - 1) {
         setStatus('finished');
         if (onComplete) {
-          onComplete(newScore, maxScore);
+          onComplete(newScore, maxScoreRef.current);
         }
       } else {
         setCurrentIndex(prev => prev + 1);
@@ -146,6 +190,17 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     return (
       <div className="flex items-center justify-center h-full bg-black text-cyan-400">
         <p className="animate-pulse tracking-widest" style={NEON_STYLES.cyanGlow}>INITIALIZING SYSTEM...</p>
+      </div>
+    );
+  }
+
+  if (!puzzles || puzzles.length === 0 || currentIndex >= puzzles.length) {
+    return (
+      <div className="flex items-center justify-center h-full bg-black text-red-400">
+        <div className="text-center">
+          <p className="text-2xl font-bold mb-2">⚠️ ERROR</p>
+          <p className="text-sm">No puzzles available</p>
+        </div>
       </div>
     );
   }
@@ -167,7 +222,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
             {score.toLocaleString()}
           </p>
           <p className="text-xs text-cyan-400 opacity-70 tracking-tighter">
-            IMAGE {currentIndex + 1} / {MAX_IMAGES}
+            IMAGE {currentIndex + 1} / {puzzles.length}
           </p>
         </div>
       </div>
