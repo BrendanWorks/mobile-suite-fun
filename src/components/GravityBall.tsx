@@ -83,7 +83,19 @@ const GravityBall = forwardRef((props, ref) => {
     platformsRef.current = startPlatforms;
   };
 
-  const startSequence = () => {
+  const startSequence = async () => {
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      try {
+        const permission = await (DeviceOrientationEvent as any).requestPermission();
+        if (permission !== 'granted') {
+          alert('Gyroscope permission is required to play this game');
+          return;
+        }
+      } catch (error) {
+        console.error('Error requesting device orientation permission:', error);
+      }
+    }
+
     resetBall(true);
     setGameState('countdown');
     setCountdown(3);
@@ -103,6 +115,21 @@ const GravityBall = forwardRef((props, ref) => {
     }, 800);
     return () => clearInterval(timer);
   }, [gameState]);
+
+  // --- Gyroscope/Tilt Controls ---
+  useEffect(() => {
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma !== null) {
+        tiltRef.current = Math.max(-1, Math.min(1, e.gamma / 30));
+      }
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation);
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+    };
+  }, []);
 
   // --- Game Loop ---
   useEffect(() => {
