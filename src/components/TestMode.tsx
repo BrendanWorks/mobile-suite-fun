@@ -10,6 +10,7 @@ import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
 import GravityBall from './GravityBall';
 import FakeOut from './FakeOut';
+import HiveMind from './HiveMind';
 
 interface TestModeProps {
   onExit: () => void;
@@ -28,6 +29,7 @@ const TEST_GAMES = [
   { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
   { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: GravityBall },
   { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
+  { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
@@ -58,7 +60,7 @@ export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestM
             duration={game.duration}
             onComplete={() => {}}
             gameName={game.name}
-            showCompletionModal={false}
+            onScoreUpdate={() => {}}
           >
             <GameComponent />
           </GameWrapper>
