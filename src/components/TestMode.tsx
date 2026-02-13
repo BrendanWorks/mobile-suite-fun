@@ -11,6 +11,7 @@ import Snake from './Snake';
 import GravityBall from './GravityBall';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
+import DoubleFake from './DoubleFake';
 
 interface TestModeProps {
   onExit: () => void;
@@ -30,6 +31,7 @@ const TEST_GAMES = [
   { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: GravityBall },
   { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
   { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
+  { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
