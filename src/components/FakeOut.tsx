@@ -31,9 +31,10 @@ const NEON_STYLES = {
   redGlow: '0 0 20px #ef4444',
 };
 
-const MAX_IMAGES = 10;
+const MAX_IMAGES = 6;
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
+const BUCKET_NAME = 'Fake_Out';
 
 const FALLBACK_PUZZLES: Puzzle[] = [
   {
@@ -65,6 +66,12 @@ const FALLBACK_PUZZLES: Puzzle[] = [
     image_url: 'https://images.pexels.com/photos/1179229/pexels-photo-1179229.jpeg',
     correct_answer: 'real',
     metadata: { source: 'photograph', description: 'Desert Dunes', difficulty: 'hard' }
+  },
+  {
+    id: 'demo-6',
+    image_url: 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg',
+    correct_answer: 'real',
+    metadata: { source: 'photograph', description: 'Ocean Waves', difficulty: 'easy' }
   }
 ];
 
@@ -90,41 +97,68 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     }
   }));
 
-  // 1. Load Data
+  // 1. Load Data from Storage Bucket
   useEffect(() => {
     async function fetchPuzzles() {
-      let query = supabase
-        .from('puzzles')
-        .select('*')
-        .eq('game_type', 'fake_out')
-        .limit(MAX_IMAGES);
+      try {
+        // Get list of files from Fake_Out bucket
+        const { data: files, error } = await supabase.storage
+          .from(BUCKET_NAME)
+          .list('', {
+            limit: MAX_IMAGES,
+            sortBy: { column: 'name', order: 'asc' }
+          });
 
-      if (puzzleId) {
-        query = query.eq('id', puzzleId);
-      }
+        if (error || !files || files.length === 0) {
+          console.error("Error fetching storage images:", error);
+          console.log("Using fallback puzzles");
+          setPuzzles(FALLBACK_PUZZLES);
+          maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
+          setStatus('playing');
+          return;
+        }
 
-      const { data, error } = await query;
+        // Convert storage files to puzzle format
+        const loadedPuzzles: Puzzle[] = files
+          .filter(file => file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg'))
+          .map((file, index) => {
+            const fileName = file.name;
+            const isFake = fileName.includes('FAKE') || fileName.includes('fake');
+            const isReal = fileName.includes('Real') || fileName.includes('real');
 
-      if (error) {
-        console.error("Error fetching puzzles:", error);
-        console.log("Using fallback puzzles");
+            // Extract location from filename (e.g., "Paris_FAKE_AI.jpg" -> "Paris")
+            const location = fileName.split('_')[0] || 'Unknown';
+
+            // Get public URL for the image
+            const { data: urlData } = supabase.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl(fileName);
+
+            return {
+              id: `storage-${index}`,
+              image_url: urlData.publicUrl,
+              correct_answer: isFake ? 'fake' : 'real',
+              metadata: {
+                source: isFake ? 'dall-e' : 'photograph',
+                description: `${location} ${isReal ? 'Photograph' : 'AI Generated'}`,
+                difficulty: 'medium'
+              }
+            };
+          });
+
+        // Shuffle the puzzles for variety
+        const shuffled = loadedPuzzles.sort(() => Math.random() - 0.5);
+
+        setPuzzles(shuffled);
+        maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
+        setStatus('playing');
+
+      } catch (err) {
+        console.error("Error loading puzzles:", err);
         setPuzzles(FALLBACK_PUZZLES);
         maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
         setStatus('playing');
-        return;
       }
-
-      if (!data || data.length === 0) {
-        console.log("No puzzles found in database, using fallback puzzles");
-        setPuzzles(FALLBACK_PUZZLES);
-        maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
-        setStatus('playing');
-        return;
-      }
-
-      setPuzzles(data as Puzzle[]);
-      maxScoreRef.current = data.length * (BASE_POINTS + STREAK_BONUS);
-      setStatus('playing');
     }
 
     fetchPuzzles();
