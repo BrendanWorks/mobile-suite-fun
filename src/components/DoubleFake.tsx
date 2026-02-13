@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface PuzzleMetadata {
@@ -23,7 +23,7 @@ interface DoubleFakeProps {
 }
 
 const ZOOM_LEVEL = 3;
-const LENS_SIZE = 120;
+const LENS_SIZE = 140; // Slightly larger for better mobile visibility
 const MAX_IMAGES = 10;
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
@@ -59,6 +59,7 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
   const [status, setStatus] = useState<'loading' | 'playing' | 'feedback' | 'finished'>('loading');
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const [aiSide, setAiSide] = useState<'left' | 'right'>('left');
+  
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(0);
 
@@ -68,10 +69,11 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
       maxScore: maxScoreRef.current
     }),
     onGameEnd: () => {
-      console.log('DoubleFake game ended');
+      console.log('DoubleFake session terminated');
     }
   }));
 
+  // Load Data
   useEffect(() => {
     async function fetchPuzzles() {
       let query = supabase
@@ -87,7 +89,6 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
       const { data, error } = await query;
 
       if (error || !data || data.length === 0) {
-        console.log("Using fallback puzzles for DoubleFake");
         setPuzzles(FALLBACK_PUZZLES);
         maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
         setStatus('playing');
@@ -102,19 +103,10 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
     fetchPuzzles();
   }, [puzzleId]);
 
+  // Randomize AI position per round
   useEffect(() => {
     if (puzzles.length > 0) {
       setAiSide(Math.random() < 0.5 ? 'left' : 'right');
-    }
-  }, [currentIndex, puzzles]);
-
-  useEffect(() => {
-    if (currentIndex < puzzles.length - 1 && puzzles[currentIndex + 1]) {
-      const nextPuzzle = puzzles[currentIndex + 1];
-      const img1 = new Image();
-      const img2 = new Image();
-      img1.src = nextPuzzle.metadata.ai_image_url;
-      img2.src = nextPuzzle.metadata.real_image_url;
     }
   }, [currentIndex, puzzles]);
 
@@ -125,8 +117,9 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
     let pointsGained = isCorrect ? BASE_POINTS : 0;
     const newStreak = isCorrect ? streak + 1 : 0;
 
+    // Correct streak logic: bonus applied for 2nd correct answer onwards
     if (isCorrect && newStreak > 1) {
-      pointsGained += STREAK_BONUS * newStreak;
+      pointsGained += STREAK_BONUS;
     }
 
     const newScore = score + pointsGained;
@@ -136,7 +129,7 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
 
     setLastResult({
       isCorrect,
-      message: isCorrect ? `+${pointsGained} pts!` : 'Wrong!'
+      message: isCorrect ? `+${pointsGained} PTS` : 'DETECTION FAILED'
     });
 
     setStatus('feedback');
@@ -152,26 +145,24 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
         setLastResult(null);
       } else {
         setStatus('finished');
-        if (onComplete) {
-          onComplete(newScore, maxScoreRef.current);
-        }
+        if (onComplete) onComplete(newScore, maxScoreRef.current);
       }
     }, 1500);
   };
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center h-full bg-black text-white">
-        <div className="text-2xl">Loading...</div>
+      <div className="flex items-center justify-center h-full bg-black">
+        <div className="text-cyan-400 animate-pulse tracking-widest font-mono">INITIALIZING SCANNER...</div>
       </div>
     );
   }
 
   if (status === 'finished') {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-black text-white p-4">
-        <div className="text-4xl mb-4">Game Complete!</div>
-        <div className="text-2xl">Final Score: {score}</div>
+      <div className="flex flex-col items-center justify-center h-full bg-black text-white p-4 font-mono">
+        <div className="text-4xl font-black text-yellow-400 mb-2 shadow-yellow-500/50" style={{ textShadow: '0 0 10px #fbbf24' }}>MISSION COMPLETE</div>
+        <div className="text-xl text-cyan-400">FINAL SCORE: {score}</div>
       </div>
     );
   }
@@ -181,29 +172,30 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
 
   return (
     <div className="flex flex-col h-full bg-black text-white p-2 sm:p-4 font-mono select-none overflow-hidden">
+      {/* Arcade HUD */}
       <div className="flex justify-between items-end mb-4 border-b-2 border-cyan-900 pb-2">
         <div>
-          <div className="text-xs text-cyan-400 uppercase tracking-wider">Score</div>
-          <div className="text-2xl font-black text-cyan-300">{score}</div>
+          <div className="text-[10px] text-cyan-500 uppercase font-bold">Data Stream</div>
+          <div className="text-2xl font-black text-cyan-300" style={{ textShadow: '0 0 8px #06b6d4' }}>{score}</div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-pink-400 uppercase tracking-wider">Image</div>
-          <div className="text-2xl font-black text-pink-300">{currentIndex + 1}/{puzzles.length}</div>
+          <div className="text-[10px] text-pink-500 uppercase font-bold">Node</div>
+          <div className="text-2xl font-black text-pink-300" style={{ textShadow: '0 0 8px #d946ef' }}>{currentIndex + 1}/{puzzles.length}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-yellow-400 uppercase tracking-wider">Streak</div>
-          <div className="text-2xl font-black text-yellow-300">{streak}🔥</div>
+          <div className="text-[10px] text-yellow-500 uppercase font-bold">Sync</div>
+          <div className="text-2xl font-black text-yellow-300" style={{ textShadow: '0 0 8px #eab308' }}>{streak}🔥</div>
         </div>
       </div>
 
-      {lastResult && (
-        <div className={`text-center text-xl font-bold mb-2 ${lastResult.isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-          {lastResult.message}
-        </div>
-      )}
-
-      <div className="text-center mb-2 text-sm text-gray-400">
-        Which image is AI-generated?
+      <div className="h-8 flex items-center justify-center">
+        {lastResult ? (
+           <div className={`text-xl font-black tracking-tighter ${lastResult.isCorrect ? 'text-green-400' : 'text-red-500 animate-shake'}`}>
+             {lastResult.message}
+           </div>
+        ) : (
+          <div className="text-xs text-gray-500 uppercase tracking-[0.2em]">Identify the Synthetic Image</div>
+        )}
       </div>
 
       <div className="flex-1 grid grid-cols-2 gap-2 sm:gap-4 items-center">
@@ -229,6 +221,9 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // THE FIX: didZoom tracks if the magnifier was actually activated during the current press
+  const didZoom = useRef(false);
 
   const isFeedback = status === 'feedback';
 
@@ -252,21 +247,26 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isFeedback) return;
+    didZoom.current = false; // Reset for new interaction
 
     pressTimer.current = setTimeout(() => {
       setShowMagnifier(true);
-      if (window.navigator.vibrate) window.navigator.vibrate(50);
-    }, 250);
+      didZoom.current = true; // Mark that we have entered zoom mode
+      if (window.navigator.vibrate) window.navigator.vibrate(40);
+    }, 300); // Increased threshold slightly for better tap detection
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
     }
 
-    if (showMagnifier) {
+    if (didZoom.current) {
+      // If we zoomed, we ONLY hide the magnifier. No selection allowed.
       setShowMagnifier(false);
+      didZoom.current = false;
     } else if (!isFeedback) {
+      // If we never hit the zoom threshold, it's a valid selection tap.
       onSelect();
     }
   };
@@ -279,10 +279,11 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerUp}
       className={`relative w-full aspect-[3/4] rounded-sm border-2 overflow-hidden transition-all duration-300 touch-none
-        ${isFeedback ? (isAI ? 'border-green-500 shadow-[0_0_15px_#22c55e]' : 'border-red-500') : 'border-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]'}`}
+        ${isFeedback ? (isAI ? 'border-green-500 shadow-[0_0_20px_#22c55e]' : 'border-red-600') : 'border-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:border-white'}`}
     >
-      <img src={url} className="w-full h-full object-cover pointer-events-none" alt="Detect" />
+      <img src={url} className="w-full h-full object-cover pointer-events-none" alt="Evidence" />
 
+      {/* Magnifier Lens */}
       <div
         ref={lensRef}
         style={{
@@ -291,21 +292,22 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
           backgroundImage: `url(${url})`,
           backgroundSize: `${100 * ZOOM_LEVEL}%`,
           display: showMagnifier ? 'block' : 'none',
-          boxShadow: '0 0 20px rgba(0,0,0,0.5), 0 0 0 2px #00ffff',
+          boxShadow: '0 0 25px rgba(0,0,0,0.8), 0 0 0 3px #00ffff',
         }}
-        className="absolute pointer-events-none rounded-full border-2 border-cyan-400 z-50 bg-no-repeat"
+        className="absolute pointer-events-none rounded-full border-2 border-cyan-400 z-50 bg-no-repeat transition-transform scale-110"
       />
 
+      {/* Feedback Overlay */}
       {isFeedback && (
-        <div className={`absolute bottom-0 left-0 right-0 py-1 text-[10px] font-black uppercase text-center z-10
-          ${isAI ? 'bg-green-500 text-black' : 'bg-red-500 text-white'}`}>
-          {isAI ? '🤖 AI GENERATED' : '📷 AUTHENTIC'}
+        <div className={`absolute bottom-0 left-0 right-0 py-2 text-xs font-black uppercase text-center z-10
+          ${isAI ? 'bg-green-500 text-black' : 'bg-red-600 text-white'}`}>
+          {isAI ? 'SYNTHETIC' : 'AUTHENTIC'}
         </div>
       )}
 
       {!isFeedback && (
-        <div className="absolute top-2 left-2 bg-black/50 px-1 text-[8px] text-cyan-400 uppercase tracking-tighter">
-          Hold to Zoom
+        <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 text-[7px] text-cyan-300 uppercase tracking-widest border border-cyan-800 rounded-sm">
+          Long Press: Zoom
         </div>
       )}
     </div>
