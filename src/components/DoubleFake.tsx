@@ -23,10 +23,11 @@ interface DoubleFakeProps {
 }
 
 const ZOOM_LEVEL = 3;
-const LENS_SIZE = 140; // Slightly larger for better mobile visibility
+const LENS_SIZE = 140;
 const MAX_IMAGES = 10;
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
+const ZOOM_THRESHOLD = 250; // ms to trigger zoom
 
 const FALLBACK_PUZZLES: Puzzle[] = [
   {
@@ -50,7 +51,7 @@ const FALLBACK_PUZZLES: Puzzle[] = [
 ];
 
 const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
-  const { onScoreUpdate, onComplete, duration, timeRemaining, puzzleId } = props;
+  const { onScoreUpdate, onComplete, puzzleId } = props;
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -68,46 +69,29 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
       score: scoreRef.current,
       maxScore: maxScoreRef.current
     }),
-    onGameEnd: () => {
-      console.log('DoubleFake session terminated');
-    }
+    onGameEnd: () => console.log('Session Ended')
   }));
 
-  // Load Data
   useEffect(() => {
     async function fetchPuzzles() {
-      let query = supabase
-        .from('puzzles')
-        .select('*')
-        .eq('game_type', 'double_fake')
-        .limit(MAX_IMAGES);
-
-      if (puzzleId) {
-        query = query.eq('id', puzzleId);
-      }
-
+      let query = supabase.from('puzzles').select('*').eq('game_type', 'double_fake').limit(MAX_IMAGES);
+      if (puzzleId) query = query.eq('id', puzzleId);
       const { data, error } = await query;
 
       if (error || !data || data.length === 0) {
         setPuzzles(FALLBACK_PUZZLES);
         maxScoreRef.current = FALLBACK_PUZZLES.length * (BASE_POINTS + STREAK_BONUS);
-        setStatus('playing');
-        return;
+      } else {
+        setPuzzles(data as Puzzle[]);
+        maxScoreRef.current = data.length * (BASE_POINTS + STREAK_BONUS);
       }
-
-      setPuzzles(data as Puzzle[]);
-      maxScoreRef.current = data.length * (BASE_POINTS + STREAK_BONUS);
       setStatus('playing');
     }
-
     fetchPuzzles();
   }, [puzzleId]);
 
-  // Randomize AI position per round
   useEffect(() => {
-    if (puzzles.length > 0) {
-      setAiSide(Math.random() < 0.5 ? 'left' : 'right');
-    }
+    if (puzzles.length > 0) setAiSide(Math.random() < 0.5 ? 'left' : 'right');
   }, [currentIndex, puzzles]);
 
   const handleChoice = (side: 'left' | 'right') => {
@@ -116,31 +100,20 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
     const isCorrect = side === aiSide;
     let pointsGained = isCorrect ? BASE_POINTS : 0;
     const newStreak = isCorrect ? streak + 1 : 0;
-
-    // Correct streak logic: bonus applied for 2nd correct answer onwards
-    if (isCorrect && newStreak > 1) {
-      pointsGained += STREAK_BONUS;
-    }
+    if (isCorrect && newStreak > 1) pointsGained += STREAK_BONUS;
 
     const newScore = score + pointsGained;
     setScore(newScore);
     setStreak(newStreak);
     scoreRef.current = newScore;
-
-    setLastResult({
-      isCorrect,
-      message: isCorrect ? `+${pointsGained} PTS` : 'DETECTION FAILED'
-    });
-
+    setLastResult({ isCorrect, message: isCorrect ? `+${pointsGained} PTS` : 'DETECTION FAILED' });
     setStatus('feedback');
 
-    if (onScoreUpdate) {
-      onScoreUpdate(newScore, maxScoreRef.current);
-    }
+    if (onScoreUpdate) onScoreUpdate(newScore, maxScoreRef.current);
 
     setTimeout(() => {
       if (currentIndex < puzzles.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+        setCurrentIndex(prev => prev + 1);
         setStatus('playing');
         setLastResult(null);
       } else {
@@ -150,52 +123,29 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
     }, 1500);
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center h-full bg-black">
-        <div className="text-cyan-400 animate-pulse tracking-widest font-mono">INITIALIZING SCANNER...</div>
-      </div>
-    );
-  }
-
-  if (status === 'finished') {
-    return (
-      <div className="flex flex-col items-center justify-center h-full bg-black text-white p-4 font-mono">
-        <div className="text-4xl font-black text-yellow-400 mb-2 shadow-yellow-500/50" style={{ textShadow: '0 0 10px #fbbf24' }}>MISSION COMPLETE</div>
-        <div className="text-xl text-cyan-400">FINAL SCORE: {score}</div>
-      </div>
-    );
-  }
+  if (status === 'loading') return <div className="h-full bg-black flex items-center justify-center font-mono text-cyan-400 animate-pulse">BOOTING...</div>;
+  
+  if (status === 'finished') return (
+    <div className="h-full bg-black flex flex-col items-center justify-center font-mono text-white">
+      <h1 className="text-4xl font-black text-yellow-400 mb-4" style={{ textShadow: '0 0 10px #fbbf24' }}>COMPLETE</h1>
+      <p className="text-xl">SCORE: {score}</p>
+    </div>
+  );
 
   const current = puzzles[currentIndex];
-  if (!current) return null;
 
   return (
     <div className="flex flex-col h-full bg-black text-white p-2 sm:p-4 font-mono select-none overflow-hidden">
-      {/* Arcade HUD */}
       <div className="flex justify-between items-end mb-4 border-b-2 border-cyan-900 pb-2">
-        <div>
-          <div className="text-[10px] text-cyan-500 uppercase font-bold">Data Stream</div>
-          <div className="text-2xl font-black text-cyan-300" style={{ textShadow: '0 0 8px #06b6d4' }}>{score}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-[10px] text-pink-500 uppercase font-bold">Node</div>
-          <div className="text-2xl font-black text-pink-300" style={{ textShadow: '0 0 8px #d946ef' }}>{currentIndex + 1}/{puzzles.length}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] text-yellow-500 uppercase font-bold">Sync</div>
-          <div className="text-2xl font-black text-yellow-300" style={{ textShadow: '0 0 8px #eab308' }}>{streak}🔥</div>
-        </div>
+        <div><p className="text-[10px] text-cyan-500 font-bold uppercase">Score</p><p className="text-2xl font-black text-cyan-300">{score}</p></div>
+        <div><p className="text-[10px] text-pink-500 font-bold uppercase">Node</p><p className="text-2xl font-black text-pink-300">{currentIndex + 1}/{puzzles.length}</p></div>
+        <div><p className="text-[10px] text-yellow-500 font-bold uppercase">Sync</p><p className="text-2xl font-black text-yellow-300">{streak}🔥</p></div>
       </div>
 
-      <div className="h-8 flex items-center justify-center">
-        {lastResult ? (
-           <div className={`text-xl font-black tracking-tighter ${lastResult.isCorrect ? 'text-green-400' : 'text-red-500 animate-shake'}`}>
-             {lastResult.message}
-           </div>
-        ) : (
-          <div className="text-xs text-gray-500 uppercase tracking-[0.2em]">Identify the Synthetic Image</div>
-        )}
+      <div className="h-8 flex items-center justify-center mb-2">
+        <p className={`text-lg font-black tracking-tighter ${lastResult?.isCorrect ? 'text-green-400' : lastResult ? 'text-red-500' : 'text-gray-500'}`}>
+          {lastResult?.message || "WHICH IS THE SYNTHETIC IMAGE?"}
+        </p>
       </div>
 
       <div className="flex-1 grid grid-cols-2 gap-2 sm:gap-4 items-center">
@@ -221,52 +171,48 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
-  
-  // THE FIX: didZoom tracks if the magnifier was actually activated during the current press
-  const didZoom = useRef(false);
-
+  const pressStartTime = useRef<number>(0);
   const isFeedback = status === 'feedback';
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!showMagnifier || !containerRef.current || !lensRef.current) return;
-
     const bounds = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - bounds.left;
-    const y = e.clientY - bounds.top;
+    const x = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
+    const y = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
 
-    const posX = Math.max(0, Math.min(x, bounds.width));
-    const posY = Math.max(0, Math.min(y, bounds.height));
-
-    lensRef.current.style.left = `${posX - LENS_SIZE / 2}px`;
-    lensRef.current.style.top = `${posY - LENS_SIZE / 2}px`;
-
-    const bgX = (posX / bounds.width) * 100;
-    const bgY = (posY / bounds.height) * 100;
-    lensRef.current.style.backgroundPosition = `${bgX}% ${bgY}%`;
+    lensRef.current.style.left = `${x - LENS_SIZE / 2}px`;
+    lensRef.current.style.top = `${y - LENS_SIZE / 2}px`;
+    lensRef.current.style.backgroundPosition = `${(x / bounds.width) * 100}% ${(y / bounds.height) * 100}%`;
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isFeedback) return;
-    didZoom.current = false; // Reset for new interaction
+    pressStartTime.current = Date.now();
+    
+    // Safety: prevent context menu/long-press defaults
+    if (e.pointerType === 'touch') {
+        const target = e.target as HTMLElement;
+        target.style.webkitUserSelect = 'none';
+    }
 
     pressTimer.current = setTimeout(() => {
       setShowMagnifier(true);
-      didZoom.current = true; // Mark that we have entered zoom mode
       if (window.navigator.vibrate) window.navigator.vibrate(40);
-    }, 300); // Increased threshold slightly for better tap detection
+    }, ZOOM_THRESHOLD);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-    }
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    
+    const pressDuration = Date.now() - pressStartTime.current;
 
-    if (didZoom.current) {
-      // If we zoomed, we ONLY hide the magnifier. No selection allowed.
+    // IF we are showing the magnifier OR the press lasted longer than the threshold
+    // we cancel the selection entirely.
+    if (showMagnifier || pressDuration >= ZOOM_THRESHOLD) {
       setShowMagnifier(false);
-      didZoom.current = false;
+      e.preventDefault();
+      e.stopPropagation();
     } else if (!isFeedback) {
-      // If we never hit the zoom threshold, it's a valid selection tap.
       onSelect();
     }
   };
@@ -277,13 +223,15 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerUp}
-      className={`relative w-full aspect-[3/4] rounded-sm border-2 overflow-hidden transition-all duration-300 touch-none
-        ${isFeedback ? (isAI ? 'border-green-500 shadow-[0_0_20px_#22c55e]' : 'border-red-600') : 'border-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:border-white'}`}
+      onPointerLeave={() => {
+        if (pressTimer.current) clearTimeout(pressTimer.current);
+        setShowMagnifier(false);
+      }}
+      className={`relative w-full aspect-[3/4] rounded-sm border-2 overflow-hidden transition-all duration-300 touch-none select-none
+        ${isFeedback ? (isAI ? 'border-green-500 shadow-[0_0_20px_#22c55e]' : 'border-red-600') : 'border-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]'}`}
     >
       <img src={url} className="w-full h-full object-cover pointer-events-none" alt="Evidence" />
 
-      {/* Magnifier Lens */}
       <div
         ref={lensRef}
         style={{
@@ -297,17 +245,16 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
         className="absolute pointer-events-none rounded-full border-2 border-cyan-400 z-50 bg-no-repeat transition-transform scale-110"
       />
 
-      {/* Feedback Overlay */}
       {isFeedback && (
-        <div className={`absolute bottom-0 left-0 right-0 py-2 text-xs font-black uppercase text-center z-10
+        <div className={`absolute bottom-0 left-0 right-0 py-2 text-[10px] font-black uppercase text-center z-10
           ${isAI ? 'bg-green-500 text-black' : 'bg-red-600 text-white'}`}>
-          {isAI ? 'SYNTHETIC' : 'AUTHENTIC'}
+          {isAI ? '🤖 SYNTHETIC' : '📷 AUTHENTIC'}
         </div>
       )}
 
       {!isFeedback && (
-        <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 text-[7px] text-cyan-300 uppercase tracking-widest border border-cyan-800 rounded-sm">
-          Long Press: Zoom
+        <div className="absolute top-1 left-1 bg-black/70 px-1 text-[7px] text-cyan-300 uppercase tracking-widest border border-cyan-900">
+          Hold to Zoom
         </div>
       )}
     </div>
@@ -315,5 +262,4 @@ function ImageSlot({ url, isAI, status, onSelect }: any) {
 }
 
 DoubleFake.displayName = 'DoubleFake';
-
 export default DoubleFake;
