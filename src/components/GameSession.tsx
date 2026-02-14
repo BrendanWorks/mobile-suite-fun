@@ -56,7 +56,9 @@ const GAME_ID_TO_SLUG: { [key: number]: string } = {
   5: 'rank-and-roll',
   6: 'snapshot',
   7: 'split-decision',
-  12: 'snake'
+  12: 'snake',
+  13: 'hive-mind',
+  15: 'fake-out'
 };
 
 interface PlaylistRound {
