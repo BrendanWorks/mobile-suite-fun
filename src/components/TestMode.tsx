@@ -12,6 +12,7 @@ import GravityBall from './GravityBall';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import DoubleFake from './DoubleFake';
+import SlopeRider from './SlopeRider';
 
 interface TestModeProps {
   onExit: () => void;
@@ -32,6 +33,7 @@ const TEST_GAMES = [
   { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
   { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
   { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },
+  { id: 'slope-rider', name: 'Slope Rider', icon: '⛷️', duration: 60, component: SlopeRider },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
