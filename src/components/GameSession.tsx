@@ -24,6 +24,7 @@ import GravityBall from './GravityBall';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import SlopeRider from './SlopeRider';
+import NeuralPulse from './NeuralPulse';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -50,6 +51,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'fake-out', name: 'Fake Out', component: FakeOut, duration: 60, instructions: 'Identify if the photo is real or AI-generated' },
   { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 90, instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
+  { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 90, instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
@@ -514,6 +516,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       case 'gravity-ball':
         normalizedScore = scoringSystem.gravityBall(rawScore);
         console.log('🌍 Gravity Ball scoring (no time bonus):', normalizedScore);
+        break;
+
+      case 'neural-pulse':
+        normalizedScore = scoringSystem.neuralPulse(rawScore);
+        console.log('🧠 Neural Pulse scoring:', normalizedScore);
         break;
 
       default:

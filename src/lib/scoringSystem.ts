@@ -196,6 +196,19 @@ export const scoringSystem = {
       grade: getGrade(Math.round(normalized)),
       breakdown: `Distance and coins: ${rawScore}`
     };
+  },
+
+  // Neural Pulse: 500 exploration points = 100 (levels + steps)
+  neuralPulse: (rawScore: number): GameScore => {
+    const normalized = Math.min(100, (rawScore / 500) * 100);
+    return {
+      gameId: 'neural-pulse',
+      gameName: 'Neural Pulse',
+      rawScore: rawScore,
+      normalizedScore: Math.round(normalized),
+      grade: getGrade(Math.round(normalized)),
+      breakdown: `${rawScore} exploration points`
+    };
   }
 };
 
