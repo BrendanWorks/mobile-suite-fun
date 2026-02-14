@@ -25,6 +25,7 @@ import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import SlopeRider from './SlopeRider';
 import NeuralPulse from './NeuralPulse';
+import ZenGravity from './ZenGravity';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -52,6 +53,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 90, instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
   { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 90, instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
+  { id: 'zen-gravity', name: 'Zen Gravity', component: ZenGravity, duration: 60, instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
@@ -521,6 +523,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       case 'neural-pulse':
         normalizedScore = scoringSystem.neuralPulse(rawScore);
         console.log('🧠 Neural Pulse scoring:', normalizedScore);
+        break;
+
+      case 'zen-gravity':
+        normalizedScore = scoringSystem.oddManOut(rawScore, maxScore);
+        console.log('🎯 Zen Gravity scoring:', normalizedScore);
         break;
 
       default:
