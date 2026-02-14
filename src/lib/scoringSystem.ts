@@ -183,6 +183,19 @@ export const scoringSystem = {
       grade: getGrade(normalized),
       breakdown: `${score} points (Level ${level})`
     };
+  },
+
+  // Slope Rider: Soft cap at 100, ~50 at 300, ~75 at 600 - NO TIME BONUS
+  slopeRider: (rawScore: number): GameScore => {
+    const normalized = Math.atan(rawScore / 300) * (2 / Math.PI) * 100;
+    return {
+      gameId: 'slope-rider',
+      gameName: 'Slope Rider',
+      rawScore: rawScore,
+      normalizedScore: Math.round(normalized),
+      grade: getGrade(Math.round(normalized)),
+      breakdown: `Distance and coins: ${rawScore}`
+    };
   }
 };
 
