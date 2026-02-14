@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 const GRID_SIZE = 30;
-const TILE_SIZE = 16;
 const WALL = 1;
 const FLOOR = 0;
 const EXIT = 2;
@@ -20,7 +19,26 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
   const [score, setScore] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [startTime] = useState(Date.now());
+  const [tileSize, setTileSize] = useState(16);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate responsive tile size
+  useEffect(() => {
+    const updateTileSize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight - 100;
+        const maxSize = Math.min(containerWidth, containerHeight);
+        const calculatedTileSize = Math.floor(maxSize / GRID_SIZE);
+        setTileSize(Math.max(8, Math.min(20, calculatedTileSize)));
+      }
+    };
+
+    updateTileSize();
+    window.addEventListener('resize', updateTileSize);
+    return () => window.removeEventListener('resize', updateTileSize);
+  }, []);
 
   // Generate procedural cave map using cellular automata
   const generateCaves = useCallback(() => {
@@ -184,9 +202,9 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
   }, [duration, score, startTime, onComplete]);
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full bg-black flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden">
       {/* HUD */}
-      <div className="w-full max-w-md flex justify-between items-center mb-3">
+      <div className="w-full flex justify-between items-center mb-2 px-2">
         <div className="text-cyan-400 text-sm font-bold" style={{ textShadow: '0 0 10px #00ffff' }}>
           LEVEL {level}
         </div>
@@ -204,8 +222,8 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
           isGenerating ? 'opacity-40' : 'opacity-100'
         }`}
         style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, ${TILE_SIZE}px)`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, ${TILE_SIZE}px)`,
+          gridTemplateColumns: `repeat(${GRID_SIZE}, ${tileSize}px)`,
+          gridTemplateRows: `repeat(${GRID_SIZE}, ${tileSize}px)`,
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -227,11 +245,17 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
               <div
                 key={`${x}-${y}`}
                 className={`transition-all duration-300 ${bgClass}`}
-                style={{ width: TILE_SIZE, height: TILE_SIZE }}
+                style={{ width: tileSize, height: tileSize }}
               >
                 {isPlayer && (
                   <div
-                    className="w-4 h-4 mx-auto mt-1 bg-pink-500 rounded-full shadow-[0_0_12px_#ec4899,0_0_20px_#ec4899]"
+                    className="bg-pink-500 rounded-full shadow-[0_0_12px_#ec4899,0_0_20px_#ec4899]"
+                    style={{
+                      width: Math.max(tileSize * 0.7, 6),
+                      height: Math.max(tileSize * 0.7, 6),
+                      margin: 'auto',
+                      marginTop: Math.max(tileSize * 0.15, 1)
+                    }}
                   />
                 )}
               </div>
@@ -241,7 +265,7 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
       </div>
 
       {/* Instructions */}
-      <div className="mt-6 text-cyan-400/70 text-xs sm:text-sm text-center max-w-md">
+      <div className="mt-3 text-cyan-400/70 text-xs sm:text-sm text-center px-2">
         Swipe or use arrow keys to explore the cave<br />
         Find the pulsing exit to advance
       </div>
