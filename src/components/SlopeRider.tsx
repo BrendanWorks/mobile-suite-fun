@@ -56,7 +56,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
     }
   }, []);
 
-  useEffect(() => {
+  const handlePermissionClick = useCallback(() => {
     requestMotionPermission();
   }, [requestMotionPermission]);
 
@@ -97,6 +97,8 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
   }, []);
 
   useEffect(() => {
+    if (showPermission) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -339,24 +341,6 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       ctx.font = '14px -apple-system, sans-serif';
       ctx.fillText(`Tilt: ${tiltValue.toString().padStart(3, ' ')}°`, canvas.width - 120, 35);
 
-      // Permission overlay
-      if (showPermission) {
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = '#00ffff';
-        ctx.font = 'bold 32px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🏂 Slope Rider', canvas.width / 2, canvas.height / 2 - 60);
-        ctx.font = 'bold 20px -apple-system, sans-serif';
-        ctx.fillText('Tap to enable', canvas.width / 2, canvas.height / 2);
-        ctx.font = '18px -apple-system, sans-serif';
-        ctx.fillStyle = '#00ffff80';
-        ctx.fillText('Tilt phone to steer', canvas.width / 2, canvas.height / 2 + 40);
-      }
-
       animationRef.current = requestAnimationFrame(loop);
     };
 
@@ -371,10 +355,28 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
         window.removeEventListener('deviceorientation', orientationHandlerRef.current);
       }
     };
-  }, [onComplete, onScoreUpdate, duration, score, tiltValue, motionGranted, showPermission, handleTouchMove, handleTouchStart]);
+  }, [onComplete, onScoreUpdate, duration, motionGranted, showPermission, handleTouchMove, handleTouchStart]);
 
   return (
     <div className="w-full h-full relative bg-black" style={{ border: '2px solid #00ffff', boxShadow: '0 0 20px rgba(0,255,255,0.4), inset 0 0 30px rgba(0,255,255,0.1)' }}>
+      {showPermission && (
+        <div
+          onClick={handlePermissionClick}
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-90 z-50 cursor-pointer"
+        >
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl font-bold text-cyan-400" style={{ textShadow: '0 0 20px rgba(0,255,255,0.8)' }}>
+              🏂 Slope Rider
+            </h1>
+            <p className="text-xl font-bold text-cyan-400" style={{ textShadow: '0 0 15px rgba(0,255,255,0.6)' }}>
+              Tap to start
+            </p>
+            <p className="text-lg text-cyan-400 opacity-60">
+              Tilt phone to steer
+            </p>
+          </div>
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         className="w-full h-full touch-none select-none"
