@@ -126,12 +126,12 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       const rand = Math.random();
       const typeChance = rand;
       let type: string, radius = 20;
-      if (typeChance < 0.35) type = 'tree';
-      else if (typeChance < 0.65) type = 'boulder';
-      else if (typeChance < 0.78) type = 'coin';
-      else if (typeChance < 0.88) type = 'ramp';
-      else if (typeChance < 0.93) type = 'nitro';
-      else if (typeChance < 0.97) type = 'invinc';
+      if (typeChance < 0.20) type = 'tree';
+      else if (typeChance < 0.40) type = 'boulder';
+      else if (typeChance < 0.60) type = 'coin';
+      else if (typeChance < 0.75) type = 'ramp';
+      else if (typeChance < 0.87) type = 'nitro';
+      else if (typeChance < 0.98) type = 'invinc';
       else type = 'chasm';
 
       const x = Math.random() * (canvas.width - 40) + 20;
@@ -191,7 +191,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       obstaclesRef.current = obstaclesRef.current.filter(o => o.y < canvas.height + 50);
 
       // Generate new items
-      if (Math.random() < 0.12 * (speedRef.current / 3) * deltaTime * 60) {
+      if (Math.random() < 0.06 * (speedRef.current / 3) * deltaTime * 60) {
         obstaclesRef.current.push(generateItem());
       }
 
