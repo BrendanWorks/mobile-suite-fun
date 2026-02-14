@@ -10,6 +10,7 @@ interface SlopeRiderProps {
 export default function SlopeRider({ onComplete, onScoreUpdate, duration }: SlopeRiderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const tiltRef = useRef(0);
   const playerXRef = useRef(0);
   const playerHeightRef = useRef(0); // For jumps (positive up)
@@ -34,6 +35,16 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - 80; // Account for nav bar
     playerXRef.current = canvas.width / 2;
+    scoreRef.current = 0;
+    gameOverRef.current = false;
+    startTimeRef.current = Date.now();
+    speedRef.current = 3;
+    playerHeightRef.current = 0;
+    vyRef.current = 0;
+    obstaclesRef.current = [];
+    invincibleRef.current = false;
+    nitroRef.current = false;
+    fogRef.current = false;
 
     // Tilt controls
     const handleOrientation = (e: DeviceOrientationEvent) => {
@@ -119,7 +130,8 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < o.radius + playerRadius) {
           if (o.type === 'coin') {
-            setScore((prev) => prev + 10);
+            scoreRef.current += 10;
+            setScore(scoreRef.current);
             obstaclesRef.current.splice(idx, 1);
           } else if (o.type === 'nitro') {
             nitroRef.current = true;
@@ -141,8 +153,9 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       });
 
       // Score update (distance)
-      setScore((prev) => prev + speedRef.current / 60);
-      onScoreUpdate(score, 0); // No max for endless
+      scoreRef.current += speedRef.current / 60;
+      setScore(scoreRef.current);
+      onScoreUpdate(scoreRef.current, 0); // No max for endless
 
       // Random events (every ~20s)
       if (Math.random() < 0.001) fogRef.current = true; setTimeout(() => (fogRef.current = false), 8000);
@@ -207,7 +220,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       if (timerRef.current) clearTimeout(timerRef.current);
       const timeElapsed = (Date.now() - startTimeRef.current) / 1000;
       const timeRemaining = Math.max(0, duration - timeElapsed);
-      onComplete(score, 0, timeRemaining);
+      onComplete(scoreRef.current, 0, timeRemaining);
     };
 
     loop();
@@ -222,7 +235,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       cancelAnimationFrame(animationRef.current);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [onComplete, onScoreUpdate, duration, score]);
+  }, [onComplete, onScoreUpdate, duration]);
 
   return (
     <canvas
