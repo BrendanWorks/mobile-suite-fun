@@ -30,6 +30,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
   const gameOverRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
+  const lastFrameTimeRef = useRef(0);
 
   const requestMotionPermission = useCallback(async () => {
     try {
@@ -111,6 +112,15 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
     window.addEventListener('resize', resizeCanvas);
 
     startTimeRef.current = Date.now();
+    lastFrameTimeRef.current = 0;
+    gameOverRef.current = false;
+    obstaclesRef.current = [];
+    speedRef.current = 3;
+    playerHeightRef.current = 0;
+    vyRef.current = 0;
+    invincibleRef.current = false;
+    nitroRef.current = false;
+    fogRef.current = false;
 
     const generateItem = () => {
       const rand = Math.random();
@@ -151,7 +161,8 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
 
       const ctx = canvas.getContext('2d')!;
       const now = Date.now();
-      const deltaTime = (now - (startTimeRef.current + (now - startTimeRef.current))) / 1000; // ~1/60
+      const deltaTime = lastFrameTimeRef.current ? (now - lastFrameTimeRef.current) / 1000 : 1/60;
+      lastFrameTimeRef.current = now;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
