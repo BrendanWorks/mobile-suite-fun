@@ -35,9 +35,11 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: totalScore, maxScore: questions.length * 200 }),
-    onGameEnd: () => {},
+    onGameEnd: () => {
+      onComplete(totalScore);
+    },
     canSkipQuestion: false,
-    hideTimer: true
+    pauseTimer: revealState
   }));
 
   // Load Data
