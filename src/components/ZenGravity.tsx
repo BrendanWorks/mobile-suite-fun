@@ -260,14 +260,10 @@ export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
         </div>
       )}
 
-      <div className="absolute top-12 left-0 right-0 flex justify-between px-10 z-10 pointer-events-none">
-        <div className="flex flex-col">
+      <div className="absolute top-12 left-0 right-0 flex justify-center px-10 z-10 pointer-events-none">
+        <div className="flex flex-col items-center">
           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sorted</span>
           <span className="text-3xl font-black text-white tabular-nums">{score}</span>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Timer</span>
-          <span className="text-3xl font-black text-pink-500 tabular-nums">{timeLeft}s</span>
         </div>
       </div>
 

@@ -85,6 +85,7 @@ const GravityBall = forwardRef<any, GravityBallProps>((props, ref) => {
         props.onComplete(scoreRef.current, 3000, props.timeRemaining);
       }
     },
+    hideTimer: true,
   }));
 
   const initStarfield = () => {
