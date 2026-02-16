@@ -42,7 +42,8 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
       }
     },
     canSkipQuestion: false,
-    hideTimer: false
+    hideTimer: false,
+    pauseTimer: false
   }));
 
   const COLORS = {
