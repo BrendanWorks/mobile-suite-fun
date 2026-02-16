@@ -8,7 +8,6 @@ import GameSession from './components/GameSession';
 import LandingPage from './components/LandingPage';
 import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
-import PlaylistSelector from './components/PlaylistSelector';
 import { useUserStats } from './hooks/useUserStats';
 
 export type GameId =
@@ -49,12 +48,11 @@ const GLOW_STYLES = {
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showGames, setShowGames] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAuthPage, setShowAuthPage] = useState(false);
-  const [showPlaylistTest, setShowPlaylistTest] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
+  const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
 
   // Initialize analytics on mount
@@ -94,12 +92,14 @@ export default function App() {
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('✅ User logged in:', session.user.email);
         analytics.signedIn('email', session.user.id);
+        setAutoStartAfterLogin(true);
       }
 
       if (event === 'SIGNED_OUT') {
         console.log('👋 User logged out');
         analytics.signedOut();
-        setShowGames(false);
+        setSelectedPlaylistId(null);
+        setAutoStartAfterLogin(false);
       }
 
       setLoading(false);
@@ -107,6 +107,15 @@ export default function App() {
 
     return () => subscription?.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session && autoStartAfterLogin) {
+      const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
+      console.log('🚀 Auto-starting playlist after login:', currentPlaylist);
+      setSelectedPlaylistId(currentPlaylist);
+      setAutoStartAfterLogin(false);
+    }
+  }, [session, autoStartAfterLogin]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -148,46 +157,17 @@ export default function App() {
     );
   }
 
-  if (showPlaylistTest && !selectedPlaylistId) {
-    return (
-      <PlaylistSelector
-        onSelectPlaylist={(id) => setSelectedPlaylistId(id)}
-        onBack={() => {
-          setShowPlaylistTest(false);
-          trackPageView('/menu');
-        }}
-      />
-    );
-  }
-
   if (selectedPlaylistId) {
     return (
       <GameSession
         playlistId={selectedPlaylistId}
         onExit={() => {
           setSelectedPlaylistId(null);
-          setShowPlaylistTest(false);
           if (session) {
             trackPageView('/menu');
           } else {
             trackPageView('/');
           }
-        }}
-        totalRounds={5}
-      />
-    );
-  }
-
-  if (showGames) {
-    return (
-      <GameSession
-        onExit={() => {
-          if (session) {
-            trackPageView('/menu');
-          } else {
-            trackPageView('/');
-          }
-          setShowGames(false);
         }}
         totalRounds={5}
       />
@@ -211,7 +191,8 @@ export default function App() {
 
   const handlePlayGames = () => {
     trackPageView('/game-session');
-    setShowGames(true);
+    const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
+    setSelectedPlaylistId(currentPlaylist);
   };
 
   if (showAuthPage && !session) {
@@ -264,33 +245,17 @@ export default function App() {
           <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6">
             <div
               onClick={handlePlayGames}
-              className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-cyan-400/40 hover:border-cyan-400 cursor-pointer transition-all active:scale-[0.98] touch-manipulation"
-              style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}
+              className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-red-500/40 hover:border-red-500 cursor-pointer transition-all active:scale-[0.98] touch-manipulation"
+              style={{ boxShadow: '0 0 25px rgba(239, 68, 68, 0.3)' }}
             >
               <div className="text-4xl sm:text-5xl mb-3">🚀</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2" style={GLOW_STYLES.cyan}>Play Games</h2>
-              <p className="text-sm sm:text-base text-cyan-300 mb-4">
-                Challenge yourself with 5 different mini-games. Test your skills, earn points, and climb the leaderboard!
+              <h2 className="text-2xl sm:text-3xl font-bold text-red-400 mb-2" style={{ textShadow: '0 0 15px rgba(239, 68, 68, 0.6)' }}>Continue Playing</h2>
+              <p className="text-sm sm:text-base text-red-300 mb-4">
+                Pick up where you left off. Progress through playlists 1-10 and test your skills!
               </p>
               <div className="flex items-center justify-between text-sm sm:text-base">
-                <span className="text-cyan-400">5 rounds • ~15 minutes</span>
-                <span className="text-xl sm:text-2xl text-cyan-400">→</span>
-              </div>
-            </div>
-
-            <div
-              onClick={() => setShowPlaylistTest(true)}
-              className="bg-black backdrop-blur rounded-xl sm:rounded-2xl p-6 sm:p-8 border-2 border-yellow-400/40 hover:border-yellow-400 cursor-pointer transition-all active:scale-[0.98] touch-manipulation"
-              style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
-            >
-              <div className="text-4xl sm:text-5xl mb-3">🧪</div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={GLOW_STYLES.yellow}>Test Playlists</h2>
-              <p className="text-sm sm:text-base text-yellow-300 mb-4">
-                Try out curated game playlists. Test different difficulty levels and sequences!
-              </p>
-              <div className="flex items-center justify-between text-sm sm:text-base">
-                <span className="text-yellow-400">5 rounds • Custom sequences</span>
-                <span className="text-xl sm:text-2xl text-yellow-400">→</span>
+                <span className="text-red-400">Current: Playlist {anonymousSessionManager.getCurrentPlaylistId()}</span>
+                <span className="text-xl sm:text-2xl text-red-400">→</span>
               </div>
             </div>
 
