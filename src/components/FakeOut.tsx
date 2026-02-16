@@ -53,8 +53,9 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     }),
     onGameEnd: () => {
       console.log('FakeOut game ended');
-    }
-  }));
+    },
+    pauseTimer: status === 'feedback'
+  }), [status]);
 
   // Load puzzles from database using puzzle_ids
   useEffect(() => {
