@@ -255,7 +255,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
   }, [isStarted, timeRemaining]);
 
   return (
-    <div className="relative w-full h-full bg-[#020617] flex flex-col items-center justify-center overflow-hidden">
+    <div className="relative w-full flex-1 bg-[#020617] flex flex-col items-center justify-center overflow-hidden">
       {!isStarted && (
         <div className="absolute inset-0 z-50 bg-slate-950 flex items-center justify-center p-8 text-center">
           <div className="max-w-xs">
