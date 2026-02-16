@@ -142,6 +142,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         audioManager.play('snake_gameover', 0.7);
         gameOverRef.current = true;
         setIsGameOver(true);
+        if (onComplete) {
+          setTimeout(() => {
+            onComplete(scoreRef.current, 200, timeRemaining);
+          }, 2000);
+        }
       } else {
         audioManager.play('snake_die', 0.5);
         resetSnake();

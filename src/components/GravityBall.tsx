@@ -44,7 +44,13 @@ interface Star {
   brightness: number;
 }
 
-const GravityBall = forwardRef((props, ref) => {
+interface GravityBallProps {
+  onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
+  timeRemaining?: number;
+  duration?: number;
+}
+
+const GravityBall = forwardRef<any, GravityBallProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'idle' | 'countdown' | 'playing' | 'paused' | 'gameOver'>('idle');
   const [countdown, setCountdown] = useState(3);
@@ -73,7 +79,12 @@ const GravityBall = forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: scoreRef.current, level: 1 }),
-    onGameEnd: () => setGameState('gameOver'),
+    onGameEnd: () => {
+      setGameState('gameOver');
+      if (props.onComplete) {
+        props.onComplete(scoreRef.current, 3000, props.timeRemaining);
+      }
+    },
   }));
 
   const initStarfield = () => {
@@ -385,6 +396,11 @@ const GravityBall = forwardRef((props, ref) => {
           setCombo(0);
           if (livesRef.current <= 0) {
             setGameState('gameOver');
+            if (props.onComplete) {
+              setTimeout(() => {
+                props.onComplete?.(scoreRef.current, 3000, props.timeRemaining);
+              }, 2000);
+            }
           } else {
             resetBall();
           }

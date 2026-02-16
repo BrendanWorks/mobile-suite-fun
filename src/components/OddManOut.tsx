@@ -301,10 +301,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           callback(newScore, MAX_QUESTIONS * 250, props.timeRemaining);
         }
       } else {
-        console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
+        console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 6s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
-        }, 3500);
+        }, 6000);
       }
     } else {
       audioManager.play('global-wrong');
@@ -324,10 +324,10 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
           }
         } else {
-          console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 3.5s');
+          console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 6s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             generateNewQuestion();
-          }, 3500);
+          }, 6000);
         }
       }, 800);
     }

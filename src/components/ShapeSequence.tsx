@@ -79,7 +79,12 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: MAX_SCORE }),
-    onGameEnd: () => cleanup(),
+    onGameEnd: () => {
+      cleanup();
+      if (props.onComplete) {
+        props.onComplete(score, MAX_SCORE, props.timeRemaining);
+      }
+    },
     canSkipQuestion: false,
     hideTimer: true,
   }));

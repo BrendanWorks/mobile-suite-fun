@@ -23,6 +23,7 @@ const PhotoMystery = forwardRef((props, ref) => {
   const onCompleteRef = useRef(onComplete);
   const onScoreUpdateRef = useRef(onScoreUpdate);
   const correctCountRef = useRef(0);
+  const hasCalledOnCompleteRef = useRef(false);
 
   const maxPoints = 333;
   const minPoints = 0;
@@ -51,12 +52,17 @@ const PhotoMystery = forwardRef((props, ref) => {
     }),
     onGameEnd: () => {
       console.log('Zooma: onGameEnd called (GameWrapper timer hit 0)');
+      if (hasCalledOnCompleteRef.current) {
+        console.log('Zooma: onComplete already called, skipping');
+        return;
+      }
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
       const callback = onCompleteRef.current;
       const finalCorrect = correctCountRef.current;
       console.log('Zooma: GameWrapper time up! Calling onComplete with correct:', finalCorrect, 'out of', totalPhotos);
       if (callback) {
+        hasCalledOnCompleteRef.current = true;
         callback(finalCorrect, totalPhotos);
       } else {
         console.error('Zooma: onComplete callback is undefined in onGameEnd!');
@@ -453,6 +459,10 @@ const PhotoMystery = forwardRef((props, ref) => {
   const completeGame = () => {
     const finalCorrect = correctCountRef.current;
     console.log('Zooma: completeGame called, final correct:', finalCorrect, 'out of', totalPhotos);
+    if (hasCalledOnCompleteRef.current) {
+      console.log('Zooma: onComplete already called, skipping');
+      return;
+    }
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -465,6 +475,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     const callback = onCompleteRef.current;
     console.log('Zooma: Calling onComplete with correct:', finalCorrect, 'max:', totalPhotos);
     if (callback) {
+      hasCalledOnCompleteRef.current = true;
       callback(finalCorrect, totalPhotos);
     } else {
       console.error('Zooma: onComplete callback is undefined!');
