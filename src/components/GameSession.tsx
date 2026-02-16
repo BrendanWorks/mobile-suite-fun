@@ -176,7 +176,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const loadPlaylist = async () => {
     if (!playlistId) {
       console.error('❌ No playlist ID provided');
-      setGameState('complete');
+      setPlaylistLoading(false);
       return;
     }
 
@@ -188,11 +188,19 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         .from('playlists')
         .select('id, name, description')
         .eq('id', playlistId)
-        .single();
+        .maybeSingle();
 
       if (playlistError) {
         console.error('❌ Playlist query error:', playlistError);
         throw playlistError;
+      }
+
+      if (!playlist) {
+        console.error('❌ Playlist not found:', playlistId);
+        alert(`Playlist ${playlistId} not found. Returning to menu.`);
+        setPlaylistLoading(false);
+        onExit();
+        return;
       }
 
       setPlaylistName(playlist.name);
@@ -211,7 +219,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       if (!rounds || rounds.length === 0) {
         console.error('❌ No rounds found for playlist:', playlistId);
-        throw new Error('No rounds found for playlist');
+        alert(`No rounds configured for this playlist. Returning to menu.`);
+        setPlaylistLoading(false);
+        onExit();
+        return;
       }
 
       console.log('✅ Found', rounds.length, 'rounds');
@@ -243,15 +254,20 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       setGameState('intro');
     } catch (error) {
       console.error('❌ Error loading playlist:', error);
+      alert(`Error loading playlist: ${error instanceof Error ? error.message : 'Unknown error'}. Returning to menu.`);
       setPlaylistLoading(false);
-      setGameState('complete');
+      onExit();
     }
   };
 
   // Load playlist if playlistId is provided
   useEffect(() => {
+    console.log('📋 GameSession mounted/updated. playlistId:', playlistId);
     if (playlistId) {
       loadPlaylist();
+    } else {
+      console.log('⚠️ No playlistId provided, using random game mode');
+      setPlaylistLoading(false);
     }
   }, [playlistId]);
 
@@ -905,8 +921,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             {!user && !sessionSaved && playlistId && playlistId < 10 && (
               <button
                 onClick={() => {
-                  const nextPlaylist = anonymousSessionManager.advanceToNextPlaylist();
-                  window.location.reload();
+                  anonymousSessionManager.advanceToNextPlaylist();
+                  onExit();
                 }}
                 className="w-full px-4 py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-yellow-400 hover:text-black active:scale-[0.98] touch-manipulation"
                 style={{ textShadow: '0 0 8px #fbbf24', boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)' }}
