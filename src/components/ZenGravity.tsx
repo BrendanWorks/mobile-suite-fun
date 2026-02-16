@@ -155,9 +155,9 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
       Object.entries(COLORS).forEach(([_, color], i) => {
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
-        ctx.strokeRect(i * goalWidth + 12, canvas.height - 70, goalWidth - 24, 60);
+        ctx.strokeRect(i * goalWidth + 12, canvas.height - 80, goalWidth - 24, 70);
         ctx.fillStyle = `${color}15`;
-        ctx.fillRect(i * goalWidth + 12, canvas.height - 70, goalWidth - 24, 60);
+        ctx.fillRect(i * goalWidth + 12, canvas.height - 80, goalWidth - 24, 70);
       });
 
       gameState.current.pegs.forEach(peg => {
@@ -202,7 +202,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
           if (m.x < 15) { m.x = 15; m.vx *= -0.5; }
           if (m.x > canvas.width - 15) { m.x = canvas.width - 15; m.vx *= -0.5; }
 
-          if (m.y > canvas.height - 70) {
+          if (m.y > canvas.height - 80) {
             const goalIdx = Math.floor(m.x / goalWidth);
             const goalColor = Object.values(COLORS)[goalIdx];
             m.active = false;
@@ -281,7 +281,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
         </div>
       </div>
 
-      <canvas ref={canvasRef} width={360} height={640} className="w-full h-full max-h-screen object-contain" />
+      <canvas ref={canvasRef} width={360} height={600} className="w-full h-full max-h-screen object-contain" />
       
       <div className="absolute bottom-10 w-32 h-1 bg-slate-900 rounded-full overflow-hidden">
         <div 
