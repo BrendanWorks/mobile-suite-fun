@@ -11,6 +11,7 @@ import {
   saveAllRoundResults,
   getGameId
 } from '../lib/supabaseHelpers';
+import { anonymousSessionManager } from '../lib/anonymousSession';
 import GameWrapper from './GameWrapper';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery.jsx';
@@ -382,6 +383,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       if (!user?.id) {
         setPendingSessionData(sessionData);
+
+        if (playlistId) {
+          anonymousSessionManager.update({
+            currentPlaylistId: playlistId,
+            completedRounds: roundScores.length,
+            roundScores: sessionData.results.map(r => ({
+              gameId: r.gameId.toString(),
+              gameName: roundScores.find(rs => getGameId(rs.gameId) === r.gameId)?.gameName || '',
+              rawScore: r.rawScore,
+              maxScore: r.maxScore,
+              normalizedScore: r.normalizedScore,
+              grade: r.grade
+            }))
+          });
+        }
       } else if (sessionId) {
         const saveToSupabase = async () => {
           try {
@@ -419,7 +435,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         saveToSupabase();
       }
     }
-  }, [gameState, user?.id, sessionId, roundScores, sessionSaved]);
+  }, [gameState, user?.id, sessionId, roundScores, sessionSaved, playlistId]);
 
   const selectRandomGame = () => {
     if (playlistId && currentGameSlug) {
@@ -885,23 +901,37 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
-            {!user && !sessionSaved && (
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            {!user && !sessionSaved && playlistId && playlistId < 10 && (
               <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex-1 px-4 py-3 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-green-500 hover:text-black active:scale-[0.98] touch-manipulation"
-                style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
+                onClick={() => {
+                  const nextPlaylist = anonymousSessionManager.advanceToNextPlaylist();
+                  window.location.reload();
+                }}
+                className="w-full px-4 py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-yellow-400 hover:text-black active:scale-[0.98] touch-manipulation"
+                style={{ textShadow: '0 0 8px #fbbf24', boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)' }}
               >
-                Sign In to Save
+                Next Playlist
               </button>
             )}
-            <button
-              onClick={onExit}
-              className="flex-1 px-4 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
-              style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
-            >
-              {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {!user && !sessionSaved && (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex-1 px-4 py-3 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-green-500 hover:text-black active:scale-[0.98] touch-manipulation"
+                  style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
+                >
+                  Sign In to Save
+                </button>
+              )}
+              <button
+                onClick={onExit}
+                className="flex-1 px-4 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
+                style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+              >
+                {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
+              </button>
+            </div>
           </div>
         </div>
 

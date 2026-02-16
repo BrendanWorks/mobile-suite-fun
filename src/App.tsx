@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { initGA, trackPageView, analytics } from './lib/analytics';
+import { anonymousSessionManager } from './lib/anonymousSession';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
-import TestMode from './components/TestMode';
+import LandingPage from './components/LandingPage';
+import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
 import PlaylistSelector from './components/PlaylistSelector';
 import { useUserStats } from './hooks/useUserStats';
@@ -48,9 +50,9 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGames, setShowGames] = useState(false);
-  const [testMode, setTestMode] = useState(false);
-  const [testGameId, setTestGameId] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showAuthPage, setShowAuthPage] = useState(false);
   const [showPlaylistTest, setShowPlaylistTest] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const userStats = useUserStats(session?.user?.id);
@@ -114,8 +116,8 @@ export default function App() {
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center">
         <div className="text-center px-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.5)' }}></div>
-          <p className="text-cyan-400 text-base" style={{ textShadow: '0 0 10px #00ffff' }}>Loading Game Box...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-red-500 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' }}></div>
+          <p className="text-red-400 text-base" style={{ textShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }}>Loading Rowdy...</p>
         </div>
       </div>
     );
@@ -135,16 +137,13 @@ export default function App() {
     );
   }
 
-  if (testMode) {
+  if (debugMode) {
     return (
-      <TestMode
+      <DebugMode
         onExit={() => {
-          trackPageView('/menu');
-          setTestMode(false);
-          setTestGameId(null);
+          trackPageView('/');
+          setDebugMode(false);
         }}
-        selectedGameId={testGameId}
-        onSelectGame={setTestGameId}
       />
     );
   }
@@ -168,7 +167,11 @@ export default function App() {
         onExit={() => {
           setSelectedPlaylistId(null);
           setShowPlaylistTest(false);
-          trackPageView('/menu');
+          if (session) {
+            trackPageView('/menu');
+          } else {
+            trackPageView('/');
+          }
         }}
         totalRounds={5}
       />
@@ -179,7 +182,11 @@ export default function App() {
     return (
       <GameSession
         onExit={() => {
-          trackPageView('/menu');
+          if (session) {
+            trackPageView('/menu');
+          } else {
+            trackPageView('/');
+          }
           setShowGames(false);
         }}
         totalRounds={5}
@@ -187,14 +194,19 @@ export default function App() {
     );
   }
 
-  const handlePlayAsGuest = () => {
+  const handlePlayNow = () => {
     trackPageView('/game-session');
-    setShowGames(true);
+    const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
+    setSelectedPlaylistId(currentPlaylist);
   };
 
-  const handleTestMode = () => {
-    trackPageView('/test-mode');
-    setTestMode(true);
+  const handleSignIn = () => {
+    setShowAuthPage(true);
+  };
+
+  const handleDebugMode = () => {
+    trackPageView('/debug-mode');
+    setDebugMode(true);
   };
 
   const handlePlayGames = () => {
@@ -202,25 +214,30 @@ export default function App() {
     setShowGames(true);
   };
 
-  if (!session) {
+  if (showAuthPage && !session) {
     return (
       <>
-        <AuthPage onPlayAsGuest={handlePlayAsGuest} />
+        <AuthPage onPlayAsGuest={() => {
+          setShowAuthPage(false);
+          handlePlayNow();
+        }} />
         <button
-          onClick={handleTestMode}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-semibold rounded-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
-          style={GLOW_STYLES.yellow}
+          onClick={() => setShowAuthPage(false)}
+          className="fixed top-4 left-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg z-50"
         >
-          🧪 Test Mode
-        </button>
-        <button
-          onClick={() => setShowAdmin(true)}
-          className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-transparent border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-semibold rounded-lg transition-all active:scale-[0.98] z-50 text-sm sm:text-base touch-manipulation"
-          style={GLOW_STYLES.purple}
-        >
-          🔧 Admin
+          ← Back
         </button>
       </>
+    );
+  }
+
+  if (!session) {
+    return (
+      <LandingPage
+        onPlayNow={handlePlayNow}
+        onSignIn={handleSignIn}
+        onDebugMode={handleDebugMode}
+      />
     );
   }
 
@@ -230,8 +247,8 @@ export default function App() {
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-start gap-3 mb-6 sm:mb-8">
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-1 truncate" style={{ textShadow: '0 0 15px #00ffff' }}>🎮 Game Box</h1>
-              <p className="text-sm sm:text-base text-cyan-300 truncate">
+              <h1 className="text-3xl sm:text-4xl font-bold text-red-500 mb-1 truncate" style={{ textShadow: '0 0 15px rgba(239, 68, 68, 0.8)' }}>Rowdy</h1>
+              <p className="text-sm sm:text-base text-red-400 truncate">
                 Welcome, {session.user?.email?.split('@')[0] || 'Player'}!
               </p>
             </div>
@@ -321,6 +338,16 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="text-center mt-6">
+            <button
+              onClick={handleDebugMode}
+              className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+              style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.4)', boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)' }}
+            >
+              Debug Mode
+            </button>
           </div>
         </div>
       </div>
