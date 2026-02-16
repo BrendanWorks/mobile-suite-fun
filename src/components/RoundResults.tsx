@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
+import ReactGA from 'react-ga4';
 
 interface RoundResultsProps {
   roundNumber: number;
@@ -34,6 +35,18 @@ export default function RoundResults({
   const hasTimeBonus = gameScore.timeBonus && gameScore.timeBonus > 0;
 
   useEffect(() => {
+    // Track results screen shown
+    const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
+    ReactGA.event({
+      category: 'Game',
+      action: 'results_shown',
+      label: `${gameName} - Round ${roundNumber}`,
+      game_name: gameName,
+      round_number: roundNumber,
+      score: Math.round(finalScore),
+      is_last_round: isLastRound,
+    });
+
     // Show content with fade-in
     setTimeout(() => setShowContent(true), 200);
 
@@ -41,7 +54,7 @@ export default function RoundResults({
     if (isTimedGame) {
       setTimeout(() => {
         setShowBonus(true);
-        
+
         if (hasTimeBonus) {
           const bonusDuration = 1000;
           const bonusSteps = 40;
@@ -60,7 +73,7 @@ export default function RoundResults({
         }
       }, 800);
     }
-  }, [gameScore.timeBonus, hasTimeBonus, isTimedGame]);
+  }, [gameScore.timeBonus, hasTimeBonus, isTimedGame, gameName, roundNumber, gameScore.totalWithBonus, gameScore.normalizedScore, isLastRound]);
 
   const getGradeLabel = (score: number): string => {
     if (score >= 90) return "Absolutely Crushed It!";
