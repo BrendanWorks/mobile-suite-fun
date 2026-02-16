@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GameHandle } from '../lib/gameTypes';
 
 interface Choice {
   text: string;
@@ -19,18 +20,25 @@ interface HiveMindProps {
   timeRemaining: number;
 }
 
-const HiveMind: React.FC<HiveMindProps> = ({ 
-  puzzleId, 
-  onScoreUpdate, 
-  onComplete, 
-  timeRemaining 
-}) => {
+const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
+  puzzleId,
+  onScoreUpdate,
+  onComplete,
+  timeRemaining
+}, ref) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [revealState, setRevealState] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({ score: totalScore, maxScore: questions.length * 200 }),
+    onGameEnd: () => {},
+    canSkipQuestion: false,
+    hideTimer: true
+  }));
 
   // Load Data
   useEffect(() => {
@@ -194,6 +202,6 @@ const HiveMind: React.FC<HiveMindProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default HiveMind;

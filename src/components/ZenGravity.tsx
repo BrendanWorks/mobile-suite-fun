@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { GameHandle } from '../lib/gameTypes';
 
 interface ZenGravityProps {
   onComplete: (score: number, maxScore: number, timeRemaining: number) => void;
   duration: number;
+  timeRemaining: number;
 }
 
 interface Marble {
@@ -24,13 +26,25 @@ interface Peg {
   lastHit: number;
 }
 
-export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
+const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, duration, timeRemaining }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioCtx = useRef<AudioContext | null>(null);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(duration);
   const [isStarted, setIsStarted] = useState(false);
-  
+  const scoreRef = useRef(0);
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({ score: scoreRef.current, maxScore: 20 }),
+    onGameEnd: () => {
+      gameState.current.active = false;
+      if (onComplete) {
+        onComplete(scoreRef.current, 20, timeRemaining);
+      }
+    },
+    canSkipQuestion: false,
+    hideTimer: false
+  }));
+
   const COLORS = {
     cyan: '#00ffff',
     pink: '#ec4899',
@@ -114,7 +128,7 @@ export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
     const render = (time: number) => {
       if (!gameState.current.active) return;
 
-      const timeElapsed = (duration - timeLeft);
+      const timeElapsed = (duration - timeRemaining);
       gameState.current.spawnInterval = Math.max(900, 3000 - (timeElapsed * 150));
 
       if (time - gameState.current.lastSpawn > gameState.current.spawnInterval && gameState.current.totalSpawned < 20) {
@@ -194,7 +208,8 @@ export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
             if (m.color === goalColor) {
               m.status = 'correct';
               gameState.current.collected++;
-              setScore(s => s + 1);
+              scoreRef.current++;
+              setScore(scoreRef.current);
               playClack(0.12, 550); 
             } else {
               m.status = 'wrong';
@@ -226,20 +241,18 @@ export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
       animationFrame = requestAnimationFrame(render);
     };
 
-    const timer = setInterval(() => setTimeLeft(p => p > 0 ? p - 1 : 0), 1000);
     const endGame = () => {
       if (!gameState.current.active) return;
       gameState.current.active = false;
-      onComplete(gameState.current.collected, 20, timeLeft);
+      onComplete(scoreRef.current, 20, timeRemaining);
     };
 
     animationFrame = requestAnimationFrame(render);
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation);
       cancelAnimationFrame(animationFrame);
-      clearInterval(timer);
     };
-  }, [isStarted]);
+  }, [isStarted, timeRemaining]);
 
   return (
     <div className="relative w-full h-full bg-[#020617] flex flex-col items-center justify-center overflow-hidden">
@@ -281,4 +294,6 @@ export default function ZenGravity({ onComplete, duration }: ZenGravityProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ZenGravity;
