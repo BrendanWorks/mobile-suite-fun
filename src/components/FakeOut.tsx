@@ -34,7 +34,7 @@ const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
 
 const FakeOut = forwardRef((props: FakeOutProps, ref) => {
-  const { onScoreUpdate, onComplete, puzzleIds } = props;
+  const { onScoreUpdate, onComplete, puzzleIds, timeRemaining = 0 } = props;
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -44,6 +44,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(0);
+  const hasEndedRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -110,8 +111,19 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     }
   }, [currentIndex, puzzles]);
 
+  // Handle timer expiration
+  useEffect(() => {
+    if (timeRemaining <= 0 && status === 'playing' && !hasEndedRef.current) {
+      hasEndedRef.current = true;
+      setStatus('finished');
+      if (onComplete) {
+        onComplete(scoreRef.current, maxScoreRef.current);
+      }
+    }
+  }, [timeRemaining, status, onComplete]);
+
   const handleAnswer = (choice: 'real' | 'fake') => {
-    if (status !== 'playing') return;
+    if (status !== 'playing' || hasEndedRef.current) return;
 
     const currentPuzzle = puzzles[currentIndex];
     const isCorrect = choice === currentPuzzle.correct_answer;
@@ -142,7 +154,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     setStatus('feedback');
 
     setTimeout(() => {
+      if (hasEndedRef.current) {
+        // Timer already ended the game
+        return;
+      }
       if (currentIndex === puzzles.length - 1) {
+        hasEndedRef.current = true;
         setStatus('finished');
         if (onComplete) {
           onComplete(newScore, maxScoreRef.current);
