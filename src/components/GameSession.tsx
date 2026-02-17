@@ -918,7 +918,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           </div>
 
           <div className="flex flex-col gap-2 flex-shrink-0">
-            {!user && !sessionSaved && playlistId && playlistId < 10 && (
+            {!user && !sessionSaved && playlistId && !anonymousSessionManager.isLastPlaylist() && (
               <button
                 onClick={() => {
                   anonymousSessionManager.advanceToNextPlaylist();

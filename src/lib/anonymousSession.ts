@@ -14,6 +14,9 @@ interface AnonymousSession {
 
 const STORAGE_KEY = 'rowdy_anonymous_session';
 
+// Ordered playlist sequence
+const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49];
+
 export const anonymousSessionManager = {
   get(): AnonymousSession | null {
     try {
@@ -36,7 +39,7 @@ export const anonymousSessionManager = {
 
   update(updates: Partial<AnonymousSession>): void {
     const current = this.get() || {
-      currentPlaylistId: 1,
+      currentPlaylistId: PLAYLIST_SEQUENCE[0],
       completedRounds: 0,
       roundScores: [],
       lastUpdated: Date.now()
@@ -54,19 +57,33 @@ export const anonymousSessionManager = {
 
   getCurrentPlaylistId(): number {
     const session = this.get();
-    return session?.currentPlaylistId || 1;
+    return session?.currentPlaylistId || PLAYLIST_SEQUENCE[0];
   },
 
   advanceToNextPlaylist(): number {
     const current = this.getCurrentPlaylistId();
-    const next = current >= 10 ? 1 : current + 1;
+    const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
+
+    // If current is not in sequence or is the last one, wrap to first
+    const nextIndex = currentIndex === -1 || currentIndex >= PLAYLIST_SEQUENCE.length - 1
+      ? 0
+      : currentIndex + 1;
+
+    const next = PLAYLIST_SEQUENCE[nextIndex];
     this.update({ currentPlaylistId: next, completedRounds: 0, roundScores: [] });
+    console.log(`📋 Advanced from playlist ${current} to ${next} (index ${currentIndex} → ${nextIndex})`);
     return next;
+  },
+
+  isLastPlaylist(): boolean {
+    const current = this.getCurrentPlaylistId();
+    const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
+    return currentIndex === PLAYLIST_SEQUENCE.length - 1;
   },
 
   reset(): void {
     this.save({
-      currentPlaylistId: 1,
+      currentPlaylistId: PLAYLIST_SEQUENCE[0],
       completedRounds: 0,
       roundScores: [],
       lastUpdated: Date.now()
