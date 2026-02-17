@@ -78,10 +78,10 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_gobble', '/sounds/snake/gobble_optimized.mp3', 2);
       await audioManager.loadSound('snake_die', '/sounds/ranky/fail.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
-      await audioManager.loadSound('snake_ticktock', '/sounds/snake/ticktock.mp3', 1);
+      await audioManager.loadSound('snake_bg_music', '/sounds/snake/neon_arcade_dreams.mp3', 1);
     };
     loadAudio();
-    return () => audioManager.stopMusic('snake_ticktock');
+    return () => audioManager.stopMusic('snake_bg_music');
   }, []);
 
   const triggerHaptic = (ms = 50) => {
@@ -165,7 +165,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     const isInvincible = Date.now() < invincibleUntilRef.current;
 
     if (hitWall || (!isInvincible && (hitBody || hitObs))) {
-      audioManager.stopMusic('snake_ticktock');
+      audioManager.stopMusic('snake_bg_music');
       triggerHaptic(100);
       setScreenShake(10);
       livesRef.current -= 1;
@@ -271,7 +271,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     if (!gameStarted) {
       setGameStarted(true);
       setShowInstructions(false);
-      audioManager.playMusic('snake_ticktock');
+      audioManager.playMusic('snake_bg_music');
     }
 
     const lastQueued = inputQueueRef.current.length > 0
