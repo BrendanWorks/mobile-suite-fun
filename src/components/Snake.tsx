@@ -56,6 +56,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   const [gameStarted, setGameStarted] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [activeEffects, setActiveEffects] = useState<{ slow: boolean; ghost: boolean }>({ slow: false, ghost: false });
+  const [audioLoaded, setAudioLoaded] = useState(false);
 
   // Visual Effects
   const [screenShake, setScreenShake] = useState(0);
@@ -80,6 +81,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_die', '/sounds/snake/crash.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/game_end.mp3', 1);
       await audioManager.loadSound('snake_bg_music', '/sounds/snake/neon_arcade_dreams.mp3', 1);
+      setAudioLoaded(true);
     };
     loadAudio();
     return () => audioManager.stopMusic('snake_bg_music');
@@ -166,7 +168,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     const isInvincible = Date.now() < invincibleUntilRef.current;
 
     if (hitWall || (!isInvincible && (hitBody || hitObs))) {
-      audioManager.stopMusic('snake_bg_music');
       triggerHaptic(100);
       setScreenShake(10);
       livesRef.current -= 1;
@@ -181,7 +182,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
           setTimeout(() => onComplete(scoreRef.current, 200, timeRemaining), 2000);
         }
       } else {
-        audioManager.play('snake_die', 0.5);
+        audioManager.play('snake_die', 0.7);
         resetSnake();
       }
       return;
@@ -278,7 +279,9 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       audioManager.initialize();
       setGameStarted(true);
       setShowInstructions(false);
-      audioManager.playMusic('snake_bg_music');
+      if (audioLoaded) {
+        audioManager.playMusic('snake_bg_music');
+      }
     }
 
     const lastQueued = inputQueueRef.current.length > 0
