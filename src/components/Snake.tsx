@@ -75,7 +75,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   useEffect(() => {
     const loadAudio = async () => {
       await audioManager.loadSound('snake_eat', '/sounds/snake/collect.mp3', 3);
-      await audioManager.loadSound('snake_gobble', '/sounds/snake/gobble_optimized.mp3', 2);
+      await audioManager.loadSound('snake_powerup_gold', '/sounds/snake/powerup_gold.mp3', 2);
+      await audioManager.loadSound('snake_powerup_special', '/sounds/snake/powerup_special.mp3', 2);
       await audioManager.loadSound('snake_die', '/sounds/ranky/fail.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
       await audioManager.loadSound('snake_bg_music', '/sounds/snake/neon_arcade_dreams.mp3', 1);
@@ -144,7 +145,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     triggerHaptic(80);
     createParticleBurst(snakeRef.current[0].x, snakeRef.current[0].y, '#a855f7');
     setScreenShake(8);
-    audioManager.play('snake_gobble', 0.5);
+    audioManager.play('snake_powerup_special', 0.5);
   };
 
   const gameLoop = () => {
@@ -215,31 +216,35 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         powerUpRef.current = { ...createFood(), type: chosen, spawnTime: Date.now() };
       }
     } else if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
-      audioManager.play('snake_gobble', 0.6);
       triggerHaptic(60);
       grew = true;
 
       const type = powerUpRef.current.type;
       if (type === 'gold') {
+        audioManager.play('snake_powerup_gold', 0.6);
         const multiplier = Math.min(4, 1 + Math.floor((comboRef.current - 1) / 5)) || 1;
         scoreRef.current += Math.floor(50 * multiplier);
         setDisplayScore(scoreRef.current);
         if (onScoreUpdate) onScoreUpdate(scoreRef.current, 200);
         createParticleBurst(head.x, head.y, '#fbbf24');
       } else if (type === 'ice') {
+        audioManager.play('snake_powerup_special', 0.6);
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
         setActiveEffects(prev => ({ ...prev, slow: true }));
         createParticleBurst(head.x, head.y, '#60a5fa');
       } else if (type === 'ghost') {
+        audioManager.play('snake_powerup_special', 0.6);
         invincibleUntilRef.current = Date.now() + GHOST_DURATION;
         setActiveEffects(prev => ({ ...prev, ghost: true }));
         createParticleBurst(head.x, head.y, '#c084fc');
       } else if (type === 'shrink') {
+        audioManager.play('snake_powerup_special', 0.6);
         const newLen = Math.max(1, Math.floor(snakeRef.current.length / 2));
         snakeRef.current = snakeRef.current.slice(0, newLen);
         newSnake = snakeRef.current; // override since we already sliced
         createParticleBurst(head.x, head.y, '#eab308');
       } else if (type === 'rewind') {
+        audioManager.play('snake_powerup_special', 0.6);
         rewindUsesRef.current = Math.min(3, rewindUsesRef.current + 2);
         setRewindUses(rewindUsesRef.current);
         createParticleBurst(head.x, head.y, '#a78bfa');
@@ -269,6 +274,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     if (gameOverRef.current) return;
 
     if (!gameStarted) {
+      audioManager.initialize();
       setGameStarted(true);
       setShowInstructions(false);
       audioManager.playMusic('snake_bg_music');
