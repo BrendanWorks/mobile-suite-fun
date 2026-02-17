@@ -74,7 +74,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   // Audio
   useEffect(() => {
     const loadAudio = async () => {
-      await audioManager.loadSound('snake_eat', '/sounds/snake/short_success.mp3', 3);
+      await audioManager.loadSound('snake_eat', '/sounds/snake/collect.mp3', 3);
       await audioManager.loadSound('snake_gobble', '/sounds/snake/gobble_optimized.mp3', 2);
       await audioManager.loadSound('snake_die', '/sounds/ranky/fail.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
