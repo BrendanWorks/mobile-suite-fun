@@ -77,8 +77,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_eat', '/sounds/snake/collect.mp3', 3);
       await audioManager.loadSound('snake_powerup_gold', '/sounds/snake/powerup_gold.mp3', 2);
       await audioManager.loadSound('snake_powerup_special', '/sounds/snake/powerup_special.mp3', 2);
-      await audioManager.loadSound('snake_die', '/sounds/ranky/fail.mp3', 2);
-      await audioManager.loadSound('snake_gameover', '/sounds/snake/level_complete.mp3', 1);
+      await audioManager.loadSound('snake_die', '/sounds/snake/crash.mp3', 2);
+      await audioManager.loadSound('snake_gameover', '/sounds/snake/game_end.mp3', 1);
       await audioManager.loadSound('snake_bg_music', '/sounds/snake/neon_arcade_dreams.mp3', 1);
     };
     loadAudio();
@@ -173,6 +173,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       setDisplayLives(livesRef.current);
 
       if (livesRef.current <= 0) {
+        audioManager.stopMusic('snake_bg_music');
         audioManager.play('snake_gameover', 0.7);
         gameOverRef.current = true;
         setIsGameOver(true);

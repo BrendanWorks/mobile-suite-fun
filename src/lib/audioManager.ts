@@ -1,7 +1,7 @@
 class AudioManager {
   private sounds: Map<string, HTMLAudioElement> = new Map();
   private pools: Map<string, HTMLAudioElement[]> = new Map();
-  private musicVolume: number = 0.5;
+  private musicVolume: number = 0.25;
   private sfxVolume: number = 0.7;
   private enabled: boolean = true;
   private initialized: boolean = false;
