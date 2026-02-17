@@ -177,6 +177,8 @@ export default function App() {
   const handlePlayNow = () => {
     trackPageView('/game-session');
     const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
+    console.log('🎮 Play Now clicked - Loading playlist:', currentPlaylist);
+    console.log('🎮 Sequence:', anonymousSessionManager.getPlaylistSequence());
     setSelectedPlaylistId(currentPlaylist);
   };
 
@@ -192,6 +194,7 @@ export default function App() {
   const handlePlayGames = () => {
     trackPageView('/game-session');
     const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
+    console.log('🎮 Play Games clicked (logged in) - Loading playlist:', currentPlaylist);
     setSelectedPlaylistId(currentPlaylist);
   };
 
@@ -251,11 +254,17 @@ export default function App() {
               <div className="text-4xl sm:text-5xl mb-3">🚀</div>
               <h2 className="text-2xl sm:text-3xl font-bold text-red-400 mb-2" style={{ textShadow: '0 0 15px rgba(239, 68, 68, 0.6)' }}>Continue Playing</h2>
               <p className="text-sm sm:text-base text-red-300 mb-4">
-                Pick up where you left off. Progress through playlists 1-10 and test your skills!
+                Progress through the playlist sequence!
               </p>
-              <div className="flex items-center justify-between text-sm sm:text-base">
-                <span className="text-red-400">Current: Playlist {anonymousSessionManager.getCurrentPlaylistId()}</span>
-                <span className="text-xl sm:text-2xl text-red-400">→</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm sm:text-base">
+                  <span className="text-red-400">Current Playlist:</span>
+                  <span className="text-red-400 font-bold">{anonymousSessionManager.getCurrentPlaylistId()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-red-300/60">
+                  <span>Next:</span>
+                  <span>{anonymousSessionManager.getNextPlaylistId()}</span>
+                </div>
               </div>
             </div>
 

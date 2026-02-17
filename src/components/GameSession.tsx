@@ -921,7 +921,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             {!user && !sessionSaved && playlistId && !anonymousSessionManager.isLastPlaylist() && (
               <button
                 onClick={() => {
-                  anonymousSessionManager.advanceToNextPlaylist();
+                  console.log('🎯 Next Playlist button clicked - Before:', anonymousSessionManager.getCurrentPlaylistId());
+                  const nextId = anonymousSessionManager.advanceToNextPlaylist();
+                  console.log('🎯 After advance, next playlist should be:', nextId);
+                  console.log('🎯 Verifying localStorage:', anonymousSessionManager.getCurrentPlaylistId());
                   onExit();
                 }}
                 className="w-full px-4 py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-yellow-400 hover:text-black active:scale-[0.98] touch-manipulation"

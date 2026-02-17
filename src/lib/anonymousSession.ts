@@ -14,8 +14,12 @@ interface AnonymousSession {
 
 const STORAGE_KEY = 'rowdy_anonymous_session';
 
-// Ordered playlist sequence
+// Ordered playlist sequence - DO NOT MODIFY THIS ORDER!
+// 1=Wildly Inappropriate(22), 2=Junk Food(42), 3=Music(43), 4=Plot Twist(44),
+// 5=Booze(45), 6=Sports(46), 7=Money(47), 8=Hipsters(48), 9=Health(49)
 const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49];
+
+console.log('📋 PLAYLIST_SEQUENCE initialized:', PLAYLIST_SEQUENCE);
 
 export const anonymousSessionManager = {
   get(): AnonymousSession | null {
@@ -57,7 +61,9 @@ export const anonymousSessionManager = {
 
   getCurrentPlaylistId(): number {
     const session = this.get();
-    return session?.currentPlaylistId || PLAYLIST_SEQUENCE[0];
+    const playlistId = session?.currentPlaylistId || PLAYLIST_SEQUENCE[0];
+    console.log(`📍 getCurrentPlaylistId: ${playlistId}`, session);
+    return playlistId;
   },
 
   advanceToNextPlaylist(): number {
@@ -78,7 +84,9 @@ export const anonymousSessionManager = {
   isLastPlaylist(): boolean {
     const current = this.getCurrentPlaylistId();
     const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
-    return currentIndex === PLAYLIST_SEQUENCE.length - 1;
+    const isLast = currentIndex === PLAYLIST_SEQUENCE.length - 1;
+    console.log(`🔍 isLastPlaylist check: current=${current}, index=${currentIndex}, isLast=${isLast}`);
+    return isLast;
   },
 
   reset(): void {
@@ -88,5 +96,20 @@ export const anonymousSessionManager = {
       roundScores: [],
       lastUpdated: Date.now()
     });
+  },
+
+  // Debug helper
+  getPlaylistSequence(): number[] {
+    return [...PLAYLIST_SEQUENCE];
+  },
+
+  // Debug helper to see what's next
+  getNextPlaylistId(): number {
+    const current = this.getCurrentPlaylistId();
+    const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
+    const nextIndex = currentIndex === -1 || currentIndex >= PLAYLIST_SEQUENCE.length - 1
+      ? 0
+      : currentIndex + 1;
+    return PLAYLIST_SEQUENCE[nextIndex];
   }
 };
