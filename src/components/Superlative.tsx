@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { GameHandle } from "../lib/gameTypes";
+import { audioManager } from "../lib/audioManager";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -312,6 +313,16 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     pauseTimer: roundState === "revealing",
   }), [roundState]);
 
+  // ── Load audio ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('superlative-win', '/sounds/global/win_optimized.mp3', 2);
+      await audioManager.loadSound('superlative-wrong', '/sounds/global/wrong_optimized.mp3', 2);
+    };
+    loadAudio();
+  }, []);
+
   // ── Load puzzles ─────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -370,6 +381,12 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       );
 
       const score = calculateScore(isCorrect, elapsedMs, MAX_DECISION_MS, surpriseFactor);
+
+      if (isCorrect) {
+        audioManager.play('superlative-win');
+      } else {
+        audioManager.play('superlative-wrong', 0.3);
+      }
 
       setSelectedItem(choice);
       setRoundState("revealing");
