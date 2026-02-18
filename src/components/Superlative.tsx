@@ -533,7 +533,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const isRevealing = roundState === "revealing";
   const isTimedOut = roundState === "timeout-pulsing";
   const timerWarning = secondsLeft <= 10;
-  const progress = ((currentIndex) / puzzles.length) * 100;
+  const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
 
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-0">
@@ -561,14 +561,21 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Timer bar */}
           <div
-            className="w-full h-1.5 bg-black rounded-lg border border-cyan-400/50 overflow-hidden mb-4"
-            style={{ boxShadow: "0 0 6px rgba(0,255,255,0.2)" }}
+            className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
+            style={{
+              borderColor: timerWarning || isTimedOut ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+              boxShadow: timerWarning || isTimedOut ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+            }}
           >
             <div
-              className="h-full bg-cyan-400 transition-all duration-500"
-              style={{ width: `${progress}%`, boxShadow: "0 0 8px #00ffff" }}
+              className="h-full transition-all duration-1000 ease-linear"
+              style={{
+                width: `${timerProgress}%`,
+                background: timerWarning || isTimedOut ? "#f87171" : "#22d3ee",
+                boxShadow: timerWarning || isTimedOut ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+              }}
             />
           </div>
 
