@@ -497,57 +497,55 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
         {/* Header */}
         <div className="mb-3 pt-2">
-          <h2
-            className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400/40 pb-1"
-            style={{ textShadow: "0 0 10px #00ffff" }}
-          >
-            ⚡ Superlative
-          </h2>
-          <p className="text-cyan-300 text-xs sm:text-sm">
-            Which is{" "}
-            <span className="text-yellow-400 font-semibold" style={{ textShadow: "0 0 8px #fbbf24" }}>
-              {currentPuzzle.comparison_type}?
-            </span>
-          </p>
-        </div>
-
-        {/* Stats row */}
-        <div className="flex justify-between items-center text-xs sm:text-sm mb-3">
-          <div className="text-cyan-300">
-            Score:{" "}
-            <strong className="text-yellow-400" style={{ textShadow: "0 0 8px #fbbf24" }}>
-              {totalScore}
-            </strong>
+          <div className="flex justify-between items-center mb-2">
+            <h2
+              className="text-sm font-semibold text-cyan-400/70 uppercase tracking-widest"
+            >
+              Superlative
+            </h2>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-cyan-300">
+                Score:{" "}
+                <strong className="text-yellow-400" style={{ textShadow: "0 0 8px #fbbf24" }}>
+                  {totalScore}
+                </strong>
+              </span>
+              <span className="text-cyan-400/60">
+                {currentIndex + 1}/{puzzles.length}
+              </span>
+            </div>
           </div>
-          <div className="text-cyan-400">
-            {currentIndex + 1}/{puzzles.length}
-          </div>
-        </div>
 
-        {/* Progress bar */}
-        <div className="w-full mb-4">
+          {/* Progress bar */}
           <div
-            className="w-full h-2 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
-            style={{ boxShadow: "0 0 10px rgba(0,255,255,0.3)" }}
+            className="w-full h-1.5 bg-black rounded-lg border border-cyan-400/50 overflow-hidden mb-4"
+            style={{ boxShadow: "0 0 6px rgba(0,255,255,0.2)" }}
           >
             <div
               className="h-full bg-cyan-400 transition-all duration-500"
-              style={{ width: `${progress}%`, boxShadow: "0 0 12px #00ffff" }}
+              style={{ width: `${progress}%`, boxShadow: "0 0 8px #00ffff" }}
             />
           </div>
-        </div>
 
-        {/* Comparison prompt */}
-        <div
-          className="text-center mb-4 py-3 px-4 rounded-xl border-2 border-cyan-400/30 bg-black/50"
-          style={{ boxShadow: "0 0 10px rgba(0,255,255,0.15)" }}
-        >
-          <p
-            className="text-cyan-400 font-bold text-base sm:text-lg"
-            style={{ textShadow: "0 0 8px #00ffff" }}
-          >
-            Which is {currentPuzzle.comparison_type.toLowerCase()}?
-          </p>
+          {/* Question prompt */}
+          <div className="text-center mb-4">
+            <p
+              className="text-cyan-300 text-lg sm:text-xl font-medium tracking-wide mb-1"
+              style={{ textShadow: "0 0 6px rgba(0,255,255,0.4)" }}
+            >
+              Which is
+            </p>
+            <p
+              className="text-yellow-400 font-black leading-none"
+              style={{
+                fontSize: "clamp(3rem, 14vw, 5rem)",
+                textShadow: "0 0 30px #fbbf24, 0 0 60px rgba(251,191,36,0.4)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {currentPuzzle.comparison_type.toUpperCase()}?
+            </p>
+          </div>
         </div>
 
         {/* Item cards */}
