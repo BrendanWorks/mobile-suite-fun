@@ -868,13 +868,18 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }
 
   const getGradeLabel = (score: number): string => {
-    if (score >= 90) return "Absolutely Crushed It!";
-    if (score >= 80) return "Pretty Damn Good!";
-    if (score >= 70) return "Solidly Mediocre";
-    if (score >= 60) return "Kinda Rough";
-    if (score >= 50) return "That Was Ugly";
-    if (score >= 40) return "Spectacularly Bad!";
-    return "What Just Happened?";
+    if (score >= 100) return "Perfect";
+    if (score >= 90) return "Amazeballs!";
+    if (score >= 80) return "Exceptional";
+    if (score >= 70) return "Very Good";
+    if (score >= 60) return "Well Done";
+    if (score >= 50) return "Above Average";
+    if (score >= 40) return "Pretty Good";
+    if (score >= 30) return "Needs Improvement";
+    if (score >= 20) return "Keep Trying";
+    if (score >= 10) return "Ouch!";
+    if (score > 0) return "Poor";
+    return "Didn't Even Try!";
   };
 
   // Complete screen
