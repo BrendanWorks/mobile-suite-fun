@@ -541,6 +541,27 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
         {/* Header */}
         <div className="mb-3 pt-2">
+
+          {/* Game title */}
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
+              <line x1="12" y1="3" x2="12" y2="21" />
+              <line x1="5" y1="6" x2="19" y2="6" />
+              <path d="M5 6 L2 12 Q5 15 8 12 L5 6" />
+              <path d="M19 6 L22 12 Q19 15 16 12 L19 6" />
+              <line x1="9" y1="21" x2="15" y2="21" />
+            </svg>
+            <h1
+              className="text-2xl font-bold tracking-wide text-cyan-300"
+              style={{ textShadow: "0 0 12px rgba(0,255,255,0.6)" }}
+            >
+              Superlative
+            </h1>
+          </div>
+          <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Which one ranks highest?</p>
+          <div className="w-full h-px bg-cyan-400/30 mb-3" />
+
+          {/* Score + timer row */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-cyan-300 text-sm">
               Score:{" "}
