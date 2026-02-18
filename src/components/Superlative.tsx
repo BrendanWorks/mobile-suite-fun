@@ -564,62 +564,77 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           />
         </div>
 
-        {/* Reveal section */}
-        {roundState === "revealing" && (
-          <div
-            className="rounded-xl border-2 border-cyan-400/40 bg-black/80 p-4 mb-4 transition-all duration-300"
-            style={{ boxShadow: "0 0 20px rgba(0,255,255,0.2)" }}
-          >
-            {/* Score display */}
-            {roundScore !== null && (
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  {roundScore > 0 ? (
-                    <p
-                      className="text-green-400 font-bold text-lg"
-                      style={{ textShadow: "0 0 10px #22c55e" }}
-                    >
-                      +{roundScore} pts
-                    </p>
-                  ) : (
-                    <p
-                      className="text-red-400 font-bold text-lg"
-                      style={{ textShadow: "0 0 10px #ef4444" }}
-                    >
-                      +0 pts
-                    </p>
+        {/* Info / reveal box — always present */}
+        <div
+          className="rounded-xl border-2 bg-black/80 p-4 mb-4 transition-all duration-300"
+          style={{
+            borderColor: roundState === "revealing" ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
+            boxShadow: roundState === "revealing" ? "0 0 20px rgba(0,255,255,0.2)" : "none",
+            minHeight: "4.5rem",
+          }}
+        >
+          {roundState === "playing" ? (
+            <p
+              className="text-cyan-400/40 font-black text-center leading-none"
+              style={{
+                fontSize: "clamp(1.6rem, 8vw, 2.4rem)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Guess
+            </p>
+          ) : (
+            <>
+              {roundScore !== null && (
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    {roundScore > 0 ? (
+                      <p
+                        className="text-green-400 font-bold text-lg"
+                        style={{ textShadow: "0 0 10px #22c55e" }}
+                      >
+                        +{roundScore} pts
+                      </p>
+                    ) : (
+                      <p
+                        className="text-red-400 font-bold text-lg"
+                        style={{ textShadow: "0 0 10px #ef4444" }}
+                      >
+                        +0 pts
+                      </p>
+                    )}
+                  </div>
+                  {scoreBreakdown && roundScore > 0 && (
+                    <div className="text-right text-xs text-cyan-400/70 space-y-0.5">
+                      <div>correct +{scoreBreakdown.base}</div>
+                      {scoreBreakdown.speed > 0 && <div>speed +{scoreBreakdown.speed}</div>}
+                      {scoreBreakdown.surprise > 0 && <div>surprise +{scoreBreakdown.surprise}</div>}
+                    </div>
                   )}
                 </div>
-                {scoreBreakdown && roundScore > 0 && (
-                  <div className="text-right text-xs text-cyan-400/70 space-y-0.5">
-                    <div>correct +{scoreBreakdown.base}</div>
-                    {scoreBreakdown.speed > 0 && <div>speed +{scoreBreakdown.speed}</div>}
-                    {scoreBreakdown.surprise > 0 && <div>surprise +{scoreBreakdown.surprise}</div>}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+              <p className="text-cyan-300 text-xs sm:text-sm leading-relaxed">
+                {currentPuzzle.reveal_note}
+              </p>
+            </>
+          )}
+        </div>
 
-            {/* Reveal note */}
-            <p className="text-cyan-300 text-xs sm:text-sm leading-relaxed">
-              {currentPuzzle.reveal_note}
-            </p>
-          </div>
-        )}
-
-        {/* Next button — only shown during reveal */}
-        {roundState === "revealing" && (
-          <button
-            onClick={handleNext}
-            className="w-full py-3 bg-transparent border-2 border-pink-500 text-pink-400 font-bold rounded-xl text-sm transition-all hover:bg-pink-500 hover:text-black active:scale-95 touch-manipulation"
-            style={{
-              textShadow: "0 0 8px #ec4899",
-              boxShadow: "0 0 15px rgba(236,72,153,0.3)",
-            }}
-          >
-            {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
-          </button>
-        )}
+        {/* Next button — always present */}
+        <button
+          onClick={roundState === "revealing" ? handleNext : undefined}
+          disabled={roundState !== "revealing"}
+          className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
+          style={{
+            borderColor: roundState === "revealing" ? "#ec4899" : "rgba(236,72,153,0.2)",
+            color: roundState === "revealing" ? "#f472b6" : "rgba(244,114,182,0.2)",
+            textShadow: roundState === "revealing" ? "0 0 8px #ec4899" : "none",
+            boxShadow: roundState === "revealing" ? "0 0 15px rgba(236,72,153,0.3)" : "none",
+            cursor: roundState === "revealing" ? "pointer" : "default",
+          }}
+        >
+          {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
+        </button>
       </div>
     </div>
   );
