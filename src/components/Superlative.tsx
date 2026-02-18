@@ -15,10 +15,10 @@ interface SuperlativeItem {
 
 interface SuperlativePuzzle {
   id: number;
-  comparison_type: "Longer" | "Wider" | "Heavier" | "Older" | "Taller" | "Faster";
+  comparison_type: "Longer" | "Wider" | "Heavier" | "Older" | "Taller" | "Faster" | "Bigger" | "Deeper" | "Hotter";
   anchor_item: SuperlativeItem;
   challenger_item: SuperlativeItem;
-  correct_answer: string; // name of the correct (larger/heavier/etc) item
+  correct_answer: string;
   reveal_note: string;
 }
 
@@ -74,16 +74,50 @@ const supabase = createClient(
 
 async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   const { data, error } = await supabase
-    .from("puzzles")
-    .select("*")
+    .from("superlative_puzzles")
+    .select(`
+      id,
+      comparison_type,
+      correct_answer,
+      reveal_note,
+      superlative_items (
+        id, role, name, tagline, value, unit, image_url
+      )
+    `)
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
 
-  // Puzzle is stored in metadata JSON for superlative game type
-  const meta = data.metadata as SuperlativePuzzle;
-  return { id: data.id, ...meta };
+  const items = (data.superlative_items ?? []) as Array<{
+    id: number; role: string; name: string; tagline?: string;
+    value: number; unit: string; image_url: string;
+  }>;
+
+  const anchor = items.find((i) => i.role === "anchor");
+  const challenger = items.find((i) => i.role === "challenger");
+  if (!anchor || !challenger) return null;
+
+  return {
+    id: data.id,
+    comparison_type: data.comparison_type as SuperlativePuzzle["comparison_type"],
+    correct_answer: data.correct_answer,
+    reveal_note: data.reveal_note ?? "",
+    anchor_item: {
+      name: anchor.name,
+      tagline: anchor.tagline,
+      value: Number(anchor.value),
+      unit: anchor.unit,
+      image_url: anchor.image_url ?? "",
+    },
+    challenger_item: {
+      name: challenger.name,
+      tagline: challenger.tagline,
+      value: Number(challenger.value),
+      unit: challenger.unit,
+      image_url: challenger.image_url ?? "",
+    },
+  };
 }
 
 // ─── Fallback demo puzzles (used when no DB ids provided) ────────────────────
