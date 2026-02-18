@@ -6,6 +6,7 @@ import { GameHandle } from "../lib/gameTypes";
 
 interface SuperlativeItem {
   name: string;
+  tagline?: string;
   value: number;
   unit: string;
   image_url: string;
@@ -92,12 +93,14 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     comparison_type: "Heavier",
     anchor_item: {
       name: "Statue of Liberty",
+      tagline: "Gift from France, somehow",
       value: 204117,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/290386/pexels-photo-290386.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Small Cumulus Cloud",
+      tagline: "Looks harmless enough",
       value: 500000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/53594/blue-clouds-day-fluffy-53594.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -111,12 +114,14 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     comparison_type: "Longer",
     anchor_item: {
       name: "Hollywood Walk of Fame",
+      tagline: "Noted tourist trap",
       value: 2400,
       unit: "m",
       image_url: "https://images.pexels.com/photos/1037987/pexels-photo-1037987.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Coney Island Boardwalk",
+      tagline: "Rides and hotdogs",
       value: 4000,
       unit: "m",
       image_url: "https://images.pexels.com/photos/1545590/pexels-photo-1545590.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -130,12 +135,14 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     comparison_type: "Heavier",
     anchor_item: {
       name: "Blue Whale",
+      tagline: "Biggest animal ever, allegedly",
       value: 150000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/2078240/pexels-photo-2078240.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Eiffel Tower",
+      tagline: "Paris's most famous eyesore",
       value: 7300000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -152,10 +159,9 @@ interface ItemCardProps {
   item: SuperlativeItem;
   state: "idle" | "selected" | "correct" | "wrong" | "dimmed";
   onClick: () => void;
-  label: string;
 }
 
-function ItemCard({ item, state, onClick, label }: ItemCardProps) {
+function ItemCard({ item, state, onClick }: ItemCardProps) {
   const stateStyles: Record<typeof state, string> = {
     idle: "border-cyan-400/30 bg-black/50 hover:border-cyan-400 hover:bg-cyan-500/10 active:scale-95",
     selected: "border-cyan-400 bg-cyan-500/20",
@@ -229,18 +235,21 @@ function ItemCard({ item, state, onClick, label }: ItemCardProps) {
         {item.name}
       </p>
 
-      {/* Label */}
-      <p className="text-cyan-400/60 text-xs">{label}</p>
-
-      {/* Revealed value (only after answering) */}
-      {(state === "correct" || state === "wrong" || state === "dimmed") && (
-        <p
-          className="mt-2 text-yellow-400 font-bold text-sm"
-          style={{ textShadow: "0 0 8px #fbbf24" }}
-        >
-          {formatValue(item.value, item.unit)}
-        </p>
-      )}
+      {/* Fixed sub-line: tagline before answer, value after — same height, no shift */}
+      <div className="h-4">
+        {(state === "correct" || state === "wrong" || state === "dimmed") ? (
+          <p
+            className="text-yellow-400 font-bold text-xs"
+            style={{ textShadow: "0 0 8px #fbbf24" }}
+          >
+            {formatValue(item.value, item.unit)}
+          </p>
+        ) : (
+          <p className="text-cyan-400/50 text-xs italic truncate">
+            {item.tagline ?? ""}
+          </p>
+        )}
+      </div>
     </button>
   );
 }
@@ -534,13 +543,11 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             item={currentPuzzle.anchor_item}
             state={getCardState("anchor")}
             onClick={() => handleAnswer("anchor")}
-            label="Option A"
           />
           <ItemCard
             item={currentPuzzle.challenger_item}
             state={getCardState("challenger")}
             onClick={() => handleAnswer("challenger")}
-            label="Option B"
           />
         </div>
 
