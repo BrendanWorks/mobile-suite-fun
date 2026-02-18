@@ -294,12 +294,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setGameState('result');
 
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete');
+        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete after delay');
         setIsGameComplete(true);
-        const callback = onCompleteRef.current;
-        if (callback) {
-          callback(newScore, MAX_QUESTIONS * 250, props.timeRemaining);
-        }
+        autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+          const callback = onCompleteRef.current;
+          if (callback) {
+            callback(newScore, MAX_QUESTIONS * 250, props.timeRemaining);
+          }
+        }, 6000);
       } else {
         console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 6s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
@@ -308,7 +310,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       }
     } else {
       audioManager.play('global-wrong');
-      
+
       if (props.onScoreUpdate) {
         props.onScoreUpdate(score, MAX_QUESTIONS * 250);
       }
@@ -317,12 +319,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         setGameState('result');
 
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete');
+          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete after delay');
           setIsGameComplete(true);
-          const callback = onCompleteRef.current;
-          if (callback) {
-            callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
-          }
+          autoAdvanceTimeoutRef.current = window.setTimeout(() => {
+            const callback = onCompleteRef.current;
+            if (callback) {
+              callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
+            }
+          }, 6000);
         } else {
           console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 6s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
