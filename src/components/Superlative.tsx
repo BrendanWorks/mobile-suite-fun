@@ -168,7 +168,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
 
 interface ItemCardProps {
   item: SuperlativeItem;
-  state: "idle" | "selected" | "correct" | "wrong" | "dimmed";
+  state: "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout";
   onClick: () => void;
 }
 
@@ -179,6 +179,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
     correct: "border-green-500 bg-green-500/20 animate-pulse",
     wrong: "border-red-500 bg-red-500/20",
     dimmed: "border-cyan-400/10 bg-black/20 opacity-40",
+    timeout: "border-red-500 bg-red-500/10 animate-pulse",
   };
 
   const stateBoxShadow: Record<typeof state, string> = {
@@ -187,9 +188,10 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
     correct: "0 0 25px rgba(34,197,94,0.6)",
     wrong: "0 0 20px rgba(239,68,68,0.5)",
     dimmed: "none",
+    timeout: "0 0 25px rgba(239,68,68,0.5)",
   };
 
-  const isDisabled = state === "correct" || state === "wrong" || state === "dimmed";
+  const isDisabled = state === "correct" || state === "wrong" || state === "dimmed" || state === "timeout";
 
   return (
     <button
@@ -268,7 +270,9 @@ function formatValue(value: number, unit: string): string {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type RoundState = "loading" | "playing" | "revealing" | "complete";
+const ROUND_DURATION_S = 60;
+
+type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "complete";
 
 interface RoundResult {
   puzzleId: number;
@@ -283,7 +287,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   onScoreUpdate,
   onComplete,
   timeRemaining,
-  duration = 90,
 }, ref) {
   const [puzzles, setPuzzles] = useState<SuperlativePuzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -291,9 +294,12 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const [selectedItem, setSelectedItem] = useState<"anchor" | "challenger" | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [totalScore, setTotalScore] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
 
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(MAX_ROUND_SCORE);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const totalScoreRef = useRef(0);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -303,6 +309,45 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     onGameEnd: () => {},
     pauseTimer: roundState === "revealing",
   }), [roundState]);
+
+  // ── Internal 60-second timer ──────────────────────────────────────────────
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (roundState !== "playing" && roundState !== "revealing") {
+      stopTimer();
+      return;
+    }
+    if (timerRef.current) return;
+
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          stopTimer();
+          setRoundState("timeout-pulsing");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return stopTimer;
+  }, [roundState, stopTimer]);
+
+  useEffect(() => {
+    if (roundState !== "timeout-pulsing") return;
+    const t = setTimeout(() => {
+      setRoundState("complete");
+      onComplete?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemaining);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [roundState, onComplete, timeRemaining]);
 
   // ── Load audio ───────────────────────────────────────────────────────────
 
@@ -376,6 +421,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       const newTotal = totalScore + score;
       setTotalScore(newTotal);
       scoreRef.current = newTotal;
+      totalScoreRef.current = newTotal;
       setResults((prev) => [
         ...prev,
         { puzzleId: currentPuzzle.id, correct: isCorrect, score, chosenAnswer: chosenItem.name },
@@ -390,6 +436,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   const handleNext = useCallback(() => {
     if (currentIndex + 1 >= puzzles.length) {
+      stopTimer();
       setRoundState("complete");
       onComplete?.(totalScore, MAX_ROUND_SCORE, timeRemaining);
     } else {
@@ -397,13 +444,14 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       setSelectedItem(null);
       setRoundState("playing");
     }
-  }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete]);
+  }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete, stopTimer]);
 
   // ── Derived state for card display ────────────────────────────────────────
 
   const getCardState = (
     which: "anchor" | "challenger"
-  ): "idle" | "selected" | "correct" | "wrong" | "dimmed" => {
+  ): "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout" => {
+    if (roundState === "timeout-pulsing") return "timeout";
     if (roundState === "playing") {
       return selectedItem === which ? "selected" : "idle";
     }
@@ -483,6 +531,8 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   // ── Render: playing / revealing ───────────────────────────────────────────
 
   const isRevealing = roundState === "revealing";
+  const isTimedOut = roundState === "timeout-pulsing";
+  const timerWarning = secondsLeft <= 10;
   const progress = ((currentIndex) / puzzles.length) * 100;
 
   return (
@@ -498,9 +548,17 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
                 {totalScore}
               </strong>
             </div>
-            <span className="text-cyan-400/60 text-xs">
-              {currentIndex + 1}/{puzzles.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`tabular-nums font-bold text-sm ${timerWarning || isTimedOut ? "text-red-400" : "text-cyan-400/80"}`}
+                style={timerWarning || isTimedOut ? { textShadow: "0 0 8px #f87171" } : undefined}
+              >
+                {secondsLeft}s
+              </span>
+              <span className="text-cyan-400/60 text-xs">
+                {currentIndex + 1}/{puzzles.length}
+              </span>
+            </div>
           </div>
 
           {/* Progress bar */}
@@ -553,14 +611,22 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         <div
           className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
           style={{
-            borderColor: isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
-            boxShadow: isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
+            borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
+            boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
             height: "5rem",
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {!isRevealing ? (
+          {isTimedOut ? (
+            <p
+              className="text-red-400 font-black text-center animate-pulse"
+              style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171", letterSpacing: "-0.01em" }}
+            >
+              Time's Up!
+            </p>
+          ) : !isRevealing ? (
             <p
               className="w-full text-cyan-400/30 font-black text-center leading-none"
               style={{
