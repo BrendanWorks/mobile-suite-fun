@@ -288,10 +288,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const [selectedItem, setSelectedItem] = useState<"anchor" | "challenger" | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [totalScore, setTotalScore] = useState(0);
-  const [roundScore, setRoundScore] = useState<number | null>(null);
-  const [scoreBreakdown, setScoreBreakdown] = useState<{
-    base: number; speed: number; surprise: number;
-  } | null>(null);
 
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(MAX_ROUND_SCORE);
@@ -365,15 +361,8 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       );
 
       const score = calculateScore(isCorrect, elapsedMs, MAX_DECISION_MS, surpriseFactor);
-      const breakdown = {
-        base: isCorrect ? 250 : 0,
-        speed: isCorrect ? Math.max(0, Math.round(100 * (1 - elapsedMs / MAX_DECISION_MS))) : 0,
-        surprise: isCorrect ? Math.round(150 * surpriseFactor) : 0,
-      };
 
       setSelectedItem(choice);
-      setRoundScore(score);
-      setScoreBreakdown(breakdown);
       setRoundState("revealing");
 
       const newTotal = totalScore + score;
@@ -398,8 +387,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     } else {
       setCurrentIndex((i) => i + 1);
       setSelectedItem(null);
-      setRoundScore(null);
-      setScoreBreakdown(null);
       setRoundState("playing");
       puzzleStartTime.current = Date.now();
     }
@@ -498,22 +485,15 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         {/* Header */}
         <div className="mb-3 pt-2">
           <div className="flex justify-between items-center mb-2">
-            <h2
-              className="text-sm font-semibold text-cyan-400/70 uppercase tracking-widest"
-            >
-              Superlative
-            </h2>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-cyan-300">
-                Score:{" "}
-                <strong className="text-yellow-400" style={{ textShadow: "0 0 8px #fbbf24" }}>
-                  {totalScore}
-                </strong>
-              </span>
-              <span className="text-cyan-400/60">
-                {currentIndex + 1}/{puzzles.length}
-              </span>
+            <div className="text-cyan-300 text-sm">
+              Score:{" "}
+              <strong className="text-yellow-400 tabular-nums text-base" style={{ textShadow: "0 0 8px #fbbf24" }}>
+                {totalScore}
+              </strong>
             </div>
+            <span className="text-cyan-400/60 text-xs">
+              {currentIndex + 1}/{puzzles.length}
+            </span>
           </div>
 
           {/* Progress bar */}
@@ -564,59 +544,31 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           />
         </div>
 
-        {/* Info / reveal box — always present */}
+        {/* Info / reveal box — fixed height, no reflow */}
         <div
-          className="rounded-xl border-2 bg-black/80 p-4 mb-4 transition-all duration-300"
+          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
           style={{
             borderColor: roundState === "revealing" ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
             boxShadow: roundState === "revealing" ? "0 0 20px rgba(0,255,255,0.2)" : "none",
-            minHeight: "4.5rem",
+            height: "5rem",
+            display: "flex",
+            alignItems: "center",
           }}
         >
           {roundState === "playing" ? (
             <p
-              className="text-cyan-400/40 font-black text-center leading-none"
+              className="w-full text-cyan-400/30 font-black text-center leading-none"
               style={{
-                fontSize: "clamp(1.6rem, 8vw, 2.4rem)",
+                fontSize: "clamp(1.8rem, 9vw, 2.6rem)",
                 letterSpacing: "-0.02em",
               }}
             >
               Guess
             </p>
           ) : (
-            <>
-              {roundScore !== null && (
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    {roundScore > 0 ? (
-                      <p
-                        className="text-green-400 font-bold text-lg"
-                        style={{ textShadow: "0 0 10px #22c55e" }}
-                      >
-                        +{roundScore} pts
-                      </p>
-                    ) : (
-                      <p
-                        className="text-red-400 font-bold text-lg"
-                        style={{ textShadow: "0 0 10px #ef4444" }}
-                      >
-                        +0 pts
-                      </p>
-                    )}
-                  </div>
-                  {scoreBreakdown && roundScore > 0 && (
-                    <div className="text-right text-xs text-cyan-400/70 space-y-0.5">
-                      <div>correct +{scoreBreakdown.base}</div>
-                      {scoreBreakdown.speed > 0 && <div>speed +{scoreBreakdown.speed}</div>}
-                      {scoreBreakdown.surprise > 0 && <div>surprise +{scoreBreakdown.surprise}</div>}
-                    </div>
-                  )}
-                </div>
-              )}
-              <p className="text-cyan-300 text-xs sm:text-sm leading-relaxed">
-                {currentPuzzle.reveal_note}
-              </p>
-            </>
+            <p className="text-cyan-300 text-xs leading-relaxed line-clamp-3">
+              {currentPuzzle.reveal_note}
+            </p>
           )}
         </div>
 
