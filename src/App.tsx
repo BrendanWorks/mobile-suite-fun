@@ -21,7 +21,8 @@ export type GameId =
   | 'snake'
   | 'gravity-ball'
   | 'fake-out'
-  | 'hive-mind';
+  | 'hive-mind'
+  | 'superlative';
 
 const GLOW_STYLES = {
   cyan: {

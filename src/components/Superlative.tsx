@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { GameHandle } from "../lib/gameTypes";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -273,14 +274,14 @@ interface RoundResult {
   chosenAnswer: string;
 }
 
-export default function Superlative({
+const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   puzzleIds,
   puzzleId,
   onScoreUpdate,
   onComplete,
   timeRemaining,
   duration = 90,
-}: GameProps) {
+}, ref) {
   const [puzzles, setPuzzles] = useState<SuperlativePuzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundState, setRoundState] = useState<RoundState>("loading");
@@ -292,8 +293,19 @@ export default function Superlative({
     base: number; speed: number; surprise: number;
   } | null>(null);
 
+  const scoreRef = useRef(0);
+  const maxScoreRef = useRef(MAX_ROUND_SCORE);
   const puzzleStartTime = useRef<number>(0);
-  const MAX_DECISION_MS = duration * 1000 * 0.8; // 80% of total duration per puzzle
+  const MAX_DECISION_MS = duration * 1000 * 0.8;
+
+  useImperativeHandle(ref, () => ({
+    getGameScore: () => ({
+      score: scoreRef.current,
+      maxScore: maxScoreRef.current,
+    }),
+    onGameEnd: () => {},
+    pauseTimer: roundState === "revealing",
+  }), [roundState]);
 
   // ── Load puzzles ─────────────────────────────────────────────────────────
 
@@ -366,6 +378,7 @@ export default function Superlative({
 
       const newTotal = totalScore + score;
       setTotalScore(newTotal);
+      scoreRef.current = newTotal;
       setResults((prev) => [
         ...prev,
         { puzzleId: currentPuzzle.id, correct: isCorrect, score, chosenAnswer: chosenItem.name },
@@ -612,4 +625,6 @@ export default function Superlative({
       </div>
     </div>
   );
-}
+});
+
+export default Superlative;

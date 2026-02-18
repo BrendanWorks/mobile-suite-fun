@@ -198,6 +198,19 @@ export const scoringSystem = {
     };
   },
 
+  // Superlative: rawScore/maxScore direct percentage
+  superlative: (rawScore: number, maxScore: number): GameScore => {
+    const normalized = maxScore > 0 ? Math.min(100, (rawScore / maxScore) * 100) : 0;
+    return {
+      gameId: 'superlative',
+      gameName: 'Superlative',
+      rawScore,
+      normalizedScore: Math.round(normalized),
+      grade: getGrade(Math.round(normalized)),
+      breakdown: `${rawScore} / ${maxScore} points`
+    };
+  },
+
   // Neural Pulse: 500 exploration points = 100 (levels + steps)
   neuralPulse: (rawScore: number): GameScore => {
     const normalized = Math.min(100, (rawScore / 500) * 100);
