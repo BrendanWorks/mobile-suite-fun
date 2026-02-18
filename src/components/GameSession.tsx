@@ -77,8 +77,10 @@ interface PlaylistRound {
   game_id: number | null;
   puzzle_id: number | null;
   ranking_puzzle_id: number | null;
+  superlative_puzzle_id: number | null;
   metadata: {
     game_slug?: string;
+    puzzle_ids?: number[];
   };
   game_name: string;
 }
@@ -120,6 +122,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [currentPuzzleId, setCurrentPuzzleId] = useState<number | null>(null);
   const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
+  const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
 
   const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
     const round = rounds.find(r => r.round_number === roundNumber);
@@ -173,6 +176,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
 
     setCurrentRankingPuzzleId(round.ranking_puzzle_id);
+    setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
     setPlaylistLoading(false);
   };
 
@@ -211,7 +215,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
-        .select('round_number, game_id, puzzle_id, ranking_puzzle_id, metadata')
+        .select('round_number, game_id, puzzle_id, ranking_puzzle_id, superlative_puzzle_id, metadata')
         .eq('playlist_id', playlistId)
         .order('round_number');
 
@@ -246,6 +250,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         game_id: r.game_id,
         puzzle_id: r.puzzle_id,
         ranking_puzzle_id: r.ranking_puzzle_id,
+        superlative_puzzle_id: r.superlative_puzzle_id ?? null,
         metadata: r.metadata || {},
         game_name: games?.find(g => g.id === r.game_id)?.name || 'Procedural Game'
       }));
@@ -1050,10 +1055,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             gameName={currentGame.name}
             onScoreUpdate={handleScoreUpdate}
           >
-            <GameComponent 
-  puzzleId={currentPuzzleId} 
+            <GameComponent
+  puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
   puzzleIds={currentPuzzleIds}
-  rankingPuzzleId={currentRankingPuzzleId} 
+  rankingPuzzleId={currentRankingPuzzleId}
 />
           </GameWrapper>
         </div>

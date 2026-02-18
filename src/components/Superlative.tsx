@@ -33,36 +33,12 @@ interface GameProps {
 
 // ─── Scoring ─────────────────────────────────────────────────────────────────
 
-const MAX_SCORE_PER_PUZZLE = 500; // 250 correct + 100 speed + 150 surprise
 const PUZZLES_PER_ROUND = 3;
-const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND; // 1500 → normalized to ~1000
+const MAX_SCORE_PER_PUZZLE = 250;
+const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
 
-function calculateScore(
-  isCorrect: boolean,
-  elapsedMs: number,
-  maxElapsedMs: number,
-  surpriseFactor: number // 0–1, how surprising the answer is (ratio of closer values)
-): number {
-  if (!isCorrect) return 0;
-
-  const baseScore = 250;
-
-  // Speed bonus: full 100 pts under 2s, linearly decays to 0 at maxElapsed
-  const speedBonus = Math.max(0, Math.round(100 * (1 - elapsedMs / maxElapsedMs)));
-
-  // Surprise bonus: higher when the two values are close (surprising result)
-  // surpriseFactor near 1 = values almost equal = very surprising
-  const surpriseBonus = Math.round(150 * surpriseFactor);
-
-  return baseScore + speedBonus + surpriseBonus;
-}
-
-function getSurpriseFactor(a: SuperlativeItem, b: SuperlativeItem): number {
-  if (a.value === 0 && b.value === 0) return 0;
-  const min = Math.min(a.value, b.value);
-  const max = Math.max(a.value, b.value);
-  if (max === 0) return 0;
-  return min / max; // close to 1 = surprising; close to 0 = obvious
+function calculateScore(isCorrect: boolean): number {
+  return isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
 }
 
 // ─── Supabase ────────────────────────────────────────────────────────────────
@@ -244,22 +220,16 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         </div>
       )}
 
-      {/* Image or emoji placeholder */}
+      {/* Image */}
       <div
         className="w-full h-28 rounded-lg mb-3 flex items-center justify-center border border-cyan-400/20 overflow-hidden bg-black"
         style={{ boxShadow: "inset 0 0 15px rgba(0,255,255,0.05)" }}
       >
-        {item.image_url ? (
-          <img
-            src={item.image_url}
-            alt={item.name}
-            className="w-full h-full object-cover rounded-lg"
-          />
-        ) : (
-          <span className="text-5xl select-none">
-            {getItemEmoji(item.name)}
-          </span>
-        )}
+        <img
+          src={item.image_url}
+          alt={item.name}
+          className="w-full h-full object-cover rounded-lg"
+        />
       </div>
 
       {/* Name */}
@@ -289,17 +259,6 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
   );
 }
 
-function getItemEmoji(name: string): string {
-  const map: Record<string, string> = {
-    "Statue of Liberty": "🗽",
-    "Small Cumulus Cloud": "☁️",
-    "Hollywood Walk of Fame": "⭐",
-    "Coney Island Boardwalk": "🎡",
-    "Blue Whale": "🐋",
-    "Eiffel Tower": "🗼",
-  };
-  return map[name] ?? "❓";
-}
 
 function formatValue(value: number, unit: string): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M ${unit}`;
@@ -335,8 +294,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(MAX_ROUND_SCORE);
-  const puzzleStartTime = useRef<number>(0);
-  const MAX_DECISION_MS = duration * 1000 * 0.8;
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -370,7 +327,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         if (valid.length > 0) {
           setPuzzles(valid);
           setRoundState("playing");
-          puzzleStartTime.current = Date.now();
           return;
         }
       }
@@ -380,7 +336,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         if (single) {
           setPuzzles([single]);
           setRoundState("playing");
-          puzzleStartTime.current = Date.now();
           return;
         }
       }
@@ -388,7 +343,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       // Fallback to demo content
       setPuzzles(DEMO_PUZZLES);
       setRoundState("playing");
-      puzzleStartTime.current = Date.now();
     };
 
     load();
@@ -404,17 +358,11 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     (choice: "anchor" | "challenger") => {
       if (!currentPuzzle || roundState !== "playing") return;
 
-      const elapsedMs = Date.now() - puzzleStartTime.current;
       const chosenItem =
         choice === "anchor" ? currentPuzzle.anchor_item : currentPuzzle.challenger_item;
       const isCorrect = chosenItem.name === currentPuzzle.correct_answer;
 
-      const surpriseFactor = getSurpriseFactor(
-        currentPuzzle.anchor_item,
-        currentPuzzle.challenger_item
-      );
-
-      const score = calculateScore(isCorrect, elapsedMs, MAX_DECISION_MS, surpriseFactor);
+      const score = calculateScore(isCorrect);
 
       if (isCorrect) {
         audioManager.play('superlative-win');
@@ -435,7 +383,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
       onScoreUpdate?.(newTotal, MAX_ROUND_SCORE);
     },
-    [currentPuzzle, roundState, totalScore, MAX_DECISION_MS, onScoreUpdate]
+    [currentPuzzle, roundState, totalScore, onScoreUpdate]
   );
 
   // ── Advance to next puzzle ────────────────────────────────────────────────
@@ -448,7 +396,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       setCurrentIndex((i) => i + 1);
       setSelectedItem(null);
       setRoundState("playing");
-      puzzleStartTime.current = Date.now();
     }
   }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete]);
 
@@ -516,7 +463,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             >
               {totalScore}
             </p>
-            <p className="text-cyan-400/50 text-xs mt-1">/ {MAX_ROUND_SCORE}</p>
           </div>
           {results.map((r, i) => (
             <div
@@ -536,6 +482,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   // ── Render: playing / revealing ───────────────────────────────────────────
 
+  const isRevealing = roundState === "revealing";
   const progress = ((currentIndex) / puzzles.length) * 100;
 
   return (
@@ -606,14 +553,14 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         <div
           className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
           style={{
-            borderColor: roundState === "revealing" ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
-            boxShadow: roundState === "revealing" ? "0 0 20px rgba(0,255,255,0.2)" : "none",
+            borderColor: isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
+            boxShadow: isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
             height: "5rem",
             display: "flex",
             alignItems: "center",
           }}
         >
-          {roundState === "playing" ? (
+          {!isRevealing ? (
             <p
               className="w-full text-cyan-400/30 font-black text-center leading-none"
               style={{
@@ -632,15 +579,15 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
         {/* Next button — always present */}
         <button
-          onClick={roundState === "revealing" ? handleNext : undefined}
-          disabled={roundState !== "revealing"}
+          onClick={isRevealing ? handleNext : undefined}
+          disabled={!isRevealing}
           className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
           style={{
-            borderColor: roundState === "revealing" ? "#ec4899" : "rgba(236,72,153,0.2)",
-            color: roundState === "revealing" ? "#f472b6" : "rgba(244,114,182,0.2)",
-            textShadow: roundState === "revealing" ? "0 0 8px #ec4899" : "none",
-            boxShadow: roundState === "revealing" ? "0 0 15px rgba(236,72,153,0.3)" : "none",
-            cursor: roundState === "revealing" ? "pointer" : "default",
+            borderColor: isRevealing ? "#ec4899" : "rgba(236,72,153,0.2)",
+            color: isRevealing ? "#f472b6" : "rgba(244,114,182,0.2)",
+            textShadow: isRevealing ? "0 0 8px #ec4899" : "none",
+            boxShadow: isRevealing ? "0 0 15px rgba(236,72,153,0.3)" : "none",
+            cursor: isRevealing ? "pointer" : "default",
           }}
         >
           {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
