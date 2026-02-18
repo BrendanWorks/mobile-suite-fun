@@ -94,13 +94,13 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       name: "Statue of Liberty",
       value: 204117,
       unit: "kg",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/290386/pexels-photo-290386.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Small Cumulus Cloud",
       value: 500000,
       unit: "kg",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/53594/blue-clouds-day-fluffy-53594.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Small Cumulus Cloud",
     reveal_note:
@@ -113,13 +113,13 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       name: "Hollywood Walk of Fame",
       value: 2400,
       unit: "m",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/1037987/pexels-photo-1037987.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Coney Island Boardwalk",
       value: 4000,
       unit: "m",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/1545590/pexels-photo-1545590.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Coney Island Boardwalk",
     reveal_note:
@@ -132,13 +132,13 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       name: "Blue Whale",
       value: 150000,
       unit: "kg",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/2078240/pexels-photo-2078240.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     challenger_item: {
       name: "Eiffel Tower",
       value: 7300000,
       unit: "kg",
-      image_url: "",
+      image_url: "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Eiffel Tower",
     reveal_note:

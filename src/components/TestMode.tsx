@@ -13,6 +13,7 @@ import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import DoubleFake from './DoubleFake';
 import ZenGravity from './ZenGravity';
+import Superlative from './Superlative';
 
 interface TestModeProps {
   onExit: () => void;
@@ -34,6 +35,7 @@ const TEST_GAMES = [
   { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
   { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },
   { id: 'zen-gravity', name: 'Balls', icon: '⚫', duration: 90, component: ZenGravity },
+  { id: 'superlative', name: 'Superlative', icon: '⚡', duration: 90, component: Superlative },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
