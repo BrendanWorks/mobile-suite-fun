@@ -366,7 +366,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
 
   if (roundState === "loading" || !currentPuzzle) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
           <div className="text-lg" style={{ textShadow: "0 0 10px #00ffff" }}>
             Loading...
@@ -382,7 +382,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   if (roundState === "complete") {
     const correct = results.filter((r) => r.correct).length;
     return (
-      <div className="min-h-screen bg-black flex items-start justify-center p-3 pt-6">
+      <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-3 pt-6">
         <div className="text-center max-w-sm w-full text-white">
           <h2
             className="text-2xl font-bold text-cyan-400 mb-2"
@@ -429,7 +429,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-0">
+    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
       <div className="max-w-sm w-full text-white">
 
         {/* Header */}
