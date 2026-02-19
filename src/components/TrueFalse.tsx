@@ -294,6 +294,8 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleIdsKey, puzzleId]);
 
+  const currentPuzzle = puzzles[currentIndex];
+
   // ── Handle answer ─────────────────────────────────────────────────────────
 
   const handleAnswer = useCallback(
@@ -339,8 +341,6 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
       setRoundState("playing");
     }
   }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete, stopTimer]);
-
-  const currentPuzzle = puzzles[currentIndex];
 
   // ── Card states ───────────────────────────────────────────────────────────
 
