@@ -44,41 +44,41 @@ interface GameConfig {
   component: React.ComponentType<any>;
   duration: number;
   instructions: string;
+  dbId?: number;
 }
 
-const AVAILABLE_GAMES: GameConfig[] = [
-  { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 60, instructions: "Select the 2 items that don't belong" },
-  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 45, instructions: 'Identify the photo as it zooms out' },
-  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 90, instructions: 'Arrange items in the correct order' },
-  { id: 'snapshot', name: 'SnapShot', component: SnapShot, duration: 30, instructions: 'Drag 4 pieces to complete the puzzle' },
-  { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 60, instructions: 'Categorize items: A, B, or BOTH' },
-  { id: 'word-rescue', name: 'WordSurge', component: WordRescue, duration: 90, instructions: 'Click falling letters to make words' },
-  { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
-  { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
-  { id: 'gravity-ball', name: 'Gravity Ball', component: UpYours, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
-  { id: 'fake-out', name: 'Fake Out', component: FakeOut, duration: 60, instructions: 'Identify if the photo is real or AI-generated' },
-  { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
-  { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 90, instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
-  { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 90, instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
-  { id: 'zen-gravity', name: 'Balls', component: ZenGravity, duration: 60, instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
-  { id: 'superlative', name: 'Superlative', component: Superlative, duration: 90, instructions: 'Pick which item is bigger, heavier, longer, or older!' },
-  { id: 'true-false', name: 'True or False', component: TrueFalse, duration: 90, instructions: 'Decide if each statement is True or False!' },
-  { id: 'multiple-choice', name: 'Multiple Choice', component: MultipleChoice, duration: 90, instructions: 'Pick the correct answer from three options!' },
-  { id: 'tracer', name: 'Tracer', component: Tracer, duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
-  { id: 'clutch', name: 'Clutch', component: Clutch, duration: 60, instructions: 'Tap when the ring hits the sweet spot!' },
+const GAME_REGISTRY: GameConfig[] = [
+  { id: 'odd-man-out',     dbId: 3,  name: 'Odd Man Out',      component: OddManOut,       duration: 60,  instructions: "Select the 2 items that don't belong" },
+  { id: 'photo-mystery',   dbId: 4,  name: 'Zooma',            component: PhotoMystery,    duration: 45,  instructions: 'Identify the photo as it zooms out' },
+  { id: 'rank-and-roll',   dbId: 5,  name: 'Ranky',            component: RankAndRoll,     duration: 90,  instructions: 'Arrange items in the correct order' },
+  { id: 'snapshot',        dbId: 6,  name: 'SnapShot',         component: SnapShot,        duration: 30,  instructions: 'Drag 4 pieces to complete the puzzle' },
+  { id: 'split-decision',  dbId: 7,  name: 'Split Decision',   component: SplitDecision,   duration: 60,  instructions: 'Categorize items: A, B, or BOTH' },
+  { id: 'word-rescue',               name: 'WordSurge',        component: WordRescue,      duration: 90,  instructions: 'Click falling letters to make words' },
+  { id: 'shape-sequence',            name: 'Simple',           component: ShapeSequence,   duration: 60,  instructions: 'Watch and repeat the pattern' },
+  { id: 'snake',           dbId: 12, name: 'Snake',            component: Snake,           duration: 75,  instructions: 'Eat food, avoid walls and yourself' },
+  { id: 'gravity-ball',              name: 'Gravity Ball',     component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
+  { id: 'fake-out',        dbId: 15, name: 'Fake Out',         component: FakeOut,         duration: 60,  instructions: 'Identify if the photo is real or AI-generated' },
+  { id: 'hive-mind',       dbId: 13, name: 'Hive Mind',        component: HiveMind,        duration: 60,  instructions: 'Guess what most people chose in each survey' },
+  { id: 'slope-rider',               name: 'Slope Rider',      component: SlopeRider,      duration: 90,  instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
+  { id: 'neural-pulse',              name: 'Neural Pulse',     component: NeuralPulse,     duration: 90,  instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
+  { id: 'zen-gravity',               name: 'Balls',            component: ZenGravity,      duration: 60,  instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
+  { id: 'superlative',     dbId: 16, name: 'Superlative',      component: Superlative,     duration: 90,  instructions: 'Pick which item is bigger, heavier, longer, or older!' },
+  { id: 'true-false',                name: 'True or False',    component: TrueFalse,       duration: 90,  instructions: 'Decide if each statement is True or False!' },
+  { id: 'multiple-choice',           name: 'Multiple Choice',  component: MultipleChoice,  duration: 90,  instructions: 'Pick the correct answer from three options!' },
+  { id: 'tracer',                    name: 'Tracer',           component: Tracer,          duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
+  { id: 'clutch',                    name: 'Clutch',           component: Clutch,          duration: 60,  instructions: 'Tap when the ring hits the sweet spot!' },
 ];
 
-const GAME_ID_TO_SLUG: { [key: number]: string } = {
-  3: 'odd-man-out',
-  4: 'photo-mystery',
-  5: 'rank-and-roll',
-  6: 'snapshot',
-  7: 'split-decision',
-  12: 'snake',
-  13: 'hive-mind',
-  15: 'fake-out',
-  16: 'superlative'
-};
+const AVAILABLE_GAMES = GAME_REGISTRY;
+
+const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
+  GAME_REGISTRY.filter(g => g.dbId !== undefined).map(g => [g.dbId!, g.id])
+);
+
+type PlaylistRoundMetadata =
+  | { type: 'procedural'; game_slug: string }
+  | { type: 'multi-puzzle'; puzzle_ids: number[] }
+  | Record<string, never>;
 
 interface PlaylistRound {
   round_number: number;
@@ -86,10 +86,7 @@ interface PlaylistRound {
   puzzle_id: number | null;
   ranking_puzzle_id: number | null;
   superlative_puzzle_id: number | null;
-  metadata: {
-    game_slug?: string;
-    puzzle_ids?: number[];
-  };
+  metadata: PlaylistRoundMetadata;
   game_name: string;
 }
 
@@ -147,7 +144,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       if (!gameSlug) {
         console.error('❌ No mapping found for game_id:', round.game_id, 'Available mappings:', Object.keys(GAME_ID_TO_SLUG));
       }
-    } else if (round.metadata?.game_slug) {
+    } else if ('game_slug' in round.metadata) {
       gameSlug = round.metadata.game_slug;
     }
 
@@ -173,11 +170,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     setCurrentGameSlug(gameSlug);
 
-    // NEW: Check for multiple puzzle IDs in metadata first
-    if (round.metadata?.puzzle_ids && Array.isArray(round.metadata.puzzle_ids)) {
+    if ('puzzle_ids' in round.metadata) {
       console.log(`✅ Found ${round.metadata.puzzle_ids.length} puzzle IDs in metadata:`, round.metadata.puzzle_ids);
       setCurrentPuzzleIds(round.metadata.puzzle_ids);
-      setCurrentPuzzleId(null);  // Clear single puzzle_id
+      setCurrentPuzzleId(null);
     } else {
       setCurrentPuzzleId(round.puzzle_id);
       setCurrentPuzzleIds(null);  // Clear array
@@ -259,7 +255,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         puzzle_id: r.puzzle_id,
         ranking_puzzle_id: r.ranking_puzzle_id,
         superlative_puzzle_id: r.superlative_puzzle_id ?? null,
-        metadata: r.metadata || {},
+        metadata: (r.metadata || {}) as PlaylistRoundMetadata,
         game_name: games?.find(g => g.id === r.game_id)?.name || 'Procedural Game'
       }));
 
