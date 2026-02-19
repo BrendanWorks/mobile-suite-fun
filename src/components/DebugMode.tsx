@@ -17,6 +17,7 @@ import ZenGravity from './ZenGravity';
 import Superlative from './Superlative';
 import TrueFalse from './TrueFalse';
 import MultipleChoice from './MultipleChoice';
+import Tracer from './Tracer';
 import GameSession from './GameSession';
 
 interface DebugModeProps {
@@ -40,6 +41,7 @@ const TEST_GAMES = [
   { id: 'superlative', name: 'Superlative', icon: '⚡', duration: 90, component: Superlative },
   { id: 'true-false', name: 'True or False', icon: '✅', duration: 90, component: TrueFalse },
   { id: 'multiple-choice', name: 'Multiple Choice', icon: '❓', duration: 90, component: MultipleChoice },
+  { id: 'tracer', name: 'Tracer', icon: '✏️', duration: 120, component: Tracer },
 ];
 
 interface Playlist {
