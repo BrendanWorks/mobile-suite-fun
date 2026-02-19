@@ -262,36 +262,37 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
 
   // ── Load puzzles ──────────────────────────────────────────────────────────
 
+  const puzzleIdsKey = JSON.stringify(puzzleIds);
+
   useEffect(() => {
     const load = async () => {
       setRoundState("loading");
+      try {
+        let loaded: TrueFalsePuzzle[] = [];
 
-      if (puzzleIds && puzzleIds.length > 0) {
-        const loaded = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
-        const valid = loaded.filter(Boolean) as TrueFalsePuzzle[];
-        if (valid.length > 0) {
-          setPuzzles(valid);
-          setRoundState("playing");
-          return;
+        if (puzzleIds && puzzleIds.length > 0) {
+          const fetched = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
+          loaded = fetched.filter(Boolean) as TrueFalsePuzzle[];
+        } else if (puzzleId) {
+          const single = await loadPuzzleFromDB(puzzleId);
+          if (single) loaded = [single];
         }
-      }
 
-      if (puzzleId) {
-        const single = await loadPuzzleFromDB(puzzleId);
-        if (single) {
-          setPuzzles([single]);
-          setRoundState("playing");
-          return;
+        if (loaded.length === 0) {
+          loaded = await loadRandomPuzzles(PUZZLES_PER_ROUND);
         }
-      }
 
-      const random = await loadRandomPuzzles(PUZZLES_PER_ROUND);
-      setPuzzles(random);
-      setRoundState("playing");
+        setPuzzles(loaded.length > 0 ? loaded : DEMO_PUZZLES);
+        setRoundState("playing");
+      } catch {
+        setPuzzles(DEMO_PUZZLES);
+        setRoundState("playing");
+      }
     };
 
     load();
-  }, [puzzleIds, puzzleId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleIdsKey, puzzleId]);
 
   // ── Handle answer ─────────────────────────────────────────────────────────
 
