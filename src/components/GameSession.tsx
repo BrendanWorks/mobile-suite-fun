@@ -32,6 +32,7 @@ import TrueFalse from './TrueFalse';
 import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
 import Clutch from './Clutch';
+import Flashbang from './Flashbang';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -67,6 +68,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'multiple-choice',           name: 'Multiple Choice',  component: MultipleChoice,  duration: 90,  instructions: 'Pick the correct answer from three options!' },
   { id: 'tracer',                    name: 'Tracer',           component: Tracer,          duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
   { id: 'clutch',                    name: 'Clutch',           component: Clutch,          duration: 60,  instructions: 'Tap when the ring hits the sweet spot!' },
+  { id: 'flashbang',                 name: 'Flashbang',        component: Flashbang,       duration: 45,  instructions: 'Memorize the lit tiles, then tap them from memory!' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
