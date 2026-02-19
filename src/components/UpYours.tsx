@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { audioManager } from '../lib/audioManager';
 
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 600;
@@ -83,9 +84,23 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
   const slowmoTimerRef = useRef(0);
 
   const gameSpeedRef = useRef(1.0);
+  const lastBounceTypeRef = useRef<'normal' | 'spring' | null>(null);
 
   // Sync power-up timers to React state every ~10 frames for the HUD
   const hudFrameRef = useRef(0);
+
+  // Audio loading
+  useEffect(() => {
+    const loadAudio = async () => {
+      await audioManager.loadSound('uy_bounce',   '/sounds/ranky/select_optimized.mp3', 4);
+      await audioManager.loadSound('uy_spring',   '/sounds/snake/powerup_gold.mp3', 2);
+      await audioManager.loadSound('uy_powerup',  '/sounds/snake/powerup_special.mp3', 2);
+      await audioManager.loadSound('uy_shield',   '/sounds/snake/gobble_optimized.mp3', 2);
+      await audioManager.loadSound('uy_life_lost','/sounds/ranky/fail.mp3', 2);
+      await audioManager.loadSound('uy_gameover', '/sounds/snake/game_end.mp3', 1);
+    };
+    loadAudio();
+  }, []);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: scoreRef.current, maxScore: MAX_SCORE }),
@@ -98,6 +113,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
   const triggerGameOver = () => {
     if (completedRef.current) return;
     completedRef.current = true;
+    audioManager.play('uy_gameover', 0.7);
     setGameState('gameOver');
     setTimeout(() => {
       props.onComplete?.(scoreRef.current, MAX_SCORE, props.timeRemaining);
@@ -295,6 +311,12 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
           b.vy = p.type === 'spring' ? SPRING_JUMP_FORCE : JUMP_FORCE;
           if (p.type === 'breakable') p.isBroken = true;
 
+          if (p.type === 'spring') {
+            audioManager.play('uy_spring', 0.6);
+          } else {
+            audioManager.play('uy_bounce', 0.35);
+          }
+
           comboRef.current += 1;
           comboTimerRef.current = 120;
           setCombo(comboRef.current);
@@ -337,9 +359,19 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
           const dy = b.y - pu.y;
           if (Math.sqrt(dx * dx + dy * dy) < 20) {
             pu.collected = true;
-            if (pu.type === 'shield') { shieldActiveRef.current = true; shieldTimerRef.current = 600; }
-            else if (pu.type === 'magnet') { magnetActiveRef.current = true; magnetTimerRef.current = 450; }
-            else if (pu.type === 'slowmo') { slowmoActiveRef.current = true; slowmoTimerRef.current = 300; }
+            if (pu.type === 'shield') {
+              shieldActiveRef.current = true;
+              shieldTimerRef.current = 600;
+              audioManager.play('uy_shield', 0.6);
+            } else if (pu.type === 'magnet') {
+              magnetActiveRef.current = true;
+              magnetTimerRef.current = 450;
+              audioManager.play('uy_powerup', 0.5);
+            } else if (pu.type === 'slowmo') {
+              slowmoActiveRef.current = true;
+              slowmoTimerRef.current = 300;
+              audioManager.play('uy_powerup', 0.5);
+            }
           }
         }
       });
@@ -403,6 +435,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
           setDisplayLives(livesRef.current);
           comboRef.current = 0;
           setCombo(0);
+          audioManager.play('uy_life_lost', 0.6);
           if (livesRef.current <= 0) {
             triggerGameOver();
             return;
@@ -596,7 +629,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
             </div>
 
             <button
-              onClick={startSequence}
+              onClick={() => { audioManager.initialize(); startSequence(); }}
               className="px-12 py-4 border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold transition-all rounded-full uppercase tracking-widest text-sm active:scale-95"
               style={{ boxShadow: '0 0 20px rgba(0,255,255,0.3)' }}
             >
