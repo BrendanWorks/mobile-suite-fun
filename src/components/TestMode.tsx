@@ -8,7 +8,7 @@ import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
-import GravityBall from './GravityBall';
+import UpYours from './UpYours';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import DoubleFake from './DoubleFake';
@@ -31,7 +31,7 @@ const TEST_GAMES = [
   { id: 'word-rescue', name: 'Pop', icon: '📝', duration: 90, component: WordRescue },
   { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },
   { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
-  { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: GravityBall },
+  { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: UpYours },
   { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
   { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
   { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },

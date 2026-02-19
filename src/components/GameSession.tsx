@@ -21,7 +21,7 @@ import SplitDecision from './SplitDecision';
 import WordRescue from './WordRescue';
 import ShapeSequence from './ShapeSequence';
 import Snake from './Snake';
-import GravityBall from './GravityBall';
+import UpYours from './UpYours';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
 import SlopeRider from './SlopeRider';
@@ -53,7 +53,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'word-rescue', name: 'WordSurge', component: WordRescue, duration: 90, instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence', name: 'Simple', component: ShapeSequence, duration: 60, instructions: 'Watch and repeat the pattern' },
   { id: 'snake', name: 'Snake', component: Snake, duration: 75, instructions: 'Eat food, avoid walls and yourself' },
-  { id: 'gravity-ball', name: 'Gravity Ball', component: GravityBall, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
+  { id: 'gravity-ball', name: 'Gravity Ball', component: UpYours, duration: 90, instructions: 'Tilt to steer, bounce higher on gold springs' },
   { id: 'fake-out', name: 'Fake Out', component: FakeOut, duration: 60, instructions: 'Identify if the photo is real or AI-generated' },
   { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 90, instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
