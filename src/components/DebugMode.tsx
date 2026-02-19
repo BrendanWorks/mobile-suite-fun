@@ -19,6 +19,7 @@ import TrueFalse from './TrueFalse';
 import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
 import Clutch from './Clutch';
+import Flashbang from './Flashbang';
 import GameSession from './GameSession';
 
 interface DebugModeProps {
@@ -44,6 +45,7 @@ const TEST_GAMES = [
   { id: 'multiple-choice', name: 'Multiple Choice', icon: '❓', duration: 90, component: MultipleChoice },
   { id: 'tracer', name: 'Tracer', icon: '✏️', duration: 120, component: Tracer },
   { id: 'clutch', name: 'Clutch', icon: '🎯', duration: 60, component: Clutch },
+  { id: 'flashbang', name: 'Flashbang', icon: '⚡', duration: 45, component: Flashbang },
 ];
 
 interface Playlist {
