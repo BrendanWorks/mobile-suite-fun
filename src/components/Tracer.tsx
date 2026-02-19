@@ -182,6 +182,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
   const [shakeBtn, setShakeBtn] = useState(false);
 
   const scoreRef = useRef(0);
+  const roundRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const strokesRef = useRef<Point[][]>([]);
   const currentStrokeRef = useRef<Point[] | null>(null);
@@ -285,6 +286,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
   }, [cx, cy]);
 
   const startRound = useCallback((roundIndex: number) => {
+    roundRef.current = roundIndex;
     strokesRef.current = [];
     currentStrokeRef.current = null;
     isDrawingRef.current = false;
@@ -326,15 +328,18 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     }, SHOW_DURATIONS[shape]);
   }, [renderShowPhase, renderTracePhase]);
 
+  const startRoundRef = useRef(startRound);
+  useEffect(() => { startRoundRef.current = startRound; }, [startRound]);
+
   useEffect(() => {
-    startRound(0);
+    startRoundRef.current(0);
     return () => {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
       if (goTimerRef.current) clearTimeout(goTimerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (animIntervalRef.current) clearInterval(animIntervalRef.current);
     };
-  }, [startRound]);
+  }, []);
 
   const getCanvasPoint = (e: React.Touch | React.MouseEvent, canvas: HTMLCanvasElement): Point => {
     const rect = canvas.getBoundingClientRect();
@@ -393,7 +398,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       setTimeout(() => setShakeBtn(false), 500);
       return;
     }
-    const shape = SHAPES[round];
+    const shape = SHAPES[roundRef.current];
     const rs = scoreTrace(shape, strokesRef.current, cx, cy);
     setRoundScore(rs);
     setDisplayedScore(0);
@@ -401,7 +406,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     setPhase("score");
     renderScorePhase(shape);
 
-    const newTotal = totalScore + rs;
+    const newTotal = scoreRef.current + rs;
     setTotalScore(newTotal);
     scoreRef.current = newTotal;
     onScoreUpdate?.(newTotal, MAX_SCORE);
@@ -416,10 +421,10 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       }
       setDisplayedScore(displayed);
     }, 40);
-  }, [round, totalScore, cx, cy, renderScorePhase, onScoreUpdate]);
+  }, [cx, cy, renderScorePhase, onScoreUpdate]);
 
   const nextRound = useCallback(() => {
-    const nextRoundIndex = round + 1;
+    const nextRoundIndex = roundRef.current + 1;
     if (nextRoundIndex >= TOTAL_ROUNDS) {
       setGameOver(true);
       onComplete?.(scoreRef.current, MAX_SCORE, 0);
@@ -428,8 +433,8 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     setRound(nextRoundIndex);
     setRoundScore(0);
     setDisplayedScore(0);
-    startRound(nextRoundIndex);
-  }, [round, startRound, onComplete]);
+    startRoundRef.current(nextRoundIndex);
+  }, [onComplete]);
 
   if (gameOver) {
     return (
