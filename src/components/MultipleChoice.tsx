@@ -482,8 +482,8 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
   ];
 
   return (
-    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
-      <div className="max-w-sm w-full text-white">
+    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0 pb-4">
+      <div className="max-w-sm w-full text-white pb-4">
 
         {/* Header */}
         <div className="mb-3 pt-2">
@@ -588,11 +588,11 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Explanation / reveal box */}
         <div
-          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
+          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300"
           style={{
             borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
             boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
-            height: "5rem",
+            minHeight: "5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -616,7 +616,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
               A &nbsp; B &nbsp; C
             </p>
           ) : (
-            <p className="text-cyan-300 text-xs leading-relaxed line-clamp-3">
+            <p className="text-cyan-300 text-xs leading-relaxed">
               {currentPuzzle.explanation}
             </p>
           )}
