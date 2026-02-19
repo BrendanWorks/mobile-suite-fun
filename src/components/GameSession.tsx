@@ -58,7 +58,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 60, instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 90, instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
   { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 90, instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
-  { id: 'zen-gravity', name: 'Zen Gravity', component: ZenGravity, duration: 60, instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
+  { id: 'zen-gravity', name: 'Balls', component: ZenGravity, duration: 60, instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
   { id: 'superlative', name: 'Superlative', component: Superlative, duration: 90, instructions: 'Pick which item is bigger, heavier, longer, or older!' },
   { id: 'true-false', name: 'True or False', component: TrueFalse, duration: 90, instructions: 'Decide if each statement is True or False!' },
   { id: 'multiple-choice', name: 'Multiple Choice', component: MultipleChoice, duration: 90, instructions: 'Pick the correct answer from three options!' },

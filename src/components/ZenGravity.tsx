@@ -534,7 +534,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
                 className="text-4xl font-black text-cyan-400 mb-1 tracking-tight uppercase"
                 style={{ textShadow: '0 0 30px #00ffff, 0 0 60px rgba(0,255,255,0.4)' }}
               >
-                Zen Gravity
+                Balls
               </h2>
               <div className="w-16 h-0.5 bg-cyan-400 mx-auto mb-4" style={{ boxShadow: '0 0 8px #00ffff' }} />
               <p className="text-white/50 text-xs font-bold uppercase tracking-widest leading-relaxed">
