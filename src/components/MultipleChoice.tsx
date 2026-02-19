@@ -365,6 +365,24 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
         {/* Header */}
         <div className="mb-3 pt-2">
 
+          {/* Timer bar */}
+          <div
+            className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
+            style={{
+              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+            }}
+          >
+            <div
+              className="h-full transition-all duration-1000 ease-linear"
+              style={{
+                width: `${timerProgress}%`,
+                background: isDanger ? "#f87171" : "#22d3ee",
+                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+              }}
+            />
+          </div>
+
           {/* Title */}
           <div className="flex items-center justify-center gap-2 mb-1">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
@@ -381,24 +399,6 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           </div>
           <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Pick the correct answer</p>
           <div className="w-full h-px bg-cyan-400/30 mb-3" />
-
-          {/* Timer bar */}
-          <div
-            className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
-            style={{
-              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
-            }}
-          >
-            <div
-              className="h-full transition-all duration-1000 ease-linear"
-              style={{
-                width: `${timerProgress}%`,
-                background: isDanger ? "#f87171" : "#22d3ee",
-                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
-              }}
-            />
-          </div>
 
           {/* Question */}
           <div
