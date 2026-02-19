@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
-import { audioManager } from "../lib/audioManager";
+import { useQuizRound } from "../lib/useQuizRound";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,15 +31,7 @@ interface GameProps {
   duration?: number;
 }
 
-// ─── Scoring ─────────────────────────────────────────────────────────────────
-
-const PUZZLES_PER_ROUND = 3;
-const MAX_SCORE_PER_PUZZLE = 250;
-const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
-
-function calculateScore(isCorrect: boolean): number {
-  return isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
-}
+// ─── DB Loaders ───────────────────────────────────────────────────────────────
 
 async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   const { data, error } = await supabase
@@ -89,7 +81,44 @@ async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   };
 }
 
-// ─── Fallback demo puzzles (used when no DB ids provided) ────────────────────
+async function loadRandomPuzzles(count: number): Promise<SuperlativePuzzle[]> {
+  const { data, error } = await supabase
+    .from("superlative_puzzles")
+    .select(`
+      id,
+      comparison_type,
+      correct_answer,
+      reveal_note,
+      superlative_items (
+        id, role, name, tagline, value, unit, image_url
+      )
+    `)
+    .eq("is_active", true);
+
+  if (error || !data || data.length === 0) return DEMO_PUZZLES;
+
+  const shuffled = [...data].sort(() => Math.random() - 0.5).slice(0, count);
+
+  return shuffled.map((d) => {
+    const items = (d.superlative_items ?? []) as Array<{
+      id: number; role: string; name: string; tagline?: string;
+      value: number; unit: string; image_url: string;
+    }>;
+    const anchor = items.find((i) => i.role === "anchor");
+    const challenger = items.find((i) => i.role === "challenger");
+    if (!anchor || !challenger) return null;
+    return {
+      id: d.id,
+      comparison_type: d.comparison_type as SuperlativePuzzle["comparison_type"],
+      correct_answer: d.correct_answer,
+      reveal_note: d.reveal_note ?? "",
+      anchor_item: { name: anchor.name, tagline: anchor.tagline, value: Number(anchor.value), unit: anchor.unit, image_url: anchor.image_url ?? "" },
+      challenger_item: { name: challenger.name, tagline: challenger.tagline, value: Number(challenger.value), unit: challenger.unit, image_url: challenger.image_url ?? "" },
+    };
+  }).filter(Boolean) as SuperlativePuzzle[];
+}
+
+// ─── Fallback demo puzzles ────────────────────────────────────────────────────
 
 const DEMO_PUZZLES: SuperlativePuzzle[] = [
   {
@@ -110,8 +139,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       image_url: "https://images.pexels.com/photos/53594/blue-clouds-day-fluffy-53594.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Small Cumulus Cloud",
-    reveal_note:
-      "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume, but the mass adds up fast.",
+    reveal_note: "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume, but the mass adds up fast.",
   },
   {
     id: -2,
@@ -131,8 +159,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       image_url: "https://images.pexels.com/photos/1545590/pexels-photo-1545590.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Coney Island Boardwalk",
-    reveal_note:
-      "Coney Island's boardwalk stretches 4 km — almost double the 2.4 km Hollywood star-studded sidewalk.",
+    reveal_note: "Coney Island's boardwalk stretches 4 km — almost double the 2.4 km Hollywood star-studded sidewalk.",
   },
   {
     id: -3,
@@ -152,8 +179,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
       image_url: "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400",
     },
     correct_answer: "Eiffel Tower",
-    reveal_note:
-      "The Eiffel Tower is 7,300 tonnes of iron — about 48 blue whales. The heaviest animal alive isn't close.",
+    reveal_note: "The Eiffel Tower is 7,300 tonnes of iron — about 48 blue whales. The heaviest animal alive isn't close.",
   },
 ];
 
@@ -178,6 +204,12 @@ const CARD_STYLES: Record<ItemCardProps["state"], CardStyle> = {
   dimmed:   { className: "border-cyan-400/10 bg-black/20 opacity-40",                                                  boxShadow: "none" },
   timeout:  { className: "border-red-500 bg-red-500/10 animate-pulse",                                                 boxShadow: "0 0 25px rgba(239,68,68,0.5)" },
 };
+
+function formatValue(value: number, unit: string): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M ${unit}`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k ${unit}`;
+  return `${value} ${unit}`;
+}
 
 function ItemCard({ item, state, onClick }: ItemCardProps) {
   const { className, boxShadow } = CARD_STYLES[state];
@@ -247,25 +279,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
   );
 }
 
-
-function formatValue(value: number, unit: string): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M ${unit}`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k ${unit}`;
-  return `${value} ${unit}`;
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
-
-const ROUND_DURATION_S = 60;
-
-type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "complete";
-
-interface RoundResult {
-  puzzleId: number;
-  correct: boolean;
-  score: number;
-  chosenAnswer: string;
-}
 
 const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   puzzleIds,
@@ -274,163 +288,55 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   onComplete,
   timeRemaining,
 }, ref) {
-  const [puzzles, setPuzzles] = useState<SuperlativePuzzle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [roundState, setRoundState] = useState<RoundState>("loading");
   const [selectedItem, setSelectedItem] = useState<"anchor" | "challenger" | null>(null);
-  const [results, setResults] = useState<RoundResult[]>([]);
-  const [totalScore, setTotalScore] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
 
-  const scoreRef = useRef(0);
-  const maxScoreRef = useRef(MAX_ROUND_SCORE);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const totalScoreRef = useRef(0);
+  const {
+    puzzles,
+    currentPuzzle,
+    currentIndex,
+    roundState,
+    results,
+    totalScore,
+    isDanger,
+    timerProgress,
+    isLastPuzzle,
+    recordAnswer,
+    handleNext,
+    getGameScore,
+  } = useQuizRound<SuperlativePuzzle>({
+    puzzleIds,
+    puzzleId,
+    loadById: loadPuzzleFromDB,
+    loadRandom: loadRandomPuzzles,
+    demoPuzzles: DEMO_PUZZLES,
+    getPuzzleId: (p) => p.id,
+    audioWinKey: "superlative-win",
+    audioWrongKey: "superlative-wrong",
+    onScoreUpdate,
+    onComplete,
+    timeRemaining,
+  });
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: scoreRef.current,
-      maxScore: maxScoreRef.current,
-    }),
+    getGameScore,
     onGameEnd: () => {},
     pauseTimer: roundState === "revealing",
-  }), [roundState]);
-
-  // ── Internal 60-second timer ──────────────────────────────────────────────
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (roundState !== "playing" && roundState !== "revealing") {
-      stopTimer();
-      return;
-    }
-    if (timerRef.current) return;
-
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          stopTimer();
-          setRoundState("timeout-pulsing");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return stopTimer;
-  }, [roundState, stopTimer]);
-
-  useEffect(() => {
-    if (roundState !== "timeout-pulsing") return;
-    const t = setTimeout(() => {
-      setRoundState("complete");
-      onComplete?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemaining);
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [roundState, onComplete, timeRemaining]);
-
-  // ── Load audio ───────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const loadAudio = async () => {
-      await audioManager.loadSound('superlative-win', '/sounds/global/win_optimized.mp3', 2);
-      await audioManager.loadSound('superlative-wrong', '/sounds/global/wrong_optimized.mp3', 2);
-    };
-    loadAudio();
-  }, []);
-
-  // ── Load puzzles ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const load = async () => {
-      setRoundState("loading");
-
-      if (puzzleIds && puzzleIds.length > 0) {
-        const loaded = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
-        const valid = loaded.filter(Boolean) as SuperlativePuzzle[];
-        if (valid.length > 0) {
-          setPuzzles(valid);
-          setRoundState("playing");
-          return;
-        }
-      }
-
-      if (puzzleId) {
-        const single = await loadPuzzleFromDB(puzzleId);
-        if (single) {
-          setPuzzles([single]);
-          setRoundState("playing");
-          return;
-        }
-      }
-
-      setPuzzles(DEMO_PUZZLES);
-      setRoundState("playing");
-    };
-
-    load();
-  }, [puzzleIds, puzzleId]);
-
-  // ── Current puzzle ────────────────────────────────────────────────────────
-
-  const currentPuzzle = puzzles[currentIndex];
-
-  // ── Handle answer ─────────────────────────────────────────────────────────
+  }), [getGameScore, roundState]);
 
   const handleAnswer = useCallback(
     (choice: "anchor" | "challenger") => {
       if (!currentPuzzle || roundState !== "playing") return;
-
-      const chosenItem =
-        choice === "anchor" ? currentPuzzle.anchor_item : currentPuzzle.challenger_item;
+      const chosenItem = choice === "anchor" ? currentPuzzle.anchor_item : currentPuzzle.challenger_item;
       const isCorrect = chosenItem.name === currentPuzzle.correct_answer;
-
-      const score = calculateScore(isCorrect);
-
-      if (isCorrect) {
-        audioManager.play('superlative-win');
-      } else {
-        audioManager.play('superlative-wrong', 0.3);
-      }
-
       setSelectedItem(choice);
-      setRoundState("revealing");
-
-      const newTotal = totalScore + score;
-      setTotalScore(newTotal);
-      scoreRef.current = newTotal;
-      totalScoreRef.current = newTotal;
-      setResults((prev) => [
-        ...prev,
-        { puzzleId: currentPuzzle.id, correct: isCorrect, score, chosenAnswer: chosenItem.name },
-      ]);
-
-      onScoreUpdate?.(newTotal, MAX_ROUND_SCORE);
+      recordAnswer(isCorrect);
     },
-    [currentPuzzle, roundState, totalScore, onScoreUpdate]
+    [currentPuzzle, roundState, recordAnswer]
   );
 
-  // ── Advance to next puzzle ────────────────────────────────────────────────
-
-  const handleNext = useCallback(() => {
-    if (currentIndex + 1 >= puzzles.length) {
-      stopTimer();
-      setRoundState("complete");
-      onComplete?.(totalScore, MAX_ROUND_SCORE, timeRemaining);
-    } else {
-      setCurrentIndex((i) => i + 1);
-      setSelectedItem(null);
-      setRoundState("playing");
-    }
-  }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete, stopTimer]);
-
-  // ── Derived state for card display ────────────────────────────────────────
+  const onNext = useCallback(() => {
+    handleNext(() => setSelectedItem(null));
+  }, [handleNext]);
 
   const getCardState = (
     which: "anchor" | "challenger"
@@ -440,11 +346,9 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       return selectedItem === which ? "selected" : "idle";
     }
     if (roundState === "revealing") {
-      const chosenItem =
-        which === "anchor" ? currentPuzzle.anchor_item : currentPuzzle.challenger_item;
+      const chosenItem = which === "anchor" ? currentPuzzle!.anchor_item : currentPuzzle!.challenger_item;
       const isChosen = selectedItem === which;
       const isCorrectItem = chosenItem.name === currentPuzzle?.correct_answer;
-
       if (isChosen && isCorrectItem) return "correct";
       if (isChosen && !isCorrectItem) return "wrong";
       if (!isChosen && isCorrectItem) return "correct";
@@ -453,14 +357,14 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     return "idle";
   };
 
-  // ── Render: loading ───────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
 
   if (roundState === "loading" || !currentPuzzle) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
           <div className="text-lg" style={{ textShadow: "0 0 10px #00ffff" }}>
-            ⚡ Loading...
+            Loading...
           </div>
           <div className="text-sm text-cyan-300 mt-2">Preparing comparisons</div>
         </div>
@@ -468,7 +372,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     );
   }
 
-  // ── Render: complete ──────────────────────────────────────────────────────
+  // ── Complete ──────────────────────────────────────────────────────────────
 
   if (roundState === "complete") {
     const correct = results.filter((r) => r.correct).length;
@@ -479,7 +383,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             className="text-2xl font-bold text-cyan-400 mb-2"
             style={{ textShadow: "0 0 10px #00ffff" }}
           >
-            🏆 Round Complete
+            Round Complete
           </h2>
           <p className="text-cyan-300 text-sm mb-6">
             {correct}/{puzzles.length} correct
@@ -512,12 +416,10 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     );
   }
 
-  // ── Render: playing / revealing ───────────────────────────────────────────
+  // ── Playing / Revealing ───────────────────────────────────────────────────
 
   const isRevealing = roundState === "revealing";
   const isTimedOut = roundState === "timeout-pulsing";
-  const isDanger = secondsLeft <= 10 || isTimedOut;
-  const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
 
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-0">
@@ -598,7 +500,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           />
         </div>
 
-        {/* Info / reveal box — fixed height, no reflow */}
+        {/* Info / reveal box */}
         <div
           className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
           style={{
@@ -634,9 +536,9 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           )}
         </div>
 
-        {/* Next button — always present */}
+        {/* Next button */}
         <button
-          onClick={isRevealing ? handleNext : undefined}
+          onClick={isRevealing ? onNext : undefined}
           disabled={!isRevealing}
           className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
           style={{
@@ -647,7 +549,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             cursor: isRevealing ? "pointer" : "default",
           }}
         >
-          {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
+          {isLastPuzzle ? "Finish Round" : "Next →"}
         </button>
       </div>
     </div>

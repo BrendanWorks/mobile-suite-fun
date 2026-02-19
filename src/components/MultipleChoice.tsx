@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
-import { audioManager } from "../lib/audioManager";
+import { useQuizRound } from "../lib/useQuizRound";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,13 +25,6 @@ interface GameProps {
   timeRemaining?: number;
   duration?: number;
 }
-
-// ─── Scoring ─────────────────────────────────────────────────────────────────
-
-const PUZZLES_PER_ROUND = 3;
-const MAX_SCORE_PER_PUZZLE = 250;
-const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
-const ROUND_DURATION_S = 60;
 
 // ─── Demo fallback ────────────────────────────────────────────────────────────
 
@@ -175,7 +168,6 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
         cursor: isDisabled ? "default" : "pointer",
       }}
     >
-      {/* Option letter badge */}
       <div
         className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm transition-all duration-300"
         style={
@@ -191,7 +183,6 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
         {letter}
       </div>
 
-      {/* Answer text */}
       <span
         className="text-left font-semibold leading-tight flex-1 transition-all duration-300"
         style={{
@@ -210,7 +201,6 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
         {label}
       </span>
 
-      {/* Result icon */}
       {state === "correct" && (
         <div
           className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-black"
@@ -233,168 +223,56 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "complete";
-
-interface RoundResult {
-  puzzleId: number;
-  correct: boolean;
-  score: number;
-}
-
 const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice(
   { puzzleIds, puzzleId, onScoreUpdate, onComplete, timeRemaining },
   ref
 ) {
-  const [puzzles, setPuzzles] = useState<MCPuzzle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [roundState, setRoundState] = useState<RoundState>("loading");
   const [selectedOption, setSelectedOption] = useState<OptionKey | null>(null);
-  const [results, setResults] = useState<RoundResult[]>([]);
-  const [totalScore, setTotalScore] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
 
-  const scoreRef = useRef(0);
-  const maxScoreRef = useRef(MAX_ROUND_SCORE);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const totalScoreRef = useRef(0);
+  const {
+    puzzles,
+    currentPuzzle,
+    currentIndex,
+    roundState,
+    results,
+    totalScore,
+    isDanger,
+    timerProgress,
+    isLastPuzzle,
+    recordAnswer,
+    handleNext,
+    getGameScore,
+  } = useQuizRound<MCPuzzle>({
+    puzzleIds,
+    puzzleId,
+    loadById: loadPuzzleFromDB,
+    loadRandom: loadRandomPuzzles,
+    demoPuzzles: DEMO_PUZZLES,
+    getPuzzleId: (p) => p.id,
+    audioWinKey: "mc-win",
+    audioWrongKey: "mc-wrong",
+    onScoreUpdate,
+    onComplete,
+    timeRemaining,
+  });
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: scoreRef.current,
-      maxScore: maxScoreRef.current,
-    }),
+    getGameScore,
     onGameEnd: () => {},
-  }), []);
-
-  // ── Timer ─────────────────────────────────────────────────────────────────
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (roundState !== "playing" && roundState !== "revealing") {
-      stopTimer();
-      return;
-    }
-    if (timerRef.current) return;
-
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          stopTimer();
-          setRoundState("timeout-pulsing");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return stopTimer;
-  }, [roundState, stopTimer]);
-
-  useEffect(() => {
-    if (roundState !== "timeout-pulsing") return;
-    const t = setTimeout(() => {
-      setRoundState("complete");
-      onComplete?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemaining);
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [roundState, onComplete, timeRemaining]);
-
-  // ── Audio ─────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const load = async () => {
-      await audioManager.loadSound("mc-win", "/sounds/global/win_optimized.mp3", 2);
-      await audioManager.loadSound("mc-wrong", "/sounds/global/wrong_optimized.mp3", 2);
-    };
-    load();
-  }, []);
-
-  // ── Load puzzles ──────────────────────────────────────────────────────────
-
-  const puzzleIdsKey = JSON.stringify(puzzleIds);
-
-  useEffect(() => {
-    const load = async () => {
-      setRoundState("loading");
-      try {
-        let loaded: MCPuzzle[] = [];
-
-        if (puzzleIds && puzzleIds.length > 0) {
-          const fetched = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
-          loaded = fetched.filter(Boolean) as MCPuzzle[];
-        } else if (puzzleId) {
-          const single = await loadPuzzleFromDB(puzzleId);
-          if (single) loaded = [single];
-        }
-
-        if (loaded.length === 0) {
-          loaded = await loadRandomPuzzles(PUZZLES_PER_ROUND);
-        }
-
-        setPuzzles(loaded.length > 0 ? loaded : DEMO_PUZZLES);
-        setRoundState("playing");
-      } catch {
-        setPuzzles(DEMO_PUZZLES);
-        setRoundState("playing");
-      }
-    };
-
-    load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puzzleIdsKey, puzzleId]);
-
-  const currentPuzzle = puzzles[currentIndex];
-
-  // ── Handle answer ─────────────────────────────────────────────────────────
+  }), [getGameScore]);
 
   const handleAnswer = useCallback(
     (choice: OptionKey) => {
       if (!currentPuzzle || roundState !== "playing") return;
-
-      const isCorrect = choice === currentPuzzle.correct_option;
-      const score = isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
-
-      if (isCorrect) {
-        audioManager.play("mc-win");
-      } else {
-        audioManager.play("mc-wrong", 0.3);
-      }
-
       setSelectedOption(choice);
-      setRoundState("revealing");
-
-      const newTotal = totalScore + score;
-      setTotalScore(newTotal);
-      scoreRef.current = newTotal;
-      totalScoreRef.current = newTotal;
-      setResults((prev) => [...prev, { puzzleId: currentPuzzle.id, correct: isCorrect, score }]);
-
-      onScoreUpdate?.(newTotal, MAX_ROUND_SCORE);
+      recordAnswer(choice === currentPuzzle.correct_option);
     },
-    [currentPuzzle, roundState, totalScore, onScoreUpdate]
+    [currentPuzzle, roundState, recordAnswer]
   );
 
-  // ── Advance ───────────────────────────────────────────────────────────────
-
-  const handleNext = useCallback(() => {
-    if (currentIndex + 1 >= puzzles.length) {
-      stopTimer();
-      setRoundState("complete");
-      onComplete?.(totalScore, MAX_ROUND_SCORE, timeRemaining);
-    } else {
-      setCurrentIndex((i) => i + 1);
-      setSelectedOption(null);
-      setRoundState("playing");
-    }
-  }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete, stopTimer]);
-
-  // ── Card states ───────────────────────────────────────────────────────────
+  const onNext = useCallback(() => {
+    handleNext(() => setSelectedOption(null));
+  }, [handleNext]);
 
   const getOptionState = (key: OptionKey): AnswerState => {
     if (roundState === "timeout-pulsing") return "timeout";
@@ -473,8 +351,6 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
   const isRevealing = roundState === "revealing";
   const isTimedOut = roundState === "timeout-pulsing";
-  const timerWarning = secondsLeft <= 10;
-  const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
   const options: { key: OptionKey; label: string }[] = [
     { key: "a", label: currentPuzzle.option_a },
     { key: "b", label: currentPuzzle.option_b },
@@ -509,16 +385,16 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           <div
             className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
             style={{
-              borderColor: timerWarning || isTimedOut ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: timerWarning || isTimedOut ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
             }}
           >
             <div
               className="h-full transition-all duration-1000 ease-linear"
               style={{
                 width: `${timerProgress}%`,
-                background: timerWarning || isTimedOut ? "#f87171" : "#22d3ee",
-                boxShadow: timerWarning || isTimedOut ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+                background: isDanger ? "#f87171" : "#22d3ee",
+                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
               }}
             />
           </div>
@@ -603,7 +479,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Next button */}
         <button
-          onClick={isRevealing ? handleNext : undefined}
+          onClick={isRevealing ? onNext : undefined}
           disabled={!isRevealing}
           className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
           style={{
@@ -614,7 +490,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
             cursor: isRevealing ? "pointer" : "default",
           }}
         >
-          {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
+          {isLastPuzzle ? "Finish Round" : "Next →"}
         </button>
       </div>
     </div>

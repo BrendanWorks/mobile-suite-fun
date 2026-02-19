@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
-import { audioManager } from "../lib/audioManager";
+import { useQuizRound } from "../lib/useQuizRound";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,12 +20,6 @@ interface GameProps {
   timeRemaining?: number;
   duration?: number;
 }
-
-// ─── Scoring ─────────────────────────────────────────────────────────────────
-
-const PUZZLES_PER_ROUND = 3;
-const MAX_SCORE_PER_PUZZLE = 250;
-const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
 
 // ─── Demo fallback ────────────────────────────────────────────────────────────
 
@@ -139,7 +133,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
         cursor: isDisabled ? "default" : "pointer",
       }}
     >
-      {(state === "correct") && (
+      {state === "correct" && (
         <div
           className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black"
           style={{ background: baseColor.base, boxShadow: `0 0 12px ${baseColor.glow}` }}
@@ -147,7 +141,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
           ✓
         </div>
       )}
-      {(state === "wrong") && (
+      {state === "wrong" && (
         <div
           className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black bg-red-500"
           style={{ boxShadow: "0 0 12px rgba(239,68,68,0.8)" }}
@@ -172,17 +166,6 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ROUND_DURATION_S = 60;
-
-type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "complete";
-
-interface RoundResult {
-  puzzleId: number;
-  correct: boolean;
-  score: number;
-  chosen: boolean;
-}
-
 const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   puzzleIds,
   puzzleId,
@@ -190,160 +173,53 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   onComplete,
   timeRemaining,
 }, ref) {
-  const [puzzles, setPuzzles] = useState<TrueFalsePuzzle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [roundState, setRoundState] = useState<RoundState>("loading");
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null);
-  const [results, setResults] = useState<RoundResult[]>([]);
-  const [totalScore, setTotalScore] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
 
-  const scoreRef = useRef(0);
-  const maxScoreRef = useRef(MAX_ROUND_SCORE);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const totalScoreRef = useRef(0);
+  const {
+    puzzles,
+    currentPuzzle,
+    currentIndex,
+    roundState,
+    results,
+    totalScore,
+    isDanger,
+    timerProgress,
+    isLastPuzzle,
+    recordAnswer,
+    handleNext,
+    getGameScore,
+  } = useQuizRound<TrueFalsePuzzle>({
+    puzzleIds,
+    puzzleId,
+    loadById: loadPuzzleFromDB,
+    loadRandom: loadRandomPuzzles,
+    demoPuzzles: DEMO_PUZZLES,
+    getPuzzleId: (p) => p.id,
+    audioWinKey: "tf-win",
+    audioWrongKey: "tf-wrong",
+    onScoreUpdate,
+    onComplete,
+    timeRemaining,
+  });
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({
-      score: scoreRef.current,
-      maxScore: maxScoreRef.current,
-    }),
+    getGameScore,
     onGameEnd: () => {},
     pauseTimer: roundState === "revealing",
-  }), [roundState]);
-
-  // ── Timer ─────────────────────────────────────────────────────────────────
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (roundState !== "playing" && roundState !== "revealing") {
-      stopTimer();
-      return;
-    }
-    if (timerRef.current) return;
-
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          stopTimer();
-          setRoundState("timeout-pulsing");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return stopTimer;
-  }, [roundState, stopTimer]);
-
-  useEffect(() => {
-    if (roundState !== "timeout-pulsing") return;
-    const t = setTimeout(() => {
-      setRoundState("complete");
-      onComplete?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemaining);
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [roundState, onComplete, timeRemaining]);
-
-  // ── Audio ─────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const load = async () => {
-      await audioManager.loadSound('tf-win', '/sounds/global/win_optimized.mp3', 2);
-      await audioManager.loadSound('tf-wrong', '/sounds/global/wrong_optimized.mp3', 2);
-    };
-    load();
-  }, []);
-
-  // ── Load puzzles ──────────────────────────────────────────────────────────
-
-  const puzzleIdsKey = JSON.stringify(puzzleIds);
-
-  useEffect(() => {
-    const load = async () => {
-      setRoundState("loading");
-      try {
-        let loaded: TrueFalsePuzzle[] = [];
-
-        if (puzzleIds && puzzleIds.length > 0) {
-          const fetched = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
-          loaded = fetched.filter(Boolean) as TrueFalsePuzzle[];
-        } else if (puzzleId) {
-          const single = await loadPuzzleFromDB(puzzleId);
-          if (single) loaded = [single];
-        }
-
-        if (loaded.length === 0) {
-          loaded = await loadRandomPuzzles(PUZZLES_PER_ROUND);
-        }
-
-        setPuzzles(loaded.length > 0 ? loaded : DEMO_PUZZLES);
-        setRoundState("playing");
-      } catch {
-        setPuzzles(DEMO_PUZZLES);
-        setRoundState("playing");
-      }
-    };
-
-    load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puzzleIdsKey, puzzleId]);
-
-  const currentPuzzle = puzzles[currentIndex];
-
-  // ── Handle answer ─────────────────────────────────────────────────────────
+  }), [getGameScore, roundState]);
 
   const handleAnswer = useCallback(
     (choice: boolean) => {
       if (!currentPuzzle || roundState !== "playing") return;
-
-      const isCorrect = choice === currentPuzzle.correct_answer;
-      const score = isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
-
-      if (isCorrect) {
-        audioManager.play('tf-win');
-      } else {
-        audioManager.play('tf-wrong', 0.3);
-      }
-
       setSelectedAnswer(choice);
-      setRoundState("revealing");
-
-      const newTotal = totalScore + score;
-      setTotalScore(newTotal);
-      scoreRef.current = newTotal;
-      totalScoreRef.current = newTotal;
-      setResults((prev) => [
-        ...prev,
-        { puzzleId: currentPuzzle.id, correct: isCorrect, score, chosen: choice },
-      ]);
-
-      onScoreUpdate?.(newTotal, MAX_ROUND_SCORE);
+      recordAnswer(choice === currentPuzzle.correct_answer);
     },
-    [currentPuzzle, roundState, totalScore, onScoreUpdate]
+    [currentPuzzle, roundState, recordAnswer]
   );
 
-  // ── Advance ───────────────────────────────────────────────────────────────
-
-  const handleNext = useCallback(() => {
-    if (currentIndex + 1 >= puzzles.length) {
-      stopTimer();
-      setRoundState("complete");
-      onComplete?.(totalScore, MAX_ROUND_SCORE, timeRemaining);
-    } else {
-      setCurrentIndex((i) => i + 1);
-      setSelectedAnswer(null);
-      setRoundState("playing");
-    }
-  }, [currentIndex, puzzles.length, totalScore, timeRemaining, onComplete, stopTimer]);
-
-  // ── Card states ───────────────────────────────────────────────────────────
+  const onNext = useCallback(() => {
+    handleNext(() => setSelectedAnswer(null));
+  }, [handleNext]);
 
   const getAnswerState = (value: boolean): AnswerState => {
     if (roundState === "timeout-pulsing") return "timeout";
@@ -422,8 +298,6 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
 
   const isRevealing = roundState === "revealing";
   const isTimedOut = roundState === "timeout-pulsing";
-  const timerWarning = secondsLeft <= 10;
-  const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
 
   return (
     <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
@@ -452,16 +326,16 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
           <div
             className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
             style={{
-              borderColor: timerWarning || isTimedOut ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: timerWarning || isTimedOut ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
             }}
           >
             <div
               className="h-full transition-all duration-1000 ease-linear"
               style={{
                 width: `${timerProgress}%`,
-                background: timerWarning || isTimedOut ? "#f87171" : "#22d3ee",
-                boxShadow: timerWarning || isTimedOut ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+                background: isDanger ? "#f87171" : "#22d3ee",
+                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
               }}
             />
           </div>
@@ -497,16 +371,8 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
 
         {/* Answer buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <AnswerButton
-            value={true}
-            state={getAnswerState(true)}
-            onClick={() => handleAnswer(true)}
-          />
-          <AnswerButton
-            value={false}
-            state={getAnswerState(false)}
-            onClick={() => handleAnswer(false)}
-          />
+          <AnswerButton value={true} state={getAnswerState(true)} onClick={() => handleAnswer(true)} />
+          <AnswerButton value={false} state={getAnswerState(false)} onClick={() => handleAnswer(false)} />
         </div>
 
         {/* Explanation / reveal box */}
@@ -547,7 +413,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
 
         {/* Next button */}
         <button
-          onClick={isRevealing ? handleNext : undefined}
+          onClick={isRevealing ? onNext : undefined}
           disabled={!isRevealing}
           className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
           style={{
@@ -558,7 +424,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
             cursor: isRevealing ? "pointer" : "default",
           }}
         >
-          {currentIndex + 1 >= puzzles.length ? "Finish Round" : "Next →"}
+          {isLastPuzzle ? "Finish Round" : "Next →"}
         </button>
       </div>
     </div>
