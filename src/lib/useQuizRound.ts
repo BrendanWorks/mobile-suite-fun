@@ -51,6 +51,14 @@ export function useQuizRound<T>({
   const scoreRef = useRef(0);
   const totalScoreRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const roundStateRef = useRef<RoundState>("loading");
+  const completedRef = useRef(false);
+
+  // Keep roundStateRef in sync so the timer callback can read current state
+  // without causing re-renders
+  useEffect(() => {
+    roundStateRef.current = roundState;
+  }, [roundState]);
 
   const currentPuzzle = puzzles[currentIndex] ?? null;
   const isLastPuzzle = currentIndex + 1 >= puzzles.length;
@@ -64,14 +72,33 @@ export function useQuizRound<T>({
     }
   }, []);
 
+  // Stable ref for onComplete so the timeout-pulsing effect doesn't
+  // cancel/restart every time the parent re-renders
+  const onCompleteRef = useRef(onComplete);
   useEffect(() => {
-    if (roundState !== "playing" && roundState !== "revealing") {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  const timeRemainingRef = useRef(timeRemaining);
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
+
+  // Single timer that only ticks when playing; uses ref to check state
+  // so it doesn't restart when roundState flips to "revealing"
+  useEffect(() => {
+    if (roundState === "loading" || roundState === "timeout-pulsing" || roundState === "complete") {
       stopTimer();
       return;
     }
+
+    // Already running — don't create a second interval
     if (timerRef.current) return;
 
     timerRef.current = setInterval(() => {
+      // Only decrement while we're in playing state (not revealing)
+      if (roundStateRef.current !== "playing") return;
+
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           stopTimer();
@@ -85,14 +112,19 @@ export function useQuizRound<T>({
     return stopTimer;
   }, [roundState, stopTimer]);
 
+  // Timeout-pulsing → complete after 3 s (uses stable refs to avoid cancellation)
   useEffect(() => {
     if (roundState !== "timeout-pulsing") return;
+
     const t = setTimeout(() => {
+      if (completedRef.current) return;
+      completedRef.current = true;
       setRoundState("complete");
-      onComplete?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemaining);
+      onCompleteRef.current?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemainingRef.current);
     }, 3000);
+
     return () => clearTimeout(t);
-  }, [roundState, onComplete, timeRemaining]);
+  }, [roundState]);
 
   useEffect(() => {
     audioManager.loadSound(audioWinKey, "/sounds/global/win_optimized.mp3", 2);
@@ -102,6 +134,7 @@ export function useQuizRound<T>({
   const puzzleIdsKey = JSON.stringify(puzzleIds);
 
   useEffect(() => {
+    completedRef.current = false;
     const load = async () => {
       setRoundState("loading");
       try {
@@ -142,7 +175,7 @@ export function useQuizRound<T>({
 
       setRoundState("revealing");
 
-      const newTotal = totalScore + score;
+      const newTotal = totalScoreRef.current + score;
       setTotalScore(newTotal);
       scoreRef.current = newTotal;
       totalScoreRef.current = newTotal;
@@ -154,22 +187,24 @@ export function useQuizRound<T>({
 
       onScoreUpdate?.(newTotal, MAX_ROUND_SCORE);
     },
-    [currentPuzzle, totalScore, audioWinKey, audioWrongKey, getPuzzleId, onScoreUpdate]
+    [currentPuzzle, audioWinKey, audioWrongKey, getPuzzleId, onScoreUpdate]
   );
 
   const handleNext = useCallback(
     (onAdvance?: () => void) => {
       if (isLastPuzzle) {
         stopTimer();
+        if (completedRef.current) return;
+        completedRef.current = true;
         setRoundState("complete");
-        onComplete?.(totalScore, MAX_ROUND_SCORE, timeRemaining);
+        onCompleteRef.current?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemainingRef.current);
       } else {
         setCurrentIndex((i) => i + 1);
         onAdvance?.();
         setRoundState("playing");
       }
     },
-    [isLastPuzzle, totalScore, timeRemaining, onComplete, stopTimer]
+    [isLastPuzzle, stopTimer]
   );
 
   const getGameScore = useCallback(

@@ -56,8 +56,9 @@ export default function GameWrapper({
         if (isFastCountdown) {
           newTime = Math.max(0, prev - decrement);
         } else {
-          const shouldPause = childrenRef.current?.pauseTimer !== false;
-          if (!shouldPause) {
+          // pauseTimer: true → paused, false/undefined → running
+          const isPaused = childrenRef.current?.pauseTimer === true;
+          if (!isPaused) {
             newTime = Math.max(0, prev - decrement);
           }
         }
