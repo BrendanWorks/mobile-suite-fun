@@ -68,7 +68,7 @@ function computeScore(ringR: number, sweetInner: number, sweetOuter: number): Ta
 function getSweetSpotBounds(config: RoundConfig): { inner: number; outer: number } {
   const travel = OUTER_START_R - BULLSEYE_R;
   const halfSpan = (config.sweetSpotFraction * travel) / 2;
-  const center = BULLSEYE_R + travel * 0.12;
+  const center = BULLSEYE_R + travel * 0.23;
   return {
     inner: Math.max(BULLSEYE_R + 2, center - halfSpan),
     outer: center + halfSpan,
@@ -169,7 +169,7 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     }
   }, []);
 
-  const runShrinkLoop = useCallback(() => {
+  const startRound = useCallback(() => {
     const config = ROUND_CONFIGS[roundRef.current] ?? ROUND_CONFIGS[ROUND_CONFIGS.length - 1];
 
     const tick = (now: number) => {
@@ -185,10 +185,9 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       if (progress >= 1) {
         phaseRef.current = "result";
         setPhase("result");
-        const result: TapResult = { kind: "too-late", score: 0, ringRadius: BULLSEYE_R };
-        setTapResult(result);
+        setTapResult({ kind: "too-late", score: 0, ringRadius: BULLSEYE_R });
         drawFrame(BULLSEYE_R, "too-late");
-        scheduleNextRound();
+        advanceRef.current();
         return;
       }
 
@@ -198,6 +197,9 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     startTimeRef.current = performance.now();
     animFrameRef.current = requestAnimationFrame(tick);
   }, [drawFrame]);
+
+  const startRoundRef = useRef(startRound);
+  useEffect(() => { startRoundRef.current = startRound; }, [startRound]);
 
   const scheduleNextRound = useCallback(() => {
     if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
@@ -227,10 +229,13 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       readyTimerRef.current = setTimeout(() => {
         phaseRef.current = "shrinking";
         setPhase("shrinking");
-        runShrinkLoop();
+        startRoundRef.current();
       }, 700);
     }, 900);
-  }, [runShrinkLoop, onComplete]);
+  }, [onComplete]);
+
+  const advanceRef = useRef(scheduleNextRound);
+  useEffect(() => { advanceRef.current = scheduleNextRound; }, [scheduleNextRound]);
 
   const handleTap = useCallback(() => {
     if (phaseRef.current !== "shrinking") return;
@@ -276,7 +281,7 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     readyTimerRef.current = setTimeout(() => {
       phaseRef.current = "shrinking";
       setPhase("shrinking");
-      runShrinkLoop();
+      startRoundRef.current();
     }, 700);
 
     return () => {
@@ -284,7 +289,7 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       if (readyTimerRef.current) clearTimeout(readyTimerRef.current);
       if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
     };
-  }, [runShrinkLoop]);
+  }, []);
 
   if (gameOver) {
     return (
@@ -342,7 +347,7 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
 
   return (
     <div
-      className="h-full bg-black flex flex-col overflow-hidden select-none"
+      className="relative h-full bg-black flex flex-col overflow-hidden select-none"
       onTouchStart={handleTap}
       onMouseDown={handleTap}
       style={{ cursor: phase === "shrinking" ? "crosshair" : "default" }}
@@ -350,7 +355,7 @@ const Clutch = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
       {screenFlash && (
         <div
           className="absolute inset-0 pointer-events-none z-50"
-          style={{ background: "rgba(255,255,255,0.25)", transition: "opacity 0.2s" }}
+          style={{ background: "rgba(255,255,255,0.25)" }}
         />
       )}
 
