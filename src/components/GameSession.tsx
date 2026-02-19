@@ -31,6 +31,7 @@ import Superlative from './Superlative';
 import TrueFalse from './TrueFalse';
 import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
+import Clutch from './Clutch';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -64,6 +65,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'true-false', name: 'True or False', component: TrueFalse, duration: 90, instructions: 'Decide if each statement is True or False!' },
   { id: 'multiple-choice', name: 'Multiple Choice', component: MultipleChoice, duration: 90, instructions: 'Pick the correct answer from three options!' },
   { id: 'tracer', name: 'Tracer', component: Tracer, duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
+  { id: 'clutch', name: 'Clutch', component: Clutch, duration: 60, instructions: 'Tap when the ring hits the sweet spot!' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {

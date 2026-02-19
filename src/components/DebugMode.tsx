@@ -18,6 +18,7 @@ import Superlative from './Superlative';
 import TrueFalse from './TrueFalse';
 import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
+import Clutch from './Clutch';
 import GameSession from './GameSession';
 
 interface DebugModeProps {
@@ -42,6 +43,7 @@ const TEST_GAMES = [
   { id: 'true-false', name: 'True or False', icon: '✅', duration: 90, component: TrueFalse },
   { id: 'multiple-choice', name: 'Multiple Choice', icon: '❓', duration: 90, component: MultipleChoice },
   { id: 'tracer', name: 'Tracer', icon: '✏️', duration: 120, component: Tracer },
+  { id: 'clutch', name: 'Clutch', icon: '🎯', duration: 60, component: Clutch },
 ];
 
 interface Playlist {
