@@ -442,62 +442,71 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
   const shapeLabel = shape.charAt(0).toUpperCase() + shape.slice(1);
 
   return (
-    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
-      <div className="max-w-sm w-full text-white">
+    <div className="h-full bg-black flex flex-col overflow-hidden">
 
-        <div className="mb-3 pt-2">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00ffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #00ffff)" }}>
-              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-              <path d="M13 13l6 6" />
-            </svg>
-            <h1 className="text-2xl font-bold tracking-wide text-cyan-300" style={{ textShadow: "0 0 12px rgba(0,255,255,0.6)" }}>
-              Tracer
-            </h1>
-          </div>
-          <p className="text-center text-white/50 text-sm tracking-wide">Memorize and trace the shape</p>
-          <div className="w-full h-px bg-cyan-400/30 mt-2" />
-        </div>
-
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="flex gap-1">
-            {SHAPES.map((_, i) => (
-              <div
-                key={i}
-                className="w-6 h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  background: i < round ? "#22c55e" : i === round ? "#00ffff" : "rgba(255,255,255,0.15)",
-                  boxShadow: i === round ? "0 0 6px #00ffff" : "none",
-                }}
-              />
-            ))}
-          </div>
-          <span className="text-white/40 text-xs tracking-wider uppercase">
-            {round + 1}/{TOTAL_ROUNDS}
+      {/* Top row: score left, title center, round right */}
+      <div className="flex items-center justify-between px-3 pt-2 pb-1 flex-shrink-0">
+        <div className="flex flex-col items-start min-w-[60px]">
+          <span className="text-white/40 text-xs uppercase tracking-widest leading-none mb-0.5">Score</span>
+          <span
+            className="text-yellow-400 text-2xl font-black leading-none"
+            style={{ textShadow: "0 0 12px #fbbf24" }}
+          >
+            {totalScore}
           </span>
         </div>
 
-        <div className="flex items-center justify-between mb-2 px-1">
-          <div
-            className="text-xs font-bold tracking-widest uppercase px-2 py-1 rounded-full border"
-            style={{
-              color: phase === "show" ? "#00ffff" : phase === "trace" ? "#ec4899" : "#22c55e",
-              borderColor: phase === "show" ? "rgba(0,255,255,0.4)" : phase === "trace" ? "rgba(236,72,153,0.4)" : "rgba(34,197,94,0.4)",
-              background: phase === "show" ? "rgba(0,255,255,0.08)" : phase === "trace" ? "rgba(236,72,153,0.08)" : "rgba(34,197,94,0.08)",
-            }}
-          >
-            {phase === "show" ? "Memorize…" : phase === "trace" ? "Draw it" : "Score"}
-          </div>
-          <span className="text-white/40 text-xs">{shapeLabel}</span>
+        <div className="flex items-center gap-1.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #00ffff)" }}>
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+            <path d="M13 13l6 6" />
+          </svg>
+          <h1 className="text-xl font-bold tracking-wide text-cyan-300" style={{ textShadow: "0 0 10px rgba(0,255,255,0.6)" }}>
+            Tracer
+          </h1>
         </div>
 
+        <span className="text-white/40 text-xs tracking-wider uppercase min-w-[60px] text-right">
+          {round + 1}/{TOTAL_ROUNDS}
+        </span>
+      </div>
+
+      {/* Progress pips */}
+      <div className="flex gap-1.5 px-3 pb-1 flex-shrink-0">
+        {SHAPES.map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 h-1.5 rounded-full transition-all duration-300"
+            style={{
+              background: i < round ? "#22c55e" : i === round ? "#00ffff" : "rgba(255,255,255,0.15)",
+              boxShadow: i === round ? "0 0 6px #00ffff" : "none",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Phase badge */}
+      <div className="flex items-center justify-between px-3 pb-1 flex-shrink-0">
         <div
-          className="relative rounded-2xl overflow-hidden mb-3 border"
+          className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded-full border"
           style={{
-            width: "100%",
-            aspectRatio: "1",
+            color: phase === "show" ? "#00ffff" : phase === "trace" ? "#ec4899" : "#22c55e",
+            borderColor: phase === "show" ? "rgba(0,255,255,0.4)" : phase === "trace" ? "rgba(236,72,153,0.4)" : "rgba(34,197,94,0.4)",
+            background: phase === "show" ? "rgba(0,255,255,0.08)" : phase === "trace" ? "rgba(236,72,153,0.08)" : "rgba(34,197,94,0.08)",
+          }}
+        >
+          {phase === "show" ? "Memorize…" : phase === "trace" ? "Draw it" : "Score"}
+        </div>
+        <span className="text-white/40 text-xs">{shapeLabel}</span>
+      </div>
+
+      {/* Canvas — fills available space */}
+      <div className="flex-1 px-3 min-h-0 flex items-center justify-center">
+        <div
+          className="relative rounded-2xl overflow-hidden border w-full"
+          style={{
             maxWidth: CANVAS_SIZE,
-            margin: "0 auto 12px",
+            aspectRatio: "1",
             borderColor: phase === "show" ? "rgba(0,255,255,0.3)" : phase === "trace" ? "rgba(236,72,153,0.3)" : "rgba(34,197,94,0.3)",
             boxShadow: phase === "show"
               ? "0 0 20px rgba(0,255,255,0.12)"
@@ -522,11 +531,36 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
             onMouseLeave={handlePointerUp}
           />
         </div>
+      </div>
+
+      {/* Bottom area — always visible */}
+      <div className="px-3 pb-3 pt-2 flex-shrink-0">
+        {phase === "score" && (
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-white/40 text-xs uppercase tracking-widest leading-none mb-0.5">Round</p>
+              <p
+                className="text-3xl font-black leading-none"
+                style={{
+                  color: roundScore >= 160 ? "#22c55e" : roundScore >= 100 ? "#f59e0b" : "#ef4444",
+                  textShadow: roundScore >= 160
+                    ? "0 0 16px rgba(34,197,94,0.7)"
+                    : roundScore >= 100
+                    ? "0 0 16px rgba(245,158,11,0.7)"
+                    : "0 0 16px rgba(239,68,68,0.7)",
+                }}
+              >
+                {displayedScore}
+              </p>
+              <p className="text-white/25 text-xs">/ 200</p>
+            </div>
+          </div>
+        )}
 
         {phase === "trace" && (
           <button
             onClick={submitTrace}
-            className="w-full py-3 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-transform"
+            className="w-full py-3.5 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-transform"
             style={{
               background: "rgba(236,72,153,0.15)",
               border: "1px solid rgba(236,72,153,0.5)",
@@ -539,42 +573,36 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
         )}
 
         {phase === "score" && (
-          <div className="text-center">
-            <div className="mb-4">
-              <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Round score</p>
-              <p
-                className="text-5xl font-black transition-all duration-100"
-                style={{
-                  color: roundScore >= 160 ? "#22c55e" : roundScore >= 100 ? "#f59e0b" : "#ef4444",
-                  textShadow: roundScore >= 160
-                    ? "0 0 20px rgba(34,197,94,0.7)"
-                    : roundScore >= 100
-                    ? "0 0 20px rgba(245,158,11,0.7)"
-                    : "0 0 20px rgba(239,68,68,0.7)",
-                }}
-              >
-                {displayedScore}
-              </p>
-              <p className="text-white/25 text-xs mt-1">/ 200</p>
+          <button
+            onClick={nextRound}
+            className="w-full py-3.5 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-transform"
+            style={{
+              background: "rgba(236,72,153,0.15)",
+              border: "1px solid rgba(236,72,153,0.5)",
+              color: "#ec4899",
+              boxShadow: "0 0 16px rgba(236,72,153,0.2)",
+            }}
+          >
+            {round + 1 >= TOTAL_ROUNDS ? "See Results" : "Next Shape →"}
+          </button>
+        )}
+
+        {/* Difficulty indicator — lower left */}
+        {phase === "show" && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-white/30 text-xs">Difficulty:</span>
+            <div className="flex gap-0.5">
+              {[1,2,3,4,5].map(i => (
+                <div
+                  key={i}
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    background: i <= (round + 1) ? "#00ffff" : "rgba(255,255,255,0.12)",
+                    boxShadow: i <= (round + 1) ? "0 0 4px #00ffff" : "none",
+                  }}
+                />
+              ))}
             </div>
-            <div className="flex items-center justify-between mb-4 px-2">
-              <span className="text-white/40 text-xs">Total</span>
-              <span className="text-cyan-300 font-bold text-lg" style={{ textShadow: "0 0 8px rgba(0,255,255,0.5)" }}>
-                {totalScore}
-              </span>
-            </div>
-            <button
-              onClick={nextRound}
-              className="w-full py-3 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-transform"
-              style={{
-                background: "rgba(236,72,153,0.15)",
-                border: "1px solid rgba(236,72,153,0.5)",
-                color: "#ec4899",
-                boxShadow: "0 0 16px rgba(236,72,153,0.2)",
-              }}
-            >
-              {round + 1 >= TOTAL_ROUNDS ? "See Results" : "Next Shape →"}
-            </button>
           </div>
         )}
       </div>
