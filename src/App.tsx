@@ -114,6 +114,25 @@ export default function App() {
     await supabase.auth.signOut();
   }, []);
 
+  const handlePlayNow = useCallback(() => {
+    trackPageView('/game-session');
+    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+  }, []);
+
+  const handleSignIn = useCallback(() => {
+    setShowAuthPage(true);
+  }, []);
+
+  const handleDebugMode = useCallback(() => {
+    trackPageView('/debug-mode');
+    setDebugMode(true);
+  }, []);
+
+  const handlePlayGames = useCallback(() => {
+    trackPageView('/game-session');
+    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+  }, []);
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center">
@@ -166,25 +185,6 @@ export default function App() {
       />
     );
   }
-
-  const handlePlayNow = useCallback(() => {
-    trackPageView('/game-session');
-    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
-  }, []);
-
-  const handleSignIn = useCallback(() => {
-    setShowAuthPage(true);
-  }, []);
-
-  const handleDebugMode = useCallback(() => {
-    trackPageView('/debug-mode');
-    setDebugMode(true);
-  }, []);
-
-  const handlePlayGames = useCallback(() => {
-    trackPageView('/game-session');
-    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
-  }, []);
 
   if (showAuthPage && !session) {
     return (
