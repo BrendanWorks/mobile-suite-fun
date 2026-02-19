@@ -28,6 +28,7 @@ import SlopeRider from './SlopeRider';
 import NeuralPulse from './NeuralPulse';
 import ZenGravity from './ZenGravity';
 import Superlative from './Superlative';
+import TrueFalse from './TrueFalse';
 import RoundResults from './RoundResults';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
@@ -58,6 +59,7 @@ const AVAILABLE_GAMES: GameConfig[] = [
   { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 90, instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
   { id: 'zen-gravity', name: 'Zen Gravity', component: ZenGravity, duration: 60, instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
   { id: 'superlative', name: 'Superlative', component: Superlative, duration: 90, instructions: 'Pick which item is bigger, heavier, longer, or older!' },
+  { id: 'true-false', name: 'True or False', component: TrueFalse, duration: 90, instructions: 'Decide if each statement is True or False!' },
 ];
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = {
@@ -574,6 +576,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       case 'superlative':
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         console.log('⚡ Superlative scoring:', normalizedScore);
+        break;
+
+      case 'true-false':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        console.log('✅ True or False scoring:', normalizedScore);
         break;
 
       default:
