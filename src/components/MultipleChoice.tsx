@@ -152,9 +152,9 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
       opacity: 0.45,
     },
     dimmed: {
-      border: "2px solid rgba(255,255,255,0.06)",
+      border: "2px solid rgba(255,255,255,0.15)",
       background: "rgba(0,0,0,0.2)",
-      opacity: 0.3,
+      opacity: 0.75,
     },
     timeout: {
       border: "2px solid rgba(239,68,68,0.4)",
@@ -184,7 +184,7 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
             : state === "wrong"
             ? { background: "rgba(239,68,68,0.25)", color: "rgba(239,68,68,0.7)", border: "1px solid rgba(239,68,68,0.4)" }
             : state === "dimmed"
-            ? { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.08)" }
+            ? { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.15)" }
             : { background: `${col.dim}`, color: col.base, border: `1px solid ${col.idleBorder}` }
         }
       >
@@ -202,7 +202,7 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
               : state === "wrong"
               ? "rgba(239,68,68,0.8)"
               : state === "dimmed"
-              ? "rgba(255,255,255,0.25)"
+              ? "rgba(255,255,255,0.6)"
               : "rgba(255,255,255,0.9)",
           textShadow: state === "correct" ? `0 0 12px ${col.glow}` : "none",
         }}
@@ -513,17 +513,9 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
                 {totalScore}
               </strong>
             </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`tabular-nums font-bold text-sm ${timerWarning || isTimedOut ? "text-red-400" : "text-cyan-400/80"}`}
-                style={timerWarning || isTimedOut ? { textShadow: "0 0 8px #f87171" } : undefined}
-              >
-                {secondsLeft}s
-              </span>
-              <span className="text-cyan-400/60 text-xs">
-                {currentIndex + 1}/{puzzles.length}
-              </span>
-            </div>
+            <span className="text-cyan-400/60 text-xs">
+              {currentIndex + 1}/{puzzles.length}
+            </span>
           </div>
 
           {/* Timer bar */}

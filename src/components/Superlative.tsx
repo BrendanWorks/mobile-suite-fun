@@ -562,17 +562,9 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
                 {totalScore}
               </strong>
             </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`tabular-nums font-bold text-sm ${timerWarning || isTimedOut ? "text-red-400" : "text-cyan-400/80"}`}
-                style={timerWarning || isTimedOut ? { textShadow: "0 0 8px #f87171" } : undefined}
-              >
-                {secondsLeft}s
-              </span>
-              <span className="text-cyan-400/60 text-xs">
-                {currentIndex + 1}/{puzzles.length}
-              </span>
-            </div>
+            <span className="text-cyan-400/60 text-xs">
+              {currentIndex + 1}/{puzzles.length}
+            </span>
           </div>
 
           {/* Timer bar */}
