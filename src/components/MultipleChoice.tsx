@@ -505,19 +505,6 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Pick the correct answer</p>
           <div className="w-full h-px bg-cyan-400/30 mb-3" />
 
-          {/* Score + timer row */}
-          <div className="flex justify-between items-center mb-2">
-            <div className="text-cyan-300 text-sm">
-              Score:{" "}
-              <strong className="text-yellow-400 tabular-nums text-base" style={{ textShadow: "0 0 8px #fbbf24" }}>
-                {totalScore}
-              </strong>
-            </div>
-            <span className="text-cyan-400/60 text-xs">
-              {currentIndex + 1}/{puzzles.length}
-            </span>
-          </div>
-
           {/* Timer bar */}
           <div
             className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
