@@ -23,8 +23,8 @@ interface SuperlativePuzzle {
 }
 
 interface GameProps {
-  puzzleIds?: number[] | null;        // metadata.puzzle_ids array from playlist_rounds
-  puzzleId?: number | null;          // legacy single puzzle fallback
+  puzzleIds?: number[] | null;
+  puzzleId?: number | null;
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
@@ -165,25 +165,22 @@ interface ItemCardProps {
   onClick: () => void;
 }
 
+interface CardStyle {
+  className: string;
+  boxShadow: string;
+}
+
+const CARD_STYLES: Record<ItemCardProps["state"], CardStyle> = {
+  idle:     { className: "border-cyan-400/30 bg-black/50 hover:border-cyan-400 hover:bg-cyan-500/10 active:scale-95", boxShadow: "0 0 10px rgba(0,255,255,0.15)" },
+  selected: { className: "border-cyan-400 bg-cyan-500/20",                                                             boxShadow: "0 0 15px rgba(0,255,255,0.4)" },
+  correct:  { className: "border-green-500 bg-green-500/20 animate-pulse",                                             boxShadow: "0 0 25px rgba(34,197,94,0.6)" },
+  wrong:    { className: "border-red-500 bg-red-500/20",                                                               boxShadow: "0 0 20px rgba(239,68,68,0.5)" },
+  dimmed:   { className: "border-cyan-400/10 bg-black/20 opacity-40",                                                  boxShadow: "none" },
+  timeout:  { className: "border-red-500 bg-red-500/10 animate-pulse",                                                 boxShadow: "0 0 25px rgba(239,68,68,0.5)" },
+};
+
 function ItemCard({ item, state, onClick }: ItemCardProps) {
-  const stateStyles: Record<typeof state, string> = {
-    idle: "border-cyan-400/30 bg-black/50 hover:border-cyan-400 hover:bg-cyan-500/10 active:scale-95",
-    selected: "border-cyan-400 bg-cyan-500/20",
-    correct: "border-green-500 bg-green-500/20 animate-pulse",
-    wrong: "border-red-500 bg-red-500/20",
-    dimmed: "border-cyan-400/10 bg-black/20 opacity-40",
-    timeout: "border-red-500 bg-red-500/10 animate-pulse",
-  };
-
-  const stateBoxShadow: Record<typeof state, string> = {
-    idle: "0 0 10px rgba(0,255,255,0.15)",
-    selected: "0 0 15px rgba(0,255,255,0.4)",
-    correct: "0 0 25px rgba(34,197,94,0.6)",
-    wrong: "0 0 20px rgba(239,68,68,0.5)",
-    dimmed: "none",
-    timeout: "0 0 25px rgba(239,68,68,0.5)",
-  };
-
+  const { className, boxShadow } = CARD_STYLES[state];
   const isDisabled = state === "correct" || state === "wrong" || state === "dimmed" || state === "timeout";
 
   return (
@@ -192,12 +189,11 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
       disabled={isDisabled}
       className={`
         relative w-full rounded-xl border-2 p-4 text-left transition-all duration-200
-        ${stateStyles[state]}
+        ${className}
         ${isDisabled ? "cursor-default" : "cursor-pointer touch-manipulation"}
       `}
-      style={{ boxShadow: stateBoxShadow[state] }}
+      style={{ boxShadow }}
     >
-      {/* Correct/Wrong indicator */}
       {state === "correct" && (
         <div
           className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-black font-bold text-sm"
@@ -215,7 +211,6 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         </div>
       )}
 
-      {/* Image */}
       <div
         className="w-full h-28 rounded-lg mb-3 flex items-center justify-center border border-cyan-400/20 overflow-hidden bg-black"
         style={{ boxShadow: "inset 0 0 15px rgba(0,255,255,0.05)" }}
@@ -227,7 +222,6 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         />
       </div>
 
-      {/* Name */}
       <p
         className="text-white font-semibold text-sm sm:text-base mb-1 leading-tight"
         style={{ textShadow: "0 0 8px rgba(255,255,255,0.3)" }}
@@ -235,7 +229,6 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         {item.name}
       </p>
 
-      {/* Fixed sub-line: tagline before answer, value after — same height, no shift */}
       <div className="h-4">
         {(state === "correct" || state === "wrong" || state === "dimmed") ? (
           <p
@@ -358,7 +351,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     const load = async () => {
       setRoundState("loading");
 
-      // Priority: puzzleIds array → single puzzleId → demo puzzles
       if (puzzleIds && puzzleIds.length > 0) {
         const loaded = await Promise.all(puzzleIds.map(loadPuzzleFromDB));
         const valid = loaded.filter(Boolean) as SuperlativePuzzle[];
@@ -378,7 +370,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
         }
       }
 
-      // Fallback to demo content
       setPuzzles(DEMO_PUZZLES);
       setRoundState("playing");
     };
@@ -525,7 +516,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   const isRevealing = roundState === "revealing";
   const isTimedOut = roundState === "timeout-pulsing";
-  const timerWarning = secondsLeft <= 10;
+  const isDanger = secondsLeft <= 10 || isTimedOut;
   const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
 
   return (
@@ -554,7 +545,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Which one ranks highest?</p>
           <div className="w-full h-px bg-cyan-400/30 mb-3" />
 
-          {/* Score + timer row */}
+          {/* Score + puzzle counter row */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-cyan-300 text-sm">
               Score:{" "}
@@ -571,16 +562,16 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           <div
             className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-4"
             style={{
-              borderColor: timerWarning || isTimedOut ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: timerWarning || isTimedOut ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
             }}
           >
             <div
               className="h-full transition-all duration-1000 ease-linear"
               style={{
                 width: `${timerProgress}%`,
-                background: timerWarning || isTimedOut ? "#f87171" : "#22d3ee",
-                boxShadow: timerWarning || isTimedOut ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+                background: isDanger ? "#f87171" : "#22d3ee",
+                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
               }}
             />
           </div>
