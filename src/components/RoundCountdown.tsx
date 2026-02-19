@@ -11,6 +11,11 @@ export function RoundCountdown({ onComplete, from = 3, intervalMs = 800 }: Round
   const [count, setCount] = useState(from);
   const [key, setKey] = useState(0);
   const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     playCountdownBeep(from);
@@ -25,7 +30,7 @@ export function RoundCountdown({ onComplete, from = 3, intervalMs = 800 }: Round
           if (!completedRef.current) {
             completedRef.current = true;
             playRoundStartChime();
-            setTimeout(onComplete, 200);
+            setTimeout(() => onCompleteRef.current(), 200);
           }
           return 0;
         }

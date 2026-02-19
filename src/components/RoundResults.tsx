@@ -32,7 +32,7 @@ export default function RoundResults({
   const showBonusTimerRef = useRef<number | null>(null);
 
   const totalPercentage = useMemo(
-    () => (totalSessionScore / maxSessionScore) * 100,
+    () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
     [totalSessionScore, maxSessionScore]
   );
 
