@@ -38,13 +38,3 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
   }
 })
-
-supabase.auth.onAuthStateChange((event, _session) => {
-  if (event === 'TOKEN_REFRESHED') {
-    console.log('🔄 Auth token refreshed');
-  } else if (event === 'SIGNED_OUT') {
-    console.log('👋 User signed out');
-  } else if (event === 'USER_UPDATED') {
-    console.log('✏️ User updated');
-  }
-});
