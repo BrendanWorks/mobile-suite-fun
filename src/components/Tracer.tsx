@@ -10,10 +10,17 @@ interface GameProps {
   duration?: number;
 }
 
-type Phase = "show" | "trace" | "score";
+type Phase = "show" | "go" | "trace" | "score";
 type ShapeType = "circle" | "triangle" | "star" | "spiral" | "freeform";
 
 const SHAPES: ShapeType[] = ["circle", "triangle", "star", "spiral", "freeform"];
+const SHOW_DURATIONS: Record<ShapeType, number> = {
+  circle: 1200,
+  triangle: 1500,
+  star: 1800,
+  spiral: 2200,
+  freeform: 2500,
+};
 const TOTAL_ROUNDS = 5;
 const MAX_SCORE = 1000;
 const SAMPLE_POINTS = 200;
@@ -172,7 +179,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
   const [roundScore, setRoundScore] = useState(0);
   const [displayedScore, setDisplayedScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [pulseAnim, setPulseAnim] = useState(false);
+  const [shakeBtn, setShakeBtn] = useState(false);
 
   const scoreRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -181,6 +188,7 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
   const isDrawingRef = useRef(false);
   const phaseRef = useRef<Phase>("show");
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const animIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -192,14 +200,6 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
 
   const cx = CANVAS_SIZE / 2;
   const cy = CANVAS_SIZE / 2;
-
-  const clearCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  }, []);
 
   const renderShowPhase = useCallback((shape: ShapeType, pulse: boolean) => {
     const canvas = canvasRef.current;
@@ -290,7 +290,6 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     isDrawingRef.current = false;
     phaseRef.current = "show";
     setPhase("show");
-    setPulseAnim(true);
 
     const shape = SHAPES[roundIndex];
 
@@ -304,25 +303,38 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
     animate();
 
     if (showTimerRef.current) clearTimeout(showTimerRef.current);
+    if (goTimerRef.current) clearTimeout(goTimerRef.current);
+
     showTimerRef.current = setTimeout(() => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
-      phaseRef.current = "trace";
-      setPhase("trace");
-      setPulseAnim(false);
-      strokesRef.current = [];
-      renderTracePhase();
-    }, 1500);
+      phaseRef.current = "go";
+      setPhase("go");
+
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      }
+
+      goTimerRef.current = setTimeout(() => {
+        phaseRef.current = "trace";
+        setPhase("trace");
+        strokesRef.current = [];
+        renderTracePhase();
+      }, 400);
+    }, SHOW_DURATIONS[shape]);
   }, [renderShowPhase, renderTracePhase]);
 
   useEffect(() => {
     startRound(0);
     return () => {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      if (goTimerRef.current) clearTimeout(goTimerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (animIntervalRef.current) clearInterval(animIntervalRef.current);
     };
-  }, []);
+  }, [startRound]);
 
   const getCanvasPoint = (e: React.Touch | React.MouseEvent, canvas: HTMLCanvasElement): Point => {
     const rect = canvas.getBoundingClientRect();
@@ -375,6 +387,12 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
 
   const submitTrace = useCallback(() => {
     if (phaseRef.current !== "trace") return;
+    const allPts = strokesRef.current.flat();
+    if (allPts.length < 5) {
+      setShakeBtn(true);
+      setTimeout(() => setShakeBtn(false), 500);
+      return;
+    }
     const shape = SHAPES[round];
     const rs = scoreTrace(shape, strokesRef.current, cx, cy);
     setRoundScore(rs);
@@ -490,12 +508,12 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
         <div
           className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded-full border"
           style={{
-            color: phase === "show" ? "#00ffff" : phase === "trace" ? "#ec4899" : "#22c55e",
-            borderColor: phase === "show" ? "rgba(0,255,255,0.4)" : phase === "trace" ? "rgba(236,72,153,0.4)" : "rgba(34,197,94,0.4)",
-            background: phase === "show" ? "rgba(0,255,255,0.08)" : phase === "trace" ? "rgba(236,72,153,0.08)" : "rgba(34,197,94,0.08)",
+            color: phase === "show" ? "#00ffff" : phase === "go" ? "#f59e0b" : phase === "trace" ? "#ec4899" : "#22c55e",
+            borderColor: phase === "show" ? "rgba(0,255,255,0.4)" : phase === "go" ? "rgba(245,158,11,0.5)" : phase === "trace" ? "rgba(236,72,153,0.4)" : "rgba(34,197,94,0.4)",
+            background: phase === "show" ? "rgba(0,255,255,0.08)" : phase === "go" ? "rgba(245,158,11,0.12)" : phase === "trace" ? "rgba(236,72,153,0.08)" : "rgba(34,197,94,0.08)",
           }}
         >
-          {phase === "show" ? "Memorize…" : phase === "trace" ? "Draw it" : "Score"}
+          {phase === "show" ? "Memorize…" : phase === "go" ? "GO!" : phase === "trace" ? "Draw it" : "Score"}
         </div>
         <span className="text-white/40 text-xs">{shapeLabel}</span>
       </div>
@@ -507,9 +525,11 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
           style={{
             maxWidth: CANVAS_SIZE,
             aspectRatio: "1",
-            borderColor: phase === "show" ? "rgba(0,255,255,0.3)" : phase === "trace" ? "rgba(236,72,153,0.3)" : "rgba(34,197,94,0.3)",
+            borderColor: phase === "show" ? "rgba(0,255,255,0.3)" : phase === "go" ? "rgba(245,158,11,0.5)" : phase === "trace" ? "rgba(236,72,153,0.3)" : "rgba(34,197,94,0.3)",
             boxShadow: phase === "show"
               ? "0 0 20px rgba(0,255,255,0.12)"
+              : phase === "go"
+              ? "0 0 30px rgba(245,158,11,0.25)"
               : phase === "trace"
               ? "0 0 20px rgba(236,72,153,0.12)"
               : "0 0 20px rgba(34,197,94,0.12)",
@@ -530,6 +550,23 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
             onMouseUp={handlePointerUp}
             onMouseLeave={handlePointerUp}
           />
+          {phase === "go" && (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.5)" }}
+            >
+              <span
+                className="font-black text-6xl"
+                style={{
+                  color: "#f59e0b",
+                  textShadow: "0 0 40px #f59e0b, 0 0 80px rgba(245,158,11,0.5)",
+                  animation: "pulse 0.2s ease-out",
+                }}
+              >
+                GO!
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -542,10 +579,10 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
               <p
                 className="text-3xl font-black leading-none"
                 style={{
-                  color: roundScore >= 160 ? "#22c55e" : roundScore >= 100 ? "#f59e0b" : "#ef4444",
-                  textShadow: roundScore >= 160
+                  color: roundScore >= 140 ? "#22c55e" : roundScore >= 80 ? "#f59e0b" : "#ef4444",
+                  textShadow: roundScore >= 140
                     ? "0 0 16px rgba(34,197,94,0.7)"
-                    : roundScore >= 100
+                    : roundScore >= 80
                     ? "0 0 16px rgba(245,158,11,0.7)"
                     : "0 0 16px rgba(239,68,68,0.7)",
                 }}
@@ -560,12 +597,14 @@ const Tracer = forwardRef<GameHandle, GameProps>(({ onScoreUpdate, onComplete },
         {phase === "trace" && (
           <button
             onClick={submitTrace}
-            className="w-full py-3.5 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-transform"
+            className="w-full py-3.5 rounded-xl font-bold tracking-widest uppercase text-sm active:scale-95 transition-all"
             style={{
               background: "rgba(236,72,153,0.15)",
               border: "1px solid rgba(236,72,153,0.5)",
               color: "#ec4899",
               boxShadow: "0 0 16px rgba(236,72,153,0.2)",
+              transform: shakeBtn ? "translateX(0)" : undefined,
+              animation: shakeBtn ? "shake 0.4s ease-in-out" : undefined,
             }}
           >
             Done
