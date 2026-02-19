@@ -164,7 +164,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
     // Peg layout — diamond funnel
     const pegs: Peg[] = [];
     const centerX = W / 2;
-    const startY = 190;
+    const startY = 155;
     const rowSpacing = 68;
     const colSpacing = 58;
 
@@ -178,7 +178,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
     gameState.current.pegs = pegs;
 
     const goalHeight = 72;
-    const goalY = H - goalHeight - 8;
+    const goalY = H - goalHeight - 30;
     const goalWidth = W / 3;
 
     // Goal flash state
