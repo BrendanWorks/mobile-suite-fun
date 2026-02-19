@@ -107,6 +107,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
       border: "2px solid rgba(239,68,68,0.6)",
       background: "rgba(239,68,68,0.1)",
       boxShadow: "0 0 20px rgba(239,68,68,0.4)",
+      opacity: 0.45,
     },
     dimmed: {
       border: "2px solid rgba(255,255,255,0.06)",
@@ -131,7 +132,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
-      className="relative w-full rounded-xl transition-all duration-200 flex items-center justify-center touch-manipulation"
+      className="relative w-full rounded-xl transition-all duration-300 flex items-center justify-center touch-manipulation"
       style={{
         ...stateStyles[state],
         height: "clamp(100px, 22vw, 140px)",
