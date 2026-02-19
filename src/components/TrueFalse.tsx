@@ -27,29 +27,6 @@ const PUZZLES_PER_ROUND = 3;
 const MAX_SCORE_PER_PUZZLE = 250;
 const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
 
-async function loadPuzzleFromDB(id: number): Promise<TrueFalsePuzzle | null> {
-  const { data, error } = await supabase
-    .from("true_false_puzzles")
-    .select("id, statement, correct_answer, explanation")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data as TrueFalsePuzzle;
-}
-
-async function loadRandomPuzzles(count: number): Promise<TrueFalsePuzzle[]> {
-  const { data, error } = await supabase
-    .from("true_false_puzzles")
-    .select("id, statement, correct_answer, explanation")
-    .eq("is_active", true);
-
-  if (error || !data || data.length === 0) return DEMO_PUZZLES;
-
-  const shuffled = [...data].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count) as TrueFalsePuzzle[];
-}
-
 // ─── Demo fallback ────────────────────────────────────────────────────────────
 
 const DEMO_PUZZLES: TrueFalsePuzzle[] = [
@@ -72,6 +49,31 @@ const DEMO_PUZZLES: TrueFalsePuzzle[] = [
     explanation: "Venus rotates so slowly that one day (243 Earth days) is longer than its year — the time to orbit the Sun (225 Earth days).",
   },
 ];
+
+// ─── DB Loaders ───────────────────────────────────────────────────────────────
+
+async function loadPuzzleFromDB(id: number): Promise<TrueFalsePuzzle | null> {
+  const { data, error } = await supabase
+    .from("true_false_puzzles")
+    .select("id, statement, correct_answer, explanation")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as TrueFalsePuzzle;
+}
+
+async function loadRandomPuzzles(count: number): Promise<TrueFalsePuzzle[]> {
+  const { data, error } = await supabase
+    .from("true_false_puzzles")
+    .select("id, statement, correct_answer, explanation")
+    .eq("is_active", true);
+
+  if (error || !data || data.length === 0) return DEMO_PUZZLES;
+
+  const shuffled = [...data].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count) as TrueFalsePuzzle[];
+}
 
 // ─── Answer Button Component ──────────────────────────────────────────────────
 
