@@ -37,7 +37,7 @@ export const analytics = {
   // GAME LIFECYCLE
   // ============================================================================
   
-  gameStarted: (gameName: string, gameId: number, userId?: string) => {
+  gameStarted: (gameName: string, gameId: number) => {
     ReactGA.event({
       category: 'Game',
       action: 'game_started',
@@ -46,9 +46,6 @@ export const analytics = {
       game_id: gameId,
       game_name: gameName,
     });
-    if (userId) {
-      ReactGA.set({ userId });
-    }
   },
 
   // ============================================================================
@@ -382,22 +379,20 @@ export const analytics = {
   // USER EVENTS
   // ============================================================================
 
-  accountCreated: (provider: string, userId: string) => {
+  accountCreated: (provider: string) => {
     ReactGA.event({
       category: 'User',
       action: 'account_created',
       label: provider,
     });
-    ReactGA.set({ userId });
   },
 
-  signedIn: (provider: string, userId: string) => {
+  signedIn: (provider: string) => {
     ReactGA.event({
       category: 'User',
       action: 'signed_in',
       label: provider,
     });
-    ReactGA.set({ userId });
   },
 
   signedOut: () => {
@@ -533,7 +528,6 @@ export const analytics = {
   },
 
   userProgressMilestone: (
-    userId: string,
     milestone: string,
     value: number
   ) => {

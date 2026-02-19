@@ -130,6 +130,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -215,9 +216,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       if (!playlist) {
         console.error('❌ Playlist not found:', playlistId);
-        alert(`Playlist ${playlistId} not found. Returning to menu.`);
+        setLoadError('Playlist not found. Returning to menu...');
         setPlaylistLoading(false);
-        onExit();
+        setTimeout(onExit, 2000);
         return;
       }
 
@@ -237,9 +238,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       if (!rounds || rounds.length === 0) {
         console.error('❌ No rounds found for playlist:', playlistId);
-        alert(`No rounds configured for this playlist. Returning to menu.`);
+        setLoadError('No rounds configured for this playlist. Returning to menu...');
         setPlaylistLoading(false);
-        onExit();
+        setTimeout(onExit, 2000);
         return;
       }
 
@@ -273,9 +274,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       setGameState('intro');
     } catch (error) {
       console.error('❌ Error loading playlist:', error);
-      alert(`Error loading playlist: ${error instanceof Error ? error.message : 'Unknown error'}. Returning to menu.`);
+      setLoadError('Could not load playlist. Returning to menu...');
       setPlaylistLoading(false);
-      onExit();
+      setTimeout(onExit, 2000);
     }
   };
 
@@ -505,7 +506,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     setGameState('playing');
 
     if (currentGame) {
-      analytics.gameStarted(currentGame.name, getGameId(currentGame.id), user?.id);
+      analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
     }
   };
 
@@ -794,13 +795,17 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   if (gameState === 'intro') {
 
     // Wait for game to be selected or playlist to load
-    if (!currentGame || playlistLoading) {
+    if (!currentGame || playlistLoading || loadError) {
       return (
         <div className="h-screen w-screen bg-black flex items-center justify-center">
           <div className="text-center">
             <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
-            {playlistLoading && <p className="text-cyan-300 text-sm">Loading playlist...</p>}
-            {!playlistLoading && <p className="text-cyan-300 text-sm">Loading round...</p>}
+            {loadError
+              ? <p className="text-red-400 text-sm max-w-xs mx-auto">{loadError}</p>
+              : playlistLoading
+                ? <p className="text-cyan-300 text-sm">Loading playlist...</p>
+                : <p className="text-cyan-300 text-sm">Loading round...</p>
+            }
           </div>
         </div>
       );

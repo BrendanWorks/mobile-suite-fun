@@ -64,6 +64,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
     magnet: number;
     slowmo: number;
   }>({ shield: 0, magnet: 0, slowmo: 0 });
+  const [permissionError, setPermissionError] = useState(false);
 
   const ballRef = useRef({ x: 200, y: 0, vx: 0, vy: 0, trail: [] as any[] });
   const platformsRef = useRef<Platform[]>([]);
@@ -230,7 +231,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
       try {
         const permission = await (DeviceOrientationEvent as any).requestPermission();
         if (permission !== 'granted') {
-          alert('Gyroscope permission is required to play this game');
+          setPermissionError(true);
           return;
         }
       } catch (error) {
@@ -629,12 +630,17 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
             </div>
 
             <button
-              onClick={() => { audioManager.initialize(); startSequence(); }}
+              onClick={() => { setPermissionError(false); audioManager.initialize(); startSequence(); }}
               className="px-12 py-4 border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold transition-all rounded-full uppercase tracking-widest text-sm active:scale-95"
               style={{ boxShadow: '0 0 20px rgba(0,255,255,0.3)' }}
             >
               Initialize
             </button>
+            {permissionError && (
+              <p className="text-red-400 text-xs text-center max-w-[200px]">
+                Gyroscope access is required. Please allow motion permission and try again.
+              </p>
+            )}
           </div>
         )}
 

@@ -77,7 +77,7 @@ export default function App() {
       setLoading(false);
 
       if (session?.user) {
-        analytics.signedIn('email', session.user.id);
+        analytics.signedIn('email');
       }
     });
 
@@ -87,7 +87,7 @@ export default function App() {
       setSession(session);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        analytics.signedIn('email', session.user.id);
+        analytics.signedIn('email');
         setAutoStartAfterLogin(true);
       }
 
