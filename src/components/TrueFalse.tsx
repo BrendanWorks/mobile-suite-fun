@@ -206,6 +206,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
     getGameScore,
     onGameEnd: () => {},
     pauseTimer: roundState === "revealing",
+    hideTimer: true,
   }), [getGameScore, roundState]);
 
   const handleAnswer = useCallback(

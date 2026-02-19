@@ -259,6 +259,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
   useImperativeHandle(ref, () => ({
     getGameScore,
     onGameEnd: () => {},
+    hideTimer: true,
   }), [getGameScore]);
 
   const handleAnswer = useCallback(

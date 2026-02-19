@@ -321,6 +321,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     getGameScore,
     onGameEnd: () => {},
     pauseTimer: roundState === "revealing",
+    hideTimer: true,
   }), [getGameScore, roundState]);
 
   const handleAnswer = useCallback(
