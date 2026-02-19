@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { initGA, trackPageView, analytics } from './lib/analytics';
@@ -65,9 +65,7 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
-        console.error('❌ Session error:', error.message);
         if (error.message.includes('refresh_token_not_found')) {
-          console.log('🧹 Clearing invalid session');
           await supabase.auth.signOut();
         }
         setSession(null);
@@ -85,19 +83,15 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state changed:', event);
-
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('✅ User logged in:', session.user.email);
         analytics.signedIn('email', session.user.id);
         setAutoStartAfterLogin(true);
       }
 
       if (event === 'SIGNED_OUT') {
-        console.log('👋 User logged out');
         analytics.signedOut();
         setSelectedPlaylistId(null);
         setAutoStartAfterLogin(false);
@@ -111,16 +105,14 @@ export default function App() {
 
   useEffect(() => {
     if (session && autoStartAfterLogin) {
-      const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
-      console.log('🚀 Auto-starting playlist after login:', currentPlaylist);
-      setSelectedPlaylistId(currentPlaylist);
+      setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
       setAutoStartAfterLogin(false);
     }
   }, [session, autoStartAfterLogin]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -175,29 +167,24 @@ export default function App() {
     );
   }
 
-  const handlePlayNow = () => {
+  const handlePlayNow = useCallback(() => {
     trackPageView('/game-session');
-    const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
-    console.log('🎮 Play Now clicked - Loading playlist:', currentPlaylist);
-    console.log('🎮 Sequence:', anonymousSessionManager.getPlaylistSequence());
-    setSelectedPlaylistId(currentPlaylist);
-  };
+    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+  }, []);
 
-  const handleSignIn = () => {
+  const handleSignIn = useCallback(() => {
     setShowAuthPage(true);
-  };
+  }, []);
 
-  const handleDebugMode = () => {
+  const handleDebugMode = useCallback(() => {
     trackPageView('/debug-mode');
     setDebugMode(true);
-  };
+  }, []);
 
-  const handlePlayGames = () => {
+  const handlePlayGames = useCallback(() => {
     trackPageView('/game-session');
-    const currentPlaylist = anonymousSessionManager.getCurrentPlaylistId();
-    console.log('🎮 Play Games clicked (logged in) - Loading playlist:', currentPlaylist);
-    setSelectedPlaylistId(currentPlaylist);
-  };
+    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+  }, []);
 
   if (showAuthPage && !session) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import ReactGA from 'react-ga4';
@@ -27,55 +27,20 @@ export default function RoundResults({
   const [animateBonus, setAnimateBonus] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
+  const intervalRef = useRef<number | null>(null);
+  const showContentTimerRef = useRef<number | null>(null);
+  const showBonusTimerRef = useRef<number | null>(null);
 
-  const totalPercentage = (totalSessionScore / maxSessionScore) * 100;
-  
-  // Check if this game has time bonus capability (undefined = no time bonus like Snake)
+  const totalPercentage = useMemo(
+    () => (totalSessionScore / maxSessionScore) * 100,
+    [totalSessionScore, maxSessionScore]
+  );
+
   const isTimedGame = gameScore.timeBonus !== undefined;
-  const hasTimeBonus = gameScore.timeBonus && gameScore.timeBonus > 0;
+  const hasTimeBonus = !!gameScore.timeBonus && gameScore.timeBonus > 0;
+  const timeBonus = gameScore.timeBonus || 0;
 
-  useEffect(() => {
-    // Track results screen shown
-    const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
-    ReactGA.event({
-      category: 'Game',
-      action: 'results_shown',
-      label: `${gameName} - Round ${roundNumber}`,
-      game_name: gameName,
-      round_number: roundNumber,
-      score: Math.round(finalScore),
-      is_last_round: isLastRound,
-    });
-
-    // Show content with fade-in
-    setTimeout(() => setShowContent(true), 200);
-
-    // Only animate bonus for timed games
-    if (isTimedGame) {
-      setTimeout(() => {
-        setShowBonus(true);
-
-        if (hasTimeBonus) {
-          const bonusDuration = 1000;
-          const bonusSteps = 40;
-          const bonusIncrement = (gameScore.timeBonus || 0) / bonusSteps;
-          let bonusStep = 0;
-
-          const bonusInterval = setInterval(() => {
-            bonusStep++;
-            setAnimateBonus(Math.min(gameScore.timeBonus || 0, bonusStep * bonusIncrement));
-            if (bonusStep >= bonusSteps) {
-              clearInterval(bonusInterval);
-            }
-          }, bonusDuration / bonusSteps);
-
-          return () => clearInterval(bonusInterval);
-        }
-      }, 800);
-    }
-  }, [gameScore.timeBonus, hasTimeBonus, isTimedGame, gameName, roundNumber, gameScore.totalWithBonus, gameScore.normalizedScore, isLastRound]);
-
-  const getGradeLabel = (score: number): string => {
+  const getGradeLabel = useCallback((score: number): string => {
     if (score >= 100) return "Perfect";
     if (score >= 90) return "Amazeballs!";
     if (score >= 80) return "Exceptional";
@@ -88,25 +53,56 @@ export default function RoundResults({
     if (score >= 10) return "Ouch!";
     if (score > 0) return "Poor";
     return "Didn't Even Try!";
-  };
+  }, []);
+
+  useEffect(() => {
+    const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
+    ReactGA.event({
+      category: 'Game',
+      action: 'results_shown',
+      label: `${gameName} - Round ${roundNumber}`,
+      game_name: gameName,
+      round_number: roundNumber,
+      score: Math.round(finalScore),
+      is_last_round: isLastRound,
+    });
+
+    showContentTimerRef.current = window.setTimeout(() => setShowContent(true), 200);
+
+    if (isTimedGame) {
+      showBonusTimerRef.current = window.setTimeout(() => {
+        setShowBonus(true);
+
+        if (hasTimeBonus) {
+          const bonusDuration = 1000;
+          const bonusSteps = 40;
+          const bonusIncrement = timeBonus / bonusSteps;
+          let bonusStep = 0;
+
+          intervalRef.current = window.setInterval(() => {
+            bonusStep++;
+            setAnimateBonus(Math.min(timeBonus, bonusStep * bonusIncrement));
+            if (bonusStep >= bonusSteps) {
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
+            }
+          }, bonusDuration / bonusSteps);
+        }
+      }, 800);
+    }
+
+    return () => {
+      if (showContentTimerRef.current) clearTimeout(showContentTimerRef.current);
+      if (showBonusTimerRef.current) clearTimeout(showBonusTimerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6">
-      <style>{`
-        @keyframes pulse-red {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        .pulse-red {
-          animation: pulse-red 2s ease-in-out infinite;
-        }
-      `}</style>
       <div className={`max-w-2xl w-full transition-all duration-700 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-        {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 20px #00ffff' }}>
             Round {roundNumber} Complete
@@ -114,9 +110,7 @@ export default function RoundResults({
           <p className="text-base sm:text-lg text-cyan-300/80">{gameName}</p>
         </div>
 
-        {/* Score Card */}
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
-          {/* Round Score - Hero Element */}
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
             <div className="text-6xl sm:text-7xl font-bold text-yellow-400 mb-3" style={{ textShadow: '0 0 20px #fbbf24' }}>
               {gameScore.grade}
@@ -129,16 +123,14 @@ export default function RoundResults({
             </div>
           </div>
 
-          {/* Time Bonus - Fixed height area */}
           <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
-            {/* Only show bonus content for timed games */}
             {isTimedGame && showBonus && (
               <div className="text-center animate-fade-in">
-                <div className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`} 
+                <div className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
                      style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}>
                   Speed Bonus
                 </div>
-                <div className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 pulse-red'}`} 
+                <div className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 pulse-red'}`}
                      style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}>
                   +{hasTimeBonus ? Math.round(animateBonus) : 0}
                 </div>
@@ -149,10 +141,8 @@ export default function RoundResults({
                 )}
               </div>
             )}
-            {/* Blank space for non-timed games like Snake */}
           </div>
 
-          {/* Session Progress */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-3">
               <TrendingUp className="w-5 h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }} />
@@ -167,7 +157,6 @@ export default function RoundResults({
           </div>
         </div>
 
-        {/* Continue Button */}
         <button
           onClick={onContinue}
           className="w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wide"

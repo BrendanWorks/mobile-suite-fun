@@ -2,7 +2,7 @@
  * GameSession.tsx - NEON EDITION
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trophy, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import {
@@ -130,6 +130,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
+
+  const currentSessionScore = useMemo(
+    () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
+    [roundScores]
+  );
 
   const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
     const round = rounds.find(r => r.round_number === roundNumber);
@@ -504,9 +509,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
   };
 
-  const handleScoreUpdate = (score: number, maxScore: number) => {
+  const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
     setCurrentGameScore({ score, maxScore });
-  };
+  }, []);
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
     if (!currentGame) {
@@ -521,7 +526,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       rawScore = 0;
     }
 
-    console.log('🎯 Game Complete:', { game: currentGame.id, rawScore, maxScore, timeRemaining });
 
     let normalizedScore: GameScore;
     const percentage = (rawScore / maxScore) * 100;
@@ -554,37 +558,30 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       case 'snapshot':
         const completed = rawScore >= 50;
         normalizedScore = scoringSystem.snapshot(completed, timeRemaining, currentGame.duration);
-        console.log('🧩 SnapShot scoring:', { completed, timeRemaining, duration: currentGame.duration, normalizedScore });
         break;
 
       case 'snake':
         normalizedScore = scoringSystem.snake(rawScore);
-        console.log('🐍 Snake scoring (no time bonus):', normalizedScore);
         break;
 
       case 'gravity-ball':
         normalizedScore = scoringSystem.gravityBall(rawScore);
-        console.log('🌍 Gravity Ball scoring (no time bonus):', normalizedScore);
         break;
 
       case 'neural-pulse':
         normalizedScore = scoringSystem.neuralPulse(rawScore);
-        console.log('🧠 Neural Pulse scoring:', normalizedScore);
         break;
 
       case 'zen-gravity':
         normalizedScore = scoringSystem.oddManOut(rawScore, maxScore);
-        console.log('🎯 Zen Gravity scoring:', normalizedScore);
         break;
 
       case 'superlative':
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
-        console.log('⚡ Superlative scoring:', normalizedScore);
         break;
 
       case 'true-false':
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
-        console.log('✅ True or False scoring:', normalizedScore);
         break;
 
       default:
@@ -601,26 +598,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     // Apply time bonus if there's time remaining (but NOT for Snake or Gravity Ball)
     if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
-      console.log(`⏱️ Time Bonus Applied: +${normalizedScore.timeBonus} (${timeRemaining}s / ${currentGame.duration}s)`);
     }
 
-    console.log(`Round ${currentRound} - ${currentGame.name}: ${Math.round(normalizedScore.normalizedScore)}/100 (${normalizedScore.grade})`);
-    console.log('📊 Normalized Score Object:', normalizedScore);
-    console.log('📊 Raw Score:', rawScore, 'Max Score:', maxScore);
-
-    setRoundScores(prev => {
-      const newScores = [...prev, {
-        gameId: currentGame.id,
-        gameName: currentGame.name,
-        rawScore,
-        maxScore,
-        normalizedScore
-      }];
-      console.log('📊 All Round Scores:', newScores);
-      const total = newScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
-      console.log('📊 Current Session Total:', total);
-      return newScores;
-    });
+    setRoundScores(prev => [...prev, {
+      gameId: currentGame.id,
+      gameName: currentGame.name,
+      rawScore,
+      maxScore,
+      normalizedScore
+    }]);
 
     const finalScore = normalizedScore.totalWithBonus || normalizedScore.normalizedScore;
     const isPerfect = normalizedScore.grade === 'A';
@@ -716,7 +702,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   };
 
   const handleQuitAndSave = async () => {
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
     const completedRounds = roundScores.length;
     const playtimeSeconds = sessionStartTimeRef.current
       ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
@@ -807,8 +792,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
   // Intro screen (shows before each round in playlist mode)
   if (gameState === 'intro') {
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
-    console.log('🎯 INTRO SCREEN - Round:', currentRound, 'Scores:', roundScores.length, 'Total:', currentSessionScore);
 
     // Wait for game to be selected or playlist to load
     if (!currentGame || playlistLoading) {
@@ -861,8 +844,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
 
     const lastRound = roundScores[roundScores.length - 1];
-    const currentSessionScore = roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0);
-    console.log('🏆 RESULTS SCREEN - Round:', currentRound, 'Last Round Score:', lastRound.normalizedScore.normalizedScore, 'Session Total:', currentSessionScore);
 
     return (
       <RoundResults
@@ -950,10 +931,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             {!user && !sessionSaved && playlistId && !anonymousSessionManager.isLastPlaylist() && (
               <button
                 onClick={() => {
-                  console.log('🎯 Next Playlist button clicked - Before:', anonymousSessionManager.getCurrentPlaylistId());
-                  const nextId = anonymousSessionManager.advanceToNextPlaylist();
-                  console.log('🎯 After advance, next playlist should be:', nextId);
-                  console.log('🎯 Verifying localStorage:', anonymousSessionManager.getCurrentPlaylistId());
+                  anonymousSessionManager.advanceToNextPlaylist();
                   onExit();
                 }}
                 className="w-full px-4 py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-yellow-400 hover:text-black active:scale-[0.98] touch-manipulation"
@@ -1009,7 +987,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   // Playing state - NEON NAV BAR
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
-    const previousRoundsScore = roundScores.reduce((sum, r) => sum + r.normalizedScore.normalizedScore, 0);
+    const previousRoundsScore = currentSessionScore;
 
     let currentGameNormalizedScore = 0;
     if (currentGameScore.maxScore > 0) {
