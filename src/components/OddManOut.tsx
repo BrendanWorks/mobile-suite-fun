@@ -416,26 +416,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
       <div className="text-center max-w-2xl w-full text-white">
-      <style>{`
-        @keyframes pulse-twice {
-          0%, 100% {
-            opacity: 1;
-          }
-          25% {
-            opacity: 0.5;
-          }
-          50% {
-            opacity: 1;
-          }
-          75% {
-            opacity: 0.5;
-          }
-        }
-        .animate-pulse-twice {
-          animation: pulse-twice 1s ease-in-out;
-        }
-      `}</style>
-
       <div className="mb-3 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-1 border-b border-purple-400 pb-1 flex items-center justify-center gap-2">
           <Sparkles 
@@ -548,7 +528,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
         {gameState === 'result' && (
           <div className={`
-            p-2 sm:p-3 rounded-lg border-2
+            p-2 sm:p-3 rounded-lg border-2 animate-fade-in-up
             ${isCorrect
               ? 'bg-green-500/20 text-green-400 border-green-500'
               : 'bg-red-500/20 text-red-400 border-red-500'

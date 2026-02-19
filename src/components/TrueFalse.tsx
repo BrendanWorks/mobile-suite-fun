@@ -2,6 +2,7 @@ import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
 import { useQuizRound } from "../lib/useQuizRound";
+import { playSelect } from "../lib/sounds";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ interface AnswerButtonProps {
 
 function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
   const isTrue = value;
+  const shakeClass = state === "wrong" ? "animate-shake" : "";
 
   const baseColor = isTrue
     ? { base: "#22c55e", dim: "rgba(34,197,94,0.15)", glow: "rgba(34,197,94,0.6)" }
@@ -126,7 +128,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
-      className="relative w-full rounded-xl transition-all duration-300 flex items-center justify-center touch-manipulation"
+      className={`relative w-full rounded-xl transition-all duration-300 flex items-center justify-center touch-manipulation ${shakeClass}`}
       style={{
         ...stateStyles[state],
         height: "clamp(100px, 22vw, 140px)",
@@ -135,7 +137,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
     >
       {state === "correct" && (
         <div
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black"
+          className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black animate-pop-in"
           style={{ background: baseColor.base, boxShadow: `0 0 12px ${baseColor.glow}` }}
         >
           ✓
@@ -143,7 +145,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
       )}
       {state === "wrong" && (
         <div
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black bg-red-500"
+          className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm text-black bg-red-500 animate-pop-in"
           style={{ boxShadow: "0 0 12px rgba(239,68,68,0.8)" }}
         >
           ✗
@@ -212,6 +214,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   const handleAnswer = useCallback(
     (choice: boolean) => {
       if (!currentPuzzle || roundState !== "playing") return;
+      playSelect();
       setSelectedAnswer(choice);
       recordAnswer(choice === currentPuzzle.correct_answer);
     },
@@ -406,7 +409,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
               True or False?
             </p>
           ) : (
-            <p className="text-cyan-300 text-xs leading-relaxed line-clamp-3">
+            <p className="text-cyan-300 text-xs leading-relaxed line-clamp-3 animate-fade-in-up">
               {currentPuzzle.explanation}
             </p>
           )}
@@ -416,7 +419,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
         <button
           onClick={isRevealing ? onNext : undefined}
           disabled={!isRevealing}
-          className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
+          className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation active:scale-95"
           style={{
             borderColor: isRevealing ? "#ec4899" : "rgba(236,72,153,0.2)",
             color: isRevealing ? "#f472b6" : "rgba(244,114,182,0.2)",

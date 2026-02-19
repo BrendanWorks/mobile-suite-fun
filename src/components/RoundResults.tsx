@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
+import { useCountUp } from '../hooks/useCountUp';
+import { playWin } from '../lib/sounds';
 import ReactGA from 'react-ga4';
 
 interface RoundResultsProps {
@@ -24,10 +26,8 @@ export default function RoundResults({
   onContinue,
   isLastRound
 }: RoundResultsProps) {
-  const [animateBonus, setAnimateBonus] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
-  const intervalRef = useRef<number | null>(null);
   const showContentTimerRef = useRef<number | null>(null);
   const showBonusTimerRef = useRef<number | null>(null);
 
@@ -39,6 +39,8 @@ export default function RoundResults({
   const isTimedGame = gameScore.timeBonus !== undefined;
   const hasTimeBonus = !!gameScore.timeBonus && gameScore.timeBonus > 0;
   const timeBonus = gameScore.timeBonus || 0;
+
+  const animatedBonus = useCountUp(hasTimeBonus ? timeBonus : 0, 900, showBonus && hasTimeBonus);
 
   const getGradeLabel = useCallback((score: number): string => {
     if (score >= 100) return "Perfect";
@@ -67,36 +69,18 @@ export default function RoundResults({
       is_last_round: isLastRound,
     });
 
-    showContentTimerRef.current = window.setTimeout(() => setShowContent(true), 200);
+    showContentTimerRef.current = window.setTimeout(() => {
+      setShowContent(true);
+      playWin(0.5);
+    }, 200);
 
     if (isTimedGame) {
-      showBonusTimerRef.current = window.setTimeout(() => {
-        setShowBonus(true);
-
-        if (hasTimeBonus) {
-          const bonusDuration = 1000;
-          const bonusSteps = 40;
-          const bonusIncrement = timeBonus / bonusSteps;
-          let bonusStep = 0;
-
-          intervalRef.current = window.setInterval(() => {
-            bonusStep++;
-            setAnimateBonus(Math.min(timeBonus, bonusStep * bonusIncrement));
-            if (bonusStep >= bonusSteps) {
-              if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-              }
-            }
-          }, bonusDuration / bonusSteps);
-        }
-      }, 800);
+      showBonusTimerRef.current = window.setTimeout(() => setShowBonus(true), 800);
     }
 
     return () => {
       if (showContentTimerRef.current) clearTimeout(showContentTimerRef.current);
       if (showBonusTimerRef.current) clearTimeout(showBonusTimerRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
@@ -112,10 +96,13 @@ export default function RoundResults({
 
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
-            <div className="text-6xl sm:text-7xl font-bold text-yellow-400 mb-3" style={{ textShadow: '0 0 20px #fbbf24' }}>
+            <div
+              className={`text-6xl sm:text-7xl font-bold text-yellow-400 mb-3 ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
+              style={{ textShadow: '0 0 20px #fbbf24' }}
+            >
               {gameScore.grade}
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-3 uppercase tracking-wider" style={{ textShadow: '0 0 15px #00ffff' }}>
+            <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-3 uppercase tracking-wider animate-fade-in-up" style={{ textShadow: '0 0 15px #00ffff', animationDelay: '0.15s', animationFillMode: 'both' }}>
               {getGradeLabel(gameScore.normalizedScore)}
             </div>
             <div className="text-lg sm:text-xl text-cyan-400 font-semibold">
@@ -126,13 +113,17 @@ export default function RoundResults({
           <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
             {isTimedGame && showBonus && (
               <div className="text-center animate-fade-in">
-                <div className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
-                     style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}>
+                <div
+                  className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
+                  style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}
+                >
                   Speed Bonus
                 </div>
-                <div className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 pulse-red'}`}
-                     style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}>
-                  +{hasTimeBonus ? Math.round(animateBonus) : 0}
+                <div
+                  className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 animate-pulse-danger'}`}
+                  style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}
+                >
+                  +{hasTimeBonus ? Math.round(animatedBonus) : 0}
                 </div>
                 {gameScore.totalWithBonus && hasTimeBonus && (
                   <div className="text-sm text-cyan-400">
