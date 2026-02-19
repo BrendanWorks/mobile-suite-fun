@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
 import { audioManager } from "../lib/audioManager";
 
@@ -40,13 +40,6 @@ const MAX_ROUND_SCORE = MAX_SCORE_PER_PUZZLE * PUZZLES_PER_ROUND;
 function calculateScore(isCorrect: boolean): number {
   return isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
 }
-
-// ─── Supabase ────────────────────────────────────────────────────────────────
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL ?? "",
-  import.meta.env.VITE_SUPABASE_ANON_KEY ?? ""
-);
 
 async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   const { data, error } = await supabase
