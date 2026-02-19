@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Type } from 'lucide-react';
+import { RoundCountdown } from './RoundCountdown';
 
 interface WordRescueProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -104,7 +105,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   const profanityWords = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'hell', 'cunt'];
 
-  const [gameState, setGameState] = useState('menu');
+  const [gameState, setGameState] = useState('countdown');
   const [letters, setLetters] = useState([]);
   const [poppingLetters, setPoppingLetters] = useState([]);
   const [selectedLetters, setSelectedLetters] = useState([]);
@@ -148,7 +149,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
         callback(score, MAX_SCORE, props.timeRemaining);
       }
     },
-    pauseTimer: gameState !== 'playing' || !timerStarted, // Pause when not playing or timer hasn't started
+    pauseTimer: gameState !== 'playing' || !timerStarted,
     canSkipQuestion: false
   }), [score, gameState, timerStarted, props.timeRemaining]);
 
@@ -515,7 +516,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   };
 
   const resetGame = () => {
-    setGameState('menu');
+    setGameState('countdown');
     setLetters([]);
     setPoppingLetters([]);
     setSelectedLetters([]);
@@ -539,38 +540,26 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     }
   };
 
-  if (gameState === 'menu') {
+  if (gameState === 'countdown') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
-          {/* Header with icon */}
-          <div className="mb-4">
-            <h2 className="text-3xl sm:text-4xl font-bold text-blue-400 mb-1 flex items-center justify-center gap-2">
-              <Type 
-                className="w-8 h-8 sm:w-10 sm:h-10" 
-                style={{ 
-                  color: '#3b82f6',
-                  filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
-                  strokeWidth: 2
-                }} 
-              />
-              <span style={{ textShadow: '0 0 15px #3b82f6' }}>WordSurge</span>
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-black text-white overflow-hidden">
+        <div className="text-center px-6 z-10">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Type
+              className="w-8 h-8"
+              style={{ color: '#3b82f6', filter: 'drop-shadow(0 0 8px rgba(59,130,246,0.6))' }}
+            />
+            <h2
+              className="text-3xl font-bold text-blue-400"
+              style={{ textShadow: '0 0 15px #3b82f6' }}
+            >
+              WordSurge
             </h2>
-            <p className="text-blue-300 text-sm">Make Words</p>
           </div>
-
-          <p className="text-lg mb-2 text-blue-300">Make words from falling letters!</p>
-          <p className="text-sm text-blue-400 mb-2">90 seconds per round - longer words = more points!</p>
-          <p className="text-xs text-yellow-400 font-semibold mb-1">🤭 Big bonus for potty mouths!</p>
-          <p className="text-xs text-blue-300">🔊 Turn on sound for the full experience!</p>
+          <p className="text-blue-300 text-lg font-semibold mb-1">Make Words</p>
+          <p className="text-yellow-400 text-sm font-bold">Big Bonus for Potty Mouths</p>
         </div>
-        <button 
-          onClick={startGame}
-          className="bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-4 px-8 rounded-lg text-xl transition-all hover:bg-blue-400 hover:text-black active:scale-95"
-          style={{ textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}
-        >
-          Start Playing
-        </button>
+        <RoundCountdown onComplete={startGame} />
       </div>
     );
   }

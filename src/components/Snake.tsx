@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { TrendingUp } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
+import { RoundCountdown } from './RoundCountdown';
 
 interface Position { x: number; y: number; }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; }
@@ -54,7 +55,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   const [rewindUses, setRewindUses] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(true);
   const [activeEffects, setActiveEffects] = useState<{ slow: boolean; ghost: boolean }>({ slow: false, ghost: false });
   const [audioLoaded, setAudioLoaded] = useState(false);
 
@@ -273,16 +274,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   };
 
   const updateDirection = (newDir: Position) => {
-    if (gameOverRef.current) return;
-
-    if (!gameStarted) {
-      audioManager.initialize();
-      setGameStarted(true);
-      setShowInstructions(false);
-      if (audioLoaded) {
-        audioManager.playMusic('snake_bg_music');
-      }
-    }
+    if (gameOverRef.current || !gameStarted) return;
 
     const lastQueued = inputQueueRef.current.length > 0
       ? inputQueueRef.current[inputQueueRef.current.length - 1]
@@ -548,12 +540,16 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         >
           <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ width: '100%', height: '100%' }} />
 
-          {showInstructions && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-center p-6">
-              <div className="text-green-400 animate-pulse">
-                <p className="mb-2 font-bold text-xl">SWIPE or KEYS TO MOVE</p>
-                <p className="text-xs text-green-200 opacity-80">Eat apples • Grab power-ups<br />Ghost through obstacles • Rewind mistakes!</p>
-              </div>
+          {showCountdown && (
+            <div className="absolute inset-0 bg-black/70 overflow-hidden">
+              <RoundCountdown
+                onComplete={() => {
+                  setShowCountdown(false);
+                  audioManager.initialize();
+                  setGameStarted(true);
+                  if (audioLoaded) audioManager.playMusic('snake_bg_music');
+                }}
+              />
             </div>
           )}
 

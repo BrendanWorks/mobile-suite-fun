@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Repeat } from 'lucide-react';
+import { RoundCountdown } from './RoundCountdown';
 
 interface ShapeSequenceProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -55,7 +56,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const sequenceTimeoutsRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   
-  const [gameStatus, setGameStatus] = useState<'idle' | 'showing' | 'playing' | 'gameover'>('idle');
+  const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
@@ -330,11 +331,9 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
             onClick={handleCanvasClick}
             className="w-full aspect-square rounded-3xl bg-black/50 border-4 border-gray-800 shadow-2xl cursor-pointer"
           />
-          {gameStatus === 'idle' && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-3xl">
-              <button onClick={startGame} className="px-8 py-3 bg-orange-500 hover:bg-orange-600 rounded-full font-bold text-white transition-transform active:scale-95">
-                START GAME
-              </button>
+          {gameStatus === 'countdown' && (
+            <div className="absolute inset-0 bg-black/70 rounded-3xl overflow-hidden">
+              <RoundCountdown onComplete={startGame} />
             </div>
           )}
         </div>
