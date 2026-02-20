@@ -1,14 +1,38 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
+import { Trophy, ChevronRight, Shuffle, Image, Zap, Square, Layers, BookOpen, Grid3x3, Gamepad2, ChevronUp, Radio, Sun, Star, ThumbsUp, CheckCircle } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
 import { playWin } from '../lib/sounds';
 import ReactGA from 'react-ga4';
 
+const GAME_ICONS: Record<string, React.ReactNode> = {
+  'odd-man-out': <Shuffle className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'photo-mystery': <Image className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'rank-and-roll': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'snapshot': <Square className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'split-decision': <Layers className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'word-rescue': <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'shape-sequence': <Grid3x3 className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'snake': <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'gravity-ball': <ChevronUp className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'fake-out': <Radio className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'hive-mind': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'slope-rider': <Sun className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'neural-pulse': <Star className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'zen-gravity': <Sun className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'superlative': <ThumbsUp className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'true-false': <CheckCircle className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'multiple-choice': <Radio className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'tracer': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'clutch': <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'flashbang': <Star className="w-6 h-6 sm:w-7 sm:h-7" />,
+};
+
 interface RoundResultsProps {
   roundNumber: number;
   gameName: string;
   gameScore: GameScore;
+  gameId?: string;
   allRoundScores: Array<{ gameId: string; gameName: string; score: GameScore }>;
   totalSessionScore: number;
   maxSessionScore: number;
@@ -20,6 +44,7 @@ export default function RoundResults({
   roundNumber,
   gameName,
   gameScore,
+  gameId,
   allRoundScores,
   totalSessionScore,
   maxSessionScore,
@@ -56,6 +81,8 @@ export default function RoundResults({
     if (score > 0) return "Poor";
     return "Didn't Even Try!";
   }, []);
+
+  const gameIcon = gameId ? GAME_ICONS[gameId.toLowerCase()] : null;
 
   useEffect(() => {
     const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
@@ -98,7 +125,14 @@ export default function RoundResults({
           <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 20px #00ffff' }}>
             Round {roundNumber} Complete
           </h1>
-          <p className="text-base sm:text-lg text-cyan-300/80">{gameName}</p>
+          <div className="flex items-center justify-center gap-2">
+            {gameIcon && (
+              <div className="text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }}>
+                {gameIcon}
+              </div>
+            )}
+            <p className="text-base sm:text-lg text-cyan-300/80">{gameName}</p>
+          </div>
         </div>
 
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
@@ -135,7 +169,6 @@ export default function RoundResults({
               </div>
             )}
           </div>
-
         </div>
 
         <button
