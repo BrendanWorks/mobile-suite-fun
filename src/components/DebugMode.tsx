@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Shuffle, Image, Zap, Square, Layers, BookOpen, Grid3x3,
+  Gamepad2, ChevronUp, Radio, Sun, Star, ThumbsUp, CheckCircle
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GameWrapper from './GameWrapper';
 import OddManOut from './OddManOut';
@@ -21,6 +25,30 @@ import Tracer from './Tracer';
 import Clutch from './Clutch';
 import Flashbang from './Flashbang';
 import GameSession from './GameSession';
+
+const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
+  'odd-man-out': <Shuffle className="w-full h-full" />,
+  'photo-mystery': <Image className="w-full h-full" />,
+  'rank-and-roll': <Zap className="w-full h-full" />,
+  'snapshot': <Square className="w-full h-full" />,
+  'split-decision': <Layers className="w-full h-full" />,
+  'word-rescue': <BookOpen className="w-full h-full" />,
+  'shape-sequence': <Grid3x3 className="w-full h-full" />,
+  'snake': <Gamepad2 className="w-full h-full" />,
+  'gravity-ball': <ChevronUp className="w-full h-full" />,
+  'fake-out': <Radio className="w-full h-full" />,
+  'hive-mind': <Zap className="w-full h-full" />,
+  'slope-rider': <Sun className="w-full h-full" />,
+  'neural-pulse': <Star className="w-full h-full" />,
+  'zen-gravity': <Sun className="w-full h-full" />,
+  'superlative': <ThumbsUp className="w-full h-full" />,
+  'true-false': <CheckCircle className="w-full h-full" />,
+  'multiple-choice': <Radio className="w-full h-full" />,
+  'tracer': <Zap className="w-full h-full" />,
+  'clutch': <Gamepad2 className="w-full h-full" />,
+  'flashbang': <Star className="w-full h-full" />,
+  'double-fake': <Radio className="w-full h-full" />,
+};
 
 interface DebugModeProps {
   onExit: () => void;
@@ -217,6 +245,27 @@ export default function DebugMode({ onExit }: DebugModeProps) {
                   <div className="text-xs sm:text-sm">{game.name}</div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-cyan-400 mb-4" style={{ textShadow: '0 0 15px rgba(0, 255, 255, 0.4)' }}>
+              Icon Reference
+            </h2>
+            <div className="bg-black border-2 border-cyan-400/30 rounded-lg p-6">
+              <p className="text-cyan-300 text-sm mb-4">Current icon assignments for celebration screen:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Object.entries(GAME_ICONS_LOOKUP).map(([gameId, icon]) => (
+                  <div key={gameId} className="flex flex-col items-center gap-2 p-3 bg-black border border-cyan-400/20 rounded-lg hover:border-cyan-400/50 transition-colors">
+                    <div className="w-10 h-10 text-cyan-400" style={{ filter: 'drop-shadow(0 0 8px #00ffff)' }}>
+                      {icon}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-cyan-300 font-mono break-words">{gameId}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
