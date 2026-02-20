@@ -141,18 +141,6 @@ export default function RoundResults({
             )}
           </div>
 
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <TrendingUp className="w-5 h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 10px #00ffff)' }} />
-              <span className="text-sm text-cyan-300 uppercase tracking-wide">Session Progress</span>
-            </div>
-            <div className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2" style={{ textShadow: '0 0 10px #00ffff' }}>
-              {Math.round(totalPercentage)}%
-            </div>
-            <div className="text-sm text-cyan-400/80">
-              {totalSessionScore} / {maxSessionScore} points
-            </div>
-          </div>
         </div>
 
         <button
