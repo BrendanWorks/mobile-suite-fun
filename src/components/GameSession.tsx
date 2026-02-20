@@ -814,7 +814,14 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
 
     return (
-      <div className="h-screen w-screen bg-black flex items-center justify-center p-4 sm:p-6">
+      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+        {/* ROWDY BRANDING - TOP */}
+        <div className="mb-8 sm:mb-12">
+          <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+            ROWDY
+          </p>
+        </div>
+
         <div className="text-center max-w-2xl w-full">
           <div className="mb-6 sm:mb-8">
             <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
