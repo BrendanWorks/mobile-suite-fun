@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Shuffle, Image, Zap, Square, Layers, BookOpen, Grid3x3,
-  Gamepad2, ChevronUp, Radio, Sun, Star, ThumbsUp, CheckCircle
+  Search, Camera, Triangle, Square, Circle, Users, Check,
+  ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2,
+  ThumbsUp, Zap
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GameWrapper from './GameWrapper';
@@ -27,27 +28,25 @@ import Flashbang from './Flashbang';
 import GameSession from './GameSession';
 
 const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
-  'odd-man-out': <Shuffle className="w-full h-full" />,
-  'photo-mystery': <Image className="w-full h-full" />,
-  'rank-and-roll': <Zap className="w-full h-full" />,
-  'snapshot': <Square className="w-full h-full" />,
+  'odd-man-out': <CircleX className="w-full h-full" />,
+  'photo-mystery': <Search className="w-full h-full" />,
+  'rank-and-roll': <ChartBar className="w-full h-full" />,
+  'snapshot': <Camera className="w-full h-full" />,
   'split-decision': <Layers className="w-full h-full" />,
   'word-rescue': <BookOpen className="w-full h-full" />,
-  'shape-sequence': <Grid3x3 className="w-full h-full" />,
+  'shape-sequence': <Triangle className="w-full h-full" />,
   'snake': <Gamepad2 className="w-full h-full" />,
-  'gravity-ball': <ChevronUp className="w-full h-full" />,
-  'fake-out': <Radio className="w-full h-full" />,
-  'hive-mind': <Zap className="w-full h-full" />,
-  'slope-rider': <Sun className="w-full h-full" />,
-  'neural-pulse': <Star className="w-full h-full" />,
-  'zen-gravity': <Sun className="w-full h-full" />,
+  'gravity-ball': <Zap className="w-full h-full" />,
+  'fake-out': <CircleX className="w-full h-full" />,
+  'hive-mind': <Users className="w-full h-full" />,
+  'zen-gravity': <Circle className="w-full h-full" />,
   'superlative': <ThumbsUp className="w-full h-full" />,
-  'true-false': <CheckCircle className="w-full h-full" />,
-  'multiple-choice': <Radio className="w-full h-full" />,
+  'true-false': <Shuffle className="w-full h-full" />,
+  'multiple-choice': <Check className="w-full h-full" />,
   'tracer': <Zap className="w-full h-full" />,
   'clutch': <Gamepad2 className="w-full h-full" />,
-  'flashbang': <Star className="w-full h-full" />,
-  'double-fake': <Radio className="w-full h-full" />,
+  'flashbang': <Zap className="w-full h-full" />,
+  'double-fake': <Shuffle className="w-full h-full" />,
 };
 
 interface DebugModeProps {
