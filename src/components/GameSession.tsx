@@ -74,6 +74,30 @@ const GAME_REGISTRY: GameConfig[] = [
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
 
+// Game icon mapping - ICONS FOR INTRO SCREEN
+const GAME_ICONS: { [key: string]: string } = {
+  'odd-man-out': '❌',
+  'photo-mystery': '🔍',
+  'rank-and-roll': '📊',
+  'snapshot': '📷',
+  'split-decision': '🧩',
+  'word-rescue': '📖',
+  'shape-sequence': '🎮',
+  'snake': '🐍',
+  'gravity-ball': '⬆️',
+  'fake-out': '🎭',
+  'hive-mind': '🧠',
+  'slope-rider': '☀️',
+  'neural-pulse': '⭐',
+  'zen-gravity': '⭐',
+  'superlative': '👍',
+  'true-false': '✓✗',
+  'multiple-choice': '✓',
+  'tracer': '⚡',
+  'clutch': '🎯',
+  'flashbang': '⭐',
+};
+
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
   GAME_REGISTRY.filter(g => g.dbId !== undefined).map(g => [g.dbId!, g.id])
 );
@@ -813,6 +837,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       );
     }
 
+    // ICON-FORWARD INTRO SCREEN
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
         {/* ROWDY BRANDING - TOP */}
@@ -822,25 +847,44 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           </p>
         </div>
 
-        <div className="text-center max-w-2xl w-full">
-          <div className="mb-6 sm:mb-8">
-            <Star className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
-          </div>
+        <div className="text-center max-w-2xl w-full flex flex-col items-center">
+          {/* Playlist badge */}
           {playlistId && playlistName && (
-            <div className="mb-2">
+            <div className="mb-4">
               <span className="inline-block px-3 py-1 text-xs bg-yellow-400/20 border border-yellow-400 text-yellow-300 rounded-full font-semibold" style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}>
                 {playlistName}
               </span>
             </div>
           )}
-          <h1 className="text-4xl sm:text-6xl font-bold text-cyan-400 mb-3 sm:mb-4" style={{ textShadow: '0 0 20px #00ffff' }}>Round {currentRound}</h1>
-          <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 mb-4" style={{ textShadow: '0 0 15px #ec4899' }}>{currentGame.name}</h2>
-          <p className="text-lg sm:text-xl text-cyan-300 mb-6 sm:mb-8">{currentGame.instructions}</p>
+
+          {/* Round number - small */}
+          <div className="text-cyan-400 text-sm sm:text-base mb-4" style={{ textShadow: '0 0 8px #00ffff' }}>
+            Round {currentRound}
+          </div>
+
+          {/* Game icon - large */}
+          <div className="text-7xl sm:text-8xl mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }}>
+            {GAME_ICONS[currentGame.id] || '🎮'}
+          </div>
+
+          {/* Game name - large and bold */}
+          <h2 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-4" style={{ textShadow: '0 0 15px #00ffff' }}>
+            {currentGame.name}
+          </h2>
+
+          {/* Instructions - small */}
+          <p className="text-cyan-300 text-xs sm:text-sm mb-6">
+            {currentGame.instructions}
+          </p>
+
+          {/* Session score if available */}
           {currentSessionScore > 0 && (
             <div className="mb-4">
               <p className="text-sm text-cyan-400">Session Score: <span className="font-bold text-yellow-400">{Math.round(currentSessionScore)}</span></p>
             </div>
           )}
+
+          {/* Starting message */}
           <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-6 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
             <p className="text-xs sm:text-sm text-cyan-400">Starting in a moment...</p>
           </div>
