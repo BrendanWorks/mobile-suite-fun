@@ -23,21 +23,21 @@ interface TestModeProps {
 }
 
 const TEST_GAMES = [
-  { id: 'odd-man-out', name: 'Odd Man Out', icon: '🔍', duration: 60, component: OddManOut },
-  { id: 'photo-mystery', name: 'Zooma', icon: '📷', duration: 15, component: PhotoMystery },
-  { id: 'rank-and-roll', name: 'Ranky', icon: '📊', duration: 30, component: RankAndRoll },
-  { id: 'snapshot', name: 'SnapShot', icon: '🧩', duration: 60, component: SnapShot },
-  { id: 'split-decision', name: 'Split Decision', icon: '⚡', duration: 60, component: SplitDecision },
-  { id: 'word-rescue', name: 'Pop', icon: '📝', duration: 90, component: WordRescue },
-  { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },
-  { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
-  { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: UpYours },
-  { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
-  { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
-  { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },
-  { id: 'zen-gravity', name: 'Balls', icon: '⚫', duration: 90, component: ZenGravity },
-  { id: 'superlative', name: 'Superlative', icon: '⚡', duration: 90, component: Superlative },
-  { id: 'true-false', name: 'True or False', icon: '✅', duration: 90, component: TrueFalse },
+  { id: 'odd-man-out', name: 'Odd Man Out', emoji: '🔍', duration: 60, component: OddManOut },
+  { id: 'photo-mystery', name: 'Zooma', emoji: '📷', duration: 15, component: PhotoMystery },
+  { id: 'rank-and-roll', name: 'Ranky', emoji: '📊', duration: 30, component: RankAndRoll },
+  { id: 'snapshot', name: 'SnapShot', emoji: '🧩', duration: 60, component: SnapShot },
+  { id: 'split-decision', name: 'Split Decision', emoji: '⚡', duration: 60, component: SplitDecision },
+  { id: 'word-rescue', name: 'Pop', emoji: '📝', duration: 90, component: WordRescue },
+  { id: 'shape-sequence', name: 'Shape Sequence', emoji: '🔷', duration: 60, component: ShapeSequence },
+  { id: 'snake', name: 'Snake', emoji: '🐍', duration: 75, component: Snake },
+  { id: 'gravity-ball', name: 'Gravity Ball', emoji: '🌍', duration: 90, component: UpYours },
+  { id: 'fake-out', name: 'Fake Out', emoji: '🎭', duration: 60, component: FakeOut },
+  { id: 'hive-mind', name: 'Hive Mind', emoji: '🐝', duration: 60, component: HiveMind },
+  { id: 'double-fake', name: 'DoubleFake', emoji: '🎨', duration: 60, component: DoubleFake },
+  { id: 'zen-gravity', name: 'Balls', emoji: '⚫', duration: 90, component: ZenGravity },
+  { id: 'superlative', name: 'Superlative', emoji: '⚡', duration: 90, component: Superlative },
+  { id: 'true-false', name: 'True or False', emoji: '✅', duration: 90, component: TrueFalse },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
@@ -100,7 +100,7 @@ export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestM
               onClick={() => onSelectGame(game.id)}
               className="bg-gradient-to-br from-blue-600 to-orange-600 active:from-blue-500 active:to-orange-500 text-white font-bold py-5 sm:py-6 px-3 sm:px-4 rounded-xl shadow-lg transition-all active:scale-[0.98] border-2 border-blue-400/50 touch-manipulation"
             >
-              <div className="text-2xl sm:text-3xl mb-2">{game.icon}</div>
+              <div className="text-2xl sm:text-3xl mb-2">{game.emoji}</div>
               <div className="text-xs sm:text-sm">{game.name}</div>
             </button>
           ))}

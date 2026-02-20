@@ -1,31 +1,30 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Trophy, ChevronRight, Shuffle, Image, Zap, Square, Layers, BookOpen, Grid3x3, Gamepad2, ChevronUp, Radio, Sun, Star, ThumbsUp, CheckCircle } from 'lucide-react';
+import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
 import { playWin } from '../lib/sounds';
 import ReactGA from 'react-ga4';
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
-  'odd-man-out': <Shuffle className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'photo-mystery': <Image className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'rank-and-roll': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'snapshot': <Square className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'odd-man-out': <CircleX className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'photo-mystery': <Search className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'rank-and-roll': <ChartBar className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'snapshot': <Camera className="w-6 h-6 sm:w-7 sm:h-7" />,
   'split-decision': <Layers className="w-6 h-6 sm:w-7 sm:h-7" />,
   'word-rescue': <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'shape-sequence': <Grid3x3 className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'shape-sequence': <Triangle className="w-6 h-6 sm:w-7 sm:h-7" />,
   'snake': <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'gravity-ball': <ChevronUp className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'fake-out': <Radio className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'hive-mind': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'slope-rider': <Sun className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'neural-pulse': <Star className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'zen-gravity': <Sun className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'gravity-ball': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'fake-out': <CircleX className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'hive-mind': <Users className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'zen-gravity': <Shuffle className="w-6 h-6 sm:w-7 sm:h-7" />,
   'superlative': <ThumbsUp className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'true-false': <CheckCircle className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'multiple-choice': <Radio className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'true-false': <Shuffle className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'multiple-choice': <Check className="w-6 h-6 sm:w-7 sm:h-7" />,
   'tracer': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
   'clutch': <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'flashbang': <Star className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'flashbang': <Zap className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'double-fake': <Shuffle className="w-6 h-6 sm:w-7 sm:h-7" />,
 };
 
 interface RoundResultsProps {
