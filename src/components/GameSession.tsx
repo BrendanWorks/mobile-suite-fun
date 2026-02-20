@@ -864,6 +864,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         roundNumber={currentRound}
         gameName={lastRound.gameName}
         gameScore={lastRound.normalizedScore}
+        gameId={lastRound.gameId}
         allRoundScores={roundScores.map(r => ({ gameId: r.gameId, gameName: r.gameName, score: r.normalizedScore }))}
         totalSessionScore={Math.round(currentSessionScore)}
         maxSessionScore={currentRound * 100}
