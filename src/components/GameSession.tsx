@@ -3,7 +3,11 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Trophy, Star } from 'lucide-react';
+import {
+  Trophy, Star, Search, Camera, Triangle, Users, Check,
+  ChartBar, Shuffle, CircleX, Layers, BookOpen,
+  Gamepad2, Zap, ThumbsUp
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import {
   createGameSession,
@@ -74,133 +78,28 @@ const GAME_REGISTRY: GameConfig[] = [
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
 
-// Game icon mapping - APPROVED LINE ART SVG ICONS FOR INTRO SCREEN
 const GAME_ICONS: { [key: string]: JSX.Element } = {
-  'odd-man-out': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="8" />
-      <path d="M9 10l6 4M9 14l6-4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'photo-mystery': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 8v8M8 12h8" strokeLinecap="round" />
-    </svg>
-  ),
-  'rank-and-roll': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M4 8h10" strokeLinecap="round" />
-      <path d="M4 12h8" strokeLinecap="round" />
-      <path d="M4 16h6" strokeLinecap="round" />
-      <path d="M16 6v12" strokeLinecap="round" />
-      <path d="M19 9l-3 3 3 3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'snapshot': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2z" />
-      <circle cx="12" cy="12" r="3.5" />
-    </svg>
-  ),
-  'split-decision': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M6 8l3-3 3 3M6 16l3 3 3-3M12 11v2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8 12l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'word-rescue': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-      <path d="M6 4v16M18 4v16" strokeLinecap="round" />
-    </svg>
-  ),
-  'shape-sequence': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M6 8l6-6 6 6-6 6-6-6z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 14v6" strokeLinecap="round" />
-    </svg>
-  ),
-  'snake': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M4 8h4v4H4zM9 8h3v4H9zM13 8h3v4h-3zM17 6h2v8h-2z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'gravity-ball': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 2v4M12 18v4" strokeLinecap="round" />
-      <path d="M13 8L8 13" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'fake-out': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="8" />
-      <path d="M9 10l6 4M9 14l6-4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'hive-mind': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="8" cy="10" r="2" />
-      <circle cx="12" cy="7" r="2" />
-      <circle cx="16" cy="10" r="2" />
-      <circle cx="12" cy="14" r="2.5" />
-      <path d="M8 12l4 2M16 12l-4 2M10 9l2 5M14 9l-2 5" strokeOpacity="0.5" strokeLinecap="round" />
-    </svg>
-  ),
-  'zen-gravity': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="9" />
-    </svg>
-  ),
-  'superlative': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 4l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'true-false': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M6 12l2 2 4-5M16 9l-2 2 2 2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'multiple-choice': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M4 6l3 3M4 12l3 3M4 18l3 3M10 8h10M10 14h10M10 20h10" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'tracer': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M13 2l-2 4h8l-2-4M3 12h18M9 18l3-5 3 5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'clutch': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M8 10l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 14c1.1 0 2-.9 2-2 0-1.1-.9-2-2-2s-2 .9-2 2c0 1.1.9 2 2 2zM4 14c1.1 0 2-.9 2-2 0-1.1-.9-2-2-2S2 10.9 2 12c0 1.1.9 2 2 2z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'flashbang': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" strokeLinecap="round" />
-      <path d="M8 8l3 3M16 16l-3-3M16 8l-3 3M8 16l3-3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'slope-rider': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M2 18l20-14" strokeLinecap="round" />
-      <circle cx="8" cy="14" r="1.5" />
-      <path d="M6 14l2 2M10 14l2 2M14 14l2 2" strokeOpacity="0.4" strokeLinecap="round" />
-    </svg>
-  ),
-  'neural-pulse': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <polyline points="3 12 9 12 11 8 13 16 15 12 21 12" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  'double-fake': (
-    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M8 10l3 3 5-5M16 10l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
+  'odd-man-out': <CircleX className="w-full h-full" />,
+  'photo-mystery': <Search className="w-full h-full" />,
+  'rank-and-roll': <ChartBar className="w-full h-full" />,
+  'snapshot': <Camera className="w-full h-full" />,
+  'split-decision': <Layers className="w-full h-full" />,
+  'word-rescue': <BookOpen className="w-full h-full" />,
+  'shape-sequence': <Triangle className="w-full h-full" />,
+  'snake': <Gamepad2 className="w-full h-full" />,
+  'gravity-ball': <Zap className="w-full h-full" />,
+  'fake-out': <CircleX className="w-full h-full" />,
+  'hive-mind': <Users className="w-full h-full" />,
+  'zen-gravity': <Shuffle className="w-full h-full" />,
+  'superlative': <ThumbsUp className="w-full h-full" />,
+  'true-false': <Shuffle className="w-full h-full" />,
+  'multiple-choice': <Check className="w-full h-full" />,
+  'tracer': <Zap className="w-full h-full" />,
+  'clutch': <Gamepad2 className="w-full h-full" />,
+  'flashbang': <Zap className="w-full h-full" />,
+  'slope-rider': <Zap className="w-full h-full" />,
+  'neural-pulse': <Zap className="w-full h-full" />,
+  'double-fake': <Shuffle className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
