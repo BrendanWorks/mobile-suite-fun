@@ -113,7 +113,7 @@ export default function RoundResults({
               {getGradeLabel(gameScore.normalizedScore)}
             </div>
             <div className="text-lg sm:text-xl text-cyan-400 font-semibold">
-              {Math.round(gameScore.normalizedScore)}/100
+              {Math.round(gameScore.normalizedScore + (hasTimeBonus ? animatedBonus : 0))}/100
             </div>
           </div>
 
@@ -132,11 +132,6 @@ export default function RoundResults({
                 >
                   +{hasTimeBonus ? Math.round(animatedBonus) : 0}
                 </div>
-                {gameScore.totalWithBonus && hasTimeBonus && (
-                  <div className="text-sm text-cyan-400">
-                    New Total: {Math.round(gameScore.totalWithBonus)}/100
-                  </div>
-                )}
               </div>
             )}
           </div>
