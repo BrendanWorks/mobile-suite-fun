@@ -85,7 +85,14 @@ export default function RoundResults({
   }, []);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+      {/* ROWDY BRANDING - TOP */}
+      <div className="mb-8 sm:mb-12">
+        <p className="text-5xl sm:text-7xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+          ROWDY
+        </p>
+      </div>
+
       <div className={`max-w-2xl w-full transition-all duration-700 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         <div className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2 uppercase tracking-wide" style={{ textShadow: '0 0 20px #00ffff' }}>
