@@ -34,6 +34,7 @@ import Tracer from './Tracer';
 import Clutch from './Clutch';
 import Flashbang from './Flashbang';
 import RoundResults from './RoundResults';
+import CelebrationScreen from './CelebrationScreen';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
@@ -893,79 +894,29 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     console.log('🎊 COMPLETE SCREEN - Game Scores:', gameScores);
     console.log('🎊 Session Total:', sessionTotal);
 
+    const celebrationTiles = roundScores.map((round, idx) => ({
+      gameId: round.gameId,
+      gameName: round.gameName,
+      score: round.normalizedScore,
+    }));
+
+    const handlePlayAgain = () => {
+      if (!user && !sessionSaved) {
+        if (playlistId && !anonymousSessionManager.isLastPlaylist()) {
+          anonymousSessionManager.advanceToNextPlaylist();
+        }
+      }
+      onExit();
+    };
+
     return (
-      <div className="h-screen w-screen bg-black flex flex-col p-3 sm:p-6">
-        <div className="max-w-2xl w-full mx-auto flex flex-col flex-1 min-h-0">
-          <div className="text-center mb-3 sm:mb-4 flex-shrink-0">
-            <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-yellow-400 mb-2" style={{ filter: 'drop-shadow(0 0 20px #fbbf24)' }} />
-            <h1 className="text-2xl sm:text-4xl font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 15px #00ffff' }}>Game Complete!</h1>
-          </div>
-
-          <div className="flex-1 overflow-y-auto mb-3">
-            <div className="bg-black border-2 border-cyan-400 rounded-lg p-3 sm:p-4" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
-              <div className="text-center mb-3 pb-3 border-b border-cyan-400/30">
-                <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 uppercase tracking-wider" style={{ textShadow: '0 0 15px #00ffff' }}>
-                  {getGradeLabel(sessionTotal.percentage)}
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-cyan-300 mb-1">
-                  {sessionTotal.totalScore} / {sessionTotal.maxPossible}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                {roundScores.map((round, idx) => (
-                  <div key={idx} className="flex items-center bg-black/50 border border-cyan-400/30 px-3 py-2 rounded text-xs sm:text-sm">
-                    <span className="text-cyan-300 truncate flex-1 mr-3">{round.gameName}</span>
-                    <span className="text-cyan-400 font-bold w-16 text-right">{Math.round(round.normalizedScore.normalizedScore)}/100</span>
-                    <span className="text-yellow-400 text-base ml-2" style={{ textShadow: '0 0 10px #fbbf24' }}>
-                      {round.normalizedScore.grade}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {sessionSaved && (
-                <div className="p-2 bg-green-500/20 border-2 border-green-500 rounded text-xs text-green-400 mt-3">
-                  ✅ Score saved
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 flex-shrink-0">
-            {!user && !sessionSaved && playlistId && !anonymousSessionManager.isLastPlaylist() && (
-              <button
-                onClick={() => {
-                  anonymousSessionManager.advanceToNextPlaylist();
-                  onExit();
-                }}
-                className="w-full px-4 py-3 bg-transparent border-2 border-yellow-400 text-yellow-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-yellow-400 hover:text-black active:scale-[0.98] touch-manipulation"
-                style={{ textShadow: '0 0 8px #fbbf24', boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)' }}
-              >
-                Next Playlist
-              </button>
-            )}
-            <div className="flex flex-col sm:flex-row gap-2">
-              {!user && !sessionSaved && (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="flex-1 px-4 py-3 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-green-500 hover:text-black active:scale-[0.98] touch-manipulation"
-                  style={{ textShadow: '0 0 8px #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
-                >
-                  Sign In to Save
-                </button>
-              )}
-              <button
-                onClick={onExit}
-                className="flex-1 px-4 py-3 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg text-sm sm:text-base transition-all hover:bg-cyan-400 hover:text-black active:scale-[0.98] touch-manipulation"
-                style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
-              >
-                {!user && !sessionSaved ? 'Continue Without Saving' : 'Back to Menu'}
-              </button>
-            </div>
-          </div>
-        </div>
-
+      <div>
+        <CelebrationScreen
+          roundScores={celebrationTiles}
+          totalSessionScore={sessionTotal.totalScore}
+          maxSessionScore={sessionTotal.maxPossible}
+          onPlayAgain={handlePlayAgain}
+        />
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
