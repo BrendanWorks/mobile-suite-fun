@@ -74,28 +74,169 @@ const GAME_REGISTRY: GameConfig[] = [
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
 
-// Game icon mapping - ICONS FOR INTRO SCREEN
-const GAME_ICONS: { [key: string]: string } = {
-  'odd-man-out': '❌',
-  'photo-mystery': '🔍',
-  'rank-and-roll': '📊',
-  'snapshot': '📷',
-  'split-decision': '🧩',
-  'word-rescue': '📖',
-  'shape-sequence': '🎮',
-  'snake': '🐍',
-  'gravity-ball': '⬆️',
-  'fake-out': '🎭',
-  'hive-mind': '🧠',
-  'slope-rider': '☀️',
-  'neural-pulse': '⭐',
-  'zen-gravity': '⭐',
-  'superlative': '👍',
-  'true-false': '✓✗',
-  'multiple-choice': '✓',
-  'tracer': '⚡',
-  'clutch': '🎯',
-  'flashbang': '⭐',
+// Game icon mapping - LINE ART SVG ICONS FOR INTRO SCREEN
+const GAME_ICONS: { [key: string]: JSX.Element } = {
+  'odd-man-out': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M6 9c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" />
+      <path d="M15 9c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" />
+      <path d="M6 13c-2.21 0-4 1.79-4 4v3h8v-3c0-2.21-1.79-4-4-4z" />
+      <path d="M18 13c-2.21 0-4 1.79-4 4v3h8v-3c0-2.21-1.79-4-4-4z" />
+      <circle cx="12" cy="6" r="3" />
+    </svg>
+  ),
+  'photo-mystery': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2z" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5-6 6-4-4" />
+      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+      <path d="M15 9l-6 6" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+    </svg>
+  ),
+  'rank-and-roll': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 4h18v2H3z" />
+      <path d="M3 9h14v2H3z" />
+      <path d="M3 14h10v2H3z" />
+      <path d="M19 9v8" strokeLinecap="round" />
+      <path d="M15 14v3" strokeLinecap="round" />
+    </svg>
+  ),
+  'snapshot': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2z" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M8 6h.01M20 6h.01" strokeLinecap="round" />
+    </svg>
+  ),
+  'split-decision': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2v20M2 12h20" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="18" r="3" />
+    </svg>
+  ),
+  'word-rescue': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+      <path d="M6 4v16M18 4v16" strokeLinecap="round" />
+    </svg>
+  ),
+  'shape-sequence': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="6" cy="6" r="3" />
+      <rect x="10" y="3" width="6" height="6" />
+      <polygon points="18,12 21,18 15,18" />
+      <path d="M3 14h18v6H3z" />
+    </svg>
+  ),
+  'snake': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M2 12h4v4H2zM7 12h3v4H7zM11 12h3v4h-3zM15 8h3v8h-3zM19 6h3v10h-3z" />
+    </svg>
+  ),
+  'gravity-ball': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 5v14M5 12h14" strokeOpacity="0.5" />
+      <path d="M12 3v2" strokeLinecap="round" />
+      <path d="M12 19v2" strokeLinecap="round" />
+    </svg>
+  ),
+  'fake-out': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M6 10s1-2 6-2 6 2 6 2M6 14s1 2 6 2 6-2 6-2" strokeOpacity="0.4" strokeLinecap="round" />
+    </svg>
+  ),
+  'hive-mind': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="6" cy="6" r="2" />
+      <circle cx="12" cy="6" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <circle cx="6" cy="12" r="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="18" cy="12" r="2" />
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="12" cy="18" r="2" />
+      <circle cx="18" cy="18" r="2" />
+      <path d="M6 8v4M12 8v8M18 8v4" strokeOpacity="0.3" strokeLinecap="round" />
+    </svg>
+  ),
+  'slope-rider': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M2 18l20-14" />
+      <circle cx="8" cy="14" r="2" />
+      <path d="M4 16l2 2M6 16l2 2M8 16l2 2M10 16l2 2" strokeOpacity="0.4" strokeLinecap="round" />
+    </svg>
+  ),
+  'neural-pulse': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <polyline points="3 12 9 12 11 8 13 16 15 12 21 12" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 6h20M2 18h20" strokeOpacity="0.3" />
+    </svg>
+  ),
+  'zen-gravity': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="2" />
+      <circle cx="16" cy="8" r="2" />
+      <circle cx="6" cy="16" r="2" fill="currentColor" />
+      <circle cx="12" cy="16" r="2" fill="currentColor" />
+      <circle cx="18" cy="16" r="2" fill="currentColor" />
+      <path d="M8 10v4M16 10v4" strokeOpacity="0.5" strokeLinecap="round" />
+    </svg>
+  ),
+  'superlative': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  ),
+  'true-false': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 12l5 5 10-10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M18 3l3 3M21 3l-3 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+    </svg>
+  ),
+  'multiple-choice': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 5l5 5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+      <path d="M3 12l5 5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+      <path d="M3 19l5 5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+      <path d="M12 7h8M12 14h8M12 21h8" strokeLinecap="round" />
+    </svg>
+  ),
+  'tracer': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M13 2l-2 4h8l-2-4M3 12h18M9 18l3-5 3 5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="9" strokeDasharray="2,2" opacity="0.3" />
+    </svg>
+  ),
+  'clutch': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M7 12h10" strokeLinecap="round" opacity="0.5" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  ),
+  'flashbang': (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <g>
+        <rect x="2" y="6" width="4" height="4" />
+        <rect x="10" y="6" width="4" height="4" />
+        <rect x="18" y="6" width="4" height="4" />
+      </g>
+      <g>
+        <rect x="2" y="14" width="4" height="4" />
+        <rect x="10" y="14" width="4" height="4" fill="currentColor" />
+        <rect x="18" y="14" width="4" height="4" />
+      </g>
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2" strokeLinecap="round" opacity="0.3" />
+    </svg>
+  ),
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
@@ -862,9 +1003,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             Round {currentRound}
           </div>
 
-          {/* Game icon - large */}
-          <div className="text-7xl sm:text-8xl mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }}>
-            {GAME_ICONS[currentGame.id] || '🎮'}
+          {/* Game icon - large line-art SVG */}
+          <div className="w-24 h-24 sm:w-32 sm:h-32 mb-6 text-cyan-400 mx-auto" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }}>
+            {GAME_ICONS[currentGame.id] || (
+              <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+            )}
           </div>
 
           {/* Game name - large and bold */}
