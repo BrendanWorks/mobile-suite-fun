@@ -964,35 +964,28 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         {/* NEON NAVIGATION BAR - REFACTORED */}
         <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
           <div className="flex justify-between items-center max-w-6xl mx-auto gap-2 sm:gap-3">
-            {/* Left: Rowdy Branding */}
+            {/* Left: Game info */}
+            <div className="text-cyan-400 min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs leading-tight">Round {currentRound} of {totalRounds}</p>
+              <p className="text-xs sm:text-sm font-bold truncate leading-tight" style={{ textShadow: '0 0 8px #00ffff' }}>{currentGame.name}</p>
+            </div>
+
+            {/* Center: Rowdy Branding (RED) */}
             <div className="flex-shrink-0 min-w-fit">
-              <p className="text-sm sm:text-lg font-black text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+              <p className="text-lg sm:text-xl font-black text-red-500" style={{ textShadow: '0 0 20px #ef4444', letterSpacing: '0.05em' }}>
                 ROWDY
               </p>
             </div>
 
-            {/* Center: Game info and score */}
-            <div className="flex-1 min-w-0 flex justify-between items-center gap-2 sm:gap-3">
-              <div className="text-cyan-400 min-w-0">
-                <p className="text-[10px] sm:text-xs leading-tight">Round {currentRound} of {totalRounds}</p>
-                <p className="text-xs sm:text-sm font-bold truncate leading-tight" style={{ textShadow: '0 0 8px #00ffff' }}>{currentGame.name}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-[9px] sm:text-[10px] text-cyan-400 leading-tight">Session Score</p>
+            {/* Right: Score + Action buttons */}
+            <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2">
+              <div className="text-right mr-1">
+                <p className="text-[9px] sm:text-[10px] text-cyan-400 leading-tight">Score</p>
                 <p className="text-sm sm:text-base font-bold text-yellow-400 leading-tight" style={{ textShadow: '0 0 10px #fbbf24' }}>
                   {Math.round(totalSessionScore)}/
                   <span className="text-cyan-400/60 text-xs sm:text-sm">{maxPossibleScore}</span>
                 </p>
-                {currentGameNormalizedScore > 0 && (
-                  <p className="text-[9px] sm:text-[10px] text-cyan-300 leading-tight">
-                    +{Math.round(currentGameNormalizedScore)}
-                  </p>
-                )}
               </div>
-            </div>
-
-            {/* Right: Action buttons */}
-            <div className="flex-shrink-0 flex items-center gap-1">
               {/* Arrow button for next game */}
               <button
                 onClick={handleSkipGame}
