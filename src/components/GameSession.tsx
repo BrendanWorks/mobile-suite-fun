@@ -132,6 +132,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -940,7 +941,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     );
   }
 
-  // Playing state - NEON NAV BAR
+  // Playing state - NEON NAV BAR (REFACTORED)
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
     const previousRoundsScore = currentSessionScore;
@@ -954,19 +955,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     const totalSessionScore = previousRoundsScore + currentGameNormalizedScore;
     const maxPossibleScore = currentRound * 100;
 
+    // Shared neon button styling - DRY consolidation
+    const neonButtonBase = "flex-shrink-0 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded text-xs sm:text-sm font-semibold transition-all hover:text-black active:scale-95 touch-manipulation";
+    const neonButtonStyle = { textShadow: '0 0 8px #00ffff', boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' };
+
     return (
       <div className="h-screen w-screen bg-black flex flex-col">
-        {/* NEON NAVIGATION BAR */}
+        {/* NEON NAVIGATION BAR - REFACTORED */}
         <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
-          <div className="flex justify-between items-center max-w-6xl mx-auto gap-2">
-            {/* Left: Next Game button */}
-            <button
-              onClick={handleSkipGame}
-              className="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 bg-transparent border-2 border-pink-500 text-pink-400 font-semibold rounded text-xs sm:text-sm transition-all hover:bg-pink-500 hover:text-black active:scale-95 touch-manipulation"
-              style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)' }}
-            >
-              Next Game
-            </button>
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-2 sm:gap-3">
+            {/* Left: Rowdy Branding */}
+            <div className="flex-shrink-0 min-w-fit">
+              <p className="text-sm sm:text-lg font-black text-cyan-400" style={{ textShadow: '0 0 15px #00ffff' }}>
+                ROWDY
+              </p>
+            </div>
 
             {/* Center: Game info and score */}
             <div className="flex-1 min-w-0 flex justify-between items-center gap-2 sm:gap-3">
@@ -988,16 +991,52 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
               </div>
             </div>
 
-            {/* Right: Quit button */}
-            <button
-              onClick={handleQuitAndSave}
-              className="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 bg-transparent border-2 border-red-500 text-red-400 font-semibold rounded text-xs sm:text-sm transition-all hover:bg-red-500 hover:text-black active:scale-95 touch-manipulation"
-              style={{ textShadow: '0 0 8px #ef4444', boxShadow: '0 0 10px rgba(239, 68, 68, 0.3)' }}
-            >
-              Quit & Save
-            </button>
+            {/* Right: Action buttons */}
+            <div className="flex-shrink-0 flex items-center gap-1">
+              {/* Arrow button for next game */}
+              <button
+                onClick={handleSkipGame}
+                className={`${neonButtonBase} px-2 sm:px-2.5 py-1 sm:py-1.5`}
+                style={neonButtonStyle}
+                title="Skip to next game"
+              >
+                →
+              </button>
+
+              {/* Menu button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className={`${neonButtonBase} px-2 sm:px-2.5 py-1 sm:py-1.5`}
+                  style={neonButtonStyle}
+                  title="Menu"
+                >
+                  ⋮
+                </button>
+
+                {/* Dropdown menu */}
+                {showMenu && (
+                  <div 
+                    className="absolute right-0 mt-1 bg-black border-2 border-cyan-400 rounded shadow-lg z-50 min-w-max"
+                    style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
+                  >
+                    <button
+                      onClick={() => {
+                        handleQuitAndSave();
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs sm:text-sm text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors whitespace-nowrap"
+                    >
+                      Quit & Save
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Game Content */}
         <div className="flex-1 overflow-auto">
           <GameWrapper
             duration={currentGame.duration}
@@ -1006,10 +1045,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             onScoreUpdate={handleScoreUpdate}
           >
             <GameComponent
-  puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
-  puzzleIds={currentPuzzleIds}
-  rankingPuzzleId={currentRankingPuzzleId}
-/>
+              puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
+              puzzleIds={currentPuzzleIds}
+              rankingPuzzleId={currentRankingPuzzleId}
+            />
           </GameWrapper>
         </div>
       </div>
