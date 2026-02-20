@@ -96,8 +96,15 @@ export default function CelebrationScreen({
 
   return (
     <div className="min-h-screen w-screen bg-black flex flex-col items-center justify-between p-4">
+      {/* ROWDY BRANDING - TOP */}
+      <div className="flex-shrink-0 pt-4 sm:pt-6">
+        <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+          ROWDY
+        </p>
+      </div>
+
       <div className="flex flex-col items-center gap-6 w-full flex-1">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in pt-6" style={{ textShadow: '0 0 20px #00ffff' }}>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in" style={{ textShadow: '0 0 20px #00ffff' }}>
           Game Complete!
         </h1>
 
