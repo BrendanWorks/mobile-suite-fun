@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { TrendingUp } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 import { RoundCountdown } from './RoundCountdown';
@@ -508,7 +508,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     <div className="flex flex-col h-full bg-black select-none overflow-hidden touch-none">
       <div className="px-6 py-4">
         <h2 className="text-2xl font-bold text-green-400 border-b border-green-900 pb-2 flex items-center justify-center gap-2">
-          <TrendingUp className="w-6 h-6" />
+          <Gamepad2 className="w-6 h-6" />
           <span style={{ textShadow: '0 0 10px #22c55e' }}>NEO-SNAKE</span>
         </h2>
         <div className="flex justify-between mt-2 font-mono text-sm">

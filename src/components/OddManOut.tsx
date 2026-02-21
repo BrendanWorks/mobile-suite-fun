@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Sparkles } from 'lucide-react';
+import { CircleX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
@@ -367,7 +367,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-purple-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
-            <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
+            <CircleX className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
             Loading puzzle...
           </div>
           {(props.puzzleId || props.puzzleIds) && (
@@ -418,13 +418,13 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       <div className="text-center max-w-2xl w-full text-white">
       <div className="mb-3 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-1 border-b border-purple-400 pb-1 flex items-center justify-center gap-2">
-          <Sparkles 
-            className="w-6 h-6 sm:w-7 sm:h-7" 
-            style={{ 
+          <CircleX
+            className="w-6 h-6 sm:w-7 sm:h-7"
+            style={{
               color: '#a855f7',
               filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))',
               strokeWidth: 2
-            }} 
+            }}
           />
           <span style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</span>
         </h2>

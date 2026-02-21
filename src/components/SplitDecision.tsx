@@ -19,7 +19,7 @@
  */
 
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Zap } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
@@ -288,7 +288,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>
-          <Zap className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))' }} />
+          <Layers className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))' }} />
           Loading puzzle...
         </div>
       </div>
@@ -366,13 +366,13 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       {/* Header - Updated with icon and branding */}
       <div className="mb-3 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-1 border-b border-yellow-400 pb-1 flex items-center justify-center gap-2">
-          <Zap 
-            className="w-6 h-6 sm:w-7 sm:h-7" 
-            style={{ 
+          <Layers
+            className="w-6 h-6 sm:w-7 sm:h-7"
+            style={{
               color: '#fbbf24',
               filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))',
               strokeWidth: 2
-            }} 
+            }}
           />
           <span style={{ textShadow: '0 0 10px #fbbf24' }}>Split Decision</span>
         </h2>

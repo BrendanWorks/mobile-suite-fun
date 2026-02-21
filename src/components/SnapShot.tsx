@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { Shapes } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { audioManager } from '../lib/audioManager';
 
@@ -736,7 +736,7 @@ const SnapShot = forwardRef((props: any, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-pink-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #ec4899' }}>
-            <Shapes className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
+            <Camera className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
             Loading puzzles...
           </div>
           <div className="text-sm text-pink-300 mt-2">Connecting to database</div>
@@ -751,7 +751,7 @@ const SnapShot = forwardRef((props: any, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-pink-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #ec4899' }}>
-            <Shapes className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
+            <Camera className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
             Loading image...
           </div>
           <div className="text-sm text-pink-300 mt-2">
@@ -791,13 +791,13 @@ const SnapShot = forwardRef((props: any, ref) => {
       {/* Header */}
       <div className="mb-3 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-pink-400 mb-1 border-b border-pink-400 pb-1 flex items-center justify-center gap-2">
-          <Shapes 
-            className="w-6 h-6 sm:w-7 sm:h-7" 
-            style={{ 
+          <Camera
+            className="w-6 h-6 sm:w-7 sm:h-7"
+            style={{
               color: '#ec4899',
               filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
               strokeWidth: 2
-            }} 
+            }}
           />
           <span style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</span>
         </h2>
