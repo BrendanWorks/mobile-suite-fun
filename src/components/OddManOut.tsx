@@ -403,7 +403,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-purple-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
-            <Sparkles className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
+            <CircleX className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
             Getting ready...
           </div>
         </div>
