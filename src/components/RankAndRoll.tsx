@@ -39,12 +39,19 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const [correctCount, setCorrectCount] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showHint, setShowHint] = useState<{ itemId: number; direction: 'up' | 'down' } | null>(null);
+  const [dragState, setDragState] = useState<{ draggedItemId: number | null; draggedItemIndex: number | null; startY: number; currentY: number }>({
+    draggedItemId: null,
+    draggedItemIndex: null,
+    startY: 0,
+    currentY: 0
+  });
   const feedbackTimeoutRef = useRef<number | null>(null);
   const onCompleteRef = useRef(props.onComplete);
   const correctCountRef = useRef(0);
   const gameStateRef = useRef(gameState);
   const itemCountRef = useRef(0);
   const hasCompletedRef = useRef(false);
+  const itemHeightRef = useRef<number>(0);
 
   const MAX_HINTS = 3;
   const HINT_PENALTY = 25;
@@ -247,6 +254,80 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     }
   };
 
+  const swapItems = (index1: number, index2: number) => {
+    if (index1 < 0 || index1 >= items.length || index2 < 0 || index2 >= items.length) return;
+    
+    const newItems = [...items];
+    [newItems[index1], newItems[index2]] = [newItems[index2], newItems[index1]];
+    setItems(newItems);
+    audioManager.play('ranky-select');
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    if (gameState !== 'playing') return;
+    
+    const touch = e.touches[0];
+    setDragState({
+      draggedItemId: items[index].id,
+      draggedItemIndex: index,
+      startY: touch.clientY,
+      currentY: touch.clientY
+    });
+    
+    // Prevent scroll while dragging
+    e.preventDefault();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, index: number) => {
+    if (gameState !== 'playing' || dragState.draggedItemIndex === null) return;
+    
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    const deltaY = currentY - dragState.startY;
+    
+    // Prevent default scroll behavior while dragging
+    if (Math.abs(deltaY) > 10) {
+      e.preventDefault();
+    }
+    
+    setDragState(prev => ({
+      ...prev,
+      currentY
+    }));
+
+    // Calculate which item we're hovering over based on drag distance
+    const draggedIdx = dragState.draggedItemIndex;
+    const itemHeight = itemHeightRef.current || 80; // Fallback to estimated height
+    const threshold = itemHeight / 2;
+
+    if (deltaY < -threshold && draggedIdx > 0) {
+      // Dragged up - swap with item above
+      swapItems(draggedIdx, draggedIdx - 1);
+      setDragState(prev => ({
+        ...prev,
+        draggedItemIndex: draggedIdx - 1,
+        startY: currentY
+      }));
+    } else if (deltaY > threshold && draggedIdx < items.length - 1) {
+      // Dragged down - swap with item below
+      swapItems(draggedIdx, draggedIdx + 1);
+      setDragState(prev => ({
+        ...prev,
+        draggedItemIndex: draggedIdx + 1,
+        startY: currentY
+      }));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setDragState({
+      draggedItemId: null,
+      draggedItemIndex: null,
+      startY: 0,
+      currentY: 0
+    });
+  };
+
   const getHint = () => {
     if (hintsUsed >= MAX_HINTS || gameState !== 'playing') return;
 
@@ -373,6 +454,17 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           .hint-pulse {
             animation: hint-pulse 0.8s ease-in-out infinite;
           }
+          @keyframes drag-shadow {
+            0% {
+              box-shadow: 0 0 20px rgba(34, 197, 94, 0.6), 0 10px 30px rgba(0, 0, 0, 0.8);
+            }
+            50% {
+              box-shadow: 0 0 30px rgba(34, 197, 94, 0.8), 0 10px 40px rgba(0, 0, 0, 1);
+            }
+          }
+          .ghost-shadow {
+            animation: drag-shadow 1s ease-in-out infinite;
+          }
         `}</style>
 
         {/* Header - single line, compact (matches other games) */}
@@ -456,7 +548,57 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
               : '0 0 8px rgba(34, 197, 94, 0.6)';
 
             return (
-              <div key={item.id} className={cardClass} style={glowStyle}>
+              <div 
+                key={item.id} 
+                className={cardClass} 
+                style={{
+                  ...glowStyle,
+                  cursor: gameState === 'playing' ? 'grab' : 'default',
+                  opacity: dragState.draggedItemIndex === index ? 0.5 : 1,
+                  transition: dragState.draggedItemIndex === index ? 'none' : 'opacity 0.2s',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none'
+                } as React.CSSProperties}
+                onTouchStart={(e) => handleTouchStart(e, index)}
+                onTouchMove={(e) => handleTouchMove(e, index)}
+                onTouchEnd={handleTouchEnd}
+                ref={(el) => {
+                  if (el && index === 0) {
+                    itemHeightRef.current = el.offsetHeight;
+                  }
+                }}
+              >
+                {/* Ghost shadow when dragging */}
+                {dragState.draggedItemIndex === index && dragState.currentY !== dragState.startY && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      left: 0,
+                      right: 0,
+                      top: dragState.currentY - 20,
+                      zIndex: 1000,
+                      pointerEvents: 'none',
+                      opacity: 0.6,
+                      filter: 'brightness(1.2)',
+                    }}
+                  >
+                    <div className="mx-3 bg-black/50 border-2 border-green-500 rounded-lg p-2 sm:p-2.5" style={{ boxShadow: '0 0 20px rgba(34, 197, 94, 0.6)' }}>
+                      <div className="flex items-center justify-between gap-2 pl-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {item.emoji && (
+                            <span className="text-lg flex-shrink-0">{item.emoji}</span>
+                          )}
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="text-green-400 text-sm font-semibold truncate">
+                              {item.name}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Number Badge */}
                 <div className={`absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full ${badgeColor} flex items-center justify-center flex-shrink-0 z-10 text-xs font-bold text-black`} style={{ boxShadow: badgeShadow }}>
                   {index + 1}
