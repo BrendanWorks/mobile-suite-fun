@@ -31,6 +31,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [revealState, setRevealState] = useState(false);
+  const [barsComplete, setBarsComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -77,11 +78,12 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     
     setSelectedChoice(choiceText);
     setRevealState(true);
+    setBarsComplete(false);
 
     // Calculate Points
     const sorted = [...currentQuestion.choices].sort((a, b) => b.percentage - a.percentage);
     const rank = sorted.findIndex(c => c.text === choiceText);
-    
+
     let points = 0;
     if (rank === 0) points = 200;
     else if (rank === 1) points = 100;
@@ -91,16 +93,24 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     setTotalScore(newScore);
     onScoreUpdate(newScore);
 
-    // Move to next or complete after 3 seconds (reveal sequence + pause)
+    // 4 bars, sorted low→high, so last bar has animIndex=3: delay=3*0.4=1.2s + duration=0.8s = 2.0s
+    const numChoices = currentQuestion.choices.length;
+    const lastBarFinish = (numChoices - 1) * 0.4 + 0.8;
+    setTimeout(() => {
+      setBarsComplete(true);
+    }, lastBarFinish * 1000);
+
+    // Move to next or complete after bars finish + 2.5s showcase
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setRevealState(false);
+        setBarsComplete(false);
         setSelectedChoice(null);
         setCurrentIndex(prev => prev + 1);
       } else {
         onComplete(newScore);
       }
-    }, 4500); // Wait for the staggered bars to finish + 2.5s showcase
+    }, lastBarFinish * 1000 + 2500);
   };
 
   if (loading || !currentQuestion) {
@@ -112,20 +122,10 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   const winnerText = [...currentQuestion.choices].sort((a, b) => b.percentage - a.percentage)[0].text;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
-      <div className="text-center max-w-2xl w-full text-white font-mono select-none">
-        {/* Top Score */}
-        <div className="flex justify-between items-center mb-4 px-2">
-          <div className="text-xs uppercase tracking-widest text-cyan-400/70">
-            {/* Left spacer */}
-          </div>
-          <div className="text-xl font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>
-            {totalScore.toLocaleString()}
-          </div>
-        </div>
-
+    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-2">
+      <div className="text-center max-w-2xl w-full text-white select-none">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-2 sm:mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
             <Users
               className="w-6 h-6 sm:w-7 sm:h-7"
@@ -138,13 +138,19 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
             <span style={{ textShadow: '0 0 10px #00ffff' }}>Hive Mind</span>
           </h2>
 
-          <p className="text-cyan-300 text-xs sm:text-sm mb-2 text-center">
+          <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
             They said what?
           </p>
+
+          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
+            <div className="text-cyan-300">
+              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalScore}</strong>
+            </div>
+          </div>
         </div>
 
         {/* Question Section */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-2 sm:mb-4">
           <h3 className="text-sm sm:text-base font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
             {currentQuestion.question}
           </h3>
@@ -154,67 +160,81 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
         </div>
 
         {/* Answer Buttons */}
-        <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
-          {currentQuestion.choices.map((choice) => {
-            const isWinner = choice.text === winnerText;
-            const isSelected = selectedChoice === choice.text;
-            const animIndex = animationOrder.findIndex(c => c.text === choice.text);
+        <div className="mb-2 sm:mb-4">
+          <div className="grid grid-cols-1 gap-2">
+            {currentQuestion.choices.map((choice) => {
+              const isWinner = choice.text === winnerText;
+              const isSelected = selectedChoice === choice.text;
+              const animIndex = animationOrder.findIndex(c => c.text === choice.text);
 
-            return (
-              <button
-                key={choice.text}
-                disabled={revealState}
-                onClick={() => handleGuess(choice.text)}
-                className={`
-                  relative w-full text-left p-4 border-2 transition-all duration-200 overflow-hidden
-                  ${revealState ? 'cursor-default' : 'hover:bg-cyan-500/10 active:scale-95'}
-                  ${isSelected && !revealState ? 'border-yellow-400' : 'border-cyan-400/30'}
-                  ${revealState && isWinner ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : ''}
-                  ${revealState && isSelected && !isWinner ? 'border-red-500' : ''}
-                `}
-              >
-                {/* Fill Bar (Animated) */}
-                <AnimatePresence>
-                  {revealState && (
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${choice.percentage}%` }}
-                      transition={{
-                        duration: 0.8,
-                        delay: animIndex * 0.4,
-                        ease: "easeOut"
-                      }}
-                      className={`absolute inset-0 z-0 h-full ${
-                        isWinner ? 'bg-green-500/30' :
-                        animIndex === 2 ? 'bg-cyan-500/20' :
-                        'bg-white/5'
-                      }`}
-                    />
-                  )}
-                </AnimatePresence>
+              let buttonClass = "p-2.5 sm:p-3 rounded-lg text-sm sm:text-base font-medium text-left transition-all duration-500 border-2";
 
-                {/* Content */}
-                <div className="relative z-10 flex justify-between items-center">
-                  <span className={`text-sm sm:text-base font-medium ${revealState && !isWinner && !isSelected ? 'text-white/40' : 'text-white'}`}>
-                    {choice.text}
-                    {revealState && isSelected && isWinner && " 🎯"}
-                    {revealState && isSelected && !isWinner && animationOrder.findIndex(c => c.text === choice.text) === 2 && " (Close!)"}
-                  </span>
+              if (barsComplete) {
+                if (isWinner) {
+                  buttonClass += " bg-green-500/20 border-green-500 text-white";
+                } else if (isSelected && !isWinner) {
+                  buttonClass += " bg-red-500/20 border-red-500 text-white/70";
+                } else {
+                  buttonClass += " bg-black/50 border-cyan-400/20 text-gray-400/60";
+                }
+              } else if (revealState) {
+                buttonClass += " bg-black/50 border-cyan-400/30 text-white";
+              } else {
+                if (isSelected) {
+                  buttonClass += " bg-cyan-500/20 border-cyan-400 text-cyan-300";
+                } else {
+                  buttonClass += " bg-black/50 hover:bg-cyan-500/10 text-white border-cyan-400/30 hover:border-cyan-400";
+                }
+              }
 
-                  {revealState && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: (animIndex * 0.4) + 0.5 }}
-                      className={`text-xs font-bold ${isWinner ? 'text-green-400' : 'text-white/60'}`}
-                    >
-                      {choice.percentage}%
-                    </motion.span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+              const glowStyle = barsComplete && isWinner ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
+                               barsComplete && isSelected && !isWinner ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
+                               isSelected && !revealState ? { boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' } : {};
+
+              return (
+                <button
+                  key={choice.text}
+                  disabled={revealState}
+                  onClick={() => handleGuess(choice.text)}
+                  className={`${buttonClass} relative overflow-hidden`}
+                  style={glowStyle}
+                >
+                  <AnimatePresence>
+                    {revealState && (
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${choice.percentage}%` }}
+                        transition={{
+                          duration: 0.8,
+                          delay: animIndex * 0.4,
+                          ease: "easeOut"
+                        }}
+                        className={`absolute inset-0 z-0 h-full transition-colors duration-500 ${
+                          barsComplete && isWinner ? 'bg-green-500/30' :
+                          barsComplete && isSelected && !isWinner ? 'bg-red-500/20' :
+                          'bg-cyan-500/20'
+                        }`}
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  <div className="relative z-10 flex justify-between items-center">
+                    <span>{choice.text}</span>
+                    {revealState && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: (animIndex * 0.4) + 0.5 }}
+                        className={`text-xs font-bold ${barsComplete && isWinner ? 'text-green-400' : 'text-white/60'}`}
+                      >
+                        {choice.percentage}%
+                      </motion.span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-auto pt-4 text-center">
