@@ -86,6 +86,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     feedbackStartTime: 0,
     feedbackType: null,
   });
+  const isPlayingRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: MAX_SCORE }),
@@ -219,6 +220,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const startSequence = useCallback(async (seq: number[]) => {
     setGameStatus('showing');
+    isPlayingRef.current = false;
     gameStateRef.current.playerSequence = [];
     
     for (let i = 0; i < seq.length; i++) {
@@ -241,14 +243,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       });
     }
     setGameStatus('playing');
+    isPlayingRef.current = true;
   }, [playSound]);
 
   const handleShapeClick = (shapeId: number) => {
-    if (gameStatus !== 'playing') return;
+    if (!isPlayingRef.current) return;
 
     const state = gameStateRef.current;
     const shape = state.shapes.find(s => s.id === shapeId);
     if (!shape) return;
+
+    // Prevent out-of-sequence clicks
+    if (state.playerSequence.length >= state.sequence.length) return;
 
     state.animatingShape = shapeId;
     state.animationStartTime = Date.now();
@@ -362,9 +368,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
           <div className="text-cyan-300">
             Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
-          </div>
-          <div className="text-cyan-300">
-            High Score: <strong className="text-yellow-400">{highScore}</strong>
           </div>
         </div>
 
