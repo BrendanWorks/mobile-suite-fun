@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
@@ -323,7 +323,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
         <div className="text-center text-green-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #22c55e' }}>
-            <BarChart3 className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
+            <ArrowUp className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
             Loading puzzle...
           </div>
           <div className="text-sm text-green-300 mt-2">Connecting to database</div>
@@ -378,7 +378,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         {/* Header - single line, compact (matches other games) */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <BarChart3
+            <ArrowUp
               className="w-4 h-4 sm:w-5 sm:h-5"
               style={{
                 color: '#22c55e',
