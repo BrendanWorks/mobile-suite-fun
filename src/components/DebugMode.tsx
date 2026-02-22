@@ -17,7 +17,6 @@ import Snake from './Snake';
 import UpYours from './UpYours';
 import FakeOut from './FakeOut';
 import HiveMind from './HiveMind';
-import DoubleFake from './DoubleFake';
 import ZenGravity from './ZenGravity';
 import Superlative from './Superlative';
 import TrueFalse from './TrueFalse';
@@ -46,7 +45,6 @@ const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'tracer': <Zap className="w-full h-full" />,
   'clutch': <Gamepad2 className="w-full h-full" />,
   'flashbang': <Zap className="w-full h-full" />,
-  'double-fake': <Shuffle className="w-full h-full" />,
 };
 
 interface DebugModeProps {
@@ -54,25 +52,24 @@ interface DebugModeProps {
 }
 
 const TEST_GAMES = [
-  { id: 'odd-man-out', name: 'Odd Man Out', icon: '🔍', duration: 60, component: OddManOut },
-  { id: 'photo-mystery', name: 'Zooma', icon: '📷', duration: 15, component: PhotoMystery },
-  { id: 'rank-and-roll', name: 'Ranky', icon: '📊', duration: 30, component: RankAndRoll },
-  { id: 'snapshot', name: 'SnapShot', icon: '🧩', duration: 60, component: SnapShot },
-  { id: 'split-decision', name: 'Split Decision', icon: '⚡', duration: 60, component: SplitDecision },
-  { id: 'word-rescue', name: 'Pop', icon: '📝', duration: 90, component: WordRescue },
-  { id: 'shape-sequence', name: 'Shape Sequence', icon: '🔷', duration: 60, component: ShapeSequence },
-  { id: 'snake', name: 'Snake', icon: '🐍', duration: 75, component: Snake },
-  { id: 'gravity-ball', name: 'Gravity Ball', icon: '🌍', duration: 90, component: UpYours },
-  { id: 'fake-out', name: 'Fake Out', icon: '🎭', duration: 60, component: FakeOut },
-  { id: 'hive-mind', name: 'Hive Mind', icon: '🐝', duration: 60, component: HiveMind },
-  { id: 'double-fake', name: 'DoubleFake', icon: '🎨', duration: 60, component: DoubleFake },
-  { id: 'zen-gravity', name: 'Balls', icon: '⚫', duration: 90, component: ZenGravity },
-  { id: 'superlative', name: 'Superlative', icon: '⚡', duration: 90, component: Superlative },
-  { id: 'true-false', name: 'True or False', icon: '✅', duration: 90, component: TrueFalse },
-  { id: 'multiple-choice', name: 'Multiple Choice', icon: '❓', duration: 90, component: MultipleChoice },
-  { id: 'tracer', name: 'Tracer', icon: '✏️', duration: 120, component: Tracer },
-  { id: 'clutch', name: 'Clutch', icon: '🎯', duration: 60, component: Clutch },
-  { id: 'flashbang', name: 'Flashbang', icon: '⚡', duration: 45, component: Flashbang },
+  { id: 'odd-man-out', name: 'Odd Man Out', duration: 60, component: OddManOut },
+  { id: 'photo-mystery', name: 'Zooma', duration: 15, component: PhotoMystery },
+  { id: 'rank-and-roll', name: 'Ranky', duration: 30, component: RankAndRoll },
+  { id: 'snapshot', name: 'Jigsaw', duration: 60, component: SnapShot },
+  { id: 'split-decision', name: 'Split Decision', duration: 60, component: SplitDecision },
+  { id: 'word-rescue', name: 'Pop', duration: 90, component: WordRescue },
+  { id: 'shape-sequence', name: 'Simple', duration: 60, component: ShapeSequence },
+  { id: 'snake', name: 'Snake', duration: 75, component: Snake },
+  { id: 'gravity-ball', name: 'Gravity Ball', duration: 90, component: UpYours },
+  { id: 'fake-out', name: 'Fake Out', duration: 60, component: FakeOut },
+  { id: 'hive-mind', name: 'Hive Mind', duration: 60, component: HiveMind },
+  { id: 'zen-gravity', name: 'Zen Gravity', duration: 90, component: ZenGravity },
+  { id: 'superlative', name: 'Superlative', duration: 90, component: Superlative },
+  { id: 'true-false', name: 'True or False', duration: 90, component: TrueFalse },
+  { id: 'multiple-choice', name: 'Multiple Choice', duration: 90, component: MultipleChoice },
+  { id: 'tracer', name: 'Tracer', duration: 120, component: Tracer },
+  { id: 'clutch', name: 'Clutch', duration: 60, component: Clutch },
+  { id: 'flashbang', name: 'Flashbang', duration: 45, component: Flashbang },
 ];
 
 interface Playlist {
@@ -240,7 +237,13 @@ export default function DebugMode({ onExit }: DebugModeProps) {
                   }}
                   className="bg-gradient-to-br from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-5 sm:py-6 px-3 sm:px-4 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-pink-400/50 touch-manipulation"
                 >
-                  <div className="text-2xl sm:text-3xl mb-2">{game.icon}</div>
+                  <div className="text-2xl sm:text-3xl mb-2">
+                    {GAME_ICONS_LOOKUP[game.id] ? (
+                      <div className="w-8 h-8 mx-auto text-pink-300">
+                        {GAME_ICONS_LOOKUP[game.id]}
+                      </div>
+                    ) : '⚙️'}
+                  </div>
                   <div className="text-xs sm:text-sm">{game.name}</div>
                 </button>
               ))}
