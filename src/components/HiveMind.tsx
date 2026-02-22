@@ -122,45 +122,45 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   const winnerText = [...currentQuestion.choices].sort((a, b) => b.percentage - a.percentage)[0].text;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-2">
-      <div className="text-center max-w-2xl w-full text-white select-none">
-        {/* Header */}
-        <div className="mb-2 sm:mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
+    <div className="min-h-screen bg-black flex items-center justify-center p-3 sm:p-4">
+      <div className="text-center max-w-2xl w-full text-white select-none space-y-3">
+        
+        {/* SINGLE-LINE HEADER - Matches NEON_STYLE_GUIDE.md */}
+        <div className="flex items-center justify-between">
+          {/* Left: Icon + Game Name */}
+          <div className="flex items-center gap-1.5">
             <Users
-              className="w-6 h-6 sm:w-7 sm:h-7"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               style={{
                 color: '#00ffff',
                 filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))',
                 strokeWidth: 2
               }}
             />
-            <span style={{ textShadow: '0 0 10px #00ffff' }}>Hive Mind</span>
-          </h2>
-
-          <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            They said what?
-          </p>
-
-          <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
-            <div className="text-cyan-300">
-              Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{totalScore}</strong>
-            </div>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400"
+                style={{ textShadow: '0 0 10px #00ffff' }}>
+              Hive Mind
+            </h2>
+          </div>
+          
+          {/* Right: Score */}
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{totalScore}</strong>
           </div>
         </div>
 
-        {/* Question Section */}
-        <div className="text-center mb-2 sm:mb-4 min-h-[7.5rem]">
-          <h3 className="text-sm sm:text-base font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
+        {/* Question Text - Prominent */}
+        <div className="text-center">
+          <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}>
             {currentQuestion.question}
           </h3>
-          <p className="text-cyan-300/60 text-xs sm:text-sm italic">
+          <p className="text-cyan-300/70 text-xs sm:text-sm italic">
             What did most people say?
           </p>
         </div>
 
-        {/* Answer Buttons */}
-        <div className="mb-2 sm:mb-4">
+        {/* Answer Buttons - Direct, no extra padding */}
+        <div>
           <div className="grid grid-cols-1 gap-2">
             {currentQuestion.choices.map((choice) => {
               const isWinner = choice.text === winnerText;
@@ -237,14 +237,10 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
           </div>
         </div>
 
-        <div className="mt-auto pt-4 text-center">
-          <div className="text-[10px] text-cyan-400/40 uppercase tracking-[0.2em]">
-            🐝 Hive Mind System Active
-          </div>
-        </div>
       </div>
     </div>
   );
 });
 
+HiveMind.displayName = 'HiveMind';
 export default HiveMind;
