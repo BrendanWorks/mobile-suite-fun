@@ -348,8 +348,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const remainingHints = MAX_HINTS - hintsUsed;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-2">
-      <div className="text-center max-w-2xl w-full text-white">
+    <div className="min-h-screen bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4">
+      <div className="text-center max-w-2xl w-full text-white space-y-3">
         <style>{`
           @keyframes pulse-twice {
             0%, 100% { opacity: 1; }
@@ -375,69 +375,63 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           }
         `}</style>
 
-        {/* Header */}
-        <div className="mb-1.5">
-          <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-0.5 border-b border-green-400 pb-0.5 flex items-center justify-center gap-2">
+        {/* Header - single line, compact (matches other games) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             <BarChart3
-              className="w-6 h-6 sm:w-7 sm:h-7"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               style={{
                 color: '#22c55e',
                 filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))',
                 strokeWidth: 2
               }}
             />
-            <span style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</span>
-          </h2>
-
-          <p className="text-green-300 text-xs sm:text-sm mb-0.5 text-center">
-            Rank 'em!
-          </p>
-
-          {/* Hint Button - Centered */}
-          <div className="flex justify-center mb-1">
-            <button
-              onClick={getHint}
-              disabled={hintsUsed >= MAX_HINTS || gameState !== 'playing'}
-              className={`
-                px-2.5 py-0.5 rounded text-xs font-semibold transition-all border-2
-                ${hintsUsed >= MAX_HINTS || gameState !== 'playing'
-                  ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
-                  : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
-                }
-              `}
-              style={hintsUsed >= MAX_HINTS || gameState !== 'playing' ? {} : {
-                textShadow: '0 0 8px #fbbf24',
-                boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
-              }}
-            >
-              💡 Hint ({remainingHints})
-            </button>
+            <h2 className="text-xs sm:text-sm font-bold text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</h2>
           </div>
-
-          {/* Score */}
-          <div className="text-green-300 text-xs sm:text-sm mb-1 text-center">
+          <div className="text-green-300 text-xs sm:text-sm">
             Score: <strong className="text-yellow-400 tabular-nums">{correctCount}/{items.length}</strong>
           </div>
         </div>
 
         {/* Puzzle Info */}
-        <div className="text-center mb-1.5 bg-black/50 border-2 border-green-500 rounded-lg p-1.5" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
-          <h3 className="text-sm sm:text-base font-bold text-green-400 mb-0 break-words" style={{ textShadow: '0 0 10px #22c55e' }}>
+        <div className="bg-black/50 border-2 border-green-500 rounded-lg p-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
+          <h3 className="text-sm sm:text-base font-bold text-green-400 mb-0.5 break-words" style={{ textShadow: '0 0 10px #22c55e' }}>
             {puzzle.title}
           </h3>
-          <p className="text-gray-300 text-xs">
+          <p className="text-gray-300 text-xs sm:text-sm">
             {puzzle.instruction}
           </p>
         </div>
 
+        {/* Hint Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={getHint}
+            disabled={hintsUsed >= MAX_HINTS || gameState !== 'playing'}
+            className={`
+              px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-semibold transition-all border-2
+              ${hintsUsed >= MAX_HINTS || gameState !== 'playing'
+                ? 'bg-black/50 border-yellow-400/30 text-yellow-400/40 cursor-not-allowed'
+                : 'bg-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black active:scale-95'
+              }
+            `}
+            style={hintsUsed >= MAX_HINTS || gameState !== 'playing' ? {} : {
+              textShadow: '0 0 8px #fbbf24',
+              boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)'
+            }}
+          >
+            💡 Hint ({remainingHints})
+          </button>
+        </div>
+
         {/* Ranking Items */}
-        <div className="mb-1.5 space-y-1">
+        <div className="space-y-2">
           {items.map((item, index) => {
             const isCorrect = gameState === 'feedback' && item.correct_position === index + 1;
             const isWrong = gameState === 'feedback' && item.correct_position !== index + 1;
             const hasHint = showHint?.itemId === item.id;
 
-            let cardClass = "relative bg-black/50 border-2 rounded-lg p-1.5 transition-all";
+            let cardClass = "relative bg-black/50 border-2 rounded-lg p-2 sm:p-2.5 transition-all";
 
             if (gameState === 'feedback') {
               if (isCorrect) {
@@ -464,10 +458,8 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
             return (
               <div key={item.id} className={cardClass} style={glowStyle}>
                 {/* Number Badge */}
-                <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${badgeColor} flex items-center justify-center flex-shrink-0 z-10`} style={{ boxShadow: badgeShadow }}>
-                  <span className="text-black font-bold text-xs">
-                    {index + 1}
-                  </span>
+                <div className={`absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full ${badgeColor} flex items-center justify-center flex-shrink-0 z-10 text-xs font-bold text-black`} style={{ boxShadow: badgeShadow }}>
+                  {index + 1}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pl-3">
@@ -546,18 +538,18 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         </div>
 
         {/* Bottom Actions */}
-        <div className="flex justify-center pb-2">
+        <div className="flex justify-center">
           {gameState === 'playing' ? (
             <button
               onClick={checkAnswer}
-              className="w-2/3 py-2 px-4 rounded-lg text-sm font-bold transition-all bg-green-500 text-black hover:bg-green-400 active:scale-95"
+              className="w-full sm:w-2/3 py-2.5 sm:py-3 px-4 rounded-lg text-sm sm:text-base font-bold transition-all bg-green-500 text-black hover:bg-green-400 active:scale-95"
               style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }}
             >
               ✅ Final Answer
             </button>
           ) : (
             <div className={`
-              w-2/3 py-2 px-4 rounded-lg text-sm font-bold border-2
+              w-full sm:w-2/3 py-2.5 sm:py-3 px-4 rounded-lg text-sm sm:text-base font-bold border-2
               ${correctCount === items.length
                 ? 'bg-green-500/20 text-green-400 border-green-500'
                 : 'bg-red-500/20 text-red-400 border-red-500'
