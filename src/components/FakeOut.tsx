@@ -24,14 +24,37 @@ interface FakeOutProps {
   puzzleIds?: number[] | null;
 }
 
-const NEON_STYLES = {
-  cyanGlow: { filter: 'drop-shadow(0 0 8px #00ffff)', textShadow: '0 0 10px #00ffff' },
-  pinkGlow: { filter: 'drop-shadow(0 0 8px #ff00ff)', textShadow: '0 0 10px #ff00ff' },
-  yellowGlow: { filter: 'drop-shadow(0 0 8px #fbbf24)', textShadow: '0 0 10px #fbbf24' },
-};
-
 const BASE_POINTS = 100;
 const STREAK_BONUS = 50;
+
+// SVG Icons - Camera for REAL
+const CameraIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {/* Camera body */}
+    <rect x="3" y="3" width="18" height="15" rx="2" ry="2" />
+    {/* Lens circle */}
+    <circle cx="12" cy="10" r="4" />
+    {/* Flash */}
+    <path d="M18 7h.01" />
+  </svg>
+);
+
+// SVG Icons - Stars breaking box for FAKE
+const StarsBurstIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.5">
+    {/* Box frame */}
+    <rect x="2" y="3" width="20" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    
+    {/* Large center 4-point star */}
+    <path d="M12 7L14 12L19 12L15 15L17 20L12 17L7 20L9 15L5 12L10 12Z" fill="currentColor" />
+    
+    {/* Top-left small star */}
+    <path d="M5 6L6 8L8 8L6.5 9L7.5 11L5.5 9.5L3.5 11L4.5 9L3 8L5 8Z" fill="currentColor" />
+    
+    {/* Bottom-right small star */}
+    <path d="M19 17L20 19L22 19L20.5 20L21.5 22L19.5 20.5L17.5 22L18.5 20L17 19L19 19Z" fill="currentColor" />
+  </svg>
+);
 
 const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const { onScoreUpdate, onComplete, puzzleIds, timeRemaining = 0 } = props;
@@ -155,10 +178,8 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     setStatus('feedback');
 
     setTimeout(() => {
-      if (hasEndedRef.current) {
-        // Timer already ended the game
-        return;
-      }
+      if (hasEndedRef.current) return;
+      
       if (currentIndex === puzzles.length - 1) {
         hasEndedRef.current = true;
         setStatus('finished');
@@ -177,18 +198,20 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center h-full bg-black text-cyan-400">
-        <p className="animate-pulse tracking-widest" style={NEON_STYLES.cyanGlow}>
-          INITIALIZING SYSTEM...
-        </p>
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center text-cyan-400">
+          <p className="animate-pulse tracking-widest" style={{ textShadow: '0 0 10px #00ffff' }}>
+            LOADING...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!puzzles.length || currentIndex >= puzzles.length) {
     return (
-      <div className="flex items-center justify-center h-full bg-black text-red-400">
-        <div className="text-center">
+      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+        <div className="text-center text-red-400">
           <p className="text-2xl font-bold mb-2">⚠️ ERROR</p>
           <p className="text-sm">No puzzles available</p>
         </div>
@@ -199,108 +222,142 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const currentPuzzle = puzzles[currentIndex];
 
   return (
-    <div className="flex flex-col h-full bg-black p-2 sm:p-4 font-mono text-white select-none overflow-hidden">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold italic text-cyan-400" style={NEON_STYLES.cyanGlow}>
-            🎭 FAKE OUT
-          </h1>
-          <p className="text-[10px] sm:text-xs text-cyan-700">Real photo or AI fake?</p>
-        </div>
-        <div className="text-right">
-          <p className="text-yellow-400 text-lg sm:text-xl font-black" style={NEON_STYLES.yellowGlow}>
-            {score.toLocaleString()}
-          </p>
-          <p className="text-xs text-cyan-400 opacity-70 tracking-tighter">
-            IMAGE {currentIndex + 1} / {puzzles.length}
-          </p>
-        </div>
-      </div>
-
-      {/* Game Area */}
-      <div className="relative flex-1 flex flex-col items-center justify-center gap-4">
-
-        {/* Streak */}
-        {streak >= 3 && (
-          <div className="absolute -top-2 z-10 animate-bounce">
-            <span className="bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_#fbbf24]">
-              🔥 STREAK x{streak}
-            </span>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-4 text-white select-none">
+      <div className="text-center max-w-2xl w-full">
+        
+        {/* Title Section - Centered like Odd Man Out */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" style={{ filter: 'drop-shadow(0 0 8px #00ffff)' }}>
+              <StarsBurstIcon />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 border-b border-cyan-400 pb-1" 
+                style={{ textShadow: '0 0 10px #00ffff' }}>
+              Fake Out
+            </h2>
           </div>
-        )}
+          <p className="text-cyan-300 text-xs sm:text-sm">Real or AI generated?</p>
+        </div>
 
-        {/* Image */}
-        <div
-          className={`relative w-full aspect-[4/3] sm:aspect-video rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-            status === 'feedback'
-              ? lastResult?.isCorrect
-                ? 'border-green-500 shadow-[0_0_20px_#22c55e]'
-                : 'border-red-500 shadow-[0_0_20px_#ef4444]'
-              : 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.3)]'
-          }`}
-        >
-          <img
-            src={currentPuzzle.image_url}
-            alt="Mystery Content"
-            className="w-full h-full object-cover"
-          />
+        {/* Stats Row - Left aligned score */}
+        <div className="flex justify-between items-center text-xs sm:text-sm mb-4 sm:mb-6">
+          <div className="text-cyan-300">
+            Score: <strong className="text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>{score.toLocaleString()}</strong>
+          </div>
+          <div className="text-cyan-400">
+            Image {currentIndex + 1}/{puzzles.length}
+          </div>
+        </div>
 
-          {/* Feedback Overlay */}
-          {status === 'feedback' && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
-              <div className="text-center p-4">
-                <p className={`text-2xl font-black mb-2 uppercase ${
-                  lastResult?.isCorrect ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {lastResult?.isCorrect ? 'CORRECT' : 'WRONG'}
-                </p>
-                <p className="text-sm sm:text-base font-bold text-white max-w-xs leading-tight">
-                  {lastResult?.message}
-                </p>
-              </div>
+        {/* Game Area */}
+        <div className="relative w-full mb-4">
+          {/* Streak Indicator */}
+          {streak >= 3 && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-10">
+              <span className="inline-block bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold" 
+                    style={{ boxShadow: '0 0 10px #fbbf24' }}>
+                🔥 STREAK ×{streak}
+              </span>
             </div>
           )}
+
+          {/* Image Container */}
+          <div
+            className={`relative w-full aspect-video rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+              status === 'feedback'
+                ? lastResult?.isCorrect
+                  ? 'border-green-500'
+                  : 'border-red-500'
+                : 'border-cyan-400'
+            }`}
+            style={status === 'feedback' 
+              ? lastResult?.isCorrect
+                ? { boxShadow: '0 0 20px #22c55e' }
+                : { boxShadow: '0 0 20px #ef4444' }
+              : { boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }
+            }
+          >
+            <img
+              src={currentPuzzle.image_url}
+              alt="Mystery Content"
+              className="w-full h-full object-cover"
+            />
+
+            {/* Feedback Overlay */}
+            {status === 'feedback' && lastResult && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                <div className="text-center p-4">
+                  <p className={`text-2xl sm:text-3xl font-black mb-2 uppercase ${
+                    lastResult.isCorrect ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {lastResult.isCorrect ? '✓ CORRECT' : '✗ WRONG'}
+                  </p>
+                  <p className="text-xs sm:text-sm text-cyan-300 max-w-xs leading-tight">
+                    {lastResult.message}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="w-full grid grid-cols-2 gap-4 mt-2">
+        {/* Button Grid */}
+        <div className="w-full grid grid-cols-2 gap-3 sm:gap-4">
+          {/* REAL Button with Camera Icon */}
           <button
             onClick={() => handleAnswer('real')}
             disabled={status === 'feedback'}
-            className={`py-4 sm:py-6 border-2 rounded-md font-bold transition-all active:scale-95 flex flex-col items-center justify-center
+            className={`py-4 sm:py-5 px-3 sm:px-4 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-2
               ${status === 'feedback' && currentPuzzle.correct_answer === 'real'
-                ? 'border-green-500 text-green-500 shadow-[0_0_15px_#22c55e]'
-                : 'border-cyan-400 text-cyan-400 hover:bg-cyan-400/10'}
-              ${status === 'feedback' && currentPuzzle.correct_answer !== 'real' ? 'opacity-30' : ''}
-            `}
-            style={status === 'playing' ? NEON_STYLES.cyanGlow : {}}
+                ? 'border-green-500 bg-green-500/10 text-green-400'
+                : status === 'feedback'
+                ? 'border-cyan-400/30 text-cyan-400/40 opacity-30'
+                : 'border-cyan-400 text-cyan-400 hover:bg-cyan-400/10'
+              }`}
+            style={status === 'playing' 
+              ? { boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)', textShadow: '0 0 8px #00ffff' }
+              : status === 'feedback' && currentPuzzle.correct_answer === 'real'
+              ? { boxShadow: '0 0 15px #22c55e' }
+              : {}
+            }
           >
-            <span className="text-xl">📷</span>
-            <span>REAL</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7">
+              <CameraIcon />
+            </div>
+            <span className="text-xs sm:text-sm font-semibold">REAL</span>
           </button>
 
+          {/* FAKE Button with Stars Icon */}
           <button
             onClick={() => handleAnswer('fake')}
             disabled={status === 'feedback'}
-            className={`py-4 sm:py-6 border-2 rounded-md font-bold transition-all active:scale-95 flex flex-col items-center justify-center
+            className={`py-4 sm:py-5 px-3 sm:px-4 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-2
               ${status === 'feedback' && currentPuzzle.correct_answer === 'fake'
-                ? 'border-green-500 text-green-500 shadow-[0_0_15px_#22c55e]'
-                : 'border-pink-500 text-pink-500 hover:bg-pink-500/10'}
-              ${status === 'feedback' && currentPuzzle.correct_answer !== 'fake' ? 'opacity-30' : ''}
-            `}
-            style={status === 'playing' ? NEON_STYLES.pinkGlow : {}}
+                ? 'border-green-500 bg-green-500/10 text-green-400'
+                : status === 'feedback'
+                ? 'border-pink-500/30 text-pink-400/40 opacity-30'
+                : 'border-pink-500 text-pink-400 hover:bg-pink-500/10'
+              }`}
+            style={status === 'playing'
+              ? { boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)', textShadow: '0 0 8px #ec4899' }
+              : status === 'feedback' && currentPuzzle.correct_answer === 'fake'
+              ? { boxShadow: '0 0 15px #22c55e' }
+              : {}
+            }
           >
-            <span className="text-xl">🤖</span>
-            <span>FAKE</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7">
+              <StarsBurstIcon />
+            </div>
+            <span className="text-xs sm:text-sm font-semibold">FAKE</span>
           </button>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="mt-4 border-t border-cyan-900 pt-2 flex justify-between text-[10px] sm:text-xs text-cyan-600 uppercase tracking-widest">
-        <span>LVL: {currentPuzzle.metadata.difficulty || 'medium'}</span>
-        <span>ACCURACY: {currentIndex > 0 ? Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100) : 0}%</span>
+        {/* Footer Stats */}
+        <div className="mt-6 pt-4 border-t border-cyan-900 flex justify-between text-[10px] sm:text-xs text-cyan-600 uppercase tracking-widest">
+          <span>DIFFICULTY: {currentPuzzle.metadata.difficulty || 'medium'}</span>
+          <span>ACCURACY: {currentIndex > 0 ? Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100) : 0}%</span>
+        </div>
+
       </div>
     </div>
   );
