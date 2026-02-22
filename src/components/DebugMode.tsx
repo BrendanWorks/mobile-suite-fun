@@ -58,7 +58,7 @@ const TEST_GAMES = [
   { id: 'snapshot', name: 'Jigsaw', duration: 60, component: SnapShot },
   { id: 'split-decision', name: 'Split Decision', duration: 60, component: SplitDecision },
   { id: 'word-rescue', name: 'Pop', duration: 90, component: WordRescue },
-  { id: 'shape-sequence', name: 'Simple', duration: 60, component: ShapeSequence },
+  { id: 'shape-sequence', name: 'Recall', duration: 60, component: ShapeSequence },
   { id: 'snake', name: 'Snake', duration: 75, component: Snake },
   { id: 'gravity-ball', name: 'Gravity Ball', duration: 90, component: UpYours },
   { id: 'fake-out', name: 'Fake Out', duration: 60, component: FakeOut },
