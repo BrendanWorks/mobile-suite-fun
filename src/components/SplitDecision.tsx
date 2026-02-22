@@ -333,7 +333,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   };
 
   return (
-    <div className="flex flex-col h-full bg-black p-2 sm:p-4 space-y-2 sm:space-y-3">
+    <div className="flex flex-col h-full bg-black p-3 sm:p-4 space-y-3">
       {/* Add custom animation for double pulse */}
       <style>{`
         @keyframes pulse-twice {
@@ -357,7 +357,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
       {/* Header - single line, compact */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Layers
             className="w-4 h-4 sm:w-5 sm:h-5"
             style={{
@@ -373,41 +373,41 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         </div>
       </div>
 
-      {/* Puzzle Question - large and prominent (~18-20% height) */}
-      <div className="text-center py-1">
-        <h3 className="text-xl sm:text-3xl font-bold text-yellow-400 break-words leading-tight" style={{ textShadow: '0 0 15px #fbbf24' }}>
+      {/* Puzzle Question - larger font with breathing room */}
+      <div className="text-center py-2 sm:py-3">
+        <h3 className="text-2xl sm:text-4xl font-bold text-yellow-400 break-words leading-snug" style={{ textShadow: '0 0 15px #fbbf24' }}>
           {puzzle.prompt}
         </h3>
       </div>
 
-      {/* Item to categorize - main focus (~50%+ height) */}
-      <div className="flex-1 flex items-center justify-center min-h-0 py-2">
+      {/* Item to categorize - main focus (~40% height) */}
+      <div className="flex-1 flex items-center justify-center min-h-0">
         <div 
-          className="w-full bg-black border-2 border-yellow-500 rounded-xl p-4 sm:p-6 text-center flex items-center justify-center" 
+          className="w-full bg-black border-2 border-yellow-500 rounded-xl p-6 sm:p-8 text-center flex items-center justify-center" 
           style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
         >
-          <h2 className="text-4xl sm:text-7xl font-bold text-yellow-400 break-words" style={{ textShadow: '0 0 20px #fbbf24' }}>
+          <h2 className="text-5xl sm:text-7xl font-bold text-yellow-400 break-words" style={{ textShadow: '0 0 20px #fbbf24' }}>
             {currentItem.item_text}
           </h2>
         </div>
       </div>
 
-      {/* Category buttons - compact (~25% height) */}
-      <div className="space-y-1">
+      {/* Category buttons - readable size */}
+      <div className="space-y-2">
         {/* Category A */}
         <button
           onClick={() => handleAnswer(puzzle.category_1)}
           disabled={isAnswered}
           className={`
-            w-full p-2 sm:p-3 rounded-lg text-xs sm:text-sm font-bold transition-all
-            text-yellow-400 uppercase tracking-tight
+            w-full p-3 sm:p-4 rounded-lg text-sm sm:text-base font-bold transition-all
+            text-yellow-400 uppercase tracking-wide
             ${getButtonStyle(puzzle.category_1)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
           style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
         >
-          <span className="block break-words leading-tight">{puzzle.category_1}</span>
+          <span className="block break-words">{puzzle.category_1}</span>
         </button>
 
         {/* Category B */}
@@ -415,15 +415,15 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer(puzzle.category_2)}
           disabled={isAnswered}
           className={`
-            w-full p-2 sm:p-3 rounded-lg text-xs sm:text-sm font-bold transition-all
-            text-yellow-400 uppercase tracking-tight
+            w-full p-3 sm:p-4 rounded-lg text-sm sm:text-base font-bold transition-all
+            text-yellow-400 uppercase tracking-wide
             ${getButtonStyle(puzzle.category_2)}
             ${!isAnswered && 'cursor-pointer'}
             ${isAnswered && 'cursor-default'}
           `}
           style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
         >
-          <span className="block break-words leading-tight">{puzzle.category_2}</span>
+          <span className="block break-words">{puzzle.category_2}</span>
         </button>
 
         {/* BOTH Category */}
@@ -431,8 +431,8 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           onClick={() => handleAnswer('BOTH')}
           disabled={isAnswered}
           className={`
-            w-full p-2 sm:p-3 rounded-lg text-xs sm:text-sm font-bold transition-all
-            uppercase tracking-tight
+            w-full p-3 sm:p-4 rounded-lg text-sm sm:text-base font-bold transition-all
+            uppercase tracking-wide
             text-yellow-400
             ${getButtonStyle('BOTH')}
             ${!isAnswered && 'cursor-pointer'}
@@ -440,7 +440,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           `}
           style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
         >
-          <span className="block leading-tight">BOTH</span>
+          <span className="block">BOTH</span>
         </button>
       </div>
     </div>
