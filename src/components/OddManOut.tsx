@@ -1,5 +1,6 @@
 /**
  * OddManOut.tsx - UPDATED FOR PLAYLIST SYSTEM with Multi-Puzzle Support
+ * FIXED HEADER: Matches SplitDecision layout (compact, name left, score right)
  */
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -19,7 +20,7 @@ interface OddManOutProps {
   duration?: number;
 }
 
-const MAX_QUESTIONS = 3;
+const MAX_QUESTIONS = 4;
 
 const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const [questions, setQuestions] = useState([]);
@@ -414,160 +415,157 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
-      <div className="text-center max-w-2xl w-full text-white">
-      <div className="mb-3 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-1 border-b border-purple-400 pb-1 flex items-center justify-center gap-2">
-          <CircleX
-            className="w-6 h-6 sm:w-7 sm:h-7"
-            style={{
-              color: '#a855f7',
-              filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))',
-              strokeWidth: 2
-            }}
-          />
-          <span style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</span>
-        </h2>
-        
-        <p className="text-purple-300 text-xs sm:text-sm mb-2 sm:mb-4">
-          Spot the Oddballs
-        </p>
-
-        <div className="flex justify-start items-center mb-2 sm:mb-4 text-sm sm:text-base">
-          <div className="text-purple-300">
-            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
+    <div className="min-h-screen bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4">
+      <div className="text-center max-w-2xl w-full text-white space-y-3">
+        {/* Header - single line, compact (matches SplitDecision) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <CircleX
+              className="w-4 h-4 sm:w-5 sm:h-5"
+              style={{
+                color: '#a855f7',
+                filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))',
+                strokeWidth: 2
+              }}
+            />
+            <h2 className="text-xs sm:text-sm font-bold text-purple-400" style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</h2>
+          </div>
+          <div className="text-purple-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
           </div>
         </div>
-      </div>
 
-      <div className="mb-2 sm:mb-4">
-        <div className="grid grid-cols-1 gap-2">
-          {shuffledItems.map((item, index) => {
-            const isSelected = selectedItems.includes(item);
-            const isCorrectItem = correctAnswer.includes(item);
-            const showFeedback = gameState === 'result';
+        {/* Item options grid */}
+        <div>
+          <div className="grid grid-cols-1 gap-2">
+            {shuffledItems.map((item, index) => {
+              const isSelected = selectedItems.includes(item);
+              const isCorrectItem = correctAnswer.includes(item);
+              const showFeedback = gameState === 'result';
 
-            let buttonClass = "p-2.5 sm:p-3 rounded-lg text-sm sm:text-base font-medium text-left transition-all duration-200 border-2";
+              let buttonClass = "p-2.5 sm:p-3 rounded-lg text-sm sm:text-base font-medium text-left transition-all duration-200 border-2";
 
-            if (showFeedback) {
-              if (isCorrectItem) {
-                buttonClass += " bg-green-500/20 border-green-500 animate-pulse text-white";
-              } else if (isSelected) {
-                buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
+              if (showFeedback) {
+                if (isCorrectItem) {
+                  buttonClass += " bg-green-500/20 border-green-500 animate-pulse text-white";
+                } else if (isSelected) {
+                  buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
+                } else {
+                  buttonClass += " bg-black/50 border-purple-400/20 opacity-30 text-gray-500";
+                }
+              } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
+                if (isSelected) {
+                  buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
+                } else {
+                  buttonClass += " bg-black/50 border-purple-400/30 opacity-50 text-white";
+                }
               } else {
-                buttonClass += " bg-black/50 border-purple-400/20 opacity-30 text-gray-500";
+                if (isSelected) {
+                  buttonClass += " bg-purple-500/20 border-purple-400 text-purple-300";
+                } else {
+                  buttonClass += " bg-black/50 hover:bg-purple-500/10 text-white border-purple-400/30 hover:border-purple-400";
+                }
               }
-            } else if (selectedItems.length > 0 && !isCorrect && gameState !== 'playing') {
-              if (isSelected) {
-                buttonClass += " bg-red-500/20 border-red-500 animate-pulse-twice text-white";
-              } else {
-                buttonClass += " bg-black/50 border-purple-400/30 opacity-50 text-white";
-              }
-            } else {
-              if (isSelected) {
-                buttonClass += " bg-purple-500/20 border-purple-400 text-purple-300";
-              } else {
-                buttonClass += " bg-black/50 hover:bg-purple-500/10 text-white border-purple-400/30 hover:border-purple-400";
-              }
-            }
 
-            const glowStyle = showFeedback && isCorrectItem ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
-                             showFeedback && isSelected && !isCorrectItem ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
-                             isSelected && gameState === 'playing' ? { boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)' } : {};
+              const glowStyle = showFeedback && isCorrectItem ? { boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' } :
+                               showFeedback && isSelected && !isCorrectItem ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' } :
+                               isSelected && gameState === 'playing' ? { boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)' } : {};
 
-            return (
-              <button
-                key={index}
-                onClick={() => handleItemClick(item)}
-                disabled={gameState !== 'playing'}
-                className={buttonClass}
-                style={glowStyle}
-              >
-                {item}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleItemClick(item)}
+                  disabled={gameState !== 'playing'}
+                  className={buttonClass}
+                  style={glowStyle}
+                >
+                  {item}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="mb-2 sm:mb-4">
-        <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1">Your Answer:</h4>
-        <div className="min-h-10 sm:min-h-12 bg-black/80 border-2 border-purple-400/50 rounded-lg p-2 sm:p-3" style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}>
-          {selectedItems.length === 0 ? (
-            <span className="text-purple-400/60 text-xs sm:text-sm">Select 2 items that don't belong...</span>
-          ) : (
-            <div className="text-xs sm:text-sm">
-              <strong className="text-purple-300">{selectedItems.join(' & ')}</strong>
-              {gameState === 'playing' && selectedItems.length < 2 && (
-                <span className="text-purple-400/70 ml-2">
-                  (Select {2 - selectedItems.length} more)
-                </span>
+        {/* Your Answer display */}
+        <div>
+          <h4 className="text-xs sm:text-sm font-medium text-purple-300 mb-1 text-left">Your Answer:</h4>
+          <div className="min-h-10 sm:min-h-12 bg-black/80 border-2 border-purple-400/50 rounded-lg p-2 sm:p-3" style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}>
+            {selectedItems.length === 0 ? (
+              <span className="text-purple-400/60 text-xs sm:text-sm">Select 2 items that don't belong...</span>
+            ) : (
+              <div className="text-xs sm:text-sm">
+                <strong className="text-purple-300">{selectedItems.join(' & ')}</strong>
+                {gameState === 'playing' && selectedItems.length < 2 && (
+                  <span className="text-purple-400/70 ml-2">
+                    (Select {2 - selectedItems.length} more)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Check Answer / Result */}
+        <div>
+          {gameState === 'playing' && (
+            <button
+              onClick={checkAnswer}
+              disabled={selectedItems.length !== 2}
+              className={`
+                w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2
+                ${selectedItems.length === 2
+                  ? 'bg-transparent border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black'
+                  : 'bg-black/50 border-purple-400/30 text-purple-400/40 cursor-not-allowed'
+                }
+              `}
+              style={selectedItems.length === 2 ? { textShadow: '0 0 8px #a855f7', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' } : {}}
+            >
+              {selectedItems.length === 2 ? '✨ Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
+            </button>
+          )}
+
+          {gameState === 'result' && (
+            <div className={`
+              p-2 sm:p-3 rounded-lg border-2 animate-fade-in-up
+              ${isCorrect
+                ? 'bg-green-500/20 text-green-400 border-green-500'
+                : 'bg-red-500/20 text-red-400 border-red-500'
+              }
+            `}
+            style={{
+              boxShadow: isCorrect ? '0 0 20px rgba(34, 197, 94, 0.4)' : '0 0 20px rgba(239, 68, 68, 0.4)'
+            }}>
+              {isCorrect && (
+                <div className="text-base sm:text-lg font-bold mb-1.5">
+                  {message}
+                </div>
               )}
+
+              {!isCorrect && (
+                <div className="text-xs sm:text-sm mb-1.5">
+                  <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
+                </div>
+              )}
+
+              <div className="text-xs sm:text-sm bg-black/40 border border-white/20 rounded-lg p-2">
+                <span className="text-gray-200">
+                  {currentQuestion.metadata && (
+                    typeof currentQuestion.metadata === 'string'
+                      ? (() => {
+                          try {
+                            const parsed = JSON.parse(currentQuestion.metadata);
+                            return parsed.logic || 'Think about what makes them different!';
+                          } catch (e) {
+                            return 'Think about what makes them different!';
+                          }
+                        })()
+                      : currentQuestion.metadata.logic || 'Think about what makes them different!'
+                  )}
+                </span>
+              </div>
             </div>
           )}
         </div>
-      </div>
-
-      <div>
-        {gameState === 'playing' && (
-          <button
-            onClick={checkAnswer}
-            disabled={selectedItems.length !== 2}
-            className={`
-              w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold transition-all border-2
-              ${selectedItems.length === 2
-                ? 'bg-transparent border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black'
-                : 'bg-black/50 border-purple-400/30 text-purple-400/40 cursor-not-allowed'
-              }
-            `}
-            style={selectedItems.length === 2 ? { textShadow: '0 0 8px #a855f7', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' } : {}}
-          >
-            {selectedItems.length === 2 ? '✨ Check Answer' : `Select ${2 - selectedItems.length} more item${2 - selectedItems.length === 1 ? '' : 's'}`}
-          </button>
-        )}
-
-        {gameState === 'result' && (
-          <div className={`
-            p-2 sm:p-3 rounded-lg border-2 animate-fade-in-up
-            ${isCorrect
-              ? 'bg-green-500/20 text-green-400 border-green-500'
-              : 'bg-red-500/20 text-red-400 border-red-500'
-            }
-          `}
-          style={{
-            boxShadow: isCorrect ? '0 0 20px rgba(34, 197, 94, 0.4)' : '0 0 20px rgba(239, 68, 68, 0.4)'
-          }}>
-            {isCorrect && (
-              <div className="text-base sm:text-lg font-bold mb-1.5">
-                {message}
-              </div>
-            )}
-
-            {!isCorrect && (
-              <div className="text-xs sm:text-sm mb-1.5">
-                <strong>Correct Answer:</strong> <span className="text-white">{correctAnswer.join(' & ')}</span>
-              </div>
-            )}
-
-            <div className="text-xs sm:text-sm bg-black/40 border border-white/20 rounded-lg p-2">
-              <span className="text-gray-200">
-                {currentQuestion.metadata && (
-                  typeof currentQuestion.metadata === 'string'
-                    ? (() => {
-                        try {
-                          const parsed = JSON.parse(currentQuestion.metadata);
-                          return parsed.logic || 'Think about what makes them different!';
-                        } catch (e) {
-                          return 'Think about what makes them different!';
-                        }
-                      })()
-                    : currentQuestion.metadata.logic || 'Think about what makes them different!'
-                )}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
       </div>
     </div>
   );
