@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Repeat } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
-interface ShapeSequenceProps {
+interface RecallProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
@@ -13,6 +13,8 @@ interface GameShape {
   id: number;
   type: string;
   color: string;
+  themeColor: string;
+  frequency: number;
   x: number;
   y: number;
   size: number;
@@ -36,21 +38,28 @@ interface GameState {
 const MAX_SCORE = 1000;
 const MAX_LIVES = 3;
 const INITIAL_SEQUENCE_LENGTH = 3;
-const MAX_SEQUENCE_LENGTH = 10;
 const SHAPE_ANIMATION_DURATION = 500;
 const FEEDBACK_DURATION = 800;
+const STORAGE_KEY = 'recallHighScore';
 
-const SHAPES: GameShape[] = [
-  { id: 0, type: 'circle', color: '#ef4444', x: 0.25, y: 0.25, size: 75 },
-  { id: 1, type: 'square', color: '#3b82f6', x: 0.75, y: 0.25, size: 75 },
-  { id: 2, type: 'triangle', color: '#10b981', x: 0.25, y: 0.75, size: 75 },
-  { id: 3, type: 'diamond', color: '#f59e0b', x: 0.75, y: 0.75, size: 75 },
-  { id: 4, type: 'star', color: '#8b5cf6', x: 0.5, y: 0.5, size: 75 },
+// Theme constants
+const THEME = {
+  color: '#00ffff',
+  glow: 'rgba(0, 255, 255, 0.6)',
+  shadow: '0 0 10px rgba(0, 255, 255, 0.3)',
+  textShadow: '0 0 10px #00ffff'
+};
+
+// Shape definitions with metadata
+const SHAPE_CONFIG: GameShape[] = [
+  { id: 0, type: 'circle', color: '#ef4444', themeColor: 'red', frequency: 440, x: 0.25, y: 0.25, size: 75 },
+  { id: 1, type: 'square', color: '#3b82f6', themeColor: 'blue', frequency: 523.25, x: 0.75, y: 0.25, size: 75 },
+  { id: 2, type: 'triangle', color: '#10b981', themeColor: 'green', frequency: 659.25, x: 0.25, y: 0.75, size: 75 },
+  { id: 3, type: 'diamond', color: '#f59e0b', themeColor: 'amber', frequency: 783.99, x: 0.75, y: 0.75, size: 75 },
+  { id: 4, type: 'star', color: '#8b5cf6', themeColor: 'purple', frequency: 880, x: 0.5, y: 0.5, size: 75 },
 ];
 
-const SHAPE_FREQUENCIES = [440, 523.25, 659.25, 783.99, 880];
-
-const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
+const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
   const sequenceTimeoutsRef = useRef<number[]>([]);
@@ -62,7 +71,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   const [lives, setLives] = useState(MAX_LIVES);
   const [highScore, setHighScore] = useState(() => {
     try {
-      return parseInt(localStorage.getItem('simonHighScore') || '0');
+      return parseInt(localStorage.getItem(STORAGE_KEY) || '0');
     } catch { return 0; }
   });
 
@@ -125,20 +134,28 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       ctx.strokeStyle = 'rgba(255,255,255,0.2)';
     }
 
+    ctx.lineWidth = 3;
     ctx.beginPath();
+
     switch (shape.type) {
-      case 'circle': ctx.arc(x, y, size / 2, 0, Math.PI * 2); break;
-      case 'square': ctx.rect(x - size / 2, y - size / 2, size, size); break;
+      case 'circle':
+        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+        break;
+      case 'square':
+        ctx.rect(x - size / 2, y - size / 2, size, size);
+        break;
       case 'triangle':
         ctx.moveTo(x, y - size / 2);
         ctx.lineTo(x - size / 2, y + size / 2);
         ctx.lineTo(x + size / 2, y + size / 2);
+        ctx.closePath();
         break;
       case 'diamond':
         ctx.moveTo(x, y - size / 2);
         ctx.lineTo(x + size / 2, y);
         ctx.lineTo(x, y + size / 2);
         ctx.lineTo(x - size / 2, y);
+        ctx.closePath();
         break;
       case 'star':
         for (let i = 0; i < 10; i++) {
@@ -146,9 +163,10 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
           const r = i % 2 === 0 ? size / 2 : size / 4;
           ctx.lineTo(x + Math.cos(angle) * r, y + Math.sin(angle) * r);
         }
+        ctx.closePath();
         break;
     }
-    ctx.closePath();
+
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -159,7 +177,9 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     const state = gameStateRef.current;
     const now = Date.now();
 
@@ -208,9 +228,12 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
       });
 
       const shapeId = seq[i];
-      gameStateRef.current.animatingShape = shapeId;
-      gameStateRef.current.animationStartTime = Date.now();
-      playSound(SHAPE_FREQUENCIES[shapeId], 400);
+      const shape = gameStateRef.current.shapes.find(s => s.id === shapeId);
+      if (shape) {
+        gameStateRef.current.animatingShape = shapeId;
+        gameStateRef.current.animationStartTime = Date.now();
+        playSound(shape.frequency, 400);
+      }
 
       await new Promise(r => {
         const t = window.setTimeout(r, SHAPE_ANIMATION_DURATION + 100);
@@ -224,9 +247,12 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     if (gameStatus !== 'playing') return;
 
     const state = gameStateRef.current;
+    const shape = state.shapes.find(s => s.id === shapeId);
+    if (!shape) return;
+
     state.animatingShape = shapeId;
     state.animationStartTime = Date.now();
-    playSound(SHAPE_FREQUENCIES[shapeId], 200);
+    playSound(shape.frequency, 200);
 
     const expectedId = state.sequence[state.playerSequence.length];
     
@@ -240,11 +266,12 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
         setScore(newScore);
         if (newScore > highScore) {
           setHighScore(newScore);
-          localStorage.setItem('simonHighScore', newScore.toString());
+          localStorage.setItem(STORAGE_KEY, newScore.toString());
         }
         setTimeout(() => {
           setLevel(l => l + 1);
-          const nextSeq = [...state.sequence, Math.floor(Math.random() * (level >= 3 ? 5 : 4))];
+          const maxShapeId = level >= 3 ? 4 : 3;
+          const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxShapeId + 1))];
           state.sequence = nextSeq;
           startSequence(nextSeq);
         }, 1000);
@@ -265,12 +292,14 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     }
   };
 
-  const handleCanvasClick = (e: any) => {
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX || e.touches?.[0].clientX) - rect.left) * (canvas.width / rect.width);
-    const y = ((e.clientY || e.touches?.[0].clientY) - rect.top) * (canvas.height / rect.height);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const x = (clientX - rect.left) * (canvas.width / rect.width);
+    const y = (clientY - rect.top) * (canvas.height / rect.height);
 
     const clicked = gameStateRef.current.shapes.find(s => {
       const dx = x - (s.actualX || 0);
@@ -286,7 +315,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     setScore(0);
     setLevel(1);
     setLives(MAX_LIVES);
-    const initialSeq = Array.from({ length: 3 }, () => Math.floor(Math.random() * 4));
+    const initialSeq = Array.from({ length: INITIAL_SEQUENCE_LENGTH }, () => Math.floor(Math.random() * 4));
     gameStateRef.current.sequence = initialSeq;
     startSequence(initialSeq);
   };
@@ -297,7 +326,7 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
     const size = Math.min(canvas.parentElement?.offsetWidth || 400, 500);
     canvas.width = size;
     canvas.height = size;
-    gameStateRef.current.shapes = SHAPES.map(s => ({
+    gameStateRef.current.shapes = SHAPE_CONFIG.map(s => ({
       ...s,
       actualX: s.x * size,
       actualY: s.y * size,
@@ -308,38 +337,56 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   }, [render, cleanup]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 flex flex-col items-center">
-      <div className="max-w-md w-full">
-        <div className="flex justify-between mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-          <div className="text-center">
-            <p className="text-xs text-gray-400">SCORE</p>
-            <p className="text-xl font-bold text-yellow-400">{score}</p>
+    <div className="min-h-screen bg-black text-white p-3 sm:p-4 flex flex-col items-center">
+      <div className="max-w-2xl w-full text-center space-y-3">
+        {/* Header - Single line (per Game Component Style Reference) */}
+        <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-2 sm:pb-3">
+          <div className="flex items-center gap-1.5">
+            <Zap
+              className="w-4 h-4 sm:w-5 sm:h-5"
+              style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})`, strokeWidth: 2 }}
+            />
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: THEME.textShadow }}>
+              Recall
+            </h2>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-400">LEVEL</p>
-            <p className="text-xl font-bold text-green-400">{level}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-400">LIVES</p>
-            <p className="text-xl font-bold text-red-500">{'❤️'.repeat(lives)}</p>
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
           </div>
         </div>
 
-        <div className="relative mb-8">
+        {/* Stats */}
+        <div className="flex justify-between gap-3 text-xs sm:text-sm">
+          <div className="text-cyan-300">
+            Level: <strong className="text-cyan-400">{level}</strong>
+          </div>
+          <div className="text-cyan-300">
+            Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
+          </div>
+          <div className="text-cyan-300">
+            High Score: <strong className="text-yellow-400">{highScore}</strong>
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="relative">
           <canvas
             ref={canvasRef}
-            onClick={handleCanvasClick}
-            className="w-full aspect-square rounded-3xl bg-black/50 border-4 border-gray-800 shadow-2xl cursor-pointer"
+            onMouseDown={handleCanvasClick}
+            onTouchStart={handleCanvasClick}
+            className="w-full aspect-square rounded-2xl bg-black border-2 border-cyan-500/50 shadow-lg cursor-pointer mx-auto"
+            style={{ boxShadow: `0 0 20px ${THEME.glow}` }}
           />
           {gameStatus === 'countdown' && (
-            <div className="absolute inset-0 bg-black/70 rounded-3xl overflow-hidden">
+            <div className="absolute inset-0 bg-black/80 rounded-2xl overflow-hidden flex items-center justify-center">
               <RoundCountdown onComplete={startGame} />
             </div>
           )}
         </div>
 
-        <div className="text-center text-lg font-medium h-8">
-          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch...</span>}
+        {/* Status message */}
+        <div className="text-center text-sm sm:text-base font-medium h-6">
+          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
           {gameStatus === 'playing' && <span className="text-green-400">Repeat the pattern!</span>}
           {gameStatus === 'gameover' && <span className="text-red-500">Game Over!</span>}
         </div>
@@ -348,4 +395,6 @@ const ShapeSequenceGame = forwardRef<any, ShapeSequenceProps>((props, ref) => {
   );
 });
 
-export default ShapeSequenceGame;
+Recall.displayName = 'Recall';
+
+export default Recall;
