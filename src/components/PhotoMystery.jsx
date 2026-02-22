@@ -445,7 +445,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     try {
       const audio = new Audio();
       if (type === 'correct') {
-        audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFK4DN89OCNQYaaMDu6KBPEQpJouDwtmQdBTiP1vLPgC8GJ37K8d2PRwoTWrPu7KlYFQlBm+HyvmwhBi1/zfPWhjUGG2vA7umnVRQKQ5vg8rx0KgUqgM3z04MyBhxqvu7mnEwODlOq5vCyYRoGO5PX8sp3KwUme8rx3I0+CRJXsu7spVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQcBjiP1vLPgC8GJ3/L8d2PQQkSWrLu7KlYEwpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBSBuve3mnEwODlOp5vCyYRoGOpPX8sp3KwUme8rx3I0+CRJXsu3tpVYVC0Ka4fLDcSYFLIHO8tiHNwgZabvu5p1NEgpJpODwtWQdBjiP1vLPfy4GKH/L8d2PQQkSWrLu7KlYFApBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
+        audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTOH0fPTgjMGHm7A7+OZSA0PVqzn77BfGQc+ltryxnMnBSuAzvPaizsIGGS57OihUBELTKXh8bllHAU2jdXyzn0vBSh+y/HajD4JE1u07+ynVhQKQ5zi8sFuJAUuhM7z1YU1Bhxrvu7mnEwPDlOq5vCyYhsGPJPY88p2KgUme8rx3I4+CRJYsu7sp1cUCkCa4fLFcSYFLIHO8tiHNwgZabvu5p5OEQpJpODwtmQdBjiP1vLPgC8GJ37K8d2PQQkSWrLu7KlYFQpBm+HyvnAjBSx/zfPWhjUGHGrA7umnVhQLRJvh8rx0KAUqgM3zzYAyBhxqwO7ppFQUCkSb4fK8dCgFKoDN88iAMwYcasDs6qNUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1QUCkSb4fK8dCgFKoDN88iAMwYcasDu6aRUFApEm+HyvHQoBSqAzfPIgDMGHGrA7OqjVBQKRJvh8rx0KAUqgM3zyIAzBhxqwOzqo1Q=';
       } else {
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
@@ -672,41 +672,29 @@ const PhotoMystery = forwardRef((props, ref) => {
         </div>
       )}
 
-      <div className="text-center max-w-2xl mx-auto p-3 sm:p-6 bg-black rounded-lg text-white" style={{ border: '2px solid #00ffff40' }}>
-        <div className="mb-3 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
+      <div className="text-center max-w-2xl mx-auto p-3 sm:p-4 bg-black rounded-lg text-white space-y-3 sm:space-y-4" style={{ border: '2px solid #00ffff40' }}>
+        {/* Header - single line, compact (matches SplitDecision & OddManOut) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             <Search 
-              className="w-6 h-6 sm:w-7 sm:h-7" 
+              className="w-4 h-4 sm:w-5 sm:h-5" 
               style={{ 
                 color: '#00ffff',
                 filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))',
                 strokeWidth: 2
               }} 
             />
-            <span style={{ textShadow: '0 0 10px #00ffff' }}>Zooma</span>
-          </h2>
-          
-          <p className="text-cyan-300 text-xs sm:text-sm mb-2 sm:mb-4">
-            What's in the photo?
-          </p>
-
-          <div className="flex justify-between items-center mb-2 sm:mb-4 text-sm sm:text-base">
-            <div className="text-cyan-300">
-              Correct: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{correctCount}/{totalPhotos}</strong>
-            </div>
-            <button
-              onClick={handleTerryTest}
-              className="px-3 py-1 text-xs bg-purple-600/20 border border-purple-400 text-purple-300 rounded hover:bg-purple-600/40 hover:border-purple-300 transition-all"
-              style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}
-            >
-              Terry Test
-            </button>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Photo Mystery</h2>
+          </div>
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Correct: <strong className="text-yellow-400 tabular-nums">{correctCount}/{totalPhotos}</strong>
           </div>
         </div>
 
         {(gameState === 'playing' || gameState === 'result') && (
-          <div className="space-y-3 sm:space-y-6">
-            <div className="flex justify-center items-center mb-2 sm:mb-4">
+          <div className="space-y-2 sm:space-y-3">
+            {/* Points display */}
+            <div className="flex justify-center items-center">
               <div className="flex items-center gap-1 sm:gap-2 text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>
                 <Star size={16} className="sm:w-5 sm:h-5" />
                 <span className="text-lg sm:text-xl font-bold tabular-nums">{Math.round(points)}</span>
@@ -714,7 +702,8 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden h-48 sm:h-64 mb-3 sm:mb-6" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' }}>
+            {/* Image display */}
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden h-40 sm:h-56" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' }}>
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={currentQuestion.prompt}
@@ -725,13 +714,14 @@ const PhotoMystery = forwardRef((props, ref) => {
               </div>
             </div>
 
-            <div className="grid gap-2 sm:gap-3">
+            {/* Answer options */}
+            <div className="grid gap-2">
               {answerOptions.map((option, index) => {
                 const isCorrectAnswer = option === currentQuestion.correct_answer;
                 const isSelectedAnswer = option === selectedAnswer;
                 const showFeedback = gameState === 'result';
 
-                let buttonClass = "p-2.5 sm:p-3 rounded-lg text-sm sm:text-base font-semibold transition-all text-center text-white border-2";
+                let buttonClass = "p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm font-semibold transition-all text-center text-white border-2";
                 let glowStyle = {};
                 
                 if (showFeedback) {
