@@ -1,6 +1,6 @@
 /**
- * WordSurge - BRANDED EDITION
- * Type icon, blue theme, "Make Words" tagline
+ * Pop - Word Game
+ * Blue theme, single-line header (per Game Component Style Reference)
  * - 90 second rounds
  * - Score can exceed 1000 (maxScore = 1000 baseline)
  * - Auto-advances after Round Complete screen
@@ -10,7 +10,7 @@ import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperat
 import { Type } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
-interface WordRescueProps {
+interface PopProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
@@ -19,7 +19,26 @@ interface WordRescueProps {
 
 const MAX_SCORE = 1000;
 
-const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
+// Theme constants (DRY - single source of truth)
+const THEME = {
+  color: '#3b82f6',
+  glow: 'rgba(59, 130, 246, 0.6)',
+  shadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+  shadowStrong: '0 0 20px rgba(59, 130, 246, 0.4)',
+  textShadow: '0 0 10px #3b82f6'
+};
+
+const TONE_CONFIG = {
+  select: { freq: 800, duration: 0.1, type: 'sine' },
+  success: { freq: 523, duration: 0.3, type: 'sine' },
+  fail: { freq: 200, duration: 0.2, type: 'sawtooth' },
+  bonus: { freq: 659, duration: 0.5, type: 'sine' },
+  ambient: { freq: 100, duration: 0.1, type: 'sine' }
+} as const;
+
+const PROFANITY_WORDS = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'hell', 'cunt'];
+
+const Pop = forwardRef<any, PopProps>((props, ref) => {
   // Word list for validation
   const fallbackWords = new Set([
     'cat', 'dog', 'run', 'fun', 'sun', 'car', 'art', 'bat', 'hat', 'rat',
@@ -65,7 +84,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     'rod', 'sod', 'cod', 'plod', 'prod', 'clod', 'shod', 'trod', 'broad'
   ]);
 
-  const validateWord = async (word) => {
+  const validateWord = async (word: string) => {
     const cleanWord = word.toLowerCase().trim();
     
     if (cleanWord.length < 2) return false;
@@ -103,26 +122,24 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     return fallbackWords.has(cleanWord);
   };
 
-  const profanityWords = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'hell', 'cunt'];
-
   const [gameState, setGameState] = useState('countdown');
-  const [letters, setLetters] = useState([]);
-  const [poppingLetters, setPoppingLetters] = useState([]);
-  const [selectedLetters, setSelectedLetters] = useState([]);
+  const [letters, setLetters] = useState<any[]>([]);
+  const [poppingLetters, setPoppingLetters] = useState<any[]>([]);
+  const [selectedLetters, setSelectedLetters] = useState<any[]>([]);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(1800);
   const [nextId, setNextId] = useState(0);
   const [timeLeft, setTimeLeft] = useState(90);
-  const [wordsFound, setWordsFound] = useState([]);
+  const [wordsFound, setWordsFound] = useState<any[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
-  const [scoreNotifications, setScoreNotifications] = useState([]);
+  const [scoreNotifications, setScoreNotifications] = useState<any[]>([]);
   const submissionInProgress = useRef(false);
-  const audioContext = useRef(null);
+  const audioContext = useRef<any>(null);
   const audioBuffers = useRef(new Map());
   const audioInitialized = useRef(false);
-  const roundEndTimeoutRef = useRef(null);
+  const roundEndTimeoutRef = useRef<any>(null);
   const onCompleteRef = useRef(props.onComplete);
 
   // Keep onComplete ref up to date
@@ -136,15 +153,13 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
-      console.log('WordSurge: onGameEnd called (GameWrapper timer hit 0)');
+      console.log('Pop: onGameEnd called (GameWrapper timer hit 0)');
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
-        console.log('WordSurge: Timeout cleared');
+        console.log('Pop: Timeout cleared');
       }
-      // Time ran out on GameWrapper timer - complete with current score
-      // (WordSurge usually handles its own time-up via internal timer, but this is a fallback)
       const callback = onCompleteRef.current;
-      console.log('WordSurge: GameWrapper time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
+      console.log('Pop: GameWrapper time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
       if (callback) {
         callback(score, MAX_SCORE, props.timeRemaining);
       }
@@ -166,27 +181,19 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     }
   }, []);
 
-  const playSound = useCallback((soundName, volume = 0.3) => {
+  const playSound = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
     if (!audioContext.current || !audioInitialized.current) return;
     generateTone(soundName, volume);
   }, []);
 
-  const generateTone = useCallback((soundName, volume = 0.3) => {
+  const generateTone = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
     if (!audioContext.current) return;
     
     const ctx = audioContext.current;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
-    const toneConfig = {
-      select: { freq: 800, duration: 0.1, type: 'sine' },
-      success: { freq: 523, duration: 0.3, type: 'sine' },
-      fail: { freq: 200, duration: 0.2, type: 'sawtooth' },
-      bonus: { freq: 659, duration: 0.5, type: 'sine' },
-      ambient: { freq: 100, duration: 0.1, type: 'sine' }
-    };
-    
-    const config = toneConfig[soundName] || toneConfig.select;
+    const config = TONE_CONFIG[soundName] || TONE_CONFIG.select;
     
     oscillator.frequency.setValueAtTime(config.freq, ctx.currentTime);
     oscillator.type = config.type;
@@ -235,7 +242,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   };
 
   const createLetters = useCallback(() => {
-    const letters = [];
+    const newLetters = [];
     const shouldCluster = Math.random() < 0.7;
     const maxWidth = 650;
 
@@ -245,7 +252,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       const baseY = -70;
 
       for (let i = 0; i < clusterSize; i++) {
-        letters.push({
+        newLetters.push({
           id: nextId + i,
           letter: getRandomLetter(),
           x: Math.max(5, Math.min(maxWidth - 5, baseX + (Math.random() - 0.5) * 160)),
@@ -257,7 +264,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     } else {
       const singleCount = Math.random() < 0.6 ? 2 : 1;
       for (let i = 0; i < singleCount; i++) {
-        letters.push({
+        newLetters.push({
           id: nextId + i,
           letter: getRandomLetter(),
           x: Math.random() * (maxWidth - 10) + 5,
@@ -268,7 +275,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
       setNextId(prev => prev + singleCount);
     }
 
-    return letters;
+    return newLetters;
   }, [nextId]);
 
   useEffect(() => {
@@ -346,15 +353,15 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   // Auto-advance from roundEnd screen
   useEffect(() => {
     if (gameState === 'roundEnd') {
-      console.log('WordSurge: Setting auto-advance timeout for 2.5s');
+      console.log('Pop: Setting auto-advance timeout for 2.5s');
       roundEndTimeoutRef.current = setTimeout(() => {
         const callback = onCompleteRef.current;
-        console.log('WordSurge: Auto-advance timeout fired, calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
+        console.log('Pop: Auto-advance timeout fired, calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
         if (callback) {
           callback(score, MAX_SCORE, props.timeRemaining);
-          console.log('WordSurge: Auto-advance onComplete called successfully');
+          console.log('Pop: Auto-advance onComplete called successfully');
         } else {
-          console.error('WordSurge: Auto-advance onComplete callback is undefined!');
+          console.error('Pop: Auto-advance onComplete callback is undefined!');
         }
       }, 2500);
 
@@ -366,7 +373,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     }
   }, [gameState, score]);
 
-  const selectLetter = (letterId) => {
+  const selectLetter = (letterId: number) => {
     if (selectedLetters.find(l => l.id === letterId)) return;
 
     const letter = letters.find(l => l.id === letterId);
@@ -388,7 +395,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     submissionInProgress.current = true;
     setIsValidating(true);
     
-    const word = selectedLetters.map(l => l.letter).join('').toLowerCase();
+    const word = selectedLetters.map((l: any) => l.letter).join('').toLowerCase();
     
     if (word.length < 2) {
       clearSelection();
@@ -481,7 +488,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     setScoreNotifications([]);
     submissionInProgress.current = false;
 
-    const profanityWord = profanityWords[Math.floor(Math.random() * profanityWords.length)];
+    const profanityWord = PROFANITY_WORDS[Math.floor(Math.random() * PROFANITY_WORDS.length)];
 
     const initialLetters = [];
     const screenHeight = 300;
@@ -530,7 +537,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     }
   };
 
-  const checkProfanity = async (word) => {
+  const checkProfanity = async (word: string) => {
     try {
       const response = await fetch(`https://www.purgomalum.com/service/containsprofanity?text=${word}`);
       const isProfanity = await response.text();
@@ -544,20 +551,18 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-black text-white overflow-hidden">
         <div className="text-center px-6 z-10">
-          <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
             <Type
-              className="w-8 h-8"
-              style={{ color: '#3b82f6', filter: 'drop-shadow(0 0 8px rgba(59,130,246,0.6))' }}
+              className="w-4 h-4 sm:w-5 sm:h-5"
+              style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})` }}
             />
             <h2
-              className="text-3xl font-bold text-blue-400"
-              style={{ textShadow: '0 0 15px #3b82f6' }}
+              className="text-xs sm:text-sm font-bold text-blue-400"
+              style={{ textShadow: THEME.textShadow }}
             >
-              WordSurge
+              Pop
             </h2>
           </div>
-          <p className="text-blue-300 text-lg font-semibold mb-1">Make Words</p>
-          <p className="text-yellow-400 text-sm font-bold">Big Bonus for Potty Mouths</p>
         </div>
         <RoundCountdown onComplete={startGame} />
       </div>
@@ -567,8 +572,8 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   if (gameState === 'roundEnd') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
-          <h1 className="text-4xl font-bold mb-4 text-blue-400" style={{ textShadow: '0 0 15px #3b82f6' }}>🎉 Round Complete!</h1>
+        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: THEME.shadowStrong }}>
+          <h1 className="text-4xl font-bold mb-4 text-blue-400" style={{ textShadow: THEME.textShadow }}>🎉 Round Complete!</h1>
           <p className="text-3xl mb-4 text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>Final Score: {score}</p>
           <p className="text-lg mb-6 text-blue-300">Words Found: {wordsFound.length}</p>
           
@@ -592,33 +597,30 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-blue-400/30" style={{ height: '600px' }}>
-      {/* Header - Branded */}
-      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-blue-400/50 text-white p-2 z-10">
-        <div className="mb-2">
-          <h2 className="text-lg sm:text-xl font-bold text-blue-400 mb-1 flex items-center justify-center gap-2">
+      {/* Header - Single line (per Game Component Style Reference) */}
+      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-blue-400/50 text-white p-2 sm:p-3 z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             <Type 
-              className="w-5 h-5 sm:w-6 sm:h-6" 
+              className="w-4 h-4 sm:w-5 sm:h-5" 
               style={{ 
-                color: '#3b82f6',
-                filter: 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.6))',
+                color: THEME.color,
+                filter: `drop-shadow(0 0 8px ${THEME.glow})`,
                 strokeWidth: 2
               }} 
             />
-            <span style={{ textShadow: '0 0 10px #3b82f6' }}>WordSurge</span>
-          </h2>
-          <p className="text-blue-300 text-xs text-center">Make Words</p>
-        </div>
-        
-        {/* Score left-aligned */}
-        <div className="flex justify-start items-center text-sm sm:text-base">
-          <div className="text-blue-300">
-            Score: <strong className="text-yellow-400 tabular-nums text-base sm:text-lg">{score}</strong>
+            <h2 className="text-xs sm:text-sm font-bold text-blue-400" style={{ textShadow: THEME.textShadow }}>
+              Pop
+            </h2>
+          </div>
+          <div className="text-blue-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
           </div>
         </div>
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full pt-28 pb-20" style={{ height: '300px' }}>
+      <div className="relative w-full pt-16 sm:pt-20 pb-20" style={{ height: '300px' }}>
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
@@ -632,7 +634,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
             style={{
               left: `${letter.x}px`,
               top: `${letter.y}px`,
-              boxShadow: letter.selected ? '0 0 20px #fbbf24' : '0 0 10px rgba(59, 130, 246, 0.3)'
+              boxShadow: letter.selected ? '0 0 20px #fbbf24' : THEME.shadow
             }}
           >
             {letter.letter}
@@ -699,7 +701,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
         <div className="mb-2">
           <div className="text-center text-xs text-blue-400 mb-1">Selected Word:</div>
           <div className="text-center text-lg font-bold min-h-7 bg-black border-2 border-blue-400/50 rounded px-3 py-1 text-blue-300" style={{ boxShadow: 'inset 0 0 10px rgba(59, 130, 246, 0.2)' }}>
-            {selectedLetters.map(l => l.letter).join('')}
+            {selectedLetters.map((l: any) => l.letter).join('')}
           </div>
         </div>
 
@@ -708,7 +710,7 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
             onClick={submitWord}
             disabled={selectedLetters.length === 0 || isValidating}
             className="flex-1 bg-transparent border-2 border-blue-400 text-blue-400 font-bold py-2 px-4 rounded-lg transition-all hover:bg-blue-400 hover:text-black disabled:border-blue-400/30 disabled:text-blue-400/30 disabled:hover:bg-transparent active:scale-95"
-            style={selectedLetters.length > 0 && !isValidating ? { textShadow: '0 0 10px #3b82f6', boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)' } : {}}
+            style={selectedLetters.length > 0 && !isValidating ? { textShadow: THEME.textShadow, boxShadow: THEME.shadow } : {}}
           >
             {isValidating ? 'Checking...' : 'Submit Word'}
           </button>
@@ -726,6 +728,6 @@ const WordRescue = forwardRef<any, WordRescueProps>((props, ref) => {
   );
 });
 
-WordRescue.displayName = 'WordRescue';
+Pop.displayName = 'Pop';
 
-export default WordRescue;
+export default Pop;
