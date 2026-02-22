@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Search, Camera, Triangle, Square, Circle, Users, Check,
   ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2,
-  ThumbsUp, Zap
+  ThumbsUp, Zap, ArrowUpDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GameWrapper from './GameWrapper';
@@ -29,7 +29,7 @@ import GameSession from './GameSession';
 const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-full h-full" />,
   'photo-mystery': <Search className="w-full h-full" />,
-  'rank-and-roll': <ChartBar className="w-full h-full" />,
+  'rank-and-roll': <ArrowUpDown className="w-full h-full" />,
   'snapshot': <Camera className="w-full h-full" />,
   'split-decision': <Layers className="w-full h-full" />,
   'word-rescue': <BookOpen className="w-full h-full" />,
@@ -58,12 +58,12 @@ const TEST_GAMES = [
   { id: 'snapshot', name: 'Jigsaw', duration: 60, component: SnapShot },
   { id: 'split-decision', name: 'Split Decision', duration: 60, component: SplitDecision },
   { id: 'word-rescue', name: 'Pop', duration: 90, component: WordRescue },
-  { id: 'shape-sequence', name: 'Recall', duration: 60, component: ShapeSequence },
+  { id: 'shape-sequence', name: 'Simple', duration: 60, component: ShapeSequence },
   { id: 'snake', name: 'Snake', duration: 75, component: Snake },
-  { id: 'gravity-ball', name: 'Bounce', duration: 90, component: UpYours },
+  { id: 'gravity-ball', name: 'Gravity Ball', duration: 90, component: UpYours },
   { id: 'fake-out', name: 'Fake Out', duration: 60, component: FakeOut },
   { id: 'hive-mind', name: 'Hive Mind', duration: 60, component: HiveMind },
-  { id: 'zen-gravity', name: 'Balls', duration: 90, component: ZenGravity },
+  { id: 'zen-gravity', name: 'Zen Gravity', duration: 90, component: ZenGravity },
   { id: 'superlative', name: 'Superlative', duration: 90, component: Superlative },
   { id: 'true-false', name: 'True or False', duration: 90, component: TrueFalse },
   { id: 'multiple-choice', name: 'Multiple Choice', duration: 90, component: MultipleChoice },
