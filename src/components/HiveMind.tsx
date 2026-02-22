@@ -75,7 +75,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   // Logic for the Reveal Phase
   const handleGuess = (choiceText: string) => {
     if (revealState) return;
-    
+
     setSelectedChoice(choiceText);
     setRevealState(true);
     setBarsComplete(false);
@@ -108,7 +108,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
         setSelectedChoice(null);
         setCurrentIndex(prev => prev + 1);
       } else {
-        onComplete(newScore);
+        onComplete(newScore, questions.length * 200);
       }
     }, lastBarFinish * 1000 + 2500);
   };
@@ -150,7 +150,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
         </div>
 
         {/* Question Section */}
-        <div className="text-center mb-2 sm:mb-4">
+        <div className="text-center mb-2 sm:mb-4 min-h-[7.5rem]">
           <h3 className="text-sm sm:text-base font-bold text-cyan-400 mb-1" style={{ textShadow: '0 0 10px #00ffff' }}>
             {currentQuestion.question}
           </h3>
