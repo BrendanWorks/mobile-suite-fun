@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Brain } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameHandle } from '../lib/gameTypes';
@@ -114,10 +114,20 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   return (
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-4">
       <div className="text-center max-w-2xl w-full text-white font-mono select-none">
+        {/* Top Score */}
+        <div className="flex justify-between items-center mb-4 px-2">
+          <div className="text-xs uppercase tracking-widest text-cyan-400/70">
+            {/* Left spacer */}
+          </div>
+          <div className="text-xl font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>
+            {totalScore.toLocaleString()}
+          </div>
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1 border-b border-cyan-400 pb-1 flex items-center justify-center gap-2">
-            <Brain
+            <Users
               className="w-6 h-6 sm:w-7 sm:h-7"
               style={{
                 color: '#00ffff',
@@ -131,11 +141,6 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
           <p className="text-cyan-300 text-xs sm:text-sm mb-2 text-center">
             They said what?
           </p>
-
-          {/* Score */}
-          <div className="text-cyan-300 text-xs sm:text-sm text-center">
-            Score: <strong className="text-yellow-400 tabular-nums">{totalScore.toLocaleString()}</strong>
-          </div>
         </div>
 
         {/* Question Section */}
@@ -210,6 +215,12 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-auto pt-4 text-center">
+          <div className="text-[10px] text-cyan-400/40 uppercase tracking-[0.2em]">
+            🐝 Hive Mind System Active
+          </div>
         </div>
       </div>
     </div>
