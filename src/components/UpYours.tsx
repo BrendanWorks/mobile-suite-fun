@@ -606,7 +606,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
                 className="text-5xl font-black text-cyan-400 mb-1 tracking-tighter uppercase"
                 style={{ textShadow: '0 0 30px #00ffff, 0 0 60px rgba(0,255,255,0.4)' }}
               >
-                Up Yours
+                Bounce
               </h1>
               <div className="w-16 h-0.5 bg-cyan-400 mx-auto mb-4" style={{ boxShadow: '0 0 8px #00ffff' }} />
               <p className="text-white/40 text-xs font-bold uppercase tracking-widest leading-relaxed">
