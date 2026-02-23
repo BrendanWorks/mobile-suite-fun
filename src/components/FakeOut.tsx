@@ -222,41 +222,36 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const currentPuzzle = puzzles[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-4 text-white select-none">
-      <div className="text-center max-w-2xl w-full">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none">
+      <div className="text-center max-w-2xl w-full flex flex-col h-screen">
         
-        {/* Title Section - Centered like Odd Man Out */}
-        <div className="mb-4 sm:mb-6">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" style={{ filter: 'drop-shadow(0 0 8px #00ffff)' }}>
-              <StarsBurstIcon />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 border-b border-cyan-400 pb-1" 
-                style={{ textShadow: '0 0 10px #00ffff' }}>
-              Fake Out
-            </h2>
-          </div>
-          <p className="text-cyan-300 text-xs sm:text-sm">Real or AI generated?</p>
-        </div>
-
-        {/* Stats Row - Left aligned score */}
-        <div className="flex justify-between items-center text-xs sm:text-sm mb-4 sm:mb-6">
-          <div className="text-cyan-300">
-            Score: <strong className="text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>{score.toLocaleString()}</strong>
-          </div>
-          <div className="text-cyan-400">
-            Image {currentIndex + 1}/{puzzles.length}
+        {/* Compact Header */}
+        <div className="mb-2">
+          <h2 className="text-lg sm:text-xl font-bold text-cyan-400" 
+              style={{ textShadow: '0 0 10px #00ffff' }}>
+            Fake Out
+          </h2>
+          <div className="flex justify-between items-center text-[10px] sm:text-xs text-cyan-300 mt-1">
+            <span>Real or AI?</span>
+            <span>Image {currentIndex + 1}/{puzzles.length}</span>
           </div>
         </div>
 
-        {/* Game Area */}
-        <div className="relative w-full mb-4">
+        {/* Score - minimal */}
+        <div className="text-xs sm:text-sm text-cyan-300 mb-2">
+          <strong className="text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>
+            {score.toLocaleString()}
+          </strong>
+        </div>
+
+        {/* Game Area - takes most space */}
+        <div className="relative flex-1 mb-4 flex flex-col justify-center">
           {/* Streak Indicator */}
           {streak >= 3 && (
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
               <span className="inline-block bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold" 
                     style={{ boxShadow: '0 0 10px #fbbf24' }}>
-                🔥 STREAK ×{streak}
+                🔥 ×{streak}
               </span>
             </div>
           )}
@@ -295,6 +290,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
                   <p className="text-xs sm:text-sm text-cyan-300 max-w-xs leading-tight">
                     {lastResult.message}
                   </p>
+                  <p className="text-[10px] text-cyan-500 mt-2 animate-pulse">Next...</p>
                 </div>
               </div>
             )}
@@ -302,7 +298,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
         </div>
 
         {/* Button Grid */}
-        <div className="w-full grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="w-full grid grid-cols-2 gap-3 sm:gap-4 mb-3">
           {/* REAL Button with Camera Icon */}
           <button
             onClick={() => handleAnswer('real')}
@@ -353,9 +349,13 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
         </div>
 
         {/* Footer Stats */}
-        <div className="mt-6 pt-4 border-t border-cyan-900 flex justify-between text-[10px] sm:text-xs text-cyan-600 uppercase tracking-widest">
-          <span>DIFFICULTY: {currentPuzzle.metadata.difficulty || 'medium'}</span>
-          <span>ACCURACY: {currentIndex > 0 ? Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100) : 0}%</span>
+        <div className="text-[10px] sm:text-xs text-cyan-600 uppercase tracking-widest">
+          <span>Difficulty: {currentPuzzle.metadata.difficulty || 'medium'}</span>
+          {currentIndex > 0 && (
+            <span className="ml-4">
+              Accuracy: {Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100)}%
+            </span>
+          )}
         </div>
 
       </div>
