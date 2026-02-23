@@ -153,7 +153,11 @@ export default function DebugMode({ onExit }: DebugModeProps) {
             gameName={game.name}
             onScoreUpdate={() => {}}
           >
-            <GameComponent />
+            {game.id === 'fake-out' ? (
+              <GameComponent puzzleIds={[1, 2, 3, 4, 5]} />
+            ) : (
+              <GameComponent />
+            )}
           </GameWrapper>
         </div>
       </div>
