@@ -1001,19 +1001,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     );
   }
 
-  // Playing state - NEON NAV BAR (REFACTORED)
+  // Playing state - NEON NAV BAR (MINIMAL)
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
-    const previousRoundsScore = currentSessionScore;
-
-    let currentGameNormalizedScore = 0;
-    if (currentGameScore.maxScore > 0) {
-      const percentage = (currentGameScore.score / currentGameScore.maxScore) * 100;
-      currentGameNormalizedScore = percentage;
-    }
-
-    const totalSessionScore = previousRoundsScore + currentGameNormalizedScore;
-    const maxPossibleScore = currentRound * 100;
 
     // Shared neon button styling - DRY consolidation
     const neonButtonBase = "flex-shrink-0 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded text-xs sm:text-sm font-semibold transition-all hover:text-black active:scale-95 touch-manipulation";
@@ -1021,15 +1011,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col">
-        {/* NEON NAVIGATION BAR - REFACTORED */}
+        {/* NEON NAVIGATION BAR - MINIMAL */}
         <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
           <div className="flex justify-between items-center max-w-6xl mx-auto relative">
-            {/* Left: Game info */}
-            <div className="text-cyan-400 min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs leading-tight">Round {currentRound} of {totalRounds}</p>
-              <p className="text-xs sm:text-sm font-bold truncate leading-tight" style={{ textShadow: '0 0 8px #00ffff' }}>{currentGame.name}</p>
-            </div>
-
             {/* Center: Rowdy Branding (RED) - Absolutely centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
               <p className="text-2xl sm:text-4xl font-black text-red-500" style={{ textShadow: '0 0 25px #ef4444', letterSpacing: '0.08em' }}>
@@ -1037,16 +1021,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
               </p>
             </div>
 
-            {/* Right: Score + Action buttons */}
+            {/* Right: Action buttons */}
             <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2 ml-auto">
-              <div className="text-right mr-1">
-                <p className="text-[9px] sm:text-[10px] text-cyan-400 leading-tight">Score</p>
-                <p className="text-sm sm:text-base font-bold text-yellow-400 leading-tight" style={{ textShadow: '0 0 10px #fbbf24' }}>
-                  {Math.round(totalSessionScore)}/
-                  <span className="text-cyan-400/60 text-xs sm:text-sm">{maxPossibleScore}</span>
-                </p>
-              </div>
-              {/* Arrow button for next game */}
+              {/* Skip button */}
               <button
                 onClick={handleSkipGame}
                 className={`${neonButtonBase} px-2 sm:px-2.5 py-1 sm:py-1.5`}
