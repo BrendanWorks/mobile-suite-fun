@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Trophy, Star, Search, Camera, Triangle, Users, Check,
-  ChartBar, Shuffle, CircleX, Layers, BookOpen,
+  ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
   Gamepad2, Zap, ThumbsUp
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -81,7 +81,7 @@ const AVAILABLE_GAMES = GAME_REGISTRY;
 const GAME_ICONS: { [key: string]: JSX.Element } = {
   'odd-man-out': <CircleX className="w-full h-full" />,
   'photo-mystery': <Search className="w-full h-full" />,
-  'rank-and-roll': <ChartBar className="w-full h-full" />,
+  'rank-and-roll': <ArrowUpDown className="w-full h-full" />,
   'snapshot': <Camera className="w-full h-full" />,
   'split-decision': <Layers className="w-full h-full" />,
   'word-rescue': <BookOpen className="w-full h-full" />,
