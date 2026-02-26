@@ -224,28 +224,28 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none">
       <div className="text-center max-w-2xl w-full flex flex-col h-screen">
-        
+
         {/* Compact Header */}
-        <div className="mb-2">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-400" 
+        <div className="mb-1.5">
+          <h2 className="text-base sm:text-lg font-bold text-cyan-400"
               style={{ textShadow: '0 0 10px #00ffff' }}>
             Fake Out
           </h2>
-          <div className="flex justify-between items-center text-[10px] sm:text-xs text-cyan-300 mt-1">
+          <div className="flex justify-between items-center text-[9px] sm:text-xs text-cyan-300 mt-0.5">
             <span>Real or AI?</span>
             <span>Image {currentIndex + 1}/{puzzles.length}</span>
           </div>
         </div>
 
         {/* Score - minimal */}
-        <div className="text-xs sm:text-sm text-cyan-300 mb-2">
-          <strong className="text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>
+        <div className="text-[10px] sm:text-xs text-cyan-300 mb-1.5">
+          <strong className="text-yellow-400 text-xs sm:text-sm" style={{ textShadow: '0 0 10px #fbbf24' }}>
             {score.toLocaleString()}
           </strong>
         </div>
 
-        {/* Game Area - takes most space */}
-        <div className="relative flex-1 mb-4 flex flex-col justify-center">
+        {/* Game Area - compact and centered */}
+        <div className="relative flex-1 mb-2 flex flex-col justify-center min-h-0">
           {/* Streak Indicator */}
           {streak >= 3 && (
             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
@@ -298,12 +298,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
         </div>
 
         {/* Button Grid */}
-        <div className="w-full grid grid-cols-2 gap-3 sm:gap-4 mb-3">
+        <div className="w-full grid grid-cols-2 gap-2 mb-1.5">
           {/* REAL Button with Camera Icon */}
           <button
             onClick={() => handleAnswer('real')}
             disabled={status === 'feedback'}
-            className={`py-4 sm:py-5 px-3 sm:px-4 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-2
+            className={`py-3 sm:py-4 px-2 sm:px-3 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-1
               ${status === 'feedback' && currentPuzzle.correct_answer === 'real'
                 ? 'border-green-500 bg-green-500/10 text-green-400'
                 : status === 'feedback'
@@ -327,7 +327,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           <button
             onClick={() => handleAnswer('fake')}
             disabled={status === 'feedback'}
-            className={`py-4 sm:py-5 px-3 sm:px-4 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-2
+            className={`py-3 sm:py-4 px-2 sm:px-3 border-2 rounded-lg font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-1
               ${status === 'feedback' && currentPuzzle.correct_answer === 'fake'
                 ? 'border-green-500 bg-green-500/10 text-green-400'
                 : status === 'feedback'
@@ -349,10 +349,10 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
         </div>
 
         {/* Footer Stats */}
-        <div className="text-[10px] sm:text-xs text-cyan-600 uppercase tracking-widest">
+        <div className="text-[8px] sm:text-[9px] text-cyan-600 uppercase tracking-widest">
           <span>Difficulty: {currentPuzzle.metadata.difficulty || 'medium'}</span>
           {currentIndex > 0 && (
-            <span className="ml-4">
+            <span className="ml-2">
               Accuracy: {Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100)}%
             </span>
           )}

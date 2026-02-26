@@ -154,7 +154,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
             onScoreUpdate={() => {}}
           >
             {game.id === 'fake-out' ? (
-              <GameComponent puzzleIds={[1, 2, 3, 4, 5]} />
+              <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
             ) : (
               <GameComponent />
             )}
