@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
+import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
 import { playWin } from '../lib/sounds';
@@ -8,7 +8,7 @@ import ReactGA from 'react-ga4';
 const GAME_ICONS: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-6 h-6 sm:w-7 sm:h-7" />,
   'photo-mystery': <Search className="w-6 h-6 sm:w-7 sm:h-7" />,
-  'rank-and-roll': <ChartBar className="w-6 h-6 sm:w-7 sm:h-7" />,
+  'rank-and-roll': <ArrowUpDown className="w-6 h-6 sm:w-7 sm:h-7" />,
   'snapshot': <Camera className="w-6 h-6 sm:w-7 sm:h-7" />,
   'split-decision': <Layers className="w-6 h-6 sm:w-7 sm:h-7" />,
   'word-rescue': <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />,
