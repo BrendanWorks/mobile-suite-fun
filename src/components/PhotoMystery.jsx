@@ -569,7 +569,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (gameState === 'loading') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black text-cyan-400">
         <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
           <Search className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }} />
           Loading Zooma...
@@ -581,7 +581,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (gameState === 'error') {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-white border-2 border-red-500" style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' }}>
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black text-white border-2 border-red-500 rounded-lg" style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)' }}>
         <div className="text-lg text-red-400 font-bold mb-4" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error Loading Zooma Puzzles</div>
         <div className="text-left text-sm text-cyan-300 bg-black/50 border border-cyan-400/30 rounded-lg p-4 mb-4">
           <p className="font-bold text-yellow-400 mb-2">Check the browser console for details.</p>
@@ -607,7 +607,7 @@ const PhotoMystery = forwardRef((props, ref) => {
 
   if (!currentQuestion) {
     return (
-      <div className="text-center max-w-2xl mx-auto p-6 bg-black rounded-lg text-cyan-400">
+      <div className="text-center max-w-2xl mx-auto p-6 bg-black text-cyan-400">
         <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
           <Search className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }} />
           Getting ready...
@@ -672,8 +672,8 @@ const PhotoMystery = forwardRef((props, ref) => {
         </div>
       )}
 
-      <div className="text-center max-w-2xl mx-auto p-3 sm:p-4 bg-black rounded-lg text-white space-y-3 sm:space-y-4" style={{ border: '2px solid #00ffff40' }}>
-        {/* Header - single line, compact (matches SplitDecision & OddManOut) */}
+      <div className="text-center max-w-2xl mx-auto p-3 sm:p-4 bg-black text-white space-y-3 sm:space-y-4">
+        {/* Header - icon + name left, score right (matches other games) */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Search 
