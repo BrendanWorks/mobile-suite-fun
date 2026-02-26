@@ -244,12 +244,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           </strong>
         </div>
 
-        {/* Game Area - compact and centered */}
-        <div className="relative flex-1 mb-2 flex flex-col justify-center min-h-0">
+        {/* Game Area - fixed height */}
+        <div className="relative mb-2 flex flex-col justify-center">
           {/* Streak Indicator */}
           {streak >= 3 && (
             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
-              <span className="inline-block bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold" 
+              <span className="inline-block bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold"
                     style={{ boxShadow: '0 0 10px #fbbf24' }}>
                 🔥 ×{streak}
               </span>
@@ -258,7 +258,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
           {/* Image Container */}
           <div
-            className={`relative w-full aspect-video rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+            className={`relative w-full h-64 sm:h-80 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
               status === 'feedback'
                 ? lastResult?.isCorrect
                   ? 'border-green-500'
