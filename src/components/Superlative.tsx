@@ -31,7 +31,7 @@ interface GameProps {
   duration?: number;
 }
 
-// ─── DB Loaders ───────────────────────────────────────────────────────────────
+// ─── DB Loaders ───────────────────────────────────────────────────────────
 
 async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   const { data, error } = await supabase
@@ -426,65 +426,59 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-0">
       <div className="max-w-sm w-full text-white">
 
-        {/* Header */}
-        <div className="mb-3 pt-2">
-
-          {/* Timer bar */}
-          <div
-            className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
-            style={{
-              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
-            }}
-          >
-            <div
-              className="h-full transition-all duration-1000 ease-linear"
-              style={{
-                width: `${timerProgress}%`,
-                background: isDanger ? "#f87171" : "#22d3ee",
-                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
-              }}
-            />
-          </div>
-
-          {/* Game title */}
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
+        {/* Header - icon + name left, score right (matches OddManOut/FakeOut) */}
+        <div className="flex items-center justify-between mb-3 pt-2">
+          <div className="flex items-center gap-1.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
               <line x1="12" y1="3" x2="12" y2="21" />
               <line x1="5" y1="6" x2="19" y2="6" />
               <path d="M5 6 L2 12 Q5 15 8 12 L5 6" />
               <path d="M19 6 L22 12 Q19 15 16 12 L19 6" />
               <line x1="9" y1="21" x2="15" y2="21" />
             </svg>
-            <h1
-              className="text-2xl font-bold tracking-wide text-cyan-300"
-              style={{ textShadow: "0 0 12px rgba(0,255,255,0.6)" }}
-            >
-              Superlative
-            </h1>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Superlative</h2>
           </div>
-          <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Which one ranks highest?</p>
-          <div className="w-full h-px bg-cyan-400/30 mb-3" />
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{totalScore.toLocaleString()}</strong>
+          </div>
+        </div>
 
-          {/* Question prompt */}
-          <div className="text-center mb-4">
-            <p
-              className="text-cyan-300 text-lg sm:text-xl font-medium tracking-wide mb-1"
-              style={{ textShadow: "0 0 6px rgba(0,255,255,0.4)" }}
-            >
-              Which is
-            </p>
-            <p
-              className="text-yellow-400 font-black leading-none"
-              style={{
-                fontSize: "clamp(3rem, 14vw, 5rem)",
-                textShadow: "0 0 30px #fbbf24, 0 0 60px rgba(251,191,36,0.4)",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {currentPuzzle.comparison_type.toUpperCase()}?
-            </p>
-          </div>
+        {/* Timer bar */}
+        <div
+          className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
+          style={{
+            borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+            boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+          }}
+        >
+          <div
+            className="h-full transition-all duration-1000 ease-linear"
+            style={{
+              width: `${timerProgress}%`,
+              background: isDanger ? "#f87171" : "#22d3ee",
+              boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+            }}
+          />
+        </div>
+
+        {/* Question prompt */}
+        <div className="text-center mb-4">
+          <p
+            className="text-cyan-300 text-lg sm:text-xl font-medium tracking-wide mb-1"
+            style={{ textShadow: '0 0 6px rgba(0,255,255,0.4)' }}
+          >
+            Which is
+          </p>
+          <p
+            className="text-yellow-400 font-black leading-none"
+            style={{
+              fontSize: "clamp(3rem, 14vw, 5rem)",
+              textShadow: "0 0 30px #fbbf24, 0 0 60px rgba(251,191,36,0.4)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {currentPuzzle.comparison_type.toUpperCase()}?
+          </p>
         </div>
 
         {/* Item cards */}
