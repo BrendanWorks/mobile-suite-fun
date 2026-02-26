@@ -225,23 +225,17 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none">
       <div className="text-center max-w-2xl w-full flex flex-col h-screen">
 
-        {/* Compact Header */}
-        <div className="mb-1.5">
-          <h2 className="text-base sm:text-lg font-bold text-cyan-400"
-              style={{ textShadow: '0 0 10px #00ffff' }}>
-            Fake Out
-          </h2>
-          <div className="flex justify-between items-center text-[9px] sm:text-xs text-cyan-300 mt-0.5">
-            <span>Real or AI?</span>
-            <span>Image {currentIndex + 1}/{puzzles.length}</span>
+        {/* Header - icon + name left, score right (matches OddManOut) */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}>
+              <CameraIcon />
+            </div>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Fake Out</h2>
           </div>
-        </div>
-
-        {/* Score - minimal */}
-        <div className="text-[10px] sm:text-xs text-cyan-300 mb-1.5">
-          <strong className="text-yellow-400 text-xs sm:text-sm" style={{ textShadow: '0 0 10px #fbbf24' }}>
-            {score.toLocaleString()}
-          </strong>
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{score.toLocaleString()}</strong>
+          </div>
         </div>
 
         {/* Game Area - fixed height */}
@@ -350,7 +344,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
         {/* Footer Stats */}
         <div className="text-[8px] sm:text-[9px] text-cyan-600 uppercase tracking-widest">
-          <span>Difficulty: {currentPuzzle.metadata.difficulty || 'medium'}</span>
+          <span>Image {currentIndex + 1}/{puzzles.length}</span>
           {currentIndex > 0 && (
             <span className="ml-2">
               Accuracy: {Math.round((score / ((currentIndex + (status === 'feedback' ? 1 : 0)) * BASE_POINTS)) * 100)}%
