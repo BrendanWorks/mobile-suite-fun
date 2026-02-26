@@ -182,7 +182,7 @@ export default function CelebrationScreen({
                       {icon}
                     </div>
                     <div className="text-lg sm:text-xl font-bold text-yellow-400 transition-transform duration-300 group-hover:scale-110" style={{ textShadow: '0 0 8px #fbbf24' }}>
-                      {Math.round(tile.score.normalizedScore)}
+                      {Math.round(tile.score.totalWithBonus || tile.score.normalizedScore)}
                     </div>
                   </div>
                 </div>

@@ -226,7 +226,7 @@ export const scoringSystem = {
 };
 
 export const calculateSessionScore = (gameScores: GameScore[]): SessionScore => {
-  const total = gameScores.reduce((sum, g) => sum + g.normalizedScore, 0);
+  const total = gameScores.reduce((sum, g) => sum + (g.totalWithBonus || g.normalizedScore), 0);
   const maxPossible = gameScores.length * 100;
   const percentage = (total / maxPossible) * 100;
 
