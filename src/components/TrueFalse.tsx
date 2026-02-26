@@ -307,70 +307,64 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
     <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
       <div className="max-w-sm w-full text-white">
 
-        {/* Header */}
-        <div className="mb-3 pt-2">
-
-          {/* Timer bar */}
-          <div
-            className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
-            style={{
-              borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-              boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
-            }}
-          >
-            <div
-              className="h-full transition-all duration-1000 ease-linear"
-              style={{
-                width: `${timerProgress}%`,
-                background: isDanger ? "#f87171" : "#22d3ee",
-                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
-              }}
-            />
-          </div>
-
-          {/* Title */}
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
+        {/* Header - icon + name left, score right (matches OddManOut/FakeOut/Superlative) */}
+        <div className="flex items-center justify-between mb-3 pt-2">
+          <div className="flex items-center gap-1.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
               <circle cx="12" cy="12" r="10" />
               <path d="M9 12l2 2 4-4" />
             </svg>
-            <h1
-              className="text-2xl font-bold tracking-wide text-cyan-300"
-              style={{ textShadow: "0 0 12px rgba(0,255,255,0.6)" }}
-            >
-              True or False
-            </h1>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>True or False</h2>
           </div>
-          <p className="text-center text-white/50 text-sm mb-2 tracking-wide">Is the statement true or false?</p>
-          <div className="w-full h-px bg-cyan-400/30 mb-3" />
+          <div className="text-cyan-300 text-xs sm:text-sm">
+            Score: <strong className="text-yellow-400 tabular-nums">{totalScore.toLocaleString()}</strong>
+          </div>
+        </div>
 
-          {/* Statement */}
+        {/* Timer bar */}
+        <div
+          className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
+          style={{
+            borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
+            boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
+          }}
+        >
           <div
-            className="rounded-xl border-2 px-4 py-4 mb-4"
+            className="h-full transition-all duration-1000 ease-linear"
             style={{
-              borderColor: "rgba(0,255,255,0.25)",
-              background: "rgba(0,255,255,0.04)",
-              boxShadow: "0 0 15px rgba(0,255,255,0.08)",
-              minHeight: "5.5rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: `${timerProgress}%`,
+              background: isDanger ? "#f87171" : "#22d3ee",
+              boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+            }}
+          />
+        </div>
+
+        {/* Statement */}
+        <div
+          className="rounded-xl border-2 px-4 py-4 mb-4"
+          style={{
+            borderColor: "rgba(0,255,255,0.25)",
+            background: "rgba(0,255,255,0.04)",
+            boxShadow: "0 0 15px rgba(0,255,255,0.08)",
+            minHeight: "5.5rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <p
+            className="text-white font-medium text-center leading-snug"
+            style={{
+              fontSize: "clamp(0.85rem, 3.5vw, 1.05rem)",
+              textShadow: "0 0 6px rgba(255,255,255,0.15)",
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
-            <p
-              className="text-white font-medium text-center leading-snug"
-              style={{
-                fontSize: "clamp(0.85rem, 3.5vw, 1.05rem)",
-                textShadow: "0 0 6px rgba(255,255,255,0.15)",
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {currentPuzzle.statement}
-            </p>
-          </div>
+            {currentPuzzle.statement}
+          </p>
         </div>
 
         {/* Answer buttons */}
