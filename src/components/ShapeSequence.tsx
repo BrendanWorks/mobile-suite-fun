@@ -167,21 +167,24 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     if (x === undefined || y === undefined || size === undefined) return;
 
     ctx.save();
+    ctx.globalAlpha = isHighlighted ? 1 : 0.6;
+    ctx.fillStyle = shape.color;
+
     if (isHighlighted) {
       ctx.shadowColor = shape.color;
-      ctx.shadowBlur = 30;
-      ctx.fillStyle = shape.color;
-      ctx.strokeStyle = '#fff';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
     } else {
-      ctx.globalAlpha = 0.6;
-      ctx.fillStyle = shape.color;
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
       ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
     }
 
-    ctx.lineWidth = 3;
     ctx.beginPath();
-
-    // Use shape path lookup instead of switch statement
     const drawPath = SHAPE_PATHS[shape.type];
     if (drawPath) {
       drawPath(ctx, x, y, size);
