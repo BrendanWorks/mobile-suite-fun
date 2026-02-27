@@ -509,7 +509,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       <div className="px-6 py-4">
         <h2 className="text-2xl font-bold text-green-400 border-b border-green-900 pb-2 flex items-center justify-center gap-2">
           <Gamepad2 className="w-6 h-6" />
-          <span style={{ textShadow: '0 0 10px #22c55e' }}>NEO-SNAKE</span>
+          <span style={{ textShadow: '0 0 10px #22c55e' }}>KINGSNAKE</span>
         </h2>
         <div className="flex justify-between mt-2 font-mono text-sm">
           <div className="text-green-300 flex items-center gap-2">
