@@ -296,40 +296,73 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           )}
 
           {gameStatus !== 'countdown' && (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 aspect-square bg-black/50 p-4 sm:p-6 rounded-2xl border-2 border-cyan-500/50">
-              {SHAPES.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => handleShapeClick(shape.id)}
-                  disabled={!isPlayingRef.current}
-                  className={`rounded-xl transition-all duration-100 font-semibold text-sm sm:text-base ${
-                    animatingShapeId === shape.id
-                      ? 'scale-95 shadow-lg'
-                      : isPlayingRef.current
-                        ? 'hover:scale-105 active:scale-95'
-                        : 'opacity-50 cursor-not-allowed'
-                  }`}
-                  style={{
-                    backgroundColor:
+            <div className="w-full bg-black/50 p-4 sm:p-6 rounded-2xl border-2 border-cyan-500/50">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 aspect-square">
+                {SHAPES.slice(0, 4).map((shape) => (
+                  <button
+                    key={shape.id}
+                    onClick={() => handleShapeClick(shape.id)}
+                    disabled={!isPlayingRef.current}
+                    className={`rounded-xl transition-all duration-100 font-semibold text-sm sm:text-base ${
                       animatingShapeId === shape.id
-                        ? shape.color
-                        : `${shape.color}33`,
-                    borderColor: shape.color,
-                    borderWidth: '2px',
-                    color:
-                      animatingShapeId === shape.id ? '#000' : '#fff',
-                    boxShadow:
-                      animatingShapeId === shape.id
-                        ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
-                        : `0 0 10px ${shape.color}40`,
-                  }}
-                >
-                  {shape.label}
-                </button>
-              ))}
-
-              {/* Extra empty space for 5 shapes in a 2x2 grid */}
-              <div />
+                        ? 'scale-95 shadow-lg'
+                        : isPlayingRef.current
+                          ? 'hover:scale-105 active:scale-95'
+                          : 'opacity-50 cursor-not-allowed'
+                    }`}
+                    style={{
+                      backgroundColor:
+                        animatingShapeId === shape.id
+                          ? shape.color
+                          : `${shape.color}33`,
+                      borderColor: shape.color,
+                      borderWidth: '2px',
+                      color:
+                        animatingShapeId === shape.id ? '#000' : '#fff',
+                      boxShadow:
+                        animatingShapeId === shape.id
+                          ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
+                          : `0 0 10px ${shape.color}40`,
+                    }}
+                  >
+                    {shape.label}
+                  </button>
+                ))}
+              </div>
+              {SHAPES.length > 4 && (
+                <div className="mt-3 sm:mt-4">
+                  {SHAPES.slice(4).map((shape) => (
+                    <button
+                      key={shape.id}
+                      onClick={() => handleShapeClick(shape.id)}
+                      disabled={!isPlayingRef.current}
+                      className={`w-full rounded-xl transition-all duration-100 font-semibold text-sm sm:text-base py-2 sm:py-3 ${
+                        animatingShapeId === shape.id
+                          ? 'scale-95 shadow-lg'
+                          : isPlayingRef.current
+                            ? 'hover:scale-105 active:scale-95'
+                            : 'opacity-50 cursor-not-allowed'
+                      }`}
+                      style={{
+                        backgroundColor:
+                          animatingShapeId === shape.id
+                            ? shape.color
+                            : `${shape.color}33`,
+                        borderColor: shape.color,
+                        borderWidth: '2px',
+                        color:
+                          animatingShapeId === shape.id ? '#000' : '#fff',
+                        boxShadow:
+                          animatingShapeId === shape.id
+                            ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
+                            : `0 0 10px ${shape.color}40`,
+                      }}
+                    >
+                      {shape.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
