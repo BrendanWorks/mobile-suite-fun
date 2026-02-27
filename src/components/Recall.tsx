@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Zap, Lightbulb, Bug } from 'lucide-react';
+import { Zap, Lightbulb } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
 interface RecallProps {
@@ -27,13 +27,11 @@ const GAME_CONFIG = {
   WRONG_SOUND_FREQUENCY: 150,
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
-  HINT_ENABLED_BY_DEFAULT: true,
-  DEBUG_ENABLED_BY_DEFAULT: true,
 } as const;
 
 const THEME = {
   color: '#00ffff',
-  glow: 'rgba(0, 255, 255, 0.7)',
+  glow: 'rgba(0, 255, 255, 0.6)',
   textShadow: '0 0 10px #00ffff',
 } as const;
 
@@ -61,8 +59,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       return 0;
     }
   });
-  const [showHints, setShowHints] = useState(GAME_CONFIG.HINT_ENABLED_BY_DEFAULT);
-  const [debugMode, setDebugMode] = useState(GAME_CONFIG.DEBUG_ENABLED_BY_DEFAULT);
+  const [showHints, setShowHints] = useState(false); // off by default to minimize renders
 
   const gameStateRef = useRef({
     sequence: [] as number[],
@@ -121,12 +118,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const showSequence = useCallback(async (seq: number[]) => {
     if (!isMountedRef.current || isSequenceRunningRef.current) {
-      console.log('[showSequence] Blocked');
+      console.log('[show] Blocked - mounted:', isMountedRef.current, 'running:', isSequenceRunningRef.current);
       return;
     }
 
     isSequenceRunningRef.current = true;
-    console.log('[showSequence] Starting - level', level, 'length', seq.length);
+    console.log(`[show] START level ${level} (len ${seq.length})`);
 
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -142,7 +139,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
       for (const id of seq) {
         if (signal.aborted || !isMountedRef.current) {
-          console.log('[showSequence] Aborted mid-sequence');
+          console.log('[show] Aborted during playback');
           break;
         }
 
@@ -161,11 +158,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       if (!signal.aborted && isMountedRef.current) {
         setGameStatus('playing');
         isPlayingRef.current = true;
-        setAnimatingShapeId(null); // dummy flip to force re-render
-        console.log('[showSequence] → playing enabled');
+        console.log('[show] FINISHED → now playing');
       }
     } catch (e: any) {
-      console.error('[showSequence] Caught:', e.name || e);
+      console.error('[show] Error:', e.name || e.message || e);
     } finally {
       isSequenceRunningRef.current = false;
     }
@@ -212,15 +208,19 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
       }
 
+      console.log(`[click] Round win - advancing to level ${level + 1}`);
+
       setTimeout(() => {
         if (!isMountedRef.current) return;
-        const newLevel = level + 1;
-        setLevel(newLevel);
+        setLevel(l => l + 1);
         const nextSeq = [...state.sequence, Math.floor(Math.random() * SHAPES.length)];
         state.sequence = nextSeq;
         setTimeout(() => {
-          if (isMountedRef.current) showSequence(nextSeq);
-        }, 3000); // generous breathing room
+          if (isMountedRef.current) {
+            console.log('[click] Starting next sequence');
+            showSequence(nextSeq);
+          }
+        }, 3500); // extra long to avoid overlap
       }, 1200);
     }
   }, [score, level, lives, highScore, showSequence, playSound, props.onComplete]);
@@ -229,12 +229,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const { sequence, playerSequence } = gameStateRef.current;
     if (gameStatus !== 'playing' || playerSequence.length >= sequence.length) return null;
     return sequence[playerSequence.length];
-  };
-
-  const getRemainingSequence = () => {
-    const { sequence, playerSequence } = gameStateRef.current;
-    if (gameStatus !== 'playing') return [];
-    return sequence.slice(playerSequence.length);
   };
 
   const startGame = useCallback(() => {
@@ -272,22 +266,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               Score: <strong className="text-yellow-400">{score}</strong>
             </div>
             <button
-              onClick={() => setShowHints(prev => !prev)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              onClick={() => setShowHints(p => !p)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm ${
                 showHints ? 'bg-cyan-600/40 text-cyan-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
               <Lightbulb size={16} />
-              Hint {showHints ? 'ON' : 'OFF'}
-            </button>
-            <button
-              onClick={() => setDebugMode(prev => !prev)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
-                debugMode ? 'bg-red-600/40 text-red-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
-              }`}
-            >
-              <Bug size={16} />
-              Debug {debugMode ? 'ON' : 'OFF'}
+              Hints {showHints ? 'ON' : 'OFF'}
             </button>
           </div>
         </div>
@@ -307,11 +292,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               {SHAPES.map(shape => {
                 const isNext = showHints && nextShape?.id === shape.id && gameStatus === 'playing';
                 return (
-                  <div key={shape.id} className="relative group">
+                  <div key={shape.id} className="relative">
                     <button
                       onClick={() => handleShapeClick(shape.id)}
                       disabled={!isPlayingRef.current}
-                      className={`w-full h-full rounded-xl transition-all duration-200 font-bold text-xl flex items-center justify-center shadow-xl ${
+                      className={`w-full h-full rounded-xl transition-all duration-200 font-bold text-xl flex items-center justify-center ${
                         animatingShapeId === shape.id
                           ? 'scale-95 brightness-125 ring-4 ring-white/50 shadow-2xl'
                           : isPlayingRef.current
@@ -330,11 +315,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                       {shape.label}
                     </button>
                     {isNext && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <div
-                          className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white font-black text-xl shadow-2xl border-2 animate-ping-slow"
-                          style={{ boxShadow: `0 0 30px ${shape.color}` }}
-                        >
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl animate-pulse" style={{ boxShadow: `0 0 25px ${shape.color}` }}>
                           {shape.label[0]}
                         </div>
                       </div>
@@ -344,40 +326,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               })}
             </div>
           )}
+        </div>
 
-          {debugMode && gameStatus === 'playing' && (
-            <div className="mt-6 p-3 bg-black/40 rounded-xl border border-cyan-800/50 max-w-lg mx-auto">
-              <div className="text-xs text-cyan-300 mb-2 uppercase tracking-wider">Remaining sequence:</div>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {getRemainingSequence().map((id, idx) => {
-                  const shape = SHAPES.find(s => s.id === id);
-                  return (
-                    <div
-                      key={idx}
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-lg transition-transform"
-                      style={{
-                        background: `linear-gradient(135deg, ${shape?.color}60, ${shape?.color}30)`,
-                        border: `2px solid ${shape?.color}`,
-                        transform: idx === 0 ? 'scale(1.15)' : 'scale(1)',
-                        boxShadow: idx === 0 ? `0 0 20px ${shape?.color}` : 'none',
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
-                  );
-                })}
-                {getRemainingSequence().length === 0 && (
-                  <span className="text-green-400">Sequence complete!</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="text-center text-lg font-medium mt-6 h-8">
-            {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
-            {gameStatus === 'playing' && <span className="text-green-400">Repeat!</span>}
-            {gameStatus === 'gameover' && <span className="text-red-500 animate-pulse">Game Over!</span>}
-          </div>
+        <div className="text-center text-lg font-medium h-8">
+          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch...</span>}
+          {gameStatus === 'playing' && <span className="text-green-400">Your turn!</span>}
+          {gameStatus === 'gameover' && <span className="text-red-500">Game Over!</span>}
         </div>
       </div>
     </div>
