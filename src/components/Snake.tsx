@@ -17,6 +17,7 @@ interface SnakeProps {
   timeRemaining?: number;
 }
 
+// Constants
 const GRID_SIZE = 20;
 const CANVAS_SIZE = 400;
 const INITIAL_SPEED = 180;
@@ -25,6 +26,43 @@ const MAX_SPEED = 60;
 const POWERUP_CHANCE = 0.22;
 const SLOW_DURATION = 10000;
 const GHOST_DURATION = 5000;
+
+// Color Palette (DRY - single source of truth)
+const COLORS = {
+  bg: '#000000',
+  grid: '#7f1d1d',           // Red tint for grid
+  gridBright: '#dc2626',     // Brighter grid
+  gridAlpha: 'rgba(127, 29, 29, 0.4)',
+  cyan: '#22d3ee',
+  cyanDim: 'rgba(34, 211, 238, 0.2)',
+  cyanGlow: 'rgba(34, 211, 238, 0.4)',
+  green: '#10b981',
+  red: '#ef4444',
+  yellow: '#fbbf24',
+  blue: '#60a5fa',
+  purple: '#c084fc',
+  violet: '#a78bfa',
+  gold: '#fbbf24',
+  white: '#bae6fd',
+  darkGray: '#444',
+} as const;
+
+// Direction Mapping (DRY - single source)
+const DIRECTION_MAP: Record<string, Position> = {
+  ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }
+};
+
+// Power-up Configuration (DRY - single source)
+const POWERUP_CONFIG: Record<string, { color: string; soundKey: string }> = {
+  gold: { color: COLORS.yellow, soundKey: 'snake_powerup_gold' },
+  ice: { color: COLORS.blue, soundKey: 'snake_powerup_special' },
+  ghost: { color: COLORS.purple, soundKey: 'snake_powerup_special' },
+  shrink: { color: '#eab308', soundKey: 'snake_powerup_special' },
+  rewind: { color: COLORS.violet, soundKey: 'snake_powerup_special' },
+};
 
 const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, timeRemaining }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -146,9 +184,45 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     setRewindUses(rewindUsesRef.current);
 
     triggerHaptic(80);
-    createParticleBurst(snakeRef.current[0].x, snakeRef.current[0].y, '#a855f7');
+    createParticleBurst(snakeRef.current[0].x, snakeRef.current[0].y, COLORS.violet);
     setScreenShake(8);
     audioManager.play('snake_powerup_special', 0.5);
+  };
+
+  const handlePowerUp = (type: PowerUp['type'], head: Position) => {
+    const config = POWERUP_CONFIG[type];
+    triggerHaptic(60);
+    audioManager.play(config.soundKey, 0.6);
+    createParticleBurst(head.x, head.y, config.color);
+
+    switch (type) {
+      case 'gold':
+        const multiplier = Math.min(4, 1 + Math.floor((comboRef.current - 1) / 5)) || 1;
+        scoreRef.current += Math.floor(50 * multiplier);
+        setDisplayScore(scoreRef.current);
+        if (onScoreUpdate) onScoreUpdate(scoreRef.current, 200);
+        break;
+
+      case 'ice':
+        slowedUntilRef.current = Date.now() + SLOW_DURATION;
+        setActiveEffects(prev => ({ ...prev, slow: true }));
+        break;
+
+      case 'ghost':
+        invincibleUntilRef.current = Date.now() + GHOST_DURATION;
+        setActiveEffects(prev => ({ ...prev, ghost: true }));
+        break;
+
+      case 'shrink':
+        const newLen = Math.max(1, Math.floor(snakeRef.current.length / 2));
+        snakeRef.current = snakeRef.current.slice(0, newLen);
+        break;
+
+      case 'rewind':
+        rewindUsesRef.current = Math.min(3, rewindUsesRef.current + 2);
+        setRewindUses(rewindUsesRef.current);
+        break;
+    }
   };
 
   const gameLoop = () => {
@@ -204,7 +278,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       if (onScoreUpdate) onScoreUpdate(scoreRef.current, 200);
 
       foodRef.current = createFood();
-      createParticleBurst(head.x, head.y, '#ef4444');
+      createParticleBurst(head.x, head.y, COLORS.red);
       setShimmer(1);
       grew = true;
 
@@ -219,40 +293,9 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         powerUpRef.current = { ...createFood(), type: chosen, spawnTime: Date.now() };
       }
     } else if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
-      triggerHaptic(60);
+      handlePowerUp(powerUpRef.current.type, head);
+      newSnake = snakeRef.current.length > 0 ? [head, ...snakeRef.current] : [head];
       grew = true;
-
-      const type = powerUpRef.current.type;
-      if (type === 'gold') {
-        audioManager.play('snake_powerup_gold', 0.6);
-        const multiplier = Math.min(4, 1 + Math.floor((comboRef.current - 1) / 5)) || 1;
-        scoreRef.current += Math.floor(50 * multiplier);
-        setDisplayScore(scoreRef.current);
-        if (onScoreUpdate) onScoreUpdate(scoreRef.current, 200);
-        createParticleBurst(head.x, head.y, '#fbbf24');
-      } else if (type === 'ice') {
-        audioManager.play('snake_powerup_special', 0.6);
-        slowedUntilRef.current = Date.now() + SLOW_DURATION;
-        setActiveEffects(prev => ({ ...prev, slow: true }));
-        createParticleBurst(head.x, head.y, '#60a5fa');
-      } else if (type === 'ghost') {
-        audioManager.play('snake_powerup_special', 0.6);
-        invincibleUntilRef.current = Date.now() + GHOST_DURATION;
-        setActiveEffects(prev => ({ ...prev, ghost: true }));
-        createParticleBurst(head.x, head.y, '#c084fc');
-      } else if (type === 'shrink') {
-        audioManager.play('snake_powerup_special', 0.6);
-        const newLen = Math.max(1, Math.floor(snakeRef.current.length / 2));
-        snakeRef.current = snakeRef.current.slice(0, newLen);
-        newSnake = snakeRef.current; // override since we already sliced
-        createParticleBurst(head.x, head.y, '#eab308');
-      } else if (type === 'rewind') {
-        audioManager.play('snake_powerup_special', 0.6);
-        rewindUsesRef.current = Math.min(3, rewindUsesRef.current + 2);
-        setRewindUses(rewindUsesRef.current);
-        createParticleBurst(head.x, head.y, '#a78bfa');
-      }
-
       powerUpRef.current = null;
     } else {
       newSnake.pop();
@@ -287,16 +330,21 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     }
   };
 
+  // Canvas Helpers (DRY - reusable rendering)
+  const applyShadow = (ctx: CanvasRenderingContext2D, blur: number, color: string) => {
+    ctx.shadowBlur = blur;
+    ctx.shadowColor = color;
+  };
+
+  const clearShadow = (ctx: CanvasRenderingContext2D) => {
+    ctx.shadowBlur = 0;
+  };
+
   // Input
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      const keys: Record<string, Position> = {
-        ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
-        ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
-        ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
-        ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }
-      };
-      if (keys[e.key]) updateDirection(keys[e.key]);
+      const dir = DIRECTION_MAP[e.key];
+      if (dir) updateDirection(dir);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -343,11 +391,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         .map(t => ({ ...t, life: t.life - 1 }))
         .filter(t => t.life > 0);
 
-      // Effect timeouts
-      if (Date.now() > slowedUntilRef.current && activeEffects.slow) {
+      // Effect timeouts (DRY - single expiry check pattern)
+      const now = Date.now();
+      if (now > slowedUntilRef.current && activeEffects.slow) {
         setActiveEffects(prev => ({ ...prev, slow: false }));
       }
-      if (Date.now() > invincibleUntilRef.current && activeEffects.ghost) {
+      if (now > invincibleUntilRef.current && activeEffects.ghost) {
         setActiveEffects(prev => ({ ...prev, ghost: false }));
       }
     }, activeEffects.slow 
@@ -367,12 +416,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
     const draw = () => {
       // Background
-      ctx.fillStyle = `hsl(${backgroundHue}, 15%, 5%)`;
+      ctx.fillStyle = COLORS.bg;
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       // Pulsing neon grid + twinkling stars
       const time = Date.now() / 1000;
-      ctx.strokeStyle = `hsl(${backgroundHue}, 85%, 28%)`;
+      ctx.strokeStyle = COLORS.gridAlpha;
       ctx.lineWidth = 1.5;
       const gridOffset = (time * 38) % GRID_SIZE;
       for (let x = -gridOffset; x < CANVAS_SIZE; x += GRID_SIZE) {
@@ -389,7 +438,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       }
 
       ctx.globalAlpha = 0.65;
-      ctx.fillStyle = '#bae6fd';
+      ctx.fillStyle = COLORS.white;
       for (let i = 0; i < 38; i++) {
         const tx = ((time * (12 + (i % 6)) + i * 23) % (CANVAS_SIZE + 60)) - 30;
         const ty = (Math.sin(time * 1.3 + i * 0.7) * 95 + 170 + (i * 11)) % (CANVAS_SIZE + 40);
@@ -407,13 +456,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       ctx.globalAlpha = 1;
 
       // Neon Trail
-      ctx.shadowBlur = 32;
-      ctx.shadowColor = '#22d3ee';
+      applyShadow(ctx, 32, COLORS.cyan);
       trailRef.current.forEach((t, idx) => {
         const alpha = (t.life / 32) * 0.82;
         ctx.globalAlpha = alpha;
         const size = 11 + (t.life / 32) * 7;
-        ctx.fillStyle = idx % 4 === 0 ? '#67e8f9' : '#10b981';
+        ctx.fillStyle = idx % 4 === 0 ? COLORS.cyan : COLORS.green;
         ctx.fillRect(
           t.x * GRID_SIZE + (GRID_SIZE - size) / 2,
           t.y * GRID_SIZE + (GRID_SIZE - size) / 2,
@@ -421,46 +469,39 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
           size
         );
       });
-      ctx.shadowBlur = 0;
+      clearShadow(ctx);
       ctx.globalAlpha = 1;
 
       // Food (pulsing)
       const pulse = Math.sin(Date.now() / 180) * 2.5;
-      ctx.fillStyle = '#ef4444';
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = '#ef4444';
+      ctx.fillStyle = COLORS.red;
+      applyShadow(ctx, 14, COLORS.red);
       ctx.beginPath();
       ctx.arc(foodRef.current.x * GRID_SIZE + 10, foodRef.current.y * GRID_SIZE + 10, 7.5 + pulse, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      clearShadow(ctx);
 
       // Power-up
       if (powerUpRef.current) {
-        let pColor = '#fbbf24';
-        if (powerUpRef.current.type === 'ice') pColor = '#60a5fa';
-        else if (powerUpRef.current.type === 'ghost') pColor = '#c084fc';
-        else if (powerUpRef.current.type === 'shrink') pColor = '#facc15';
-        else if (powerUpRef.current.type === 'rewind') pColor = '#a78bfa';
-
+        const pColor = POWERUP_CONFIG[powerUpRef.current.type].color;
         ctx.fillStyle = pColor;
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = pColor;
+        applyShadow(ctx, 18, pColor);
         const px = powerUpRef.current.x * GRID_SIZE + 3;
         const py = powerUpRef.current.y * GRID_SIZE + 3;
         ctx.fillRect(px, py, 14, 14);
-        ctx.shadowBlur = 0;
+        clearShadow(ctx);
       }
 
       // Obstacles
-      ctx.fillStyle = '#444';
+      ctx.fillStyle = COLORS.darkGray;
       obstaclesRef.current.forEach(o => {
         ctx.fillRect(o.x * GRID_SIZE + 1, o.y * GRID_SIZE + 1, 18, 18);
       });
 
       // Snake
       snakeRef.current.forEach((seg, i) => {
-        let fillColor = i === 0 ? '#22d3ee' : '#10b981';
-        let shadowColor = '#22d3ee';
+        let fillColor = i === 0 ? COLORS.cyan : COLORS.green;
+        let shadowColor = COLORS.cyan;
 
         if (Date.now() < invincibleUntilRef.current) {
           fillColor = i === 0 ? '#d946ef' : '#c026d3';
@@ -468,8 +509,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         }
 
         ctx.fillStyle = fillColor;
-        ctx.shadowBlur = i === 0 ? 19 : 0;
-        ctx.shadowColor = shadowColor;
+        applyShadow(ctx, i === 0 ? 19 : 0, shadowColor);
 
         const r = 5;
         const x = seg.x * GRID_SIZE + 1;
@@ -479,7 +519,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         ctx.roundRect(x, y, s, s, r);
         ctx.fill();
       });
-      ctx.shadowBlur = 0;
+      clearShadow(ctx);
 
       // Shimmer border
       if (shimmer > 0) {
@@ -506,25 +546,33 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
   return (
     <div className="flex flex-col h-full bg-black select-none overflow-hidden touch-none">
-      <div className="px-6 py-4">
-        <h2 className="text-2xl font-bold text-green-400 border-b border-green-900 pb-2 flex items-center justify-center gap-2">
-          <Gamepad2 className="w-6 h-6" />
-          <span style={{ textShadow: '0 0 10px #22c55e' }}>KINGSNAKE</span>
-        </h2>
-        <div className="flex justify-between mt-2 font-mono text-sm">
-          <div className="text-green-300 flex items-center gap-2">
-            SCORE: <span className="text-yellow-400 font-bold">{displayScore}</span>
+      {/* Header - Recall style: icon + title left, score right */}
+      <div className="px-4 sm:px-6 py-3 border-b border-green-900/50">
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: Icon + Title */}
+          <div className="flex items-center gap-1.5">
+            <Gamepad2 className="w-4 sm:w-5 h-4 sm:h-5 text-green-400" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
+            <h2 className="text-xs sm:text-sm font-bold text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>
+              KINGSNAKE
+            </h2>
+          </div>
+
+          {/* Right: Score */}
+          <div className="text-green-300 text-xs sm:text-sm flex items-center gap-2">
+            <span>Score: <strong className="text-yellow-400 font-bold">{displayScore}</strong></span>
             {displayCombo > 1 && (
-              <span className="text-pink-400 text-xs font-black tracking-widest">×{displayCombo} COMBO 🔥</span>
+              <span className="text-pink-400 text-[10px] sm:text-xs font-black tracking-widest">×{displayCombo} 🔥</span>
             )}
           </div>
-          <div className="flex gap-1">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <span key={i} className={i < displayLives ? 'grayscale-0' : 'grayscale opacity-20'}>
-                ❤️
-              </span>
-            ))}
-          </div>
+        </div>
+
+        {/* Lives - below header */}
+        <div className="flex gap-1 mt-2 justify-end">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <span key={i} className={i < displayLives ? 'grayscale-0' : 'grayscale opacity-20'}>
+              ❤️
+            </span>
+          ))}
         </div>
       </div>
 
@@ -576,7 +624,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
           {rewindUses > 0 && (
             <button
               onClick={performRewind}
-              className="absolute bottom-3 right-3 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xl active:scale-95 transition-all border border-purple-400/30"
+              className="absolute bottom-3 right-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xl active:scale-95 transition-all border border-violet-400/30"
             >
               ⏪ REWIND ({rewindUses})
             </button>
