@@ -22,7 +22,6 @@ const GAME_CONFIG = {
   INITIAL_SEQUENCE_LENGTH: 3,
   SHAPE_ANIMATION_DURATION: 500,
   SHAPE_SOUND_DURATION: 400,
-  FEEDBACK_DURATION: 800,
   SEQUENCE_DELAY: 200,
   SEQUENCE_GAP: 100,
   WRONG_SOUND_FREQUENCY: 150,
@@ -38,26 +37,24 @@ const THEME = {
 } as const;
 
 const SHAPES: GameShape[] = [
-  { id: 0, label: 'Red', color: '#ef4444', frequency: 440 },
-  { id: 1, label: 'Blue', color: '#3b82f6', frequency: 523.25 },
-  { id: 2, label: 'Green', color: '#10b981', frequency: 659.25 },
-  { id: 3, label: 'Amber', color: '#f59e0b', frequency: 783.99 },
-  { id: 4, label: 'Purple', color: '#8b5cf6', frequency: 880 },
+  { id: 0, label: 'Red',    color: '#ef4444', frequency: 440    },
+  { id: 1, label: 'Blue',   color: '#3b82f6', frequency: 523.25 },
+  { id: 2, label: 'Green',  color: '#10b981', frequency: 659.25 },
+  { id: 3, label: 'Amber',  color: '#f59e0b', frequency: 783.99 },
+  { id: 4, label: 'Purple', color: '#8b5cf6', frequency: 880    },
 ];
 
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const sequenceTimeoutsRef = useRef<number[]>([]);
-  const cleanedUpRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
-
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(GAME_CONFIG.MAX_LIVES);
   const [highScore, setHighScore] = useState(() => {
     try {
-      return parseInt(localStorage.getItem(GAME_CONFIG.STORAGE_KEY) || '0');
+      return parseInt(localStorage.getItem(GAME_CONFIG.STORAGE_KEY) || '0', 10);
     } catch {
       return 0;
     }
@@ -69,15 +66,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   });
 
   const isPlayingRef = useRef(false);
-  const sequenceAbortRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
     onGameEnd: () => {
       cleanup();
-      if (props.onComplete) {
-        props.onComplete(score, GAME_CONFIG.MAX_SCORE, props.timeRemaining);
-      }
+      props.onComplete?.(score, GAME_CONFIG.MAX_SCORE, props.timeRemaining);
     },
     canSkipQuestion: false,
     hideTimer: true,
@@ -102,155 +97,146 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
       osc.start();
       osc.stop(ctx.currentTime + duration / 1000);
-    } catch (e) {
-      // Audio context errors on some browsers, silently fail
+    } catch {
+      // silent fail
     }
   }, []);
 
   const cleanup = useCallback(() => {
-    cleanedUpRef.current = true;
-    sequenceAbortRef.current = true;
-    sequenceTimeoutsRef.current.forEach(clearTimeout);
-    sequenceTimeoutsRef.current = [];
+    isMountedRef.current = false;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
   }, []);
 
-  const startSequence = useCallback(
-    (seq: number[]) => {
-      if (cleanedUpRef.current) return;
+  const delay = useCallback((ms: number, signal?: AbortSignal) => {
+    return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, ms);
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      });
+    });
+  }, []);
 
-      sequenceAbortRef.current = true;
-      sequenceTimeoutsRef.current.forEach(clearTimeout);
-      sequenceTimeoutsRef.current = [];
+  const showSequence = useCallback(async (sequence: number[]) => {
+    if (!isMountedRef.current) return;
 
-      sequenceAbortRef.current = false;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
-      setGameStatus('showing');
+    setGameStatus('showing');
+    isPlayingRef.current = false;
+    gameStateRef.current.playerSequence = [];
+    setAnimatingShapeId(null);
+
+    try {
+      await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
+
+      for (const id of sequence) {
+        if (signal.aborted) return;
+
+        const shape = SHAPES.find(s => s.id === id);
+        if (!shape) continue;
+
+        setAnimatingShapeId(id);
+        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+
+        await delay(GAME_CONFIG.SHAPE_ANIMATION_DURATION, signal);
+        setAnimatingShapeId(null);
+
+        await delay(GAME_CONFIG.SEQUENCE_GAP, signal);
+      }
+
+      if (!signal.aborted && isMountedRef.current) {
+        setGameStatus('playing');
+        isPlayingRef.current = true;
+      }
+    } catch (err) {
+      if ((err as DOMException).name !== 'AbortError') {
+        console.error(err);
+      }
+    }
+  }, [playSound, delay]);
+
+  const handleShapeClick = useCallback((shapeId: number) => {
+    if (!isPlayingRef.current || !isMountedRef.current) return;
+
+    const state = gameStateRef.current;
+    if (state.playerSequence.length >= state.sequence.length) return;
+
+    state.playerSequence.push(shapeId);
+    const shape = SHAPES.find(s => s.id === shapeId);
+    if (shape) playSound(shape.frequency, 200);
+
+    const expected = state.sequence[state.playerSequence.length - 1];
+
+    if (shapeId !== expected) {
+      // Wrong
       isPlayingRef.current = false;
-      gameStateRef.current.playerSequence = [];
-      setAnimatingShapeId(null);
+      playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
 
-      let currentIndex = 0;
+      const newLives = lives - 1;
+      setLives(newLives);
 
-      const showNextShape = () => {
-        if (sequenceAbortRef.current || cleanedUpRef.current) return;
-
-        if (currentIndex >= seq.length) {
-          setGameStatus('playing');
-          isPlayingRef.current = true;
-          return;
-        }
-
-        const shapeId = seq[currentIndex];
-        const shape = SHAPES.find((s) => s.id === shapeId);
-
-        setAnimatingShapeId(shapeId);
-        if (shape) {
-          playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-        }
-
-        const t1 = window.setTimeout(() => {
-          if (sequenceAbortRef.current || cleanedUpRef.current) return;
-          setAnimatingShapeId(null);
-
-          const t2 = window.setTimeout(() => {
-            if (sequenceAbortRef.current || cleanedUpRef.current) return;
-            currentIndex++;
-            showNextShape();
-          }, GAME_CONFIG.SEQUENCE_GAP);
-          sequenceTimeoutsRef.current.push(t2);
-        }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
-        sequenceTimeoutsRef.current.push(t1);
-      };
-
-      const t0 = window.setTimeout(() => {
-        if (sequenceAbortRef.current || cleanedUpRef.current) return;
-        showNextShape();
-      }, GAME_CONFIG.SEQUENCE_DELAY);
-      sequenceTimeoutsRef.current.push(t0);
-    },
-    [playSound]
-  );
-
-  const handleShapeClick = useCallback(
-    (shapeId: number) => {
-      if (!isPlayingRef.current || cleanedUpRef.current) return;
-
-      const state = gameStateRef.current;
-
-      // Prevent out-of-sequence clicks
-      if (state.playerSequence.length >= state.sequence.length) return;
-
-      state.playerSequence.push(shapeId);
-      const shape = SHAPES.find((s) => s.id === shapeId);
-      if (shape) {
-        playSound(shape.frequency, 200);
-      }
-
-      const expectedId = state.sequence[state.playerSequence.length - 1];
-
-      if (shapeId === expectedId) {
-        // Correct
-        if (state.playerSequence.length === state.sequence.length) {
-          // Round win
-          isPlayingRef.current = false;
-          const newScore = score + level * 20;
-          setScore(newScore);
-          if (newScore > highScore) {
-            setHighScore(newScore);
-            localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
+      if (newLives <= 0) {
+        setGameStatus('gameover');
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
           }
-
-          const t = window.setTimeout(() => {
-            if (cleanedUpRef.current) return;
-            setLevel((l) => l + 1);
-            const maxShapeId = level >= 3 ? 4 : 3;
-            const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxShapeId + 1))];
-            state.sequence = nextSeq;
-            startSequence(nextSeq);
-          }, 1000);
-          sequenceTimeoutsRef.current.push(t);
-        }
+        }, 2000);
       } else {
-        // Wrong
-        isPlayingRef.current = false;
-        playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
-        const newLives = lives - 1;
-        setLives(newLives);
-
-        if (newLives <= 0) {
-          setGameStatus('gameover');
-          const t = window.setTimeout(() => {
-            if (!cleanedUpRef.current) {
-              props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
-            }
-          }, 2000);
-          sequenceTimeoutsRef.current.push(t);
-        } else {
-          const t = window.setTimeout(() => {
-            if (!cleanedUpRef.current) {
-              startSequence(state.sequence);
-            }
-          }, 1000);
-          sequenceTimeoutsRef.current.push(t);
-        }
+        setTimeout(() => {
+          if (isMountedRef.current) showSequence(state.sequence);
+        }, 1200);
       }
-    },
-    [score, level, lives, highScore, startSequence, playSound, props]
-  );
+      return;
+    }
+
+    // Correct
+    if (state.playerSequence.length === state.sequence.length) {
+      // Round complete
+      isPlayingRef.current = false;
+      const newScore = score + level * 20;
+      setScore(newScore);
+
+      if (newScore > highScore) {
+        setHighScore(newScore);
+        localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
+      }
+
+      setTimeout(() => {
+        if (!isMountedRef.current) return;
+
+        setLevel(prev => {
+          const nextLevel = prev + 1;
+          const maxId = nextLevel >= 3 ? 4 : 3;
+          const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxId + 1))];
+          state.sequence = nextSeq;
+          showSequence(nextSeq);
+          return nextLevel;
+        });
+      }, 1000);
+    }
+  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete]);
 
   const startGame = useCallback(() => {
-    cleanedUpRef.current = false;
+    isMountedRef.current = true;
     initAudio();
+
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
     setAnimatingShapeId(null);
+
     const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () =>
       Math.floor(Math.random() * 4)
     );
+
     gameStateRef.current.sequence = initialSeq;
-    startSequence(initialSeq);
-  }, [initAudio, startSequence]);
+    showSequence(initialSeq);
+  }, [initAudio, showSequence]);
 
   useEffect(() => {
     return () => {
@@ -298,7 +284,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           {gameStatus !== 'countdown' && (
             <div className="w-full bg-black/50 p-4 sm:p-6 rounded-2xl border-2 border-cyan-500/50">
               <div className="grid grid-cols-2 gap-3 sm:gap-4 aspect-square">
-                {SHAPES.slice(0, 4).map((shape) => (
+                {SHAPES.slice(0, 4).map(shape => (
                   <button
                     key={shape.id}
                     onClick={() => handleShapeClick(shape.id)}
@@ -307,18 +293,14 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                       animatingShapeId === shape.id
                         ? 'scale-95 shadow-lg'
                         : isPlayingRef.current
-                          ? 'hover:scale-105 active:scale-95'
-                          : 'opacity-50 cursor-not-allowed'
+                        ? 'hover:scale-105 active:scale-95'
+                        : 'opacity-50 cursor-not-allowed'
                     }`}
                     style={{
-                      backgroundColor:
-                        animatingShapeId === shape.id
-                          ? shape.color
-                          : `${shape.color}33`,
+                      backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}33`,
                       borderColor: shape.color,
                       borderWidth: '2px',
-                      color:
-                        animatingShapeId === shape.id ? '#000' : '#fff',
+                      color: animatingShapeId === shape.id ? '#000' : '#fff',
                       boxShadow:
                         animatingShapeId === shape.id
                           ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
@@ -329,9 +311,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                   </button>
                 ))}
               </div>
+
               {SHAPES.length > 4 && (
-                <div className="mt-3 sm:mt-4">
-                  {SHAPES.slice(4).map((shape) => (
+                <div className="mt-3 sm:mt-4 space-y-3">
+                  {SHAPES.slice(4).map(shape => (
                     <button
                       key={shape.id}
                       onClick={() => handleShapeClick(shape.id)}
@@ -340,18 +323,14 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                         animatingShapeId === shape.id
                           ? 'scale-95 shadow-lg'
                           : isPlayingRef.current
-                            ? 'hover:scale-105 active:scale-95'
-                            : 'opacity-50 cursor-not-allowed'
+                          ? 'hover:scale-105 active:scale-95'
+                          : 'opacity-50 cursor-not-allowed'
                       }`}
                       style={{
-                        backgroundColor:
-                          animatingShapeId === shape.id
-                            ? shape.color
-                            : `${shape.color}33`,
+                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}33`,
                         borderColor: shape.color,
                         borderWidth: '2px',
-                        color:
-                          animatingShapeId === shape.id ? '#000' : '#fff',
+                        color: animatingShapeId === shape.id ? '#000' : '#fff',
                         boxShadow:
                           animatingShapeId === shape.id
                             ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
@@ -367,7 +346,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           )}
         </div>
 
-        {/* Status message */}
+        {/* Status */}
         <div className="text-center text-sm sm:text-base font-medium h-6">
           {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
           {gameStatus === 'playing' && <span className="text-green-400">Repeat the pattern!</span>}
@@ -379,5 +358,4 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 });
 
 Recall.displayName = 'Recall';
-
 export default Recall;
