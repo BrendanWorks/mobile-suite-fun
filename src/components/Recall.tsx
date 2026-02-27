@@ -113,46 +113,55 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   }, []);
 
   const startSequence = useCallback(
-    async (seq: number[]) => {
+    (seq: number[]) => {
       if (cleanedUpRef.current) return;
-      setGameStatus('showing');
-      isPlayingRef.current = false;
-      gameStateRef.current.playerSequence = [];
 
-      for (let i = 0; i < seq.length; i++) {
-        if (cleanedUpRef.current) return;
+      const playSequence = async () => {
+        setGameStatus('showing');
+        isPlayingRef.current = false;
+        gameStateRef.current.playerSequence = [];
 
-        await new Promise<void>((resolve) => {
-          const t = window.setTimeout(() => resolve(), GAME_CONFIG.SEQUENCE_DELAY);
-          sequenceTimeoutsRef.current.push(t);
-        });
+        for (let i = 0; i < seq.length; i++) {
+          if (cleanedUpRef.current) return;
 
-        if (cleanedUpRef.current) return;
+          // Delay before showing shape
+          await new Promise<void>((resolve) => {
+            const t = window.setTimeout(() => resolve(), GAME_CONFIG.SEQUENCE_DELAY);
+            sequenceTimeoutsRef.current.push(t);
+          });
 
-        const shapeId = seq[i];
-        const shape = SHAPES.find((s) => s.id === shapeId);
+          if (cleanedUpRef.current) return;
 
-        setAnimatingShapeId(shapeId);
-        if (shape) {
-          playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+          const shapeId = seq[i];
+          const shape = SHAPES.find((s) => s.id === shapeId);
+
+          setAnimatingShapeId(shapeId);
+          if (shape) {
+            playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+          }
+
+          // Duration of animation + gap
+          await new Promise<void>((resolve) => {
+            const t = window.setTimeout(
+              () => resolve(),
+              GAME_CONFIG.SHAPE_ANIMATION_DURATION + GAME_CONFIG.SEQUENCE_GAP
+            );
+            sequenceTimeoutsRef.current.push(t);
+          });
+
+          if (cleanedUpRef.current) return;
+          setAnimatingShapeId(null);
         }
 
-        await new Promise<void>((resolve) => {
-          const t = window.setTimeout(
-            () => resolve(),
-            GAME_CONFIG.SHAPE_ANIMATION_DURATION + GAME_CONFIG.SEQUENCE_GAP
-          );
-          sequenceTimeoutsRef.current.push(t);
-        });
+        if (!cleanedUpRef.current) {
+          setGameStatus('playing');
+          isPlayingRef.current = true;
+        }
+      };
 
-        if (cleanedUpRef.current) return;
-        setAnimatingShapeId(null);
-      }
-
-      if (!cleanedUpRef.current) {
-        setGameStatus('playing');
-        isPlayingRef.current = true;
-      }
+      playSequence().catch(() => {
+        // Silently handle cancellation
+      });
     },
     [playSound]
   );
