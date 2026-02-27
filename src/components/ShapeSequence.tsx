@@ -309,8 +309,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         setTimeout(() => {
           if (cleanedUpRef.current) return;
           setLevel(l => l + 1);
-          const maxShapeId = level >= 3 ? 4 : 3;
-          const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxShapeId + 1))];
+          const maxShapeId = level >= 3 ? 5 : 3;
+          const nextSeq = [...state.sequence, Math.floor(Math.random() * maxShapeId)];
           state.sequence = nextSeq;
           startSequence(nextSeq);
         }, 1000);
@@ -371,7 +371,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
-    const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () => Math.floor(Math.random() * 4));
+    const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () => Math.floor(Math.random() * 3));
     gameStateRef.current.sequence = initialSeq;
     startSequence(initialSeq);
   };
@@ -428,8 +428,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         <div className="relative">
           <canvas
             ref={canvasRef}
-            onMouseDown={handleCanvasClick}
-            onTouchStart={handleCanvasClick}
+            onClick={handleCanvasClick}
+            onTouchEnd={handleCanvasClick}
             className="w-full aspect-square rounded-2xl bg-black border-2 border-cyan-500/50 shadow-lg cursor-pointer mx-auto"
             style={{ boxShadow: THEME.glowShadow }}
           />
