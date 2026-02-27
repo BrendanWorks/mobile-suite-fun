@@ -1,4 +1,12 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+} from 'react';
+
 import { Zap, Lightbulb, Bug } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
@@ -49,7 +57,9 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const sequenceAbortRef = useRef(false);
 
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
-  const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
+  const [gameStatus, setGameStatus] = useState<
+    'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'
+  >('countdown');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(GAME_CONFIG.MAX_LIVES);
@@ -60,6 +70,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       return 0;
     }
   });
+
   const [showHints, setShowHints] = useState(false);
   const [debugMode, setDebugMode] = useState(true);
 
@@ -84,25 +95,33 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
     }
   }, []);
 
   const playSound = useCallback((frequency: number, duration: number = 150) => {
     if (!audioContextRef.current) return;
+
     const ctx = audioContextRef.current;
     try {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+
       osc.connect(gain);
       gain.connect(ctx.destination);
+
       osc.frequency.setValueAtTime(frequency, ctx.currentTime);
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + duration / 1000
+      );
+
       osc.start();
       osc.stop(ctx.currentTime + duration / 1000);
-    } catch (e) {
-      // Audio context errors on some browsers, silently fail
+    } catch {
+      // silently ignore audio errors
     }
   }, []);
 
@@ -111,113 +130,176 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     sequenceAbortRef.current = true;
     sequenceTimeoutsRef.current.forEach(clearTimeout);
     sequenceTimeoutsRef.current = [];
+    isPlayingRef.current = false;
   }, []);
 
-  const showSequence = useCallback((seq: number[]) => {
-    if (cleanedUpRef.current) return;
-    sequenceAbortRef.current = true;
-    sequenceTimeoutsRef.current.forEach(clearTimeout);
-    sequenceTimeoutsRef.current = [];
-    sequenceAbortRef.current = false;
-    setGameStatus('showing');
-    isPlayingRef.current = false;
-    gameStateRef.current.playerSequence = [];
-    setAnimatingShapeId(null);
-    let currentIndex = 0;
-    const showNextShape = () => {
-      if (sequenceAbortRef.current || cleanedUpRef.current) return;
-      if (currentIndex >= seq.length) {
-        setGameStatus('playing');
-        isPlayingRef.current = true;
-        return;
-      }
-      const shapeId = seq[currentIndex];
-      const shape = SHAPES.find((s) => s.id === shapeId);
-      setAnimatingShapeId(shapeId);
-      if (shape) {
-        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-      }
-      const t1 = window.setTimeout(() => {
-        if (sequenceAbortRef.current || cleanedUpRef.current) return;
-        setAnimatingShapeId(null);
-        const t2 = window.setTimeout(() => {
-          if (sequenceAbortRef.current || cleanedUpRef.current) return;
-          currentIndex++;
-          showNextShape();
-        }, GAME_CONFIG.SEQUENCE_GAP);
-        sequenceTimeoutsRef.current.push(t2);
-      }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
-      sequenceTimeoutsRef.current.push(t1);
-    };
-    const t0 = window.setTimeout(() => {
-      if (sequenceAbortRef.current || cleanedUpRef.current) return;
-      showNextShape();
-    }, GAME_CONFIG.SEQUENCE_DELAY);
-    sequenceTimeoutsRef.current.push(t0);
-  }, [playSound]);
+  const showSequence = useCallback(
+    (seq: number[]) => {
+      if (cleanedUpRef.current) return;
 
-  const handleShapeClick = useCallback((shapeId: number) => {
-    if (!isPlayingRef.current || cleanedUpRef.current) return;
-    const state = gameStateRef.current;
-    if (state.playerSequence.length >= state.sequence.length) return;
-    state.playerSequence.push(shapeId);
-    const shape = SHAPES.find((s) => s.id === shapeId);
-    if (shape) {
-      playSound(shape.frequency, 200);
-    }
-    const expectedId = state.sequence[state.playerSequence.length - 1];
-    if (shapeId === expectedId) {
-      if (state.playerSequence.length === state.sequence.length) {
-        isPlayingRef.current = false;
-        const newScore = score + level * 20;
-        setScore(newScore);
-        if (newScore > highScore) {
-          setHighScore(newScore);
-          localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
-        }
-        const t = window.setTimeout(() => {
-          if (cleanedUpRef.current) return;
-          setLevel((l) => l + 1);
-          const nextSeq = [...state.sequence, Math.floor(Math.random() * SHAPES.length)];
-          state.sequence = nextSeq;
-          showSequence(nextSeq);
-        }, 1500);
-        sequenceTimeoutsRef.current.push(t);
-      }
-    } else {
+      // Clear any previous timeouts without toggling abort mid-flight
+      sequenceTimeoutsRef.current.forEach(clearTimeout);
+      sequenceTimeoutsRef.current = [];
+      sequenceAbortRef.current = false;
+
+      setGameStatus('showing');
       isPlayingRef.current = false;
-      playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
-      const newLives = lives - 1;
-      setLives(newLives);
-      if (newLives <= 0) {
-        setGameStatus('gameover');
-        const t = window.setTimeout(() => {
-          if (!cleanedUpRef.current) {
-            props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
-          }
-        }, 2000);
-        sequenceTimeoutsRef.current.push(t);
-      } else {
-        const t = window.setTimeout(() => {
-          if (!cleanedUpRef.current) {
-            showSequence(state.sequence);
-          }
-        }, 1500);
-        sequenceTimeoutsRef.current.push(t);
+      gameStateRef.current.playerSequence = [];
+      setAnimatingShapeId(null);
+
+      let currentIndex = 0;
+
+      const showNextShape = () => {
+        if (sequenceAbortRef.current || cleanedUpRef.current) return;
+
+        if (currentIndex >= seq.length) {
+          setGameStatus('playing');
+          isPlayingRef.current = true;
+          return;
+        }
+
+        const shapeId = seq[currentIndex];
+        const shape = SHAPES.find((s) => s.id === shapeId);
+
+        setAnimatingShapeId(shapeId);
+
+        if (shape) {
+          playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+        }
+
+        const t1 = window.setTimeout(() => {
+          if (sequenceAbortRef.current || cleanedUpRef.current) return;
+
+          setAnimatingShapeId(null);
+
+          const t2 = window.setTimeout(() => {
+            if (sequenceAbortRef.current || cleanedUpRef.current) return;
+
+            currentIndex++;
+            showNextShape();
+          }, GAME_CONFIG.SEQUENCE_GAP);
+
+          sequenceTimeoutsRef.current.push(t2);
+        }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
+
+        sequenceTimeoutsRef.current.push(t1);
+      };
+
+      const t0 = window.setTimeout(() => {
+        if (sequenceAbortRef.current || cleanedUpRef.current) return;
+        showNextShape();
+      }, GAME_CONFIG.SEQUENCE_DELAY);
+
+      sequenceTimeoutsRef.current.push(t0);
+    },
+    [playSound]
+  );
+
+  const handleShapeClick = useCallback(
+    (shapeId: number) => {
+      if (!isPlayingRef.current || cleanedUpRef.current) return;
+
+      const state = gameStateRef.current;
+
+      if (state.playerSequence.length >= state.sequence.length) return;
+
+      state.playerSequence.push(shapeId);
+
+      const shape = SHAPES.find((s) => s.id === shapeId);
+      if (shape) {
+        playSound(shape.frequency, 200);
       }
-    }
-  }, [score, level, lives, highScore, showSequence, playSound, props]);
+
+      const expectedId = state.sequence[state.playerSequence.length - 1];
+
+      if (shapeId === expectedId) {
+        // Correct input
+        if (state.playerSequence.length === state.sequence.length) {
+          isPlayingRef.current = false;
+
+          const newScore = score + level * 20;
+          setScore(newScore);
+
+          if (newScore > highScore) {
+            setHighScore(newScore);
+            localStorage.setItem(
+              GAME_CONFIG.STORAGE_KEY,
+              newScore.toString()
+            );
+          }
+
+          const t = window.setTimeout(() => {
+            if (cleanedUpRef.current) return;
+
+            setLevel((l) => l + 1);
+
+            const nextSeq = [
+              ...state.sequence,
+              Math.floor(Math.random() * SHAPES.length),
+            ];
+            state.sequence = nextSeq;
+
+            // Ensure flags are reset for the next round
+            cleanedUpRef.current = false;
+            sequenceAbortRef.current = false;
+            showSequence(nextSeq);
+          }, 1500);
+
+          sequenceTimeoutsRef.current.push(t);
+        }
+      } else {
+        // Wrong input
+        isPlayingRef.current = false;
+        playSound(
+          GAME_CONFIG.WRONG_SOUND_FREQUENCY,
+          GAME_CONFIG.WRONG_SOUND_DURATION
+        );
+
+        const newLives = lives - 1;
+        setLives(newLives);
+
+        if (newLives <= 0) {
+          setGameStatus('gameover');
+
+          const t = window.setTimeout(() => {
+            if (!cleanedUpRef.current) {
+              props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
+            }
+          }, 2000);
+
+          sequenceTimeoutsRef.current.push(t);
+        } else {
+          const t = window.setTimeout(() => {
+            if (!cleanedUpRef.current) {
+              // Reset abort flag before replaying sequence
+              sequenceAbortRef.current = false;
+              showSequence(state.sequence);
+            }
+          }, 1500);
+
+          sequenceTimeoutsRef.current.push(t);
+        }
+      }
+    },
+    [score, level, lives, highScore, showSequence, playSound, props]
+  );
 
   const startGame = useCallback(() => {
     cleanedUpRef.current = false;
+    sequenceAbortRef.current = false;
+    isPlayingRef.current = false;
+
     initAudio();
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
     setAnimatingShapeId(null);
-    const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () =>
-      Math.floor(Math.random() * SHAPES.length)
+
+    const initialSeq = Array.from(
+      { length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH },
+      () => Math.floor(Math.random() * SHAPES.length)
     );
+
     gameStateRef.current.sequence = initialSeq;
     showSequence(initialSeq);
   }, [initAudio, showSequence]);
@@ -230,7 +312,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const getNextExpectedId = () => {
     const { sequence, playerSequence } = gameStateRef.current;
-    if (gameStatus !== 'playing' || playerSequence.length >= sequence.length) return null;
+    if (gameStatus !== 'playing' || playerSequence.length >= sequence.length)
+      return null;
     return sequence[playerSequence.length];
   };
 
@@ -241,35 +324,55 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   };
 
   const nextExpectedId = getNextExpectedId();
-  const nextShape = nextExpectedId !== null ? SHAPES.find(s => s.id === nextExpectedId) : null;
+  const nextShape =
+    nextExpectedId !== null
+      ? SHAPES.find((s) => s.id === nextExpectedId)
+      : null;
 
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
       <div className="max-w-2xl w-full text-center space-y-4">
         <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-3">
           <div className="flex items-center gap-2">
-            <Zap className="w-6 h-6" style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})` }} />
-            <h2 className="text-lg font-bold text-cyan-400" style={{ textShadow: THEME.textShadow }}>
+            <Zap
+              className="w-6 h-6"
+              style={{
+                color: THEME.color,
+                filter: `drop-shadow(0 0 8px ${THEME.glow})`,
+              }}
+            />
+            <h2
+              className="text-lg font-bold text-cyan-400"
+              style={{ textShadow: THEME.textShadow }}
+            >
               Recall
             </h2>
           </div>
+
           <div className="flex items-center gap-4">
             <div className="text-cyan-300">
-              Score: <strong className="text-yellow-400">{score}</strong>
+              Score:{' '}
+              <strong className="text-yellow-400">{score}</strong>
             </div>
+
             <button
-              onClick={() => setShowHints(p => !p)}
+              onClick={() => setShowHints((p) => !p)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
-                showHints ? 'bg-cyan-600/40 text-cyan-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
+                showHints
+                  ? 'bg-cyan-600/40 text-cyan-200'
+                  : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
               <Lightbulb size={16} />
               Hints {showHints ? 'ON' : 'OFF'}
             </button>
+
             <button
-              onClick={() => setDebugMode(p => !p)}
+              onClick={() => setDebugMode((p) => !p)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
-                debugMode ? 'bg-red-600/40 text-red-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
+                debugMode
+                  ? 'bg-red-600/40 text-red-200'
+                  : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
               <Bug size={16} />
@@ -279,8 +382,16 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         </div>
 
         <div className="flex justify-between text-sm mb-2">
-          <div>Level: <strong className="text-cyan-400">{level}</strong></div>
-          <div>Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong></div>
+          <div>
+            Level:{' '}
+            <strong className="text-cyan-400">{level}</strong>
+          </div>
+          <div>
+            Lives:{' '}
+            <strong className="text-red-400">
+              {'❤️'.repeat(lives)}
+            </strong>
+          </div>
         </div>
 
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
@@ -290,8 +401,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4">
-              {SHAPES.map(shape => {
-                const isNext = showHints && nextShape?.id === shape.id && gameStatus === 'playing';
+              {SHAPES.map((shape) => {
+                const isNext =
+                  showHints &&
+                  nextShape?.id === shape.id &&
+                  gameStatus === 'playing';
+
                 return (
                   <div key={shape.id} className="relative">
                     <button
@@ -305,19 +420,32 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                           : 'opacity-50 cursor-not-allowed'
                       }`}
                       style={{
-                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}30`,
+                        backgroundColor:
+                          animatingShapeId === shape.id
+                            ? shape.color
+                            : `${shape.color}30`,
                         border: `3px solid ${shape.color}`,
-                        color: animatingShapeId === shape.id ? 'black' : 'white',
-                        boxShadow: animatingShapeId === shape.id
-                          ? `0 0 40px ${shape.color}, inset 0 0 20px ${shape.color}`
-                          : `0 0 20px ${shape.color}40`,
+                        color:
+                          animatingShapeId === shape.id
+                            ? 'black'
+                            : 'white',
+                        boxShadow:
+                          animatingShapeId === shape.id
+                            ? `0 0 40px ${shape.color}, inset 0 0 20px ${shape.color}`
+                            : `0 0 20px ${shape.color}40`,
                       }}
                     >
                       {shape.label}
                     </button>
+
                     {isNext && (
                       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl animate-pulse" style={{ boxShadow: `0 0 25px ${shape.color}` }}>
+                        <div
+                          className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl animate-pulse"
+                          style={{
+                            boxShadow: `0 0 25px ${shape.color}`,
+                          }}
+                        >
                           {shape.label[0]}
                         </div>
                       </div>
@@ -331,10 +459,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
         {debugMode && gameStatus === 'playing' && (
           <div className="mt-6 p-3 bg-black/40 rounded-xl border border-cyan-800/50 max-w-lg mx-auto">
-            <div className="text-xs text-cyan-300 mb-2 uppercase tracking-wider">Remaining sequence:</div>
+            <div className="text-xs text-cyan-300 mb-2 uppercase tracking-wider">
+              Remaining sequence:
+            </div>
             <div className="flex flex-wrap gap-2 justify-center">
               {getRemainingSequence().map((id, idx) => {
-                const shape = SHAPES.find(s => s.id === id);
+                const shape = SHAPES.find((s) => s.id === id);
                 return (
                   <div
                     key={idx}
@@ -342,8 +472,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                     style={{
                       background: `linear-gradient(135deg, ${shape?.color}60, ${shape?.color}30)`,
                       border: `2px solid ${shape?.color}`,
-                      transform: idx === 0 ? 'scale(1.15)' : 'scale(1)',
-                      boxShadow: idx === 0 ? `0 0 20px ${shape?.color}` : 'none',
+                      transform:
+                        idx === 0 ? 'scale(1.15)' : 'scale(1)',
+                      boxShadow:
+                        idx === 0
+                          ? `0 0 20px ${shape?.color}`
+                          : 'none',
                     }}
                   >
                     {idx + 1}
@@ -351,16 +485,26 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                 );
               })}
               {getRemainingSequence().length === 0 && (
-                <span className="text-green-400">Sequence complete!</span>
+                <span className="text-green-400">
+                  Sequence complete!
+                </span>
               )}
             </div>
           </div>
         )}
 
         <div className="text-center text-lg font-medium mt-6 h-8">
-          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch...</span>}
-          {gameStatus === 'playing' && <span className="text-green-400">Your turn!</span>}
-          {gameStatus === 'gameover' && <span className="text-red-500">Game Over!</span>}
+          {gameStatus === 'showing' && (
+            <span className="text-orange-400 animate-pulse">
+              Watch...
+            </span>
+          )}
+          {gameStatus === 'playing' && (
+            <span className="text-green-400">Your turn!</span>
+          )}
+          {gameStatus === 'gameover' && (
+            <span className="text-red-500">Game Over!</span>
+          )}
         </div>
       </div>
     </div>
@@ -368,4 +512,5 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 });
 
 Recall.displayName = 'Recall';
+
 export default Recall;
