@@ -155,7 +155,7 @@ const showSequence = useCallback(async (seq: number[]) => {
   }
 
   isSequenceRunningRef.current = true;
-  console.log('[showSequence] Starting - level', level, 'length', seq.length);
+  console.log('[showSequence] Starting - length', seq.length);
 
   abortControllerRef.current?.abort();
   abortControllerRef.current = new AbortController();
@@ -200,7 +200,7 @@ const showSequence = useCallback(async (seq: number[]) => {
     isSequenceRunningRef.current = false;
     if (slowMoActive) setSlowMoActive(false);
   }
-}, [playSound, delay, slowMoActive, level]);
+}, [playSound, delay, slowMoActive]);
 
   const activatePowerUp = useCallback((type: PowerUp['type']) => {
     setPowerUps(current => current.map(p => p.type === type ? { ...p, used: true } : p).filter(p => !p.used));
@@ -276,12 +276,14 @@ const showSequence = useCallback(async (seq: number[]) => {
     if (state.playerSequence.length === state.sequence.length) {
       isPlayingRef.current = false;
       const multiplier = powerUps.some(p => p.type === 'double' && !p.used) ? 2 : 1;
-      const newScore = score + (level * 20 * multiplier);
-      setScore(newScore);
-      if (newScore > highScore) {
-        setHighScore(newScore);
-        localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
-      }
+      setScore(prev => {
+        const newScore = prev + (level * 20 * multiplier);
+        if (newScore > highScore) {
+          setHighScore(newScore);
+          localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
+        }
+        return newScore;
+      });
 
       // Guard + stable call
       if (isMountedRef.current && !isSequenceRunningRef.current) {
@@ -290,16 +292,15 @@ const showSequence = useCallback(async (seq: number[]) => {
 
       setTimeout(() => {
         if (!isMountedRef.current) return;
-        const newLevel = level + 1;
-        setLevel(newLevel);
+        setLevel(prev => prev + 1);
         const nextSeq = [...state.sequence, Math.floor(Math.random() * SHAPES.length)];
         state.sequence = nextSeq;
         setTimeout(() => {
           if (isMountedRef.current) showSequence(nextSeq);
-        }, 3000);  // slightly longer
+        }, 3000);
       }, 1200);
     }
-  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete, powerUps, maybeGrantPowerUp]);
+  }, [lives, highScore, showSequence, playSound, props.onComplete, powerUps, maybeGrantPowerUp, level]);
 
   const getNextExpectedId = () => {
     const { sequence, playerSequence } = gameStateRef.current;
