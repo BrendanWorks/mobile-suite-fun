@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Lightbulb } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
 interface RecallProps {
@@ -20,19 +20,19 @@ const GAME_CONFIG = {
   MAX_SCORE: 1000,
   MAX_LIVES: 3,
   INITIAL_SEQUENCE_LENGTH: 3,
-  SHAPE_ANIMATION_DURATION: 400,     // reduced a bit for testing
-  SHAPE_SOUND_DURATION: 350,
-  SEQUENCE_DELAY: 400,
-  SEQUENCE_GAP: 150,
+  SHAPE_ANIMATION_DURATION: 350,
+  SHAPE_SOUND_DURATION: 300,
+  SEQUENCE_DELAY: 600,
+  SEQUENCE_GAP: 200,
   WRONG_SOUND_FREQUENCY: 150,
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
+  HINT_ENABLED_BY_DEFAULT: true,
 } as const;
 
 const THEME = {
   color: '#00ffff',
-  glow: 'rgba(0, 255, 255, 0.6)',
-  glowShadow: '0 0 20px rgba(0, 255, 255, 0.6)',
+  glow: 'rgba(0, 255, 255, 0.7)',
   textShadow: '0 0 10px #00ffff',
 } as const;
 
@@ -41,7 +41,7 @@ const SHAPES: GameShape[] = [
   { id: 1, label: 'Blue',   color: '#3b82f6', frequency: 523.25 },
   { id: 2, label: 'Green',  color: '#10b981', frequency: 659.25 },
   { id: 3, label: 'Amber',  color: '#f59e0b', frequency: 783.99 },
-  { id: 4, label: 'Purple', color: '#8b5cf6', frequency: 880    },
+  // { id: 4, label: 'Purple', color: '#8b5cf6', frequency: 880    }, // commented out for simplicity
 ];
 
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
@@ -61,6 +61,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       return 0;
     }
   });
+  const [showHints, setShowHints] = useState(GAME_CONFIG.HINT_ENABLED_BY_DEFAULT);
 
   const gameStateRef = useRef({
     sequence: [] as number[],
@@ -86,51 +87,42 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     }
   }, []);
 
-  const playSound = useCallback((frequency: number, duration: number = 150) => {
+  const playSound = useCallback((frequency: number, duration = 150) => {
     if (!audioContextRef.current) return;
-    const ctx = audioContextRef.current;
     try {
+      const ctx = audioContextRef.current;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
       osc.start();
       osc.stop(ctx.currentTime + duration / 1000);
-    } catch {
-      // silent fail
-    }
+    } catch {}
   }, []);
 
   const cleanup = useCallback(() => {
     isMountedRef.current = false;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
-    isSequenceRunningRef.current = false;
   }, []);
 
-  const delay = useCallback((ms: number, signal?: AbortSignal): Promise<void> => {
-    return new Promise((resolve, reject) => {
+  const delay = useCallback((ms: number, signal?: AbortSignal) => 
+    new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, ms);
       signal?.addEventListener('abort', () => {
         clearTimeout(timer);
         reject(new DOMException('Aborted', 'AbortError'));
       }, { once: true });
-    });
-  }, []);
+    }), []);
 
-  const showSequence = useCallback(async (sequence: number[]) => {
-    if (!isMountedRef.current || isSequenceRunningRef.current) {
-      console.log("Sequence blocked - already running or unmounted");
-      return;
-    }
+  const showSequence = useCallback(async (seq: number[]) => {
+    if (!isMountedRef.current || isSequenceRunningRef.current) return;
 
     isSequenceRunningRef.current = true;
-    console.log(`Starting sequence of length ${sequence.length} (level ${level})`);
 
-    // Cancel any previous playback
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -143,8 +135,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     try {
       await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
 
-      for (const id of sequence) {
-        if (signal.aborted || !isMountedRef.current) throw new DOMException('Aborted', 'AbortError');
+      for (const id of seq) {
+        if (signal.aborted || !isMountedRef.current) break;
 
         const shape = SHAPES.find(s => s.id === id);
         if (!shape) continue;
@@ -161,36 +153,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       if (!signal.aborted && isMountedRef.current) {
         setGameStatus('playing');
         isPlayingRef.current = true;
-        console.log("Sequence finished → now playing");
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.error("Sequence error:", err);
-      } else {
-        console.log("Sequence aborted cleanly");
-      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') console.error(e);
     } finally {
       isSequenceRunningRef.current = false;
     }
-  }, [playSound, delay, level]);
-
-  const startNextRound = useCallback((currentSequence: number[]) => {
-    if (!isMountedRef.current) return;
-
-    const newLevel = level + 1;
-    setLevel(newLevel);
-
-    const maxId = newLevel >= 3 ? 4 : 3;
-    const nextSeq = [...currentSequence, Math.floor(Math.random() * (maxId + 1))];
-    gameStateRef.current.sequence = nextSeq;
-
-    // Give extra breathing room after win animation
-    setTimeout(() => {
-      if (isMountedRef.current) {
-        showSequence(nextSeq);
-      }
-    }, 1800); // <--- increased from 1000 ms
-  }, [level, showSequence]);
+  }, [playSound, delay]);
 
   const handleShapeClick = useCallback((shapeId: number) => {
     if (!isPlayingRef.current || !isMountedRef.current) return;
@@ -200,7 +169,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
     state.playerSequence.push(shapeId);
     const shape = SHAPES.find(s => s.id === shapeId);
-    if (shape) playSound(shape.frequency, 200);
+    if (shape) playSound(shape.frequency, 180);
 
     const expected = state.sequence[state.playerSequence.length - 1];
 
@@ -219,26 +188,39 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       } else {
         setTimeout(() => {
           if (isMountedRef.current) showSequence(state.sequence);
-        }, 1400);
+        }, 1800);
       }
       return;
     }
 
+    // Correct press
     if (state.playerSequence.length === state.sequence.length) {
       isPlayingRef.current = false;
       const newScore = score + level * 20;
       setScore(newScore);
-
       if (newScore > highScore) {
         setHighScore(newScore);
         localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
       }
 
       setTimeout(() => {
-        if (isMountedRef.current) startNextRound(state.sequence);
+        if (!isMountedRef.current) return;
+        const newLevel = level + 1;
+        setLevel(newLevel);
+        const nextSeq = [...state.sequence, Math.floor(Math.random() * SHAPES.length)];
+        state.sequence = nextSeq;
+        setTimeout(() => {
+          if (isMountedRef.current) showSequence(nextSeq);
+        }, 2500);
       }, 1200);
     }
-  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete, startNextRound]);
+  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete]);
+
+  const getNextExpectedId = () => {
+    const { sequence, playerSequence } = gameStateRef.current;
+    if (gameStatus !== 'playing' || playerSequence.length >= sequence.length) return null;
+    return sequence[playerSequence.length];
+  };
 
   const startGame = useCallback(() => {
     isMountedRef.current = true;
@@ -250,120 +232,115 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setAnimatingShapeId(null);
 
     const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () =>
-      Math.floor(Math.random() * 4)
+      Math.floor(Math.random() * SHAPES.length)
     );
 
     gameStateRef.current.sequence = initialSeq;
     showSequence(initialSeq);
   }, [initAudio, showSequence]);
 
-  useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+  useEffect(() => () => cleanup(), [cleanup]);
+
+  const nextExpectedId = getNextExpectedId();
+  const nextShape = nextExpectedId !== null ? SHAPES.find(s => s.id === nextExpectedId) : null;
 
   return (
-    <div className="min-h-screen bg-black text-white p-3 sm:p-4 flex flex-col items-center">
-      <div className="max-w-2xl w-full text-center space-y-3">
-        <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-2 sm:pb-3">
-          <div className="flex items-center gap-1.5">
-            <Zap
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})`, strokeWidth: 2 }}
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: THEME.textShadow }}>
+    <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
+      <div className="max-w-2xl w-full text-center space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-6 h-6" style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})` }} />
+            <h2 className="text-lg font-bold text-cyan-400" style={{ textShadow: THEME.textShadow }}>
               Recall
             </h2>
           </div>
-          <div className="text-cyan-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
+          <div className="flex items-center gap-4">
+            <div className="text-cyan-300">
+              Score: <strong className="text-yellow-400">{score}</strong>
+            </div>
+            <button
+              onClick={() => setShowHints(prev => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                showHints ? 'bg-cyan-600/40 text-cyan-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50'
+              }`}
+            >
+              <Lightbulb size={16} />
+              {showHints ? 'Hint ON' : 'Hint OFF'}
+            </button>
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 text-xs sm:text-sm">
-          <div className="text-cyan-300">
-            Level: <strong className="text-cyan-400">{level}</strong>
-          </div>
-          <div className="text-cyan-300">
-            Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong>
-          </div>
+        {/* Stats */}
+        <div className="flex justify-between text-sm">
+          <div>Level: <strong className="text-cyan-400">{level}</strong></div>
+          <div>Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong></div>
         </div>
 
-        <div className="relative w-full">
-          {gameStatus === 'countdown' && (
-            <div className="aspect-square flex items-center justify-center bg-black rounded-2xl border-2 border-cyan-500/50">
+        {/* Game Board */}
+        <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
+          {gameStatus === 'countdown' ? (
+            <div className="w-full h-full flex items-center justify-center bg-black/80 rounded-2xl border-2 border-cyan-500/50">
               <RoundCountdown onComplete={startGame} />
             </div>
-          )}
-
-          {gameStatus !== 'countdown' && (
-            <div className="w-full bg-black/50 p-4 sm:p-6 rounded-2xl border-2 border-cyan-500/50">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 aspect-square">
-                {SHAPES.slice(0, 4).map(shape => (
-                  <button
-                    key={shape.id}
-                    onClick={() => handleShapeClick(shape.id)}
-                    disabled={!isPlayingRef.current}
-                    className={`rounded-xl transition-all duration-150 font-semibold text-sm sm:text-base ${
-                      animatingShapeId === shape.id
-                        ? 'scale-90 shadow-2xl'
-                        : isPlayingRef.current
-                        ? 'hover:scale-105 active:scale-95'
-                        : 'opacity-50 cursor-not-allowed'
-                    }`}
-                    style={{
-                      backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}40`,
-                      borderColor: shape.color,
-                      borderWidth: '3px',
-                      color: animatingShapeId === shape.id ? '#000' : '#fff',
-                      boxShadow:
-                        animatingShapeId === shape.id
-                          ? `0 0 30px ${shape.color}, inset 0 0 12px ${shape.color}`
-                          : `0 0 12px ${shape.color}60`,
-                    }}
-                  >
-                    {shape.label}
-                  </button>
-                ))}
-              </div>
-
-              {SHAPES.length > 4 && (
-                <div className="mt-4 space-y-3">
-                  {SHAPES.slice(4).map(shape => (
+          ) : (
+            <div className="grid grid-cols-2 gap-4 h-full relative">
+              {SHAPES.map(shape => {
+                const isNext = showHints && nextShape?.id === shape.id && gameStatus === 'playing';
+                return (
+                  <div key={shape.id} className="relative">
                     <button
-                      key={shape.id}
                       onClick={() => handleShapeClick(shape.id)}
                       disabled={!isPlayingRef.current}
-                      className={`w-full rounded-xl transition-all duration-150 font-semibold text-base py-3 ${
+                      className={`w-full h-full rounded-2xl transition-all duration-200 font-bold text-xl flex items-center justify-center ${
                         animatingShapeId === shape.id
-                          ? 'scale-95 shadow-2xl'
+                          ? 'scale-95 brightness-125 shadow-2xl ring-4 ring-white/30'
                           : isPlayingRef.current
-                          ? 'hover:scale-105 active:scale-95'
+                          ? 'hover:scale-105 active:scale-95 hover:brightness-110'
                           : 'opacity-50 cursor-not-allowed'
                       }`}
                       style={{
-                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}40`,
-                        borderColor: shape.color,
-                        borderWidth: '3px',
-                        color: animatingShapeId === shape.id ? '#000' : '#fff',
-                        boxShadow:
-                          animatingShapeId === shape.id
-                            ? `0 0 30px ${shape.color}, inset 0 0 12px ${shape.color}`
-                            : `0 0 12px ${shape.color}60`,
+                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}30`,
+                        border: `3px solid ${shape.color}`,
+                        color: animatingShapeId === shape.id ? 'black' : 'white',
+                        boxShadow: animatingShapeId === shape.id
+                          ? `0 0 40px ${shape.color}, inset 0 0 15px ${shape.color}`
+                          : `0 0 15px ${shape.color}50`,
                       }}
                     >
                       {shape.label}
                     </button>
-                  ))}
-                </div>
-              )}
+
+                    {/* Hint overlay */}
+                    {isNext && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div
+                          className="w-20 h-20 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl shadow-xl animate-pulse-slow"
+                          style={{
+                            boxShadow: `0 0 30px ${shape.color}, inset 0 0 10px ${shape.color}`,
+                            border: `2px solid ${shape.color}`,
+                          }}
+                        >
+                          {shape.label[0]}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
-        </div>
 
-        <div className="text-center text-base font-medium h-6">
-          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch carefully...</span>}
-          {gameStatus === 'playing' && <span className="text-green-400">Your turn — repeat!</span>}
-          {gameStatus === 'gameover' && <span className="text-red-500">Game Over</span>}
+          {/* Status text */}
+          <div className="text-center text-lg font-medium mt-4 h-8">
+            {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch...</span>}
+            {gameStatus === 'playing' && (
+              <span className="text-green-400">
+                {showHints ? 'Follow the glowing hint →' : 'Your turn!'}
+              </span>
+            )}
+            {gameStatus === 'gameover' && <span className="text-red-500">Game Over!</span>}
+          </div>
         </div>
       </div>
     </div>
