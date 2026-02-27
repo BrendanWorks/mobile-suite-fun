@@ -232,9 +232,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       }
     }
 
-    if (!cleanedUpRef.current) {
-      animationFrameRef.current = requestAnimationFrame(render);
-    }
+    animationFrameRef.current = requestAnimationFrame(render);
   }, [drawShape]);
 
   const cleanup = useCallback(() => {
@@ -345,10 +343,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const touch = 'touches' in e ? e.touches[0] || e.changedTouches[0] : null;
+    const clientX = touch ? touch.clientX : (e as React.MouseEvent).clientX;
+    const clientY = touch ? touch.clientY : (e as React.MouseEvent).clientY;
     
     // FIX: Use actual canvas resolution, not CSS size
     // DPR adjustment ensures high-DPI screens work correctly
@@ -432,7 +431,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            onTouchEnd={handleCanvasClick}
+            onTouchStart={handleCanvasClick}
             className="w-full aspect-square rounded-2xl bg-black border-2 border-cyan-500/50 shadow-lg cursor-pointer mx-auto"
             style={{ boxShadow: THEME.glowShadow }}
           />
