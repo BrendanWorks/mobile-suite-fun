@@ -684,7 +684,7 @@ const PhotoMystery = forwardRef((props, ref) => {
                 strokeWidth: 2
               }} 
             />
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Photo Mystery</h2>
+            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Zooma</h2>
           </div>
           <div className="text-cyan-300 text-xs sm:text-sm">
             Correct: <strong className="text-yellow-400 tabular-nums">{correctCount}/{totalPhotos}</strong>
