@@ -50,11 +50,13 @@ const SHAPES: GameShape[] = [
   { id: 3, label: 'Amber', color: '#f59e0b', frequency: 783.99 },
 ];
 
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const sequenceTimeoutsRef = useRef<number[]>([]);
   const cleanedUpRef = useRef(false);
   const sequenceAbortRef = useRef(false);
+  const isPlayingRef = useRef(false);
 
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [gameStatus, setGameStatus] = useState<
@@ -78,8 +80,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     sequence: [] as number[],
     playerSequence: [] as number[],
   });
-
-  const isPlayingRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
@@ -128,69 +128,42 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const cleanup = useCallback(() => {
     cleanedUpRef.current = true;
     sequenceAbortRef.current = true;
-    sequenceTimeoutsRef.current.forEach(clearTimeout);
-    sequenceTimeoutsRef.current = [];
     isPlayingRef.current = false;
+    setAnimatingShapeId(null);
   }, []);
 
-  const showSequence = useCallback(
-    (seq: number[]) => {
+  const playSequence = useCallback(
+    async (seq: number[]) => {
       if (cleanedUpRef.current) return;
 
-      // Clear any previous timeouts without toggling abort mid-flight
-      sequenceTimeoutsRef.current.forEach(clearTimeout);
-      sequenceTimeoutsRef.current = [];
       sequenceAbortRef.current = false;
-
       setGameStatus('showing');
       isPlayingRef.current = false;
       gameStateRef.current.playerSequence = [];
       setAnimatingShapeId(null);
 
-      let currentIndex = 0;
-
-      const showNextShape = () => {
+      for (const shapeId of seq) {
         if (sequenceAbortRef.current || cleanedUpRef.current) return;
 
-        if (currentIndex >= seq.length) {
-          setGameStatus('playing');
-          isPlayingRef.current = true;
-          return;
-        }
-
-        const shapeId = seq[currentIndex];
         const shape = SHAPES.find((s) => s.id === shapeId);
-
         setAnimatingShapeId(shapeId);
 
         if (shape) {
           playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
         }
 
-        const t1 = window.setTimeout(() => {
-          if (sequenceAbortRef.current || cleanedUpRef.current) return;
-
-          setAnimatingShapeId(null);
-
-          const t2 = window.setTimeout(() => {
-            if (sequenceAbortRef.current || cleanedUpRef.current) return;
-
-            currentIndex++;
-            showNextShape();
-          }, GAME_CONFIG.SEQUENCE_GAP);
-
-          sequenceTimeoutsRef.current.push(t2);
-        }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
-
-        sequenceTimeoutsRef.current.push(t1);
-      };
-
-      const t0 = window.setTimeout(() => {
+        await wait(GAME_CONFIG.SHAPE_ANIMATION_DURATION);
         if (sequenceAbortRef.current || cleanedUpRef.current) return;
-        showNextShape();
-      }, GAME_CONFIG.SEQUENCE_DELAY);
 
-      sequenceTimeoutsRef.current.push(t0);
+        setAnimatingShapeId(null);
+        await wait(GAME_CONFIG.SEQUENCE_GAP);
+        if (sequenceAbortRef.current || cleanedUpRef.current) return;
+      }
+
+      if (sequenceAbortRef.current || cleanedUpRef.current) return;
+
+      setGameStatus('playing');
+      isPlayingRef.current = true;
     },
     [playSound]
   );
@@ -222,13 +195,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
           if (newScore > highScore) {
             setHighScore(newScore);
-            localStorage.setItem(
-              GAME_CONFIG.STORAGE_KEY,
-              newScore.toString()
-            );
+            localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
           }
 
-          const t = window.setTimeout(() => {
+          (async () => {
+            await wait(1500);
             if (cleanedUpRef.current) return;
 
             setLevel((l) => l + 1);
@@ -239,13 +210,14 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             ];
             state.sequence = nextSeq;
 
-            // Ensure flags are reset for the next round
-            cleanedUpRef.current = false;
             sequenceAbortRef.current = false;
-            showSequence(nextSeq);
-          }, 1500);
+            cleanedUpRef.current = false;
 
-          sequenceTimeoutsRef.current.push(t);
+            await wait(GAME_CONFIG.SEQUENCE_DELAY);
+            if (cleanedUpRef.current) return;
+
+            await playSequence(nextSeq);
+          })();
         }
       } else {
         // Wrong input
@@ -261,30 +233,32 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         if (newLives <= 0) {
           setGameStatus('gameover');
 
-          const t = window.setTimeout(() => {
+          (async () => {
+            await wait(2000);
             if (!cleanedUpRef.current) {
               props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
             }
-          }, 2000);
-
-          sequenceTimeoutsRef.current.push(t);
+          })();
         } else {
-          const t = window.setTimeout(() => {
-            if (!cleanedUpRef.current) {
-              // Reset abort flag before replaying sequence
-              sequenceAbortRef.current = false;
-              showSequence(state.sequence);
-            }
-          }, 1500);
+          (async () => {
+            await wait(1500);
+            if (cleanedUpRef.current) return;
 
-          sequenceTimeoutsRef.current.push(t);
+            sequenceAbortRef.current = false;
+            cleanedUpRef.current = false;
+
+            await wait(GAME_CONFIG.SEQUENCE_DELAY);
+            if (cleanedUpRef.current) return;
+
+            await playSequence(state.sequence);
+          })();
         }
       }
     },
-    [score, level, lives, highScore, showSequence, playSound, props]
+    [score, level, lives, highScore, playSound, playSequence, props]
   );
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
     cleanedUpRef.current = false;
     sequenceAbortRef.current = false;
     isPlayingRef.current = false;
@@ -294,6 +268,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
     setAnimatingShapeId(null);
+    setGameStatus('idle');
 
     const initialSeq = Array.from(
       { length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH },
@@ -301,8 +276,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     );
 
     gameStateRef.current.sequence = initialSeq;
-    showSequence(initialSeq);
-  }, [initAudio, showSequence]);
+
+    await wait(GAME_CONFIG.SEQUENCE_DELAY);
+    if (cleanedUpRef.current) return;
+
+    await playSequence(initialSeq);
+  }, [initAudio, playSequence]);
+
+  useEffect(() => {
+    if (props.onScoreUpdate) {
+      props.onScoreUpdate(score, GAME_CONFIG.MAX_SCORE);
+    }
+  }, [score, props]);
 
   useEffect(() => {
     return () => {
