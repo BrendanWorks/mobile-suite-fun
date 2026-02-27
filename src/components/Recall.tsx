@@ -127,9 +127,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           sequenceTimeoutsRef.current.push(t);
         });
 
+        if (cleanedUpRef.current) return;
+
         const shapeId = seq[i];
-        setAnimatingShapeId(shapeId);
         const shape = SHAPES.find((s) => s.id === shapeId);
+
+        setAnimatingShapeId(shapeId);
         if (shape) {
           playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
         }
@@ -142,6 +145,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           sequenceTimeoutsRef.current.push(t);
         });
 
+        if (cleanedUpRef.current) return;
         setAnimatingShapeId(null);
       }
 
