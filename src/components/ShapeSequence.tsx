@@ -35,22 +35,32 @@ interface GameState {
   feedbackType: 'correct' | 'wrong' | null;
 }
 
-const MAX_SCORE = 1000;
-const MAX_LIVES = 3;
-const INITIAL_SEQUENCE_LENGTH = 3;
-const SHAPE_ANIMATION_DURATION = 500;
-const FEEDBACK_DURATION = 800;
-const STORAGE_KEY = 'recallHighScore';
+// Game constants - centralized
+const GAME_CONFIG = {
+  MAX_SCORE: 1000,
+  MAX_LIVES: 3,
+  INITIAL_SEQUENCE_LENGTH: 3,
+  SHAPE_ANIMATION_DURATION: 500,
+  SHAPE_SOUND_DURATION: 400,
+  FEEDBACK_DURATION: 800,
+  SEQUENCE_DELAY: 200,
+  SEQUENCE_GAP: 100,
+  WRONG_SOUND_FREQUENCY: 150,
+  WRONG_SOUND_DURATION: 600,
+  HIT_DETECTION_RADIUS_MULTIPLIER: 1.2, // Slightly larger than visual
+  STORAGE_KEY: 'recallHighScore',
+} as const;
 
 // Theme constants
 const THEME = {
   color: '#00ffff',
   glow: 'rgba(0, 255, 255, 0.6)',
-  shadow: '0 0 10px rgba(0, 255, 255, 0.3)',
-  textShadow: '0 0 10px #00ffff'
-};
+  glowShadow: '0 0 20px rgba(0, 255, 255, 0.6)',
+  textShadow: '0 0 10px #00ffff',
+  shadowColor: 'rgba(0, 255, 255, 0.3)',
+} as const;
 
-// Shape definitions with metadata
+// Shape definitions - includes drawing data
 const SHAPE_CONFIG: GameShape[] = [
   { id: 0, type: 'circle', color: '#ef4444', themeColor: 'red', frequency: 440, x: 0.25, y: 0.25, size: 75 },
   { id: 1, type: 'square', color: '#3b82f6', themeColor: 'blue', frequency: 523.25, x: 0.75, y: 0.25, size: 75 },
@@ -59,19 +69,51 @@ const SHAPE_CONFIG: GameShape[] = [
   { id: 4, type: 'star', color: '#8b5cf6', themeColor: 'purple', frequency: 880, x: 0.5, y: 0.5, size: 75 },
 ];
 
+// Shape drawing paths - DRY: centralized drawing logic
+const SHAPE_PATHS: Record<string, (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => void> = {
+  circle: (ctx, x, y, size) => {
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+  },
+  square: (ctx, x, y, size) => {
+    ctx.rect(x - size / 2, y - size / 2, size, size);
+  },
+  triangle: (ctx, x, y, size) => {
+    ctx.moveTo(x, y - size / 2);
+    ctx.lineTo(x - size / 2, y + size / 2);
+    ctx.lineTo(x + size / 2, y + size / 2);
+    ctx.closePath();
+  },
+  diamond: (ctx, x, y, size) => {
+    ctx.moveTo(x, y - size / 2);
+    ctx.lineTo(x + size / 2, y);
+    ctx.lineTo(x, y + size / 2);
+    ctx.lineTo(x - size / 2, y);
+    ctx.closePath();
+  },
+  star: (ctx, x, y, size) => {
+    for (let i = 0; i < 10; i++) {
+      const angle = (Math.PI * i) / 5 - Math.PI / 2;
+      const r = i % 2 === 0 ? size / 2 : size / 4;
+      ctx.lineTo(x + Math.cos(angle) * r, y + Math.sin(angle) * r);
+    }
+    ctx.closePath();
+  },
+};
+
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
   const sequenceTimeoutsRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const cleanedUpRef = useRef(false);
   
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(MAX_LIVES);
+  const [lives, setLives] = useState(GAME_CONFIG.MAX_LIVES);
   const [highScore, setHighScore] = useState(() => {
     try {
-      return parseInt(localStorage.getItem(STORAGE_KEY) || '0');
+      return parseInt(localStorage.getItem(GAME_CONFIG.STORAGE_KEY) || '0');
     } catch { return 0; }
   });
 
@@ -89,11 +131,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const isPlayingRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
-    getGameScore: () => ({ score, maxScore: MAX_SCORE }),
+    getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
     onGameEnd: () => {
       cleanup();
       if (props.onComplete) {
-        props.onComplete(score, MAX_SCORE, props.timeRemaining);
+        props.onComplete(score, GAME_CONFIG.MAX_SCORE, props.timeRemaining);
       }
     },
     canSkipQuestion: false,
@@ -108,15 +150,16 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const playSound = useCallback((frequency: number, duration: number = 150) => {
     if (!audioContextRef.current) return;
-    const osc = audioContextRef.current.createOscillator();
-    const gain = audioContextRef.current.createGain();
+    const ctx = audioContextRef.current;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(audioContextRef.current.destination);
-    osc.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
-    gain.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + duration / 1000);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
     osc.start();
-    osc.stop(audioContextRef.current.currentTime + duration / 1000);
+    osc.stop(ctx.currentTime + duration / 1000);
   }, []);
 
   const drawShape = useCallback((ctx: CanvasRenderingContext2D, shape: GameShape, isHighlighted: boolean) => {
@@ -138,34 +181,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     ctx.lineWidth = 3;
     ctx.beginPath();
 
-    switch (shape.type) {
-      case 'circle':
-        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-        break;
-      case 'square':
-        ctx.rect(x - size / 2, y - size / 2, size, size);
-        break;
-      case 'triangle':
-        ctx.moveTo(x, y - size / 2);
-        ctx.lineTo(x - size / 2, y + size / 2);
-        ctx.lineTo(x + size / 2, y + size / 2);
-        ctx.closePath();
-        break;
-      case 'diamond':
-        ctx.moveTo(x, y - size / 2);
-        ctx.lineTo(x + size / 2, y);
-        ctx.lineTo(x, y + size / 2);
-        ctx.lineTo(x - size / 2, y);
-        ctx.closePath();
-        break;
-      case 'star':
-        for (let i = 0; i < 10; i++) {
-          const angle = (Math.PI * i) / 5 - Math.PI / 2;
-          const r = i % 2 === 0 ? size / 2 : size / 4;
-          ctx.lineTo(x + Math.cos(angle) * r, y + Math.sin(angle) * r);
-        }
-        ctx.closePath();
-        break;
+    // Use shape path lookup instead of switch statement
+    const drawPath = SHAPE_PATHS[shape.type];
+    if (drawPath) {
+      drawPath(ctx, x, y, size);
     }
 
     ctx.fill();
@@ -188,7 +207,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       let active = false;
       if (state.animatingShape === shape.id) {
         const elapsed = now - state.animationStartTime;
-        if (elapsed < SHAPE_ANIMATION_DURATION) {
+        if (elapsed < GAME_CONFIG.SHAPE_ANIMATION_DURATION) {
           active = true;
         } else {
           state.animatingShape = null;
@@ -199,9 +218,9 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
     if (state.feedbackType) {
       const elapsed = now - state.feedbackStartTime;
-      if (elapsed < FEEDBACK_DURATION) {
+      if (elapsed < GAME_CONFIG.FEEDBACK_DURATION) {
         ctx.save();
-        ctx.globalAlpha = (1 - elapsed / FEEDBACK_DURATION) * 0.3;
+        ctx.globalAlpha = (1 - elapsed / GAME_CONFIG.FEEDBACK_DURATION) * 0.3;
         ctx.fillStyle = state.feedbackType === 'correct' ? '#10b981' : '#ef4444';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
@@ -210,22 +229,32 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       }
     }
 
-    animationFrameRef.current = requestAnimationFrame(render);
+    if (!cleanedUpRef.current) {
+      animationFrameRef.current = requestAnimationFrame(render);
+    }
   }, [drawShape]);
 
   const cleanup = useCallback(() => {
+    cleanedUpRef.current = true;
     sequenceTimeoutsRef.current.forEach(clearTimeout);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    sequenceTimeoutsRef.current = [];
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = undefined;
+    }
   }, []);
 
   const startSequence = useCallback(async (seq: number[]) => {
+    if (cleanedUpRef.current) return;
     setGameStatus('showing');
     isPlayingRef.current = false;
     gameStateRef.current.playerSequence = [];
     
     for (let i = 0; i < seq.length; i++) {
+      if (cleanedUpRef.current) return;
+      
       await new Promise(r => {
-        const t = window.setTimeout(r, 200);
+        const t = window.setTimeout(r, GAME_CONFIG.SEQUENCE_DELAY);
         sequenceTimeoutsRef.current.push(t);
       });
 
@@ -234,20 +263,23 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       if (shape) {
         gameStateRef.current.animatingShape = shapeId;
         gameStateRef.current.animationStartTime = Date.now();
-        playSound(shape.frequency, 400);
+        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
       }
 
       await new Promise(r => {
-        const t = window.setTimeout(r, SHAPE_ANIMATION_DURATION + 100);
+        const t = window.setTimeout(r, GAME_CONFIG.SHAPE_ANIMATION_DURATION + GAME_CONFIG.SEQUENCE_GAP);
         sequenceTimeoutsRef.current.push(t);
       });
     }
-    setGameStatus('playing');
-    isPlayingRef.current = true;
+    
+    if (!cleanedUpRef.current) {
+      setGameStatus('playing');
+      isPlayingRef.current = true;
+    }
   }, [playSound]);
 
   const handleShapeClick = (shapeId: number) => {
-    if (!isPlayingRef.current) return;
+    if (!isPlayingRef.current || cleanedUpRef.current) return;
 
     const state = gameStateRef.current;
     const shape = state.shapes.find(s => s.id === shapeId);
@@ -272,9 +304,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         setScore(newScore);
         if (newScore > highScore) {
           setHighScore(newScore);
-          localStorage.setItem(STORAGE_KEY, newScore.toString());
+          localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
         }
         setTimeout(() => {
+          if (cleanedUpRef.current) return;
           setLevel(l => l + 1);
           const maxShapeId = level >= 3 ? 4 : 3;
           const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxShapeId + 1))];
@@ -286,14 +319,22 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       // Wrong
       state.feedbackType = 'wrong';
       state.feedbackStartTime = Date.now();
-      playSound(150, 600);
+      playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
       const newLives = lives - 1;
       setLives(newLives);
       if (newLives <= 0) {
         setGameStatus('gameover');
-        setTimeout(() => props.onComplete?.(score, MAX_SCORE), 2000);
+        setTimeout(() => {
+          if (!cleanedUpRef.current) {
+            props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
+          }
+        }, 2000);
       } else {
-        setTimeout(() => startSequence(state.sequence), 1000);
+        setTimeout(() => {
+          if (!cleanedUpRef.current) {
+            startSequence(state.sequence);
+          }
+        }, 1000);
       }
     }
   };
@@ -301,27 +342,36 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const x = (clientX - rect.left) * (canvas.width / rect.width);
-    const y = (clientY - rect.top) * (canvas.height / rect.height);
+    
+    // FIX: Use actual canvas resolution, not CSS size
+    // DPR adjustment ensures high-DPI screens work correctly
+    const dpr = window.devicePixelRatio || 1;
+    const x = ((clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
+    // FIX: More accurate hit detection using actualSize
     const clicked = gameStateRef.current.shapes.find(s => {
-      const dx = x - (s.actualX || 0);
-      const dy = y - (s.actualY || 0);
-      return Math.sqrt(dx * dx + dy * dy) < (s.actualSize || 0) / 1.5;
+      if (s.actualX === undefined || s.actualY === undefined || s.actualSize === undefined) return false;
+      const dx = x - s.actualX;
+      const dy = y - s.actualY;
+      const radius = (s.actualSize / 2) * GAME_CONFIG.HIT_DETECTION_RADIUS_MULTIPLIER;
+      return Math.sqrt(dx * dx + dy * dy) < radius;
     });
 
     if (clicked) handleShapeClick(clicked.id);
   };
 
   const startGame = () => {
+    cleanedUpRef.current = false;
     initAudio();
     setScore(0);
     setLevel(1);
-    setLives(MAX_LIVES);
-    const initialSeq = Array.from({ length: INITIAL_SEQUENCE_LENGTH }, () => Math.floor(Math.random() * 4));
+    setLives(GAME_CONFIG.MAX_LIVES);
+    const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () => Math.floor(Math.random() * 4));
     gameStateRef.current.sequence = initialSeq;
     startSequence(initialSeq);
   };
@@ -329,15 +379,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     const size = Math.min(canvas.parentElement?.offsetWidth || 400, 500);
     canvas.width = size;
     canvas.height = size;
+    
     gameStateRef.current.shapes = SHAPE_CONFIG.map(s => ({
       ...s,
       actualX: s.x * size,
       actualY: s.y * size,
       actualSize: s.size * (size / 400),
     }));
+    
     render();
     return () => cleanup();
   }, [render, cleanup]);
@@ -378,7 +431,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             onMouseDown={handleCanvasClick}
             onTouchStart={handleCanvasClick}
             className="w-full aspect-square rounded-2xl bg-black border-2 border-cyan-500/50 shadow-lg cursor-pointer mx-auto"
-            style={{ boxShadow: `0 0 20px ${THEME.glow}` }}
+            style={{ boxShadow: THEME.glowShadow }}
           />
           {gameStatus === 'countdown' && (
             <div className="absolute inset-0 bg-black/80 rounded-2xl overflow-hidden flex items-center justify-center">
