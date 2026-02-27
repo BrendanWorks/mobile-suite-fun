@@ -35,7 +35,7 @@ const GAME_CONFIG = {
   HINT_ENABLED_BY_DEFAULT: true,
   POWERUP_CHANCE: 0.3,
   MAX_POWERUPS: 3,
-  DEBUG_ENABLED_BY_DEFAULT: true, // Start with debug on for testing
+  DEBUG_ENABLED_BY_DEFAULT: true,
 } as const;
 
 const THEME = {
@@ -71,7 +71,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isSequenceRunningRef = useRef(false);
-  const ghostModeRef = useRef(0); // remaining ghost presses
+  const ghostModeRef = useRef(0);
 
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
@@ -193,8 +193,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   }, [playSound, delay, slowMoActive]);
 
   const activatePowerUp = useCallback((type: PowerUp['type']) => {
-    const newPowerUps = powerUps.map(p => p.type === type ? { ...p, used: true } : p).filter(p => !p.used);
-    setPowerUps(newPowerUps);
+    setPowerUps(current => current.map(p => p.type === type ? { ...p, used: true } : p).filter(p => !p.used));
 
     switch (type) {
       case 'life':
@@ -210,18 +209,21 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         ghostModeRef.current = 3;
         break;
       case 'double':
-        // Handled in score calc
+        // score multiplier handled separately
         break;
     }
-  }, [powerUps, showSequence]);
+  }, [showSequence]);
 
   const maybeGrantPowerUp = useCallback(() => {
-    if (powerUps.length >= GAME_CONFIG.MAX_POWERUPS || Math.random() > GAME_CONFIG.POWERUP_CHANCE) return;
-
-    const types: PowerUp['type'][] = ['life', 'slow', 'replay', 'ghost', 'double'];
-    const randomType = types[Math.floor(Math.random() * types.length)];
-    setPowerUps(p => [...p, { type: randomType, used: false }]);
-  }, [powerUps]);
+    setPowerUps(currentPowerUps => {
+      if (currentPowerUps.length >= GAME_CONFIG.MAX_POWERUPS || Math.random() > GAME_CONFIG.POWERUP_CHANCE) {
+        return currentPowerUps;
+      }
+      const types: PowerUp['type'][] = ['life', 'slow', 'replay', 'ghost', 'double'];
+      const randomType = types[Math.floor(Math.random() * types.length)];
+      return [...currentPowerUps, { type: randomType, used: false }];
+    });
+  }, []);  // stable!
 
   const handleShapeClick = useCallback((shapeId: number) => {
     if (!isPlayingRef.current || !isMountedRef.current) return;
@@ -238,7 +240,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     if (shapeId !== expected) {
       if (ghostModeRef.current > 0) {
         ghostModeRef.current--;
-        playSound(200, 100); // Soft buzz
+        playSound(200, 100);
         return;
       }
 
@@ -261,7 +263,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       return;
     }
 
-    // Correct
     if (state.playerSequence.length === state.sequence.length) {
       isPlayingRef.current = false;
       const multiplier = powerUps.some(p => p.type === 'double' && !p.used) ? 2 : 1;
@@ -272,7 +273,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
       }
 
-      maybeGrantPowerUp();
+      // Guard + stable call
+      if (isMountedRef.current && !isSequenceRunningRef.current) {
+        maybeGrantPowerUp();
+      }
 
       setTimeout(() => {
         if (!isMountedRef.current) return;
@@ -282,7 +286,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         state.sequence = nextSeq;
         setTimeout(() => {
           if (isMountedRef.current) showSequence(nextSeq);
-        }, 2500);
+        }, 3000);  // slightly longer
       }, 1200);
     }
   }, [score, level, lives, highScore, showSequence, playSound, props.onComplete, powerUps, maybeGrantPowerUp]);
@@ -324,7 +328,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
       <div className="max-w-2xl w-full text-center space-y-4">
-        {/* Header */}
         <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-3">
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6" style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})` }} />
@@ -357,11 +360,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
         </div>
 
-        {/* Stats + Power-Ups */}
         <div className="flex justify-between text-sm mb-2">
           <div>Level: <strong className="text-cyan-400">{level}</strong></div>
           <div>Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong></div>
         </div>
+
         {powerUps.length > 0 && (
           <div className="flex gap-2 justify-center flex-wrap">
             {powerUps.map((pu, i) => (
@@ -384,7 +387,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
         )}
 
-        {/* Game Board */}
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
           {gameStatus === 'countdown' ? (
             <div className="w-full h-full flex items-center justify-center bg-black/80 rounded-2xl border-2 border-cyan-500/50">
@@ -433,7 +435,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           )}
 
-          {/* Debug Mode Panel */}
           {debugMode && gameStatus === 'playing' && (
             <div className="mt-6 p-3 bg-black/40 rounded-xl border border-cyan-800/50 max-w-lg mx-auto">
               <div className="text-xs text-cyan-300 mb-2 uppercase tracking-wider">Remaining sequence:</div>
@@ -462,7 +463,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           )}
 
-          {/* Status */}
           <div className="text-center text-lg font-medium mt-6 h-8">
             {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
             {gameStatus === 'playing' && <span className="text-green-400">Repeat! {ghostModeRef.current > 0 && `👻 x${ghostModeRef.current}`}</span>}
