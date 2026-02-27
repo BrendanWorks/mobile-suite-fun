@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Zap, Lightbulb, Heart, Clock, RefreshCw, Shield, Star, Bug } from 'lucide-react';
+import { Zap, Lightbulb, Bug } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
 interface RecallProps {
@@ -16,11 +16,6 @@ interface GameShape {
   frequency: number;
 }
 
-interface PowerUp {
-  type: 'life' | 'slow' | 'replay' | 'ghost' | 'double';
-  used: boolean;
-}
-
 const GAME_CONFIG = {
   MAX_SCORE: 1000,
   MAX_LIVES: 3,
@@ -33,8 +28,6 @@ const GAME_CONFIG = {
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
   HINT_ENABLED_BY_DEFAULT: true,
-  POWERUP_CHANCE: 0.3,
-  MAX_POWERUPS: 3,
   DEBUG_ENABLED_BY_DEFAULT: true,
 } as const;
 
@@ -45,33 +38,16 @@ const THEME = {
 } as const;
 
 const SHAPES: GameShape[] = [
-  { id: 0, label: 'Red', color: '#ef4444', frequency: 440 },
-  { id: 1, label: 'Blue', color: '#3b82f6', frequency: 523.25 },
-  { id: 2, label: 'Green', color: '#10b981', frequency: 659.25 },
-  { id: 3, label: 'Amber', color: '#f59e0b', frequency: 783.99 },
+  { id: 0, label: 'Red',    color: '#ef4444', frequency: 440    },
+  { id: 1, label: 'Blue',   color: '#3b82f6', frequency: 523.25 },
+  { id: 2, label: 'Green',  color: '#10b981', frequency: 659.25 },
+  { id: 3, label: 'Amber',  color: '#f59e0b', frequency: 783.99 },
 ];
-
-const POWERUP_ICONS: Record<PowerUp['type'], React.ReactNode> = {
-  life: <Heart className="w-5 h-5" />,
-  slow: <Clock className="w-5 h-5" />,
-  replay: <RefreshCw className="w-5 h-5" />,
-  ghost: <Shield className="w-5 h-5" />,
-  double: <Star className="w-5 h-5" />,
-};
-
-const POWERUP_LABELS: Record<PowerUp['type'], string> = {
-  life: 'Life',
-  slow: 'Slow',
-  replay: 'Replay',
-  ghost: 'Ghost',
-  double: '2x',
-};
 
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isSequenceRunningRef = useRef(false);
-  const ghostModeRef = useRef(0);
 
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
@@ -87,8 +63,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   });
   const [showHints, setShowHints] = useState(GAME_CONFIG.HINT_ENABLED_BY_DEFAULT);
   const [debugMode, setDebugMode] = useState(GAME_CONFIG.DEBUG_ENABLED_BY_DEFAULT);
-  const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
-  const [slowMoActive, setSlowMoActive] = useState(false);
 
   const gameStateRef = useRef({
     sequence: [] as number[],
@@ -136,7 +110,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     abortControllerRef.current = null;
   }, []);
 
-  const delay = useCallback((ms: number, signal?: AbortSignal) => 
+  const delay = useCallback((ms: number, signal?: AbortSignal) =>
     new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, ms);
       signal?.addEventListener('abort', () => {
@@ -145,95 +119,57 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       }, { once: true });
     }), []);
 
-  const getAnimationTime = () => slowMoActive ? GAME_CONFIG.SHAPE_ANIMATION_DURATION * 2 : GAME_CONFIG.SHAPE_ANIMATION_DURATION;
-  const getGapTime = () => slowMoActive ? GAME_CONFIG.SEQUENCE_GAP * 2 : GAME_CONFIG.SEQUENCE_GAP;
+  const showSequence = useCallback(async (seq: number[]) => {
+    if (!isMountedRef.current || isSequenceRunningRef.current) {
+      console.log('[showSequence] Blocked');
+      return;
+    }
 
-const showSequence = useCallback(async (seq: number[]) => {
-  if (!isMountedRef.current || isSequenceRunningRef.current) {
-    console.log('[showSequence] Blocked: mounted=', isMountedRef.current, 'running=', isSequenceRunningRef.current);
-    return;
-  }
+    isSequenceRunningRef.current = true;
+    console.log('[showSequence] Starting - level', level, 'length', seq.length);
 
-  isSequenceRunningRef.current = true;
-  console.log('[showSequence] Starting - length', seq.length);
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
-  abortControllerRef.current?.abort();
-  abortControllerRef.current = new AbortController();
-  const signal = abortControllerRef.current.signal;
+    setGameStatus('showing');
+    isPlayingRef.current = false;
+    gameStateRef.current.playerSequence = [];
+    setAnimatingShapeId(null);
 
-  setGameStatus('showing');
-  isPlayingRef.current = false;
-  gameStateRef.current.playerSequence = [];
-  setAnimatingShapeId(null);
+    try {
+      await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
 
-  try {
-    await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
+      for (const id of seq) {
+        if (signal.aborted || !isMountedRef.current) {
+          console.log('[showSequence] Aborted mid-sequence');
+          break;
+        }
 
-    for (const id of seq) {
-      if (signal.aborted || !isMountedRef.current) {
-        console.log('[showSequence] Aborted mid-loop');
-        break;
+        const shape = SHAPES.find(s => s.id === id);
+        if (!shape) continue;
+
+        setAnimatingShapeId(id);
+        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+
+        await delay(GAME_CONFIG.SHAPE_ANIMATION_DURATION, signal);
+        setAnimatingShapeId(null);
+
+        await delay(GAME_CONFIG.SEQUENCE_GAP, signal);
       }
 
-      const shape = SHAPES.find(s => s.id === id);
-      if (!shape) continue;
-
-      setAnimatingShapeId(id);
-      playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-
-      await delay(getAnimationTime(), signal);
-      setAnimatingShapeId(null);
-
-      await delay(getGapTime(), signal);
-    }
-
-    if (!signal.aborted && isMountedRef.current) {
-      setGameStatus('playing');
-      isPlayingRef.current = true;
-      // Force re-render / ref sync
-      setAnimatingShapeId(null); // dummy flip
-      console.log('[showSequence] Finished → playing enabled');
-    }
-  } catch (e: any) {
-    console.error('[showSequence] Error:', e.name, e.message);
-  } finally {
-    isSequenceRunningRef.current = false;
-    if (slowMoActive) setSlowMoActive(false);
-  }
-}, [playSound, delay, slowMoActive]);
-
-  const activatePowerUp = useCallback((type: PowerUp['type']) => {
-    setPowerUps(current => current.map(p => p.type === type ? { ...p, used: true } : p).filter(p => !p.used));
-
-    switch (type) {
-      case 'life':
-        setLives(l => Math.min(l + 1, 5));
-        break;
-      case 'slow':
-        setSlowMoActive(true);
-        break;
-      case 'replay':
-        showSequence(gameStateRef.current.sequence);
-        break;
-      case 'ghost':
-        ghostModeRef.current = 3;
-        break;
-      case 'double':
-        // score multiplier handled separately
-        break;
-    }
-  }, [showSequence]);
-
-  const maybeGrantPowerUp = useCallback(() => {
-    setPowerUps(currentPowerUps => {
-      if (currentPowerUps.length >= GAME_CONFIG.MAX_POWERUPS || Math.random() > GAME_CONFIG.POWERUP_CHANCE) {
-        return currentPowerUps;
+      if (!signal.aborted && isMountedRef.current) {
+        setGameStatus('playing');
+        isPlayingRef.current = true;
+        setAnimatingShapeId(null); // dummy flip to force re-render
+        console.log('[showSequence] → playing enabled');
       }
-      const types: PowerUp['type'][] = ['life', 'slow', 'replay', 'ghost', 'double'];
-      const randomType = types[Math.floor(Math.random() * types.length)];
-      return [...currentPowerUps, { type: randomType, used: false }];
-    });
-  }, []);  // stable!
+    } catch (e: any) {
+      console.error('[showSequence] Caught:', e.name || e);
+    } finally {
+      isSequenceRunningRef.current = false;
+    }
+  }, [playSound, delay, level]);
 
   const handleShapeClick = useCallback((shapeId: number) => {
     if (!isPlayingRef.current || !isMountedRef.current) return;
@@ -248,12 +184,6 @@ const showSequence = useCallback(async (seq: number[]) => {
     const expected = state.sequence[state.playerSequence.length - 1];
 
     if (shapeId !== expected) {
-      if (ghostModeRef.current > 0) {
-        ghostModeRef.current--;
-        playSound(200, 100);
-        return;
-      }
-
       isPlayingRef.current = false;
       playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
 
@@ -275,32 +205,25 @@ const showSequence = useCallback(async (seq: number[]) => {
 
     if (state.playerSequence.length === state.sequence.length) {
       isPlayingRef.current = false;
-      const multiplier = powerUps.some(p => p.type === 'double' && !p.used) ? 2 : 1;
-      setScore(prev => {
-        const newScore = prev + (level * 20 * multiplier);
-        if (newScore > highScore) {
-          setHighScore(newScore);
-          localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
-        }
-        return newScore;
-      });
-
-      // Guard + stable call
-      if (isMountedRef.current && !isSequenceRunningRef.current) {
-        maybeGrantPowerUp();
+      const newScore = score + level * 20;
+      setScore(newScore);
+      if (newScore > highScore) {
+        setHighScore(newScore);
+        localStorage.setItem(GAME_CONFIG.STORAGE_KEY, newScore.toString());
       }
 
       setTimeout(() => {
         if (!isMountedRef.current) return;
-        setLevel(prev => prev + 1);
+        const newLevel = level + 1;
+        setLevel(newLevel);
         const nextSeq = [...state.sequence, Math.floor(Math.random() * SHAPES.length)];
         state.sequence = nextSeq;
         setTimeout(() => {
           if (isMountedRef.current) showSequence(nextSeq);
-        }, 3000);
+        }, 3000); // generous breathing room
       }, 1200);
     }
-  }, [lives, highScore, showSequence, playSound, props.onComplete, powerUps, maybeGrantPowerUp, level]);
+  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete]);
 
   const getNextExpectedId = () => {
     const { sequence, playerSequence } = gameStateRef.current;
@@ -320,8 +243,6 @@ const showSequence = useCallback(async (seq: number[]) => {
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
-    setPowerUps([]);
-    ghostModeRef.current = 0;
     setAnimatingShapeId(null);
 
     const initialSeq = Array.from({ length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH }, () =>
@@ -353,7 +274,7 @@ const showSequence = useCallback(async (seq: number[]) => {
             <button
               onClick={() => setShowHints(prev => !prev)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
-                showHints ? 'bg-cyan-600/40 text-cyan-200 shadow-lg shadow-cyan-500/25' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
+                showHints ? 'bg-cyan-600/40 text-cyan-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
               <Lightbulb size={16} />
@@ -362,7 +283,7 @@ const showSequence = useCallback(async (seq: number[]) => {
             <button
               onClick={() => setDebugMode(prev => !prev)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
-                debugMode ? 'bg-red-600/40 text-red-200 shadow-lg shadow-red-500/25' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
+                debugMode ? 'bg-red-600/40 text-red-200' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
               <Bug size={16} />
@@ -375,28 +296,6 @@ const showSequence = useCallback(async (seq: number[]) => {
           <div>Level: <strong className="text-cyan-400">{level}</strong></div>
           <div>Lives: <strong className="text-red-400">{'❤️'.repeat(lives)}</strong></div>
         </div>
-
-        {powerUps.length > 0 && (
-          <div className="flex gap-2 justify-center flex-wrap">
-            {powerUps.map((pu, i) => (
-              <button
-                key={i}
-                onClick={() => !pu.used && activatePowerUp(pu.type)}
-                disabled={pu.used || gameStatus !== 'playing'}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg ${
-                  pu.used
-                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                    : gameStatus === 'playing'
-                    ? 'bg-gradient-to-r from-purple-600/60 to-pink-600/60 text-white hover:scale-105 shadow-purple-500/50 animate-pulse'
-                    : 'bg-yellow-600/40 text-yellow-200 hover:bg-yellow-500/60'
-                }`}
-              >
-                {POWERUP_ICONS[pu.type]}
-                {POWERUP_LABELS[pu.type]}
-              </button>
-            ))}
-          </div>
-        )}
 
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
           {gameStatus === 'countdown' ? (
@@ -476,7 +375,7 @@ const showSequence = useCallback(async (seq: number[]) => {
 
           <div className="text-center text-lg font-medium mt-6 h-8">
             {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
-            {gameStatus === 'playing' && <span className="text-green-400">Repeat! {ghostModeRef.current > 0 && `👻 x${ghostModeRef.current}`}</span>}
+            {gameStatus === 'playing' && <span className="text-green-400">Repeat!</span>}
             {gameStatus === 'gameover' && <span className="text-red-500 animate-pulse">Game Over!</span>}
           </div>
         </div>
