@@ -69,6 +69,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   });
 
   const isPlayingRef = useRef(false);
+  const sequenceAbortRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
@@ -108,6 +109,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const cleanup = useCallback(() => {
     cleanedUpRef.current = true;
+    sequenceAbortRef.current = true;
     sequenceTimeoutsRef.current.forEach(clearTimeout);
     sequenceTimeoutsRef.current = [];
   }, []);
@@ -116,52 +118,55 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     (seq: number[]) => {
       if (cleanedUpRef.current) return;
 
-      const playSequence = async () => {
-        setGameStatus('showing');
-        isPlayingRef.current = false;
-        gameStateRef.current.playerSequence = [];
+      sequenceAbortRef.current = true;
+      sequenceTimeoutsRef.current.forEach(clearTimeout);
+      sequenceTimeoutsRef.current = [];
 
-        for (let i = 0; i < seq.length; i++) {
-          if (cleanedUpRef.current) return;
+      sequenceAbortRef.current = false;
 
-          // Delay before showing shape
-          await new Promise<void>((resolve) => {
-            const t = window.setTimeout(() => resolve(), GAME_CONFIG.SEQUENCE_DELAY);
-            sequenceTimeoutsRef.current.push(t);
-          });
+      setGameStatus('showing');
+      isPlayingRef.current = false;
+      gameStateRef.current.playerSequence = [];
+      setAnimatingShapeId(null);
 
-          if (cleanedUpRef.current) return;
+      let currentIndex = 0;
 
-          const shapeId = seq[i];
-          const shape = SHAPES.find((s) => s.id === shapeId);
+      const showNextShape = () => {
+        if (sequenceAbortRef.current || cleanedUpRef.current) return;
 
-          setAnimatingShapeId(shapeId);
-          if (shape) {
-            playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-          }
-
-          // Duration of animation + gap
-          await new Promise<void>((resolve) => {
-            const t = window.setTimeout(
-              () => resolve(),
-              GAME_CONFIG.SHAPE_ANIMATION_DURATION + GAME_CONFIG.SEQUENCE_GAP
-            );
-            sequenceTimeoutsRef.current.push(t);
-          });
-
-          if (cleanedUpRef.current) return;
-          setAnimatingShapeId(null);
-        }
-
-        if (!cleanedUpRef.current) {
+        if (currentIndex >= seq.length) {
           setGameStatus('playing');
           isPlayingRef.current = true;
+          return;
         }
+
+        const shapeId = seq[currentIndex];
+        const shape = SHAPES.find((s) => s.id === shapeId);
+
+        setAnimatingShapeId(shapeId);
+        if (shape) {
+          playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+        }
+
+        const t1 = window.setTimeout(() => {
+          if (sequenceAbortRef.current || cleanedUpRef.current) return;
+          setAnimatingShapeId(null);
+
+          const t2 = window.setTimeout(() => {
+            if (sequenceAbortRef.current || cleanedUpRef.current) return;
+            currentIndex++;
+            showNextShape();
+          }, GAME_CONFIG.SEQUENCE_GAP);
+          sequenceTimeoutsRef.current.push(t2);
+        }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
+        sequenceTimeoutsRef.current.push(t1);
       };
 
-      playSequence().catch(() => {
-        // Silently handle cancellation
-      });
+      const t0 = window.setTimeout(() => {
+        if (sequenceAbortRef.current || cleanedUpRef.current) return;
+        showNextShape();
+      }, GAME_CONFIG.SEQUENCE_DELAY);
+      sequenceTimeoutsRef.current.push(t0);
     },
     [playSound]
   );
