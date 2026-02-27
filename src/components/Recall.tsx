@@ -20,10 +20,10 @@ const GAME_CONFIG = {
   MAX_SCORE: 1000,
   MAX_LIVES: 3,
   INITIAL_SEQUENCE_LENGTH: 3,
-  SHAPE_ANIMATION_DURATION: 500,
-  SHAPE_SOUND_DURATION: 400,
-  SEQUENCE_DELAY: 200,
-  SEQUENCE_GAP: 100,
+  SHAPE_ANIMATION_DURATION: 400,     // reduced a bit for testing
+  SHAPE_SOUND_DURATION: 350,
+  SEQUENCE_DELAY: 400,
+  SEQUENCE_GAP: 150,
   WRONG_SOUND_FREQUENCY: 150,
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
@@ -47,6 +47,8 @@ const SHAPES: GameShape[] = [
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isSequenceRunningRef = useRef(false);
+
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
@@ -79,7 +81,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   }));
 
   const initAudio = useCallback(() => {
-    if (!audioContextRef.current) {
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
   }, []);
@@ -106,21 +108,29 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     isMountedRef.current = false;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+    isSequenceRunningRef.current = false;
   }, []);
 
-  const delay = useCallback((ms: number, signal?: AbortSignal) => {
-    return new Promise<void>((resolve, reject) => {
+  const delay = useCallback((ms: number, signal?: AbortSignal): Promise<void> => {
+    return new Promise((resolve, reject) => {
       const timer = setTimeout(resolve, ms);
       signal?.addEventListener('abort', () => {
         clearTimeout(timer);
         reject(new DOMException('Aborted', 'AbortError'));
-      });
+      }, { once: true });
     });
   }, []);
 
   const showSequence = useCallback(async (sequence: number[]) => {
-    if (!isMountedRef.current) return;
+    if (!isMountedRef.current || isSequenceRunningRef.current) {
+      console.log("Sequence blocked - already running or unmounted");
+      return;
+    }
 
+    isSequenceRunningRef.current = true;
+    console.log(`Starting sequence of length ${sequence.length} (level ${level})`);
+
+    // Cancel any previous playback
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -134,7 +144,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
 
       for (const id of sequence) {
-        if (signal.aborted) return;
+        if (signal.aborted || !isMountedRef.current) throw new DOMException('Aborted', 'AbortError');
 
         const shape = SHAPES.find(s => s.id === id);
         if (!shape) continue;
@@ -151,13 +161,36 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       if (!signal.aborted && isMountedRef.current) {
         setGameStatus('playing');
         isPlayingRef.current = true;
+        console.log("Sequence finished → now playing");
       }
-    } catch (err) {
-      if ((err as DOMException).name !== 'AbortError') {
-        console.error(err);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error("Sequence error:", err);
+      } else {
+        console.log("Sequence aborted cleanly");
       }
+    } finally {
+      isSequenceRunningRef.current = false;
     }
-  }, [playSound, delay]);
+  }, [playSound, delay, level]);
+
+  const startNextRound = useCallback((currentSequence: number[]) => {
+    if (!isMountedRef.current) return;
+
+    const newLevel = level + 1;
+    setLevel(newLevel);
+
+    const maxId = newLevel >= 3 ? 4 : 3;
+    const nextSeq = [...currentSequence, Math.floor(Math.random() * (maxId + 1))];
+    gameStateRef.current.sequence = nextSeq;
+
+    // Give extra breathing room after win animation
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        showSequence(nextSeq);
+      }
+    }, 1800); // <--- increased from 1000 ms
+  }, [level, showSequence]);
 
   const handleShapeClick = useCallback((shapeId: number) => {
     if (!isPlayingRef.current || !isMountedRef.current) return;
@@ -172,7 +205,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const expected = state.sequence[state.playerSequence.length - 1];
 
     if (shapeId !== expected) {
-      // Wrong
       isPlayingRef.current = false;
       playSound(GAME_CONFIG.WRONG_SOUND_FREQUENCY, GAME_CONFIG.WRONG_SOUND_DURATION);
 
@@ -182,21 +214,17 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       if (newLives <= 0) {
         setGameStatus('gameover');
         setTimeout(() => {
-          if (isMountedRef.current) {
-            props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
-          }
-        }, 2000);
+          if (isMountedRef.current) props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
+        }, 2200);
       } else {
         setTimeout(() => {
           if (isMountedRef.current) showSequence(state.sequence);
-        }, 1200);
+        }, 1400);
       }
       return;
     }
 
-    // Correct
     if (state.playerSequence.length === state.sequence.length) {
-      // Round complete
       isPlayingRef.current = false;
       const newScore = score + level * 20;
       setScore(newScore);
@@ -207,19 +235,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       }
 
       setTimeout(() => {
-        if (!isMountedRef.current) return;
-
-        setLevel(prev => {
-          const nextLevel = prev + 1;
-          const maxId = nextLevel >= 3 ? 4 : 3;
-          const nextSeq = [...state.sequence, Math.floor(Math.random() * (maxId + 1))];
-          state.sequence = nextSeq;
-          showSequence(nextSeq);
-          return nextLevel;
-        });
-      }, 1000);
+        if (isMountedRef.current) startNextRound(state.sequence);
+      }, 1200);
     }
-  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete]);
+  }, [score, level, lives, highScore, showSequence, playSound, props.onComplete, startNextRound]);
 
   const startGame = useCallback(() => {
     isMountedRef.current = true;
@@ -239,15 +258,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   }, [initAudio, showSequence]);
 
   useEffect(() => {
-    return () => {
-      cleanup();
-    };
+    return cleanup;
   }, [cleanup]);
 
   return (
     <div className="min-h-screen bg-black text-white p-3 sm:p-4 flex flex-col items-center">
       <div className="max-w-2xl w-full text-center space-y-3">
-        {/* Header */}
         <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-2 sm:pb-3">
           <div className="flex items-center gap-1.5">
             <Zap
@@ -263,7 +279,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="flex justify-between gap-3 text-xs sm:text-sm">
           <div className="text-cyan-300">
             Level: <strong className="text-cyan-400">{level}</strong>
@@ -273,7 +288,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
         </div>
 
-        {/* Game Board */}
         <div className="relative w-full">
           {gameStatus === 'countdown' && (
             <div className="aspect-square flex items-center justify-center bg-black rounded-2xl border-2 border-cyan-500/50">
@@ -289,22 +303,22 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                     key={shape.id}
                     onClick={() => handleShapeClick(shape.id)}
                     disabled={!isPlayingRef.current}
-                    className={`rounded-xl transition-all duration-100 font-semibold text-sm sm:text-base ${
+                    className={`rounded-xl transition-all duration-150 font-semibold text-sm sm:text-base ${
                       animatingShapeId === shape.id
-                        ? 'scale-95 shadow-lg'
+                        ? 'scale-90 shadow-2xl'
                         : isPlayingRef.current
                         ? 'hover:scale-105 active:scale-95'
                         : 'opacity-50 cursor-not-allowed'
                     }`}
                     style={{
-                      backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}33`,
+                      backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}40`,
                       borderColor: shape.color,
-                      borderWidth: '2px',
+                      borderWidth: '3px',
                       color: animatingShapeId === shape.id ? '#000' : '#fff',
                       boxShadow:
                         animatingShapeId === shape.id
-                          ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
-                          : `0 0 10px ${shape.color}40`,
+                          ? `0 0 30px ${shape.color}, inset 0 0 12px ${shape.color}`
+                          : `0 0 12px ${shape.color}60`,
                     }}
                   >
                     {shape.label}
@@ -313,28 +327,28 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               </div>
 
               {SHAPES.length > 4 && (
-                <div className="mt-3 sm:mt-4 space-y-3">
+                <div className="mt-4 space-y-3">
                   {SHAPES.slice(4).map(shape => (
                     <button
                       key={shape.id}
                       onClick={() => handleShapeClick(shape.id)}
                       disabled={!isPlayingRef.current}
-                      className={`w-full rounded-xl transition-all duration-100 font-semibold text-sm sm:text-base py-2 sm:py-3 ${
+                      className={`w-full rounded-xl transition-all duration-150 font-semibold text-base py-3 ${
                         animatingShapeId === shape.id
-                          ? 'scale-95 shadow-lg'
+                          ? 'scale-95 shadow-2xl'
                           : isPlayingRef.current
                           ? 'hover:scale-105 active:scale-95'
                           : 'opacity-50 cursor-not-allowed'
                       }`}
                       style={{
-                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}33`,
+                        backgroundColor: animatingShapeId === shape.id ? shape.color : `${shape.color}40`,
                         borderColor: shape.color,
-                        borderWidth: '2px',
+                        borderWidth: '3px',
                         color: animatingShapeId === shape.id ? '#000' : '#fff',
                         boxShadow:
                           animatingShapeId === shape.id
-                            ? `0 0 20px ${shape.color}, inset 0 0 10px ${shape.color}`
-                            : `0 0 10px ${shape.color}40`,
+                            ? `0 0 30px ${shape.color}, inset 0 0 12px ${shape.color}`
+                            : `0 0 12px ${shape.color}60`,
                       }}
                     >
                       {shape.label}
@@ -346,11 +360,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           )}
         </div>
 
-        {/* Status */}
-        <div className="text-center text-sm sm:text-base font-medium h-6">
-          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch the pattern...</span>}
-          {gameStatus === 'playing' && <span className="text-green-400">Repeat the pattern!</span>}
-          {gameStatus === 'gameover' && <span className="text-red-500">Game Over!</span>}
+        <div className="text-center text-base font-medium h-6">
+          {gameStatus === 'showing' && <span className="text-orange-400 animate-pulse">Watch carefully...</span>}
+          {gameStatus === 'playing' && <span className="text-green-400">Your turn — repeat!</span>}
+          {gameStatus === 'gameover' && <span className="text-red-500">Game Over</span>}
         </div>
       </div>
     </div>
