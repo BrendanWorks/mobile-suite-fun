@@ -106,6 +106,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const sequenceTimeoutsRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const cleanedUpRef = useRef(false);
+  const lastTapTimeRef = useRef(0);
   
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
@@ -344,18 +345,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const now = Date.now();
+    if (now - lastTapTimeRef.current < 100) return;
+    lastTapTimeRef.current = now;
+
     const rect = canvas.getBoundingClientRect();
     const touch = 'touches' in e ? e.touches[0] || e.changedTouches[0] : null;
     const clientX = touch ? touch.clientX : (e as React.MouseEvent).clientX;
     const clientY = touch ? touch.clientY : (e as React.MouseEvent).clientY;
-    
-    // FIX: Use actual canvas resolution, not CSS size
-    // DPR adjustment ensures high-DPI screens work correctly
-    const dpr = window.devicePixelRatio || 1;
+
     const x = ((clientX - rect.left) / rect.width) * canvas.width;
     const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
-    // FIX: More accurate hit detection using actualSize
     const clicked = gameStateRef.current.shapes.find(s => {
       if (s.actualX === undefined || s.actualY === undefined || s.actualSize === undefined) return false;
       const dx = x - s.actualX;
