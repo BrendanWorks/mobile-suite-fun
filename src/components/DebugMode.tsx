@@ -24,6 +24,7 @@ import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
 import Clutch from './Clutch';
 import Flashbang from './Flashbang';
+import Recall from './Recall';
 import GameSession from './GameSession';
 
 const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
@@ -45,6 +46,7 @@ const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'tracer': <Zap className="w-full h-full" />,
   'clutch': <Gamepad2 className="w-full h-full" />,
   'flashbang': <Zap className="w-full h-full" />,
+  'recall': <Zap className="w-full h-full" />,
 };
 
 interface DebugModeProps {
@@ -70,6 +72,7 @@ const TEST_GAMES = [
   { id: 'tracer', name: 'Tracer', duration: 120, component: Tracer },
   { id: 'clutch', name: 'Clutch', duration: 60, component: Clutch },
   { id: 'flashbang', name: 'Flashbang', duration: 45, component: Flashbang },
+  { id: 'recall', name: 'Recall', duration: 60, component: Recall },
 ];
 
 interface Playlist {
