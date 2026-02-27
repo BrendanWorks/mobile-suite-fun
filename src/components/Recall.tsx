@@ -148,49 +148,59 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const getAnimationTime = () => slowMoActive ? GAME_CONFIG.SHAPE_ANIMATION_DURATION * 2 : GAME_CONFIG.SHAPE_ANIMATION_DURATION;
   const getGapTime = () => slowMoActive ? GAME_CONFIG.SEQUENCE_GAP * 2 : GAME_CONFIG.SEQUENCE_GAP;
 
-  const showSequence = useCallback(async (seq: number[]) => {
-    if (!isMountedRef.current || isSequenceRunningRef.current) return;
+const showSequence = useCallback(async (seq: number[]) => {
+  if (!isMountedRef.current || isSequenceRunningRef.current) {
+    console.log('[showSequence] Blocked: mounted=', isMountedRef.current, 'running=', isSequenceRunningRef.current);
+    return;
+  }
 
-    isSequenceRunningRef.current = true;
+  isSequenceRunningRef.current = true;
+  console.log('[showSequence] Starting - level', level, 'length', seq.length);
 
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+  abortControllerRef.current?.abort();
+  abortControllerRef.current = new AbortController();
+  const signal = abortControllerRef.current.signal;
 
-    setGameStatus('showing');
-    isPlayingRef.current = false;
-    gameStateRef.current.playerSequence = [];
-    setAnimatingShapeId(null);
+  setGameStatus('showing');
+  isPlayingRef.current = false;
+  gameStateRef.current.playerSequence = [];
+  setAnimatingShapeId(null);
 
-    try {
-      await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
+  try {
+    await delay(GAME_CONFIG.SEQUENCE_DELAY, signal);
 
-      for (const id of seq) {
-        if (signal.aborted || !isMountedRef.current) break;
-
-        const shape = SHAPES.find(s => s.id === id);
-        if (!shape) continue;
-
-        setAnimatingShapeId(id);
-        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-
-        await delay(getAnimationTime(), signal);
-        setAnimatingShapeId(null);
-
-        await delay(getGapTime(), signal);
+    for (const id of seq) {
+      if (signal.aborted || !isMountedRef.current) {
+        console.log('[showSequence] Aborted mid-loop');
+        break;
       }
 
-      if (!signal.aborted && isMountedRef.current) {
-        setGameStatus('playing');
-        isPlayingRef.current = true;
-      }
-    } catch (e: any) {
-      if (e.name !== 'AbortError') console.error(e);
-    } finally {
-      isSequenceRunningRef.current = false;
-      if (slowMoActive) setSlowMoActive(false);
+      const shape = SHAPES.find(s => s.id === id);
+      if (!shape) continue;
+
+      setAnimatingShapeId(id);
+      playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+
+      await delay(getAnimationTime(), signal);
+      setAnimatingShapeId(null);
+
+      await delay(getGapTime(), signal);
     }
-  }, [playSound, delay, slowMoActive]);
+
+    if (!signal.aborted && isMountedRef.current) {
+      setGameStatus('playing');
+      isPlayingRef.current = true;
+      // Force re-render / ref sync
+      setAnimatingShapeId(null); // dummy flip
+      console.log('[showSequence] Finished → playing enabled');
+    }
+  } catch (e: any) {
+    console.error('[showSequence] Error:', e.name, e.message);
+  } finally {
+    isSequenceRunningRef.current = false;
+    if (slowMoActive) setSlowMoActive(false);
+  }
+}, [playSound, delay, slowMoActive, level]);
 
   const activatePowerUp = useCallback((type: PowerUp['type']) => {
     setPowerUps(current => current.map(p => p.type === type ? { ...p, used: true } : p).filter(p => !p.used));
