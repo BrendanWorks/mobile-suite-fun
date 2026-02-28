@@ -37,6 +37,8 @@ import MultipleChoice from './MultipleChoice';
 import Tracer from './Tracer';
 import Clutch from './Clutch';
 import Flashbang from './Flashbang';
+import ColorClash from './ColorClash';
+import Recall from './Recall';
 import RoundResults from './RoundResults';
 import CelebrationScreen from './CelebrationScreen';
 import AuthModal from './AuthModal';
@@ -68,12 +70,14 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'slope-rider',               name: 'Slope Rider',      component: SlopeRider,      duration: 90,  instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
   { id: 'neural-pulse',              name: 'Neural Pulse',     component: NeuralPulse,     duration: 90,  instructions: 'Explore the cave, find the glowing exit to advance. Swipe or use arrows.' },
   { id: 'zen-gravity',               name: 'Balls',            component: ZenGravity,      duration: 60,  instructions: 'Tilt your phone to sort marbles into matching colored goals.' },
-  { id: 'superlative',     dbId: 16, name: 'Superlative',      component: Superlative,     duration: 90,  instructions: 'Pick which item is bigger, heavier, longer, or older!' },
-  { id: 'true-false',                name: 'True or False',    component: TrueFalse,       duration: 90,  instructions: 'Decide if each statement is True or False!' },
-  { id: 'multiple-choice',           name: 'Multiple Choice',  component: MultipleChoice,  duration: 90,  instructions: 'Pick the correct answer from three options!' },
-  { id: 'tracer',                    name: 'Tracer',           component: Tracer,          duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
-  { id: 'clutch',                    name: 'Clutch',           component: Clutch,          duration: 60,  instructions: 'Tap when the ring hits the sweet spot!' },
-  { id: 'flashbang',                 name: 'Flashbang',        component: Flashbang,       duration: 45,  instructions: 'Memorize the lit tiles, then tap them from memory!' },
+  { id: 'superlative',     dbId: 19, name: 'Superlative',      component: Superlative,     duration: 90,  instructions: 'Pick which item is bigger, heavier, longer, or older!' },
+  { id: 'true-false',      dbId: 20, name: 'True or False',    component: TrueFalse,       duration: 90,  instructions: 'Decide if each statement is True or False!' },
+  { id: 'multiple-choice', dbId: 21, name: 'Multiple Choice',  component: MultipleChoice,  duration: 90,  instructions: 'Pick the correct answer from three options!' },
+  { id: 'tracer',          dbId: 22, name: 'Tracer',           component: Tracer,          duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
+  { id: 'clutch',          dbId: 23, name: 'Clutch',           component: Clutch,          duration: 60,  instructions: 'Tap when the ring hits the sweet spot!' },
+  { id: 'flashbang',       dbId: 24, name: 'Flashbang',        component: Flashbang,       duration: 45,  instructions: 'Memorize the lit tiles, then tap them from memory!' },
+  { id: 'color-clash',     dbId: 17, name: 'ColorClash',       component: ColorClash,      duration: 60,  instructions: 'Tap the button matching the ink color, not the word!' },
+  { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
@@ -100,6 +104,8 @@ const GAME_ICONS: { [key: string]: JSX.Element } = {
   'slope-rider': <Zap className="w-full h-full" />,
   'neural-pulse': <Zap className="w-full h-full" />,
   'double-fake': <Shuffle className="w-full h-full" />,
+  'color-clash': <CircleX className="w-full h-full" />,
+  'recall': <Search className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
