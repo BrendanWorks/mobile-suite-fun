@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { GameHandle } from '../lib/gameTypes';
+import { playWin, playWrong } from '../lib/sounds';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,10 +76,17 @@ const styles = `
     from { opacity:0; transform: scale(0.7); }
     to   { opacity:1; transform: scale(1); }
   }
+  @keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-4px, -4px); }
+    50%      { transform: translate(4px, 4px); }
+    75%      { transform: translate(-4px, 4px); }
+  }
 
   .animate-pulse-twice { animation: pulse-twice 0.6s ease-in-out; }
   .animate-score-pop   { animation: score-pop 0.4s ease-out; }
   .animate-word-in     { animation: word-in 0.18s ease-out; }
+  .animate-shake       { animation: shake 0.3s ease-in-out; }
 
   .color-clash-word {
     font-family: 'Inter', sans-serif;
@@ -119,7 +127,6 @@ function ColorClashIcon({ size = 20 }: { size?: number }) {
 
 const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   const [gameState,  setGameState]  = useState<'IDLE' | 'PLAYING'>(GAME_STATES.IDLE);
-  const [timeLeft,   setTimeLeft]   = useState(TOTAL_TIME);
   const [score,      setScore]      = useState(0);
   const [streak,     setStreak]     = useState(0);
   const [multiplier, setMultiplier] = useState(1);
@@ -127,8 +134,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   const [feedback,   setFeedback]   = useState<'correct' | 'wrong' | null>(null);
   const [scorePop,   setScorePop]   = useState(false);
   const [wordKey,    setWordKey]    = useState(0);
+  const [shake,      setShake]      = useState(false);
 
-  const timerRef      = useRef<number | null>(null);
   const feedbackRef   = useRef<number | null>(null);
   const scoreRef      = useRef(score);
   const onCompleteRef = useRef(props.onComplete);
@@ -144,28 +151,16 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     }),
     onGameEnd: () => {
       // GameWrapper called time's up — stop everything and report
-      if (timerRef.current)    clearInterval(timerRef.current);
       if (feedbackRef.current) clearTimeout(feedbackRef.current);
-      setGameState(GAME_STATES.IDLE); // freeze UI
+      setGameState(GAME_STATES.IDLE);
       onCompleteRef.current?.(scoreRef.current, MAX_SCORE, props.timeRemaining);
     },
     pauseTimer: false,
     canSkipQuestion: false,
   }), [props.timeRemaining]);
 
-  // ── Internal timer (drives the timer bar) ──────────────────────────────────
-  // GameWrapper owns the authoritative countdown; this mirrors it visually.
-  useEffect(() => {
-    if (gameState !== GAME_STATES.PLAYING) return;
-    timerRef.current = window.setInterval(() => {
-      setTimeLeft(t => Math.max(0, t - 1));
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [gameState]);
-
   // ── Cleanup ─────────────────────────────────────────────────────────────────
   useEffect(() => () => {
-    if (timerRef.current)    clearInterval(timerRef.current);
     if (feedbackRef.current) clearTimeout(feedbackRef.current);
   }, []);
 
@@ -174,7 +169,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     setScore(0);
     setStreak(0);
     setMultiplier(1);
-    setTimeLeft(TOTAL_TIME);
     setFeedback(null);
     setStimulus(nextStimulus());
     setWordKey(k => k + 1);
@@ -201,6 +195,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
         setMultiplier(next % STREAK_EVERY === 0 ? MULTIPLIER : 1);
         return next;
       });
+      playWin(0.7);
     } else {
       setScore(s => {
         const next = s + WRONG_PTS;
@@ -209,7 +204,9 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       });
       setStreak(0);
       setMultiplier(1);
-      setTimeLeft(t => Math.max(0, t - WRONG_SECS));
+      setShake(true);
+      playWrong(0.5);
+      setTimeout(() => setShake(false), 300);
     }
 
     setFeedback(correct ? 'correct' : 'wrong');
@@ -221,7 +218,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   }, [gameState, feedback, stimulus, multiplier, props.onScoreUpdate]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const timerPct = (timeLeft / TOTAL_TIME) * 100;
+  const timerPct = props.timeRemaining ? (props.timeRemaining / TOTAL_TIME) * 100 : 0;
   const isPlaying = gameState === GAME_STATES.PLAYING;
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -266,7 +263,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
           </div>
 
           {/* ── Play Area ── */}
-          <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex items-center justify-center"
+          <div className={`relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex items-center justify-center ${shake ? 'animate-shake' : ''}`}
             style={{
               height: '180px',
               boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
