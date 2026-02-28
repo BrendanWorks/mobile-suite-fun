@@ -129,6 +129,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const startGame = useCallback(() => {
     clearTimers();
     initAudio();
+    lastSoundKeyRef.current = '';
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
@@ -145,7 +146,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     // small delay before first show
     showTimeoutRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
-      setShowIndex(0);
       setShowLit(false);
     }, GAME_CONFIG.SEQUENCE_DELAY);
   }, [initAudio]);
@@ -212,6 +212,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const scheduleNextRound = (nextSequence: number[]) => {
     clearTimers();
+    lastSoundKeyRef.current = '';
     setPhase('showing');
     setSequence(nextSequence);
     setShowIndex(0);
@@ -220,7 +221,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setAnimatingShapeId(null);
     roundTimeoutRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
-      setShowIndex(0);
       setShowLit(false);
     }, GAME_CONFIG.SEQUENCE_DELAY);
   };
