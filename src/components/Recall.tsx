@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { Zap, Lightbulb, Bug } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
+import { ParticleEffect } from './ParticleEffect';
 
 interface RecallProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -79,6 +80,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const [debugMode, setDebugMode] = useState(true);
   const [shake, setShake] = useState(false);
   const [combo, setCombo] = useState(0);
+  const [particleState, setParticleState] = useState<{
+    active: boolean;
+    color: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
@@ -138,6 +145,28 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const speedIncrease = Math.min(levelsPastThreshold * 0.02, 0.3);
     return Math.max(1 - speedIncrease, 0.7);
   };
+
+  const playLevelUpSound = useCallback(() => {
+    initAudio();
+    if (!audioContextRef.current) return;
+
+    const now = audioContextRef.current.currentTime;
+    const osc = audioContextRef.current.createOscillator();
+    const gain = audioContextRef.current.createGain();
+
+    osc.connect(gain);
+    gain.connect(audioContextRef.current.destination);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.15);
+
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }, [initAudio]);
 
   const startGame = useCallback(() => {
     clearTimers();
@@ -220,6 +249,22 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const shape = SHAPES.find((s) => s.id === currentId);
     if (shape) {
       playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+
+      setTimeout(() => {
+        const button = document.querySelector(
+          `button[data-shape-id="${currentId}"]`
+        ) as HTMLElement;
+        if (button) {
+          const rect = button.getBoundingClientRect();
+          setParticleState({
+            active: true,
+            color: shape.color,
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          });
+          setTimeout(() => setParticleState(null), 300);
+        }
+      }, 50);
     }
   }, [showLit, showIndex, sequence, phase, playSound]);
 
@@ -251,6 +296,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         setPlayerIndex(nextPlayerIndex);
         setCombo((c) => c + 1);
         if (nextPlayerIndex === sequence.length) {
+          playLevelUpSound();
           const newScore = score + level * 20;
           setScore(newScore);
           if (newScore > highScore) {
@@ -299,7 +345,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         }
       }
     },
-    [phase, sequence, playerIndex, score, level, highScore, lives, playSound, props]
+    [phase, sequence, playerIndex, score, level, highScore, lives, playSound, playLevelUpSound, props]
   );
 
   useEffect(() => {
@@ -399,6 +445,14 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           </div>
         </div>
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
+          {particleState && (
+            <ParticleEffect
+              active={particleState.active}
+              color={particleState.color}
+              x={particleState.x}
+              y={particleState.y}
+            />
+          )}
           {phase === 'countdown' ? (
             <div className="w-full h-full flex items-center justify-center bg-black/80 rounded-2xl border-2 border-cyan-500/50">
               <RoundCountdown onComplete={startGame} />
@@ -421,6 +475,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                 return (
                   <div key={shape.id} className="relative">
                     <button
+                      data-shape-id={shape.id}
                       onClick={() => handleShapeClick(shape.id)}
                       disabled={phase !== 'input'}
                       className={`w-full h-full rounded-xl transition-all duration-200 font-bold text-xl flex items-center justify-center shadow-xl ${
