@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { GameHandle } from '../lib/gameTypes';
-import { playWin, playWrong } from '../lib/sounds';
+import { playWin, playWrong, preloadGameSounds } from '../lib/sounds';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -143,6 +143,10 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { onCompleteRef.current = props.onComplete; }, [props.onComplete]);
 
+  useEffect(() => {
+    preloadGameSounds();
+  }, []);
+
   // ── GameHandle ──────────────────────────────────────────────────────────────
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -157,6 +161,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     },
     pauseTimer: false,
     canSkipQuestion: false,
+    hideTimer: false,
   }), [props.timeRemaining]);
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
