@@ -56,6 +56,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const mountedRef = useRef(true);
   const showTimeoutRef = useRef<number | null>(null);
   const roundTimeoutRef = useRef<number | null>(null);
+  const lastSoundKeyRef = useRef<string>('');
   const [phase, setPhase] = useState<Phase>('countdown');
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerIndex, setPlayerIndex] = useState(0);
@@ -198,6 +199,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     if (phase !== 'showing' || showIndex >= sequence.length || !showLit) return;
 
     const currentId = sequence[showIndex];
+    const soundKey = `${showIndex}-${currentId}`;
+
+    if (lastSoundKeyRef.current === soundKey) return;
+    lastSoundKeyRef.current = soundKey;
+
     const shape = SHAPES.find((s) => s.id === currentId);
     if (shape) {
       playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
