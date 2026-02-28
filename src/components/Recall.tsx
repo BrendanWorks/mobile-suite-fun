@@ -131,8 +131,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   };
 
   const getSpeedMultiplier = (currentLevel: number): number => {
-    const speedIncrease = Math.min(currentLevel * 0.08, 0.5);
-    return Math.max(1 - speedIncrease, 0.5);
+    if (currentLevel <= 5) {
+      return 1;
+    }
+    const levelsPastThreshold = currentLevel - 5;
+    const speedIncrease = Math.min(levelsPastThreshold * 0.02, 0.3);
+    return Math.max(1 - speedIncrease, 0.7);
   };
 
   const startGame = useCallback(() => {
