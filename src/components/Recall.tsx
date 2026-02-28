@@ -34,8 +34,12 @@ const GAME_CONFIG = {
   WRONG_SOUND_FREQUENCY: 150,
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
+  DIFFICULTY_STORAGE_KEY: 'recallDifficulty',
   SHAKE_DURATION: 300,
   SHAKE_INTENSITY: 8,
+  MIN_DIFFICULTY: 0,
+  MAX_DIFFICULTY: 1,
+  DEFAULT_DIFFICULTY: 1,
 } as const;
 
 const THEME = {
@@ -79,6 +83,20 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const [debugMode, setDebugMode] = useState(true);
   const [shake, setShake] = useState(false);
   const [combo, setCombo] = useState(0);
+  const [difficulty, setDifficulty] = useState(() => {
+    try {
+      const stored = parseFloat(
+        localStorage.getItem(GAME_CONFIG.DIFFICULTY_STORAGE_KEY) ||
+        String(GAME_CONFIG.DEFAULT_DIFFICULTY)
+      );
+      return Math.min(
+        Math.max(stored, GAME_CONFIG.MIN_DIFFICULTY),
+        GAME_CONFIG.MAX_DIFFICULTY
+      );
+    } catch {
+      return GAME_CONFIG.DEFAULT_DIFFICULTY;
+    }
+  });
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
@@ -131,8 +149,9 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   };
 
   const getSpeedMultiplier = (currentLevel: number): number => {
-    const speedIncrease = Math.min(currentLevel * 0.08, 0.5);
-    return Math.max(1 - speedIncrease, 0.5);
+    const baseSpeedIncrease = Math.min(currentLevel * 0.08, 0.5);
+    const adjustedSpeedincrease = baseSpeedIncrease * difficulty;
+    return Math.max(1 - adjustedSpeedincrease, 0.5);
   };
 
   const startGame = useCallback(() => {
@@ -201,7 +220,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         showTimeoutRef.current = null;
       }
     };
-  }, [phase, sequence, showIndex, showLit, level]);
+  }, [phase, sequence, showIndex, showLit, level, difficulty]);
 
   // Dedicated sound effect — plays ONLY when a shape is lit
   useEffect(() => {
@@ -392,6 +411,44 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             <strong className="text-red-400">
               {'❤️'.repeat(lives)}
             </strong>
+          </div>
+        </div>
+        <div className="bg-black/40 rounded-lg p-4 border border-cyan-500/30">
+          <div className="flex items-center gap-3 justify-center mb-2">
+            <span className="text-cyan-300 text-sm">Difficulty</span>
+            <input
+              type="range"
+              min={GAME_CONFIG.MIN_DIFFICULTY}
+              max={GAME_CONFIG.MAX_DIFFICULTY}
+              step="0.1"
+              value={difficulty}
+              onChange={(e) => {
+                const newDiff = parseFloat(e.target.value);
+                setDifficulty(newDiff);
+                try {
+                  localStorage.setItem(
+                    GAME_CONFIG.DIFFICULTY_STORAGE_KEY,
+                    newDiff.toString()
+                  );
+                } catch {
+                  // ignore storage errors
+                }
+              }}
+              disabled={phase !== 'countdown'}
+              className="w-32 cursor-pointer accent-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <span className="text-yellow-400 font-bold text-sm w-8">
+              {Math.round(difficulty * 100)}%
+            </span>
+          </div>
+          <div className="text-xs text-gray-400">
+            {difficulty === 0
+              ? 'No speed progression'
+              : difficulty < 0.3
+              ? 'Slow progression'
+              : difficulty < 0.7
+              ? 'Normal progression'
+              : 'Fast progression'}
           </div>
         </div>
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
