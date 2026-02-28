@@ -6,7 +6,6 @@ import React, {
   useImperativeHandle,
   useCallback,
 } from 'react';
-
 import { Zap, Lightbulb, Bug } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 
@@ -57,13 +56,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const mountedRef = useRef(true);
   const showTimeoutRef = useRef<number | null>(null);
   const roundTimeoutRef = useRef<number | null>(null);
-
   const [phase, setPhase] = useState<Phase>('countdown');
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerIndex, setPlayerIndex] = useState(0);
   const [showIndex, setShowIndex] = useState(0);
   const [showLit, setShowLit] = useState(false);
-
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
@@ -75,7 +72,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       return 0;
     }
   });
-
   const [showHints, setShowHints] = useState(false);
   const [debugMode, setDebugMode] = useState(true);
 
@@ -99,22 +95,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 
   const playSound = useCallback((frequency: number, duration: number = 150) => {
     if (!audioContextRef.current) return;
-
     const ctx = audioContextRef.current;
     try {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
       osc.connect(gain);
       gain.connect(ctx.destination);
-
       osc.frequency.setValueAtTime(frequency, ctx.currentTime);
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(
         0.001,
         ctx.currentTime + duration / 1000
       );
-
       osc.start();
       osc.stop(ctx.currentTime + duration / 1000);
     } catch {
@@ -136,7 +128,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const startGame = useCallback(() => {
     clearTimers();
     initAudio();
-
     setScore(0);
     setLevel(1);
     setLives(GAME_CONFIG.MAX_LIVES);
@@ -144,15 +135,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setShowIndex(0);
     setShowLit(false);
     setAnimatingShapeId(null);
-
     const initialSeq = Array.from(
       { length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH },
       () => Math.floor(Math.random() * SHAPES.length)
     );
     setSequence(initialSeq);
-
     setPhase('showing');
-
     // small delay before first show
     showTimeoutRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
@@ -161,13 +149,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     }, GAME_CONFIG.SEQUENCE_DELAY);
   }, [initAudio]);
 
-  // Main show loop: drives the Simon sequence display
+  // Main show loop: drives the animation (on/off toggling)
   useEffect(() => {
     if (phase !== 'showing') {
       setAnimatingShapeId(null);
       return;
     }
-
     if (sequence.length === 0) return;
 
     // If we've finished showing the whole sequence, switch to input
@@ -182,12 +169,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const shape = SHAPES.find((s) => s.id === currentId) || null;
 
     if (!showLit) {
-      // Turn the shape ON
+      // Turn the shape ON (visual only — sound is in separate effect)
       setAnimatingShapeId(currentId);
-      if (shape) {
-        playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-      }
-
       showTimeoutRef.current = window.setTimeout(() => {
         if (!mountedRef.current) return;
         setShowLit(true);
@@ -195,7 +178,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     } else {
       // Turn the shape OFF, then move to next index
       setAnimatingShapeId(null);
-
       showTimeoutRef.current = window.setTimeout(() => {
         if (!mountedRef.current) return;
         setShowLit(false);
@@ -209,7 +191,18 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         showTimeoutRef.current = null;
       }
     };
-  }, [phase, sequence, showIndex, showLit, playSound]);
+  }, [phase, sequence, showIndex, showLit]);
+
+  // Dedicated sound effect — plays ONLY when a shape is lit
+  useEffect(() => {
+    if (phase !== 'showing' || showIndex >= sequence.length || !showLit) return;
+
+    const currentId = sequence[showIndex];
+    const shape = SHAPES.find((s) => s.id === currentId);
+    if (shape) {
+      playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
+    }
+  }, [showLit, showIndex, sequence, phase, playSound]);
 
   const scheduleNextRound = (nextSequence: number[]) => {
     clearTimers();
@@ -219,7 +212,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setShowLit(false);
     setPlayerIndex(0);
     setAnimatingShapeId(null);
-
     roundTimeoutRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
       setShowIndex(0);
@@ -230,24 +222,19 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const handleShapeClick = useCallback(
     (shapeId: number) => {
       if (phase !== 'input') return;
-
       const expectedId = sequence[playerIndex];
       const shape = SHAPES.find((s) => s.id === shapeId);
-
       if (shape) {
         playSound(shape.frequency, 200);
       }
-
       if (shapeId === expectedId) {
         // Correct
         const nextPlayerIndex = playerIndex + 1;
         setPlayerIndex(nextPlayerIndex);
-
         // Round complete
         if (nextPlayerIndex === sequence.length) {
           const newScore = score + level * 20;
           setScore(newScore);
-
           if (newScore > highScore) {
             setHighScore(newScore);
             try {
@@ -259,12 +246,10 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               // ignore storage errors
             }
           }
-
           const nextSeq = [
             ...sequence,
             Math.floor(Math.random() * SHAPES.length),
           ];
-
           roundTimeoutRef.current = window.setTimeout(() => {
             if (!mountedRef.current) return;
             setLevel((l) => l + 1);
@@ -277,14 +262,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           GAME_CONFIG.WRONG_SOUND_FREQUENCY,
           GAME_CONFIG.WRONG_SOUND_DURATION
         );
-
         const newLives = lives - 1;
         setLives(newLives);
-
         if (newLives <= 0) {
           setPhase('gameover');
           clearTimers();
-
           roundTimeoutRef.current = window.setTimeout(() => {
             if (!mountedRef.current) return;
             props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
@@ -324,6 +306,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     phase === 'input' && playerIndex < sequence.length
       ? sequence[playerIndex]
       : null;
+
   const nextShape =
     nextExpectedId !== null
       ? SHAPES.find((s) => s.id === nextExpectedId)
@@ -348,13 +331,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               Recall
             </h2>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="text-cyan-300">
               Score:{' '}
               <strong className="text-yellow-400">{score}</strong>
             </div>
-
             <button
               onClick={() => setShowHints((p) => !p)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
@@ -366,7 +347,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               <Lightbulb size={16} />
               Hints {showHints ? 'ON' : 'OFF'}
             </button>
-
             <button
               onClick={() => setDebugMode((p) => !p)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
@@ -380,7 +360,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </button>
           </div>
         </div>
-
         <div className="flex justify-between text-sm mb-2">
           <div>
             Level:{' '}
@@ -393,7 +372,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </strong>
           </div>
         </div>
-
         <div className="relative w-full aspect-square max-w-[min(80vw,500px)] mx-auto">
           {phase === 'countdown' ? (
             <div className="w-full h-full flex items-center justify-center bg-black/80 rounded-2xl border-2 border-cyan-500/50">
@@ -406,9 +384,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                   showHints &&
                   nextShape?.id === shape.id &&
                   phase === 'input';
-
                 const isActive = animatingShapeId === shape.id;
-
                 return (
                   <div key={shape.id} className="relative">
                     <button
@@ -434,7 +410,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                     >
                       {shape.label}
                     </button>
-
                     {isNext && (
                       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                         <div
@@ -453,7 +428,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           )}
         </div>
-
         {debugMode && sequence.length > 0 && (
           <div className="mt-6 p-3 bg-black/40 rounded-xl border border-cyan-800/50 max-w-lg mx-auto">
             <div className="text-xs text-cyan-300 mb-2 uppercase tracking-wider">
@@ -486,7 +460,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           </div>
         )}
-
         <div className="text-center text-lg font-medium mt-6 h-8">
           {phase === 'showing' && (
             <span className="text-orange-400 animate-pulse">
@@ -506,5 +479,4 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 });
 
 Recall.displayName = 'Recall';
-
 export default Recall;
