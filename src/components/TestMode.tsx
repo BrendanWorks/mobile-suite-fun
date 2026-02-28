@@ -15,6 +15,7 @@ import DoubleFake from './DoubleFake';
 import ZenGravity from './ZenGravity';
 import Superlative from './Superlative';
 import TrueFalse from './TrueFalse';
+import ColorClash from './ColorClash';
 
 interface TestModeProps {
   onExit: () => void;
@@ -38,6 +39,7 @@ const TEST_GAMES = [
   { id: 'zen-gravity', name: 'Balls', emoji: '⚫', duration: 90, component: ZenGravity },
   { id: 'superlative', name: 'Superlative', emoji: '⚡', duration: 90, component: Superlative },
   { id: 'true-false', name: 'True or False', emoji: '✅', duration: 90, component: TrueFalse },
+  { id: 'color-clash', name: 'Color Clash', emoji: '🎨', duration: 30, component: ColorClash },
 ];
 
 export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestModeProps) {
