@@ -366,6 +366,36 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (phase !== 'input') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      let shapeId: number | null = null;
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        shapeId = 0;
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        shapeId = 1;
+      } else if (e.key === '1' || e.key === 'q' || e.key === 'Q') {
+        shapeId = 0;
+      } else if (e.key === '2' || e.key === 'w' || e.key === 'W') {
+        shapeId = 1;
+      } else if (e.key === '3' || e.key === 'a' || e.key === 'A') {
+        shapeId = 2;
+      } else if (e.key === '4' || e.key === 's' || e.key === 'S') {
+        shapeId = 3;
+      }
+
+      if (shapeId !== null) {
+        e.preventDefault();
+        handleShapeClick(shapeId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, handleShapeClick]);
+
   const getRemainingSequence = () => {
     if (sequence.length === 0) return [];
     return sequence.slice(playerIndex);
@@ -382,54 +412,56 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       : null;
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
-      <div className="max-w-2xl w-full text-center space-y-4">
-        <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-3">
+    <div className="min-h-screen bg-black text-white p-2 sm:p-4 flex flex-col items-center">
+      <div className="max-w-2xl w-full text-center space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-cyan-500/50 pb-3 gap-3">
           <div className="flex items-center gap-2">
             <Zap
-              className="w-6 h-6"
+              className="w-5 h-5 sm:w-6 sm:h-6"
               style={{
                 color: THEME.color,
                 filter: `drop-shadow(0 0 8px ${THEME.glow})`,
               }}
             />
             <h2
-              className="text-lg font-bold text-cyan-400"
+              className="text-base sm:text-lg font-bold text-cyan-400"
               style={{ textShadow: THEME.textShadow }}
             >
               Recall
             </h2>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-cyan-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="text-cyan-300 text-sm">
               Score:{' '}
               <strong className="text-yellow-400">{score}</strong>
             </div>
             <button
               onClick={() => setShowHints((p) => !p)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm transition-all ${
                 showHints
                   ? 'bg-cyan-600/40 text-cyan-200'
                   : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
-              <Lightbulb size={16} />
-              Hints {showHints ? 'ON' : 'OFF'}
+              <Lightbulb size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Hints {showHints ? 'ON' : 'OFF'}</span>
+              <span className="sm:hidden">{showHints ? 'ON' : 'OFF'}</span>
             </button>
             <button
               onClick={() => setDebugMode((p) => !p)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm transition-all ${
                 debugMode
                   ? 'bg-red-600/40 text-red-200'
                   : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'
               }`}
             >
-              <Bug size={16} />
-              Debug {debugMode ? 'ON' : 'OFF'}
+              <Bug size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Debug {debugMode ? 'ON' : 'OFF'}</span>
+              <span className="sm:hidden">{debugMode ? 'ON' : 'OFF'}</span>
             </button>
           </div>
         </div>
-        <div className="flex justify-between text-sm mb-2">
+        <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm mb-2 gap-2">
           <div>
             Level:{' '}
             <strong className="text-cyan-400">{level}</strong>
@@ -463,7 +495,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           ) : (
             <div
-              className="recall-game-area grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4 transition-transform"
+              className="recall-game-area grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-2 sm:p-3 md:p-4 transition-transform"
               style={{
                 transform: shake
                   ? `translate(${Math.sin(Date.now() / 30) * GAME_CONFIG.SHAKE_INTENSITY}px, ${Math.cos(Date.now() / 25) * GAME_CONFIG.SHAKE_INTENSITY}px)`
@@ -482,7 +514,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                       data-shape-id={shape.id}
                       onClick={() => handleShapeClick(shape.id)}
                       disabled={phase !== 'input'}
-                      className={`w-full h-full rounded-xl transition-all duration-200 font-bold text-xl flex items-center justify-center shadow-xl ${
+                      className={`w-full h-full rounded-lg sm:rounded-xl transition-all duration-200 font-bold text-sm sm:text-lg md:text-xl flex items-center justify-center shadow-xl ${
                         isActive
                           ? 'scale-95 brightness-125 ring-4 ring-white/50 shadow-2xl'
                           : phase === 'input'
@@ -505,7 +537,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
                     {isNext && (
                       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                         <div
-                          className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl animate-pulse"
+                          className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg sm:text-xl md:text-2xl animate-pulse"
                           style={{
                             boxShadow: `0 0 25px ${shape.color}`,
                           }}
