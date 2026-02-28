@@ -34,6 +34,8 @@ const GAME_CONFIG = {
   WRONG_SOUND_FREQUENCY: 150,
   WRONG_SOUND_DURATION: 600,
   STORAGE_KEY: 'recallHighScore',
+  SHAKE_DURATION: 300,
+  SHAKE_INTENSITY: 8,
 } as const;
 
 const THEME = {
@@ -75,6 +77,8 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   });
   const [showHints, setShowHints] = useState(false);
   const [debugMode, setDebugMode] = useState(true);
+  const [shake, setShake] = useState(false);
+  const [combo, setCombo] = useState(0);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score, maxScore: GAME_CONFIG.MAX_SCORE }),
@@ -126,6 +130,11 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     }
   };
 
+  const getSpeedMultiplier = (currentLevel: number): number => {
+    const speedIncrease = Math.min(currentLevel * 0.08, 0.5);
+    return Math.max(1 - speedIncrease, 0.5);
+  };
+
   const startGame = useCallback(() => {
     clearTimers();
     initAudio();
@@ -137,13 +146,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     setShowIndex(0);
     setShowLit(false);
     setAnimatingShapeId(null);
+    setCombo(0);
     const initialSeq = Array.from(
       { length: GAME_CONFIG.INITIAL_SEQUENCE_LENGTH },
       () => Math.floor(Math.random() * SHAPES.length)
     );
     setSequence(initialSeq);
     setPhase('showing');
-    // small delay before first show
     showTimeoutRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
       setShowLit(false);
@@ -170,20 +179,20 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const shape = SHAPES.find((s) => s.id === currentId) || null;
 
     if (!showLit) {
-      // Turn the shape ON (visual only — sound is in separate effect)
       setAnimatingShapeId(currentId);
+      const speedMultiplier = getSpeedMultiplier(level);
       showTimeoutRef.current = window.setTimeout(() => {
         if (!mountedRef.current) return;
         setShowLit(true);
-      }, GAME_CONFIG.SHAPE_ANIMATION_DURATION);
+      }, GAME_CONFIG.SHAPE_ANIMATION_DURATION * speedMultiplier);
     } else {
-      // Turn the shape OFF, then move to next index
       setAnimatingShapeId(null);
+      const speedMultiplier = getSpeedMultiplier(level);
       showTimeoutRef.current = window.setTimeout(() => {
         if (!mountedRef.current) return;
         setShowLit(false);
         setShowIndex((idx) => idx + 1);
-      }, GAME_CONFIG.SEQUENCE_GAP);
+      }, GAME_CONFIG.SEQUENCE_GAP * speedMultiplier);
     }
 
     return () => {
@@ -192,7 +201,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         showTimeoutRef.current = null;
       }
     };
-  }, [phase, sequence, showIndex, showLit]);
+  }, [phase, sequence, showIndex, showLit, level]);
 
   // Dedicated sound effect — plays ONLY when a shape is lit
   useEffect(() => {
@@ -234,10 +243,9 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         playSound(shape.frequency, 200);
       }
       if (shapeId === expectedId) {
-        // Correct
         const nextPlayerIndex = playerIndex + 1;
         setPlayerIndex(nextPlayerIndex);
-        // Round complete
+        setCombo((c) => c + 1);
         if (nextPlayerIndex === sequence.length) {
           const newScore = score + level * 20;
           setScore(newScore);
@@ -263,11 +271,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
           }, 600);
         }
       } else {
-        // Wrong
         playSound(
           GAME_CONFIG.WRONG_SOUND_FREQUENCY,
           GAME_CONFIG.WRONG_SOUND_DURATION
         );
+        setShake(true);
+        setTimeout(() => setShake(false), GAME_CONFIG.SHAKE_DURATION);
+        setCombo(0);
         const newLives = lives - 1;
         setLives(newLives);
         if (newLives <= 0) {
@@ -278,7 +288,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             props.onComplete?.(score, GAME_CONFIG.MAX_SCORE);
           }, 1000);
         } else {
-          // Replay same sequence
           roundTimeoutRef.current = window.setTimeout(() => {
             if (!mountedRef.current) return;
             scheduleNextRound(sequence);
@@ -371,6 +380,13 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             Level:{' '}
             <strong className="text-cyan-400">{level}</strong>
           </div>
+          <div className="text-center flex-1">
+            {combo > 0 && phase === 'input' && (
+              <div className="text-yellow-400 font-bold animate-pulse">
+                Combo: {combo}
+              </div>
+            )}
+          </div>
           <div>
             Lives:{' '}
             <strong className="text-red-400">
@@ -384,7 +400,14 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               <RoundCountdown onComplete={startGame} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4">
+            <div
+              className="grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4 transition-transform"
+              style={{
+                transform: shake
+                  ? `translate(${Math.sin(Date.now() / 30) * GAME_CONFIG.SHAKE_INTENSITY}px, ${Math.cos(Date.now() / 25) * GAME_CONFIG.SHAKE_INTENSITY}px)`
+                  : 'translate(0, 0)',
+              }}
+            >
               {SHAPES.map((shape) => {
                 const isNext =
                   showHints &&
