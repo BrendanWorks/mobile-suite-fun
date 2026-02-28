@@ -146,26 +146,33 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     return Math.max(1 - speedIncrease, 0.7);
   };
 
-  const playLevelUpSound = useCallback(() => {
+  const playSuccessSound = useCallback(() => {
     initAudio();
     if (!audioContextRef.current) return;
 
     const now = audioContextRef.current.currentTime;
-    const osc = audioContextRef.current.createOscillator();
-    const gain = audioContextRef.current.createGain();
+    const ctx = audioContextRef.current;
 
-    osc.connect(gain);
-    gain.connect(audioContextRef.current.destination);
+    const notes = [659.25, 783.99, 1046.5];
+    const noteDuration = 0.15;
+    const gap = 0.05;
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(523.25, now);
-    osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.start(now);
-    osc.stop(now + 0.15);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + index * (noteDuration + gap));
+
+      gain.gain.setValueAtTime(0.25, now + index * (noteDuration + gap));
+      gain.gain.exponentialRampToValueAtTime(0.05, now + index * (noteDuration + gap) + noteDuration);
+
+      osc.start(now + index * (noteDuration + gap));
+      osc.stop(now + index * (noteDuration + gap) + noteDuration);
+    });
   }, [initAudio]);
 
   const startGame = useCallback(() => {
@@ -249,22 +256,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     const shape = SHAPES.find((s) => s.id === currentId);
     if (shape) {
       playSound(shape.frequency, GAME_CONFIG.SHAPE_SOUND_DURATION);
-
-      setTimeout(() => {
-        const button = document.querySelector(
-          `button[data-shape-id="${currentId}"]`
-        ) as HTMLElement;
-        if (button) {
-          const rect = button.getBoundingClientRect();
-          setParticleState({
-            active: true,
-            color: shape.color,
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-          });
-          setTimeout(() => setParticleState(null), 300);
-        }
-      }, 50);
     }
   }, [showLit, showIndex, sequence, phase, playSound]);
 
@@ -296,7 +287,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         setPlayerIndex(nextPlayerIndex);
         setCombo((c) => c + 1);
         if (nextPlayerIndex === sequence.length) {
-          playLevelUpSound();
+          playSuccessSound();
           const newScore = score + level * 20;
           setScore(newScore);
           if (newScore > highScore) {
@@ -314,6 +305,19 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             ...sequence,
             Math.floor(Math.random() * SHAPES.length),
           ];
+          setTimeout(() => {
+            const gameArea = document.querySelector('.recall-game-area') as HTMLElement;
+            if (gameArea) {
+              const rect = gameArea.getBoundingClientRect();
+              setParticleState({
+                active: true,
+                color: '#00ffff',
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+              setTimeout(() => setParticleState(null), 400);
+            }
+          }, 50);
           roundTimeoutRef.current = window.setTimeout(() => {
             if (!mountedRef.current) return;
             setLevel((l) => l + 1);
@@ -345,7 +349,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         }
       }
     },
-    [phase, sequence, playerIndex, score, level, highScore, lives, playSound, playLevelUpSound, props]
+    [phase, sequence, playerIndex, score, level, highScore, lives, playSound, playSuccessSound, props]
   );
 
   useEffect(() => {
@@ -459,7 +463,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
             </div>
           ) : (
             <div
-              className="grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4 transition-transform"
+              className="recall-game-area grid grid-cols-2 gap-4 h-full relative rounded-2xl border-2 border-cyan-500/50 bg-black/20 p-4 transition-transform"
               style={{
                 transform: shake
                   ? `translate(${Math.sin(Date.now() / 30) * GAME_CONFIG.SHAKE_INTENSITY}px, ${Math.cos(Date.now() / 25) * GAME_CONFIG.SHAKE_INTENSITY}px)`
