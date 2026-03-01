@@ -15,7 +15,7 @@ interface SuperlativeItem {
 
 interface SuperlativePuzzle {
   id: number;
-  comparison_type: "Longer" | "Wider" | "Heavier" | "Older" | "Taller" | "Faster" | "Bigger" | "Deeper" | "Hotter";
+  comparison_type: string;
   anchor_item: SuperlativeItem;
   challenger_item: SuperlativeItem;
   correct_answer: string;
