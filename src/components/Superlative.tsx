@@ -257,9 +257,10 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         style={{ boxShadow: "inset 0 0 15px rgba(0,255,255,0.05)" }}
       >
         <img
-          src={item.image_url.split('?')[0]}
+          src={item.image_url}
           alt={item.name}
           className="w-full h-full object-cover rounded-lg"
+          crossOrigin="anonymous"
         />
       </div>
 
