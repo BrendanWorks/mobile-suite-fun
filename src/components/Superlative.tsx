@@ -255,7 +255,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
       </div>
 
       <p
-        className="text-white font-semibold text-sm sm:text-base mb-1 leading-tight"
+        className="text-white font-semibold text-sm sm:text-base mb-1 leading-snug line-clamp-2"
         style={{ textShadow: "0 0 8px rgba(255,255,255,0.3)" }}
       >
         {item.name}
@@ -470,11 +470,13 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             Which is
           </p>
           <p
-            className="text-yellow-400 font-black leading-none"
+            className="text-yellow-400 font-black leading-tight break-words"
             style={{
-              fontSize: "clamp(3rem, 14vw, 5rem)",
+              fontSize: "clamp(2rem, 12vw, 4.5rem)",
               textShadow: "0 0 30px #fbbf24, 0 0 60px rgba(251,191,36,0.4)",
               letterSpacing: "-0.02em",
+              wordWrap: "break-word",
+              overflowWrap: "break-word",
             }}
           >
             {currentPuzzle.comparison_type.toUpperCase()}?
