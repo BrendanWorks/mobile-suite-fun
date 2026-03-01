@@ -261,7 +261,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         {item.name}
       </p>
 
-      <div className="h-4">
+      <div className="min-h-10 line-clamp-2">
         {(state === "correct" || state === "wrong" || state === "dimmed") ? (
           <p
             className="text-yellow-400 font-bold text-xs"
@@ -270,7 +270,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
             {formatValue(item.value, item.unit)}
           </p>
         ) : (
-          <p className="text-cyan-400/50 text-xs italic truncate">
+          <p className="text-cyan-400/50 text-xs italic leading-snug">
             {item.tagline ?? ""}
           </p>
         )}
