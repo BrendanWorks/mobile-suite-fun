@@ -104,7 +104,7 @@ async function loadRandomPuzzles(count: number): Promise<SuperlativePuzzle[]> {
 
   return shuffled.map((d) => {
     const items = (d.superlative_items ?? []) as Array<{
-      id: number; role: string; name: string; tagline?: string;
+      id: number; role: string; name: string; tagline?: string; explanation?: string;
       value: number; unit: string; image_url: string;
     }>;
     const anchor = items.find((i) => i.role === "anchor");
@@ -115,8 +115,8 @@ async function loadRandomPuzzles(count: number): Promise<SuperlativePuzzle[]> {
       comparison_type: d.comparison_type as SuperlativePuzzle["comparison_type"],
       correct_answer: d.correct_answer,
       reveal_note: d.reveal_note ?? "",
-      anchor_item: { name: anchor.name, tagline: anchor.tagline, value: Number(anchor.value), unit: anchor.unit, image_url: anchor.image_url ?? "" },
-      challenger_item: { name: challenger.name, tagline: challenger.tagline, value: Number(challenger.value), unit: challenger.unit, image_url: challenger.image_url ?? "" },
+      anchor_item: { name: anchor.name, tagline: anchor.tagline, explanation: anchor.explanation, value: Number(anchor.value), unit: anchor.unit, image_url: anchor.image_url ?? "" },
+      challenger_item: { name: challenger.name, tagline: challenger.tagline, explanation: challenger.explanation, value: Number(challenger.value), unit: challenger.unit, image_url: challenger.image_url ?? "" },
     };
   }).filter(Boolean) as SuperlativePuzzle[];
 }
