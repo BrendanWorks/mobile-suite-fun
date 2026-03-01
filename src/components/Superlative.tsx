@@ -8,6 +8,7 @@ import { useQuizRound } from "../lib/useQuizRound";
 interface SuperlativeItem {
   name: string;
   tagline?: string;
+  explanation?: string;
   value: number;
   unit: string;
   image_url: string;
@@ -42,7 +43,7 @@ async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
       correct_answer,
       reveal_note,
       superlative_items (
-        id, role, name, tagline, value, unit, image_url
+        id, role, name, tagline, explanation, value, unit, image_url
       )
     `)
     .eq("id", id)
@@ -51,7 +52,7 @@ async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
   if (error || !data) return null;
 
   const items = (data.superlative_items ?? []) as Array<{
-    id: number; role: string; name: string; tagline?: string;
+    id: number; role: string; name: string; tagline?: string; explanation?: string;
     value: number; unit: string; image_url: string;
   }>;
 
@@ -67,6 +68,7 @@ async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
     anchor_item: {
       name: anchor.name,
       tagline: anchor.tagline,
+      explanation: anchor.explanation,
       value: Number(anchor.value),
       unit: anchor.unit,
       image_url: anchor.image_url ?? "",
@@ -74,6 +76,7 @@ async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
     challenger_item: {
       name: challenger.name,
       tagline: challenger.tagline,
+      explanation: challenger.explanation,
       value: Number(challenger.value),
       unit: challenger.unit,
       image_url: challenger.image_url ?? "",
@@ -90,7 +93,7 @@ async function loadRandomPuzzles(count: number): Promise<SuperlativePuzzle[]> {
       correct_answer,
       reveal_note,
       superlative_items (
-        id, role, name, tagline, value, unit, image_url
+        id, role, name, tagline, explanation, value, unit, image_url
       )
     `)
     .eq("is_active", true);
@@ -127,6 +130,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     anchor_item: {
       name: "Statue of Liberty",
       tagline: "Gift from France, somehow",
+      explanation: "The copper statue alone weighs ~204 tonnes",
       value: 204117,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/290386/pexels-photo-290386.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -134,6 +138,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     challenger_item: {
       name: "Small Cumulus Cloud",
       tagline: "Looks harmless enough",
+      explanation: "Cloud water droplets spread across huge volume",
       value: 500000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/53594/blue-clouds-day-fluffy-53594.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -147,6 +152,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     anchor_item: {
       name: "Hollywood Walk of Fame",
       tagline: "Noted tourist trap",
+      explanation: "The famous 2.4 km star-studded sidewalk",
       value: 2400,
       unit: "m",
       image_url: "https://images.pexels.com/photos/1037987/pexels-photo-1037987.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -154,6 +160,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     challenger_item: {
       name: "Coney Island Boardwalk",
       tagline: "Rides and hotdogs",
+      explanation: "A 4 km wooden boardwalk by the ocean",
       value: 4000,
       unit: "m",
       image_url: "https://images.pexels.com/photos/1545590/pexels-photo-1545590.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -167,6 +174,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     anchor_item: {
       name: "Blue Whale",
       tagline: "Biggest animal ever, allegedly",
+      explanation: "The largest animal to ever exist on Earth",
       value: 150000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/2078240/pexels-photo-2078240.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -174,6 +182,7 @@ const DEMO_PUZZLES: SuperlativePuzzle[] = [
     challenger_item: {
       name: "Eiffel Tower",
       tagline: "Paris's most famous eyesore",
+      explanation: "7,300 tonnes of wrought iron framework",
       value: 7300000,
       unit: "kg",
       image_url: "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -261,7 +270,7 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         {item.name}
       </p>
 
-      <div className="min-h-10 line-clamp-2">
+      <div className="min-h-10 line-clamp-2 mb-2">
         {(state === "correct" || state === "wrong" || state === "dimmed") ? (
           <p
             className="text-yellow-400 font-bold text-xs"
@@ -275,6 +284,14 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
           </p>
         )}
       </div>
+
+      {item.explanation && (
+        <div className="min-h-8 line-clamp-2">
+          <p className="text-cyan-300/70 text-xs leading-snug">
+            {item.explanation}
+          </p>
+        </div>
+      )}
     </button>
   );
 }
