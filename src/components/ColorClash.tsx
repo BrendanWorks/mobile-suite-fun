@@ -133,20 +133,13 @@ function ColorClashIcon({ size = 20 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       xmlns="http://www.w3.org/2000/svg"
       style={{ filter: 'drop-shadow(0 0 6px rgba(0,255,255,0.6))' }}>
-      <path d="M12 4.5C9.5 4.5 7 6.5 7 9.5C7 11 7.8 12.5 9 13.5C8.5 14.5 8.5 15.8 9 16.8C9.8 18 11 18.5 12 18.5"
-        stroke="#00ffff" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-      <path d="M7 9.5C6 9 5.2 8 5.5 6.8C5.8 5.8 7 5.5 7.5 6.2"
-        stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      <path d="M7 13.5C6 13.5 5 12.8 5 11.8"
-        stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      <path d="M12 4.5C14.5 4.5 17 6.5 17 9.5C17 11 16.2 12.5 15 13.5C15.5 14.5 15.5 15.8 15 16.8C14.2 18 13 18.5 12 18.5"
-        stroke="#ec4899" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-      <path d="M17 9.5C18 9 18.8 8 18.5 6.8C18.2 5.8 17 5.5 16.5 6.2"
-        stroke="#ec4899" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      <path d="M17 13.5C18 13.5 19 12.8 19 11.8"
-        stroke="#ec4899" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      <line x1="12" y1="4.5" x2="12" y2="18.5"
-        stroke="#ffffff" strokeWidth="1" strokeDasharray="2 2" opacity="0.3"/>
+      <circle cx="12" cy="12" r="10" fill="#00ffff" />
+      <circle cx="12" cy="12" r="10" fill="#ec4899" clipPath="url(#rightHalf)" />
+      <defs>
+        <clipPath id="rightHalf">
+          <rect x="12" y="0" width="12" height="24" />
+        </clipPath>
+      </defs>
     </svg>
   );
 }
@@ -461,3 +454,4 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
 ColorClash.displayName = 'ColorClash';
 
 export default ColorClash;
+export { ColorClashIcon };
