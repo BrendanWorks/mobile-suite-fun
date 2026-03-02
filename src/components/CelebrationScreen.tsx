@@ -35,7 +35,7 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ANIMATION_TIMINGS = {
-  TILE_INTERVAL: 1000,
+  TILE_INTERVAL: 600,
   TILE_START: 0,
   NAME_START: 400,
   NAME_HIDE_OFFSET: 1200,
@@ -284,7 +284,7 @@ export default function CelebrationScreen({
                 animation: 'depositBonus 2s ease-in forwards',
               }}
             >
-              +{Math.round(timeBonus)} Time Bonus
+              +{Math.round(timeBonus)} Speed Bonus
             </div>
           </div>
         )}
