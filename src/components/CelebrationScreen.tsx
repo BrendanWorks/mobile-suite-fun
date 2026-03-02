@@ -373,13 +373,15 @@ export default function CelebrationScreen({
 
                 {showName && (
                   <div
-                    className="absolute z-20"
+                    className="absolute z-20 transition-opacity duration-500"
                     style={{
-                      animation: 'arcFloat 2s ease-in-out forwards',
+                      opacity: showName ? 1 : 0,
                       left: '50%',
+                      top: '50%',
                       '--tile-index': index,
-                      '--tile-offset-x': `${(index - 2) * 35}px`,
-                      '--tile-offset-y': `${Math.abs(index - 2) * 15 + 60}px`,
+                      '--tile-offset-x': `${(index - 2) * 40}px`,
+                      '--tile-offset-y': `${Math.abs(index - 2) * 20 + 100}px`,
+                      transform: `translate(calc(-50% + var(--tile-offset-x)), calc(-50% + var(--tile-offset-y)))`,
                     } as React.CSSProperties}
                   >
                     <div
@@ -401,27 +403,6 @@ export default function CelebrationScreen({
 
       {/* ANIMATIONS */}
       <style>{`
-        @keyframes arcFloat {
-          0% {
-            opacity: 0;
-            transform: translateX(calc(-50%)) translateY(-60px);
-          }
-          15% {
-            opacity: 1;
-          }
-          50% {
-            transform: translateX(calc(-50% + var(--tile-offset-x))) translateY(var(--tile-offset-y));
-          }
-          85% {
-            opacity: 1;
-            transform: translateX(calc(-50% + var(--tile-offset-x))) translateY(var(--tile-offset-y));
-          }
-          100% {
-            opacity: 0;
-            transform: translateX(calc(-50%)) translateY(-80px);
-          }
-        }
-
         @keyframes depositBonus {
           0% {
             opacity: 1;
