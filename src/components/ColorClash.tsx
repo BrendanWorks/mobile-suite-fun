@@ -208,6 +208,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   const [shake, setShake] = useState(false);
 
   const feedbackRef = useRef<number | null>(null);
+  const idleTimeoutRef = useRef<number | null>(null);
   const scoreRef = useRef(score);
   const onCompleteRef = useRef(props.onComplete);
 
@@ -217,6 +218,18 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   useEffect(() => {
     preloadGameSounds();
   }, []);
+
+  // ── Auto-start countdown after 2 seconds of instructions ──────────────────
+  useEffect(() => {
+    if (phase === 'idle') {
+      idleTimeoutRef.current = window.setTimeout(() => {
+        setPhase('countdown');
+      }, 2000);
+    }
+    return () => {
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+    };
+  }, [phase]);
 
   // ── GameHandle ──────────────────────────────────────────────────────────────
   useImperativeHandle(ref, () => ({
@@ -237,6 +250,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   // ── Cleanup ─────────────────────────────────────────────────────────────────
   useEffect(() => () => {
     if (feedbackRef.current) clearTimeout(feedbackRef.current);
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
   }, []);
 
   // ── Start Game (from countdown) ──────────────────────────────────────────────
@@ -248,11 +262,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     setStimulus(nextStimulus());
     setWordKey(k => k + 1);
     setPhase('playing');
-  }, []);
-
-  // ── Show Instructions ───────────────────────────────────────────────────────
-  const handleIdleToCountdown = useCallback(() => {
-    setPhase('countdown');
   }, []);
 
   // ── Tap handler ─────────────────────────────────────────────────────────────
@@ -347,25 +356,25 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
 
           {/* ── IDLE: Instructions Screen ── */}
           {phase === 'idle' && (
-            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex flex-col items-center justify-center p-4"
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex flex-col items-center justify-center p-6"
               style={{
-                height: '320px',
+                height: '420px',
                 boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
               }}>
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-8 w-full">
                 <div className="text-cyan-300 text-sm">
-                  <p className="mb-2">Tap the button matching the</p>
+                  <p className="mb-4">Tap the button matching the</p>
                   <div className="instruction-demo" style={{ color: THEME.cyan.hex }}>
                     FONT
                   </div>
-                  <p className="text-xs mt-3 text-cyan-400">not what the word says</p>
+                  <p className="text-xs mt-4 text-cyan-400">not what the word says</p>
                 </div>
-                <div className="pt-2">
-                  <div className="text-xs text-cyan-300 mb-3">Example:</div>
+                <div className="pt-4">
+                  <div className="text-xs text-cyan-300 mb-4">Example:</div>
                   <div className="instruction-demo" style={{ color: '#FF4444' }}>
                     BLUE
                   </div>
-                  <div className="text-xs text-cyan-400 mt-2">is written in RED, so tap RED</div>
+                  <div className="text-xs text-cyan-400 mt-4">is written in RED, so tap RED</div>
                 </div>
               </div>
             </div>
@@ -429,15 +438,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
                 );
               })}
             </div>
-          )}
-
-          {/* ── Start Button (idle only) ── */}
-          {phase === 'idle' && (
-            <button onClick={handleIdleToCountdown}
-              className="w-full py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold text-base rounded-lg transition-all hover:bg-cyan-400 hover:text-black active:scale-95 touch-manipulation"
-              style={{ textShadow: THEME.cyan.textShadow, boxShadow: THEME.cyan.boxShadow }}>
-              TAP TO START
-            </button>
           )}
 
         </div>
