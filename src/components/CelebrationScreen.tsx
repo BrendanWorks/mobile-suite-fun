@@ -80,6 +80,7 @@ export default function CelebrationScreen({
   const [showMainCircle, setShowMainCircle] = useState(false);
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
+  const [dialPaused, setDialPaused] = useState(false);
 
   const totalPercentage = useMemo(
     () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
@@ -101,10 +102,16 @@ export default function CelebrationScreen({
     let fillInterval: NodeJS.Timeout | null = null;
 
     const hideAllNamesAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.NAME_HIDE_OFFSET;
-    const circleStartAt = hideAllNamesAt;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
 
-    // Animate in tiles and scores, then fade out names
+    // Show main circle first
+    timers.push(
+      setTimeout(() => {
+        setShowMainCircle(true);
+      }, 100)
+    );
+
+    // Animate in tiles and scores, fill dial as they appear
     for (let i = 0; i < roundScores.length; i++) {
       const delay = ANIMATION_TIMINGS.TILE_INTERVAL * i;
 
@@ -132,37 +139,21 @@ export default function CelebrationScreen({
           hideAllNamesAt
         )
       );
+
+      // Fill dial proportionally as each tile's score appears
+      timers.push(
+        setTimeout(
+          () => {
+            const tilePercentage = (roundScores[i].score.normalizedScore / maxSessionScore) * 100;
+            setDialFill((prev) => Math.min(prev + tilePercentage, dialFillWithoutBonus));
+          },
+          ANIMATION_TIMINGS.NAME_START + delay
+        )
+      );
     }
 
-    // Show main circle
-    timers.push(
-      setTimeout(() => setShowMainCircle(true), circleStartAt)
-    );
-
-    // Dial animation with optional bonus phase
-    const dialStartAt = circleStartAt + ANIMATION_TIMINGS.CIRCLE_DELAY;
-
+    // Bonus phase: show bonus and fill remainder
     if (timeBonus > 10) {
-      // Phase 1: Fill to before-bonus amount
-      timers.push(
-        setTimeout(() => {
-          fillInterval = setInterval(() => {
-            setDialFill((prev) => {
-              const increment = totalPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-              const next = Math.min(prev + increment, dialFillWithoutBonus);
-
-              if (next >= dialFillWithoutBonus) {
-                clearInterval(fillInterval);
-                fillInterval = null;
-              }
-
-              return next;
-            });
-          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-        }, dialStartAt)
-      );
-
-      // Phase 2: Show bonus and deposit while filling remainder
       timers.push(
         setTimeout(() => {
           setShowTimeBonus(true);
@@ -189,26 +180,11 @@ export default function CelebrationScreen({
         }, bonusStartAt)
       );
     } else {
-      // No bonus: fill all the way
+      // No bonus, just play sound when dial is full
       timers.push(
         setTimeout(() => {
-          let soundPlayed = false;
-          fillInterval = setInterval(() => {
-            setDialFill((prev) => {
-              const increment = totalPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-              const next = Math.min(prev + increment, totalPercentage);
-
-              if (next >= totalPercentage && !soundPlayed) {
-                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-                soundPlayed = true;
-                clearInterval(fillInterval);
-                fillInterval = null;
-              }
-
-              return next;
-            });
-          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-        }, dialStartAt)
+          playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+        }, hideAllNamesAt + 500)
       );
     }
 
@@ -244,11 +220,7 @@ export default function CelebrationScreen({
         </h1>
 
         {/* DIAL CIRCLE */}
-        <div
-          className={`transition-all duration-500 ${
-            showMainCircle ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
-          }`}
-        >
+        <div className={showMainCircle ? 'block' : 'hidden'}>
           <div className="relative w-56 h-56 sm:w-72 sm:h-72 flex items-center justify-center flex-shrink-0">
             <div
               className="absolute inset-0 rounded-full animate-pulse"
