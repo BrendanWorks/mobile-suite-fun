@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Camera, Triangle, Users, Check,
   ChartBar, Shuffle, CircleX, Layers, BookOpen,
@@ -34,7 +34,6 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
   'recall': <Lightbulb className="w-full h-full" />,
 };
 
-// Timing constants extracted for reusability and DRY
 const ANIMATION_TIMINGS = {
   TILE_INTERVAL: 350,
   TILE_START: 0,
@@ -48,18 +47,13 @@ const ANIMATION_TIMINGS = {
   SOUND_VOLUME: 0.3,
 } as const;
 
-const TEXT_SHADOWS = {
-  glow: (color: string, blur: string) => `0 0 ${blur} ${color}`,
-  bright: '0 0 20px #00ffff',
-  score: '0 0 8px #fbbf24',
-  timer: '0 0 15px #fbbf24',
-} as const;
-
-const NEON_COLORS = {
+const COLORS = {
   cyan: '#00ffff',
   yellow: '#fbbf24',
   red: '#ef4444',
 } as const;
+
+const getTextShadow = (color: string, blur: string) => `0 0 ${blur} ${color}`;
 
 interface ScoreTile {
   gameId: string;
@@ -86,8 +80,6 @@ export default function CelebrationScreen({
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
 
-  const hasRun = useRef(false);
-
   const totalPercentage = useMemo(
     () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
     [totalSessionScore, maxSessionScore]
@@ -98,30 +90,28 @@ export default function CelebrationScreen({
   }, [roundScores]);
 
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
     const timers: NodeJS.Timeout[] = [];
     let fillInterval: NodeJS.Timeout | null = null;
 
-    const tileDelayBase = ANIMATION_TIMINGS.TILE_START;
-    const nameDelayBase = ANIMATION_TIMINGS.NAME_START;
     const hideAllNamesAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.NAME_HIDE_OFFSET;
     const circleStartAt = hideAllNamesAt;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
 
-    // Animate in tiles and names
+    // Animate in tiles
     for (let i = 0; i < roundScores.length; i++) {
       const delay = ANIMATION_TIMINGS.TILE_INTERVAL * i;
 
       timers.push(
-        setTimeout(() => setVisibleTiles(i + 1), tileDelayBase + delay)
+        setTimeout(
+          () => setVisibleTiles(i + 1),
+          ANIMATION_TIMINGS.TILE_START + delay
+        )
       );
 
       timers.push(
         setTimeout(
           () => setVisibleNames((prev) => new Set([...prev, i])),
-          nameDelayBase + delay
+          ANIMATION_TIMINGS.NAME_START + delay
         )
       );
 
@@ -194,29 +184,35 @@ export default function CelebrationScreen({
 
   return (
     <div className="min-h-screen w-screen bg-black flex flex-col items-center justify-between p-4">
-      {/* ROWDY BRANDING - TOP */}
+      {/* ROWDY BRANDING */}
       <div className="flex-shrink-0 pt-4 sm:pt-6">
         <p
           className="text-6xl sm:text-8xl font-black text-red-500 uppercase tracking-widest"
-          style={{ textShadow: TEXT_SHADOWS.glow(NEON_COLORS.red, '40px') }}
+          style={{ textShadow: getTextShadow(COLORS.red, '40px') }}
         >
           ROWDY
         </p>
       </div>
 
+      {/* MAIN CONTENT AREA */}
       <div className="flex flex-col items-center gap-6 w-full flex-1">
         <h1
           className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in"
-          style={{ textShadow: TEXT_SHADOWS.bright }}
+          style={{ textShadow: getTextShadow(COLORS.cyan, '20px') }}
         >
           Game Complete!
         </h1>
 
-        <div className={`transition-all duration-500 ${showMainCircle ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+        {/* DIAL CIRCLE */}
+        <div
+          className={`transition-all duration-500 ${
+            showMainCircle ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
+          }`}
+        >
           <div className="relative w-56 h-56 sm:w-72 sm:h-72 flex items-center justify-center flex-shrink-0">
             <div
               className="absolute inset-0 rounded-full animate-pulse"
-              style={{ boxShadow: `0 0 60px rgba(0, 255, 255, 0.3)` }}
+              style={{ boxShadow: '0 0 60px rgba(0, 255, 255, 0.3)' }}
             />
             <svg className="w-full h-full" viewBox="0 0 200 200">
               <circle
@@ -245,8 +241,8 @@ export default function CelebrationScreen({
               />
               <defs>
                 <linearGradient id="dialGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: NEON_COLORS.cyan, stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: NEON_COLORS.yellow, stopOpacity: 1 }} />
+                  <stop offset="0%" style={{ stopColor: COLORS.cyan, stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: COLORS.yellow, stopOpacity: 1 }} />
                 </linearGradient>
               </defs>
             </svg>
@@ -254,7 +250,7 @@ export default function CelebrationScreen({
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div
                 className="text-4xl sm:text-6xl font-bold text-yellow-400"
-                style={{ textShadow: TEXT_SHADOWS.timer }}
+                style={{ textShadow: getTextShadow(COLORS.yellow, '20px') }}
               >
                 {Math.round(totalSessionScore)}
               </div>
@@ -263,13 +259,14 @@ export default function CelebrationScreen({
         </div>
       </div>
 
+      {/* SCORE TILES AND TIME BONUS */}
       <div className="w-full flex-shrink-0">
         {showTimeBonus && timeBonus > 10 && (
           <div className="flex justify-center mb-6">
             <div
               className="text-2xl sm:text-3xl font-bold text-yellow-400 transition-opacity duration-1500"
               style={{
-                textShadow: TEXT_SHADOWS.timer,
+                textShadow: getTextShadow(COLORS.yellow, '15px'),
                 letterSpacing: '0.05em',
                 opacity: showTimeBonus ? 1 : 0,
               }}
@@ -278,24 +275,28 @@ export default function CelebrationScreen({
             </div>
           </div>
         )}
+
         <div className="w-full grid grid-cols-5 gap-2">
           {roundScores.map((tile, index) => {
             const gameKey = tile.gameId.toLowerCase();
             const icon = GAME_ICONS[gameKey] || <Star className="w-full h-full" />;
             const showName = visibleNames.has(index);
+            const isVisible = index < visibleTiles;
 
             return (
               <div key={`${tile.gameId}-${index}`} className="relative">
                 <div
-                  className={`transition-all duration-500 ${index < visibleTiles ? 'opacity-100' : 'opacity-0'}`}
+                  className={`transition-all duration-500 ${
+                    isVisible ? 'opacity-100' : 'opacity-0'
+                  }`}
                   style={{
-                    transform: index < visibleTiles ? 'translateX(0)' : 'translateX(-20px)',
+                    transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
                   }}
                 >
                   <div
                     className="aspect-square bg-black rounded-lg border-2 border-cyan-400/50 p-2 sm:p-3 flex flex-col items-center justify-center relative overflow-hidden group hover:border-cyan-400/80 transition-all duration-300 touch-manipulation"
                     style={{
-                      boxShadow: index < visibleTiles
+                      boxShadow: isVisible
                         ? '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 12px rgba(0, 255, 255, 0.1)'
                         : 'none',
                     }}
@@ -312,9 +313,11 @@ export default function CelebrationScreen({
                       </div>
                       <div
                         className="text-lg sm:text-xl font-bold text-yellow-400 transition-transform duration-300 group-hover:scale-110"
-                        style={{ textShadow: TEXT_SHADOWS.score }}
+                        style={{ textShadow: getTextShadow(COLORS.yellow, '8px') }}
                       >
-                        {Math.round(tile.score.totalWithBonus || tile.score.normalizedScore)}
+                        {Math.round(
+                          tile.score.totalWithBonus || tile.score.normalizedScore
+                        )}
                       </div>
                     </div>
                   </div>
@@ -331,7 +334,10 @@ export default function CelebrationScreen({
                   >
                     <div
                       className="text-sm sm:text-base font-bold text-cyan-300 whitespace-nowrap"
-                      style={{ textShadow: TEXT_SHADOWS.glow(NEON_COLORS.cyan, '10px'), letterSpacing: '0.05em' }}
+                      style={{
+                        textShadow: getTextShadow(COLORS.cyan, '10px'),
+                        letterSpacing: '0.05em',
+                      }}
                     >
                       {tile.gameName}
                     </div>
@@ -343,6 +349,7 @@ export default function CelebrationScreen({
         </div>
       </div>
 
+      {/* ANIMATIONS */}
       <style>{`
         @keyframes arcFloat {
           0% {
@@ -362,20 +369,24 @@ export default function CelebrationScreen({
         }
       `}</style>
 
+      {/* ACTION BUTTON AND CONFIRMATION */}
       <div className="w-full flex flex-col items-center gap-3 pt-4 sm:pt-6 border-t border-cyan-400/30 flex-shrink-0">
         <button
           onClick={onPlayAgain}
           className="w-full py-3 sm:py-4 px-6 bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold rounded-lg text-base sm:text-lg transition-all active:scale-95 touch-manipulation uppercase tracking-wide"
           style={{
-            textShadow: TEXT_SHADOWS.glow(NEON_COLORS.cyan, '15px'),
-            boxShadow: `0 0 30px rgba(0, 255, 255, 0.3)`,
+            textShadow: getTextShadow(COLORS.cyan, '15px'),
+            boxShadow: '0 0 30px rgba(0, 255, 255, 0.3)',
           }}
         >
           Play Again
         </button>
 
         <div className="flex items-center gap-2 text-green-400 text-xs sm:text-sm">
-          <Check className="w-4 h-4 sm:w-5 sm:h-5" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
+          <Check
+            className="w-4 h-4 sm:w-5 sm:h-5"
+            style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }}
+          />
           <span>Progress Saved</span>
         </div>
       </div>
