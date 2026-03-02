@@ -76,6 +76,7 @@ export default function CelebrationScreen({
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);
   const [visibleNames, setVisibleNames] = useState<Set<number>>(new Set());
+  const [visibleScores, setVisibleScores] = useState<Set<number>>(new Set());
   const [showMainCircle, setShowMainCircle] = useState(false);
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
@@ -89,6 +90,12 @@ export default function CelebrationScreen({
     return roundScores.reduce((sum, tile) => sum + (tile.score.timeBonus || 0), 0);
   }, [roundScores]);
 
+  const dialFillWithoutBonus = useMemo(() => {
+    if (maxSessionScore <= 0 || timeBonus <= 0) return totalPercentage;
+    const bonusPercentage = (timeBonus / maxSessionScore) * 100;
+    return Math.max(0, totalPercentage - bonusPercentage);
+  }, [totalPercentage, timeBonus, maxSessionScore]);
+
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
     let fillInterval: NodeJS.Timeout | null = null;
@@ -97,7 +104,7 @@ export default function CelebrationScreen({
     const circleStartAt = hideAllNamesAt;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
 
-    // Animate in tiles
+    // Animate in tiles, names, and scores
     for (let i = 0; i < roundScores.length; i++) {
       const delay = ANIMATION_TIMINGS.TILE_INTERVAL * i;
 
@@ -110,18 +117,23 @@ export default function CelebrationScreen({
 
       timers.push(
         setTimeout(
-          () => setVisibleNames((prev) => new Set([...prev, i])),
+          () => {
+            setVisibleNames((prev) => new Set([...prev, i]));
+            setVisibleScores((prev) => new Set([...prev, i]));
+          },
           ANIMATION_TIMINGS.NAME_START + delay
         )
       );
 
       timers.push(
         setTimeout(
-          () => setVisibleNames((prev) => {
-            const next = new Set(prev);
-            next.delete(i);
-            return next;
-          }),
+          () => {
+            setVisibleNames((prev) => {
+              const next = new Set(prev);
+              next.delete(i);
+              return next;
+            });
+          },
           hideAllNamesAt
         )
       );
@@ -132,51 +144,84 @@ export default function CelebrationScreen({
       setTimeout(() => setShowMainCircle(true), circleStartAt)
     );
 
-    // Show time bonus if earned
+    // Dial animation with optional bonus phase
+    const dialStartAt = circleStartAt + ANIMATION_TIMINGS.CIRCLE_DELAY;
+
     if (timeBonus > 10) {
+      // Phase 1: Fill to before-bonus amount
+      timers.push(
+        setTimeout(() => {
+          fillInterval = setInterval(() => {
+            setDialFill((prev) => {
+              const increment = totalPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+              const next = Math.min(prev + increment, dialFillWithoutBonus);
+
+              if (next >= dialFillWithoutBonus) {
+                clearInterval(fillInterval);
+                fillInterval = null;
+              }
+
+              return next;
+            });
+          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+        }, dialStartAt)
+      );
+
+      // Phase 2: Show bonus and deposit while filling remainder
       timers.push(
         setTimeout(() => {
           setShowTimeBonus(true);
           playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+
+          let soundPlayed = false;
+          fillInterval = setInterval(() => {
+            setDialFill((prev) => {
+              const bonusPercentage = (timeBonus / maxSessionScore) * 100;
+              const increment = bonusPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+              const next = Math.min(prev + increment, totalPercentage);
+
+              if (next >= totalPercentage && !soundPlayed) {
+                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                soundPlayed = true;
+                clearInterval(fillInterval);
+                fillInterval = null;
+                setShowTimeBonus(false);
+              }
+
+              return next;
+            });
+          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
         }, bonusStartAt)
       );
+    } else {
+      // No bonus: fill all the way
+      timers.push(
+        setTimeout(() => {
+          let soundPlayed = false;
+          fillInterval = setInterval(() => {
+            setDialFill((prev) => {
+              const increment = totalPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+              const next = Math.min(prev + increment, totalPercentage);
+
+              if (next >= totalPercentage && !soundPlayed) {
+                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                soundPlayed = true;
+                clearInterval(fillInterval);
+                fillInterval = null;
+              }
+
+              return next;
+            });
+          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+        }, dialStartAt)
+      );
     }
-
-    // Animate dial fill
-    const dialStartAt = timeBonus > 10
-      ? bonusStartAt + ANIMATION_TIMINGS.BONUS_DELAY
-      : circleStartAt + ANIMATION_TIMINGS.CIRCLE_DELAY;
-
-    timers.push(
-      setTimeout(() => {
-        let soundPlayed = false;
-        fillInterval = setInterval(() => {
-          setDialFill((prev) => {
-            const increment = totalPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-            const next = Math.min(prev + increment, totalPercentage);
-
-            if (next >= totalPercentage && !soundPlayed) {
-              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-              soundPlayed = true;
-            }
-
-            if (next >= totalPercentage && fillInterval) {
-              clearInterval(fillInterval);
-              fillInterval = null;
-              setShowTimeBonus(false);
-            }
-
-            return next;
-          });
-        }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-      }, dialStartAt)
-    );
 
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
       if (fillInterval) clearInterval(fillInterval);
     };
-  }, [roundScores.length, totalPercentage, timeBonus]);
+  }, [roundScores.length, totalPercentage, timeBonus, dialFillWithoutBonus, maxSessionScore]);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
@@ -264,11 +309,11 @@ export default function CelebrationScreen({
         {showTimeBonus && timeBonus > 10 && (
           <div className="flex justify-center mb-6">
             <div
-              className="text-2xl sm:text-3xl font-bold text-yellow-400 transition-opacity duration-1500"
+              className="text-2xl sm:text-3xl font-bold text-yellow-400"
               style={{
                 textShadow: getTextShadow(COLORS.yellow, '15px'),
                 letterSpacing: '0.05em',
-                opacity: showTimeBonus ? 1 : 0,
+                animation: 'depositBonus 2s ease-in forwards',
               }}
             >
               +{Math.round(timeBonus)} Time Bonus
@@ -281,6 +326,7 @@ export default function CelebrationScreen({
             const gameKey = tile.gameId.toLowerCase();
             const icon = GAME_ICONS[gameKey] || <Star className="w-full h-full" />;
             const showName = visibleNames.has(index);
+            const showScore = visibleScores.has(index);
             const isVisible = index < visibleTiles;
 
             return (
@@ -312,7 +358,9 @@ export default function CelebrationScreen({
                         {icon}
                       </div>
                       <div
-                        className="text-lg sm:text-xl font-bold text-yellow-400 transition-transform duration-300 group-hover:scale-110"
+                        className={`text-lg sm:text-xl font-bold text-yellow-400 transition-all duration-500 group-hover:scale-110 ${
+                          showScore ? 'opacity-100' : 'opacity-0'
+                        }`}
                         style={{ textShadow: getTextShadow(COLORS.yellow, '8px') }}
                       >
                         {Math.round(
@@ -329,8 +377,8 @@ export default function CelebrationScreen({
                     style={{
                       animation: 'arcFloat 2s ease-in-out forwards',
                       left: '50%',
-                      transform: 'translateX(-50%)',
-                    }}
+                      '--arc-offset': `${(index - 2) * 35}px`,
+                    } as React.CSSProperties}
                   >
                     <div
                       className="text-sm sm:text-base font-bold text-cyan-300 whitespace-nowrap"
@@ -354,17 +402,35 @@ export default function CelebrationScreen({
         @keyframes arcFloat {
           0% {
             opacity: 0;
-            top: -60px;
+            transform: translateX(calc(-50%)) translateY(-60px);
           }
           15% {
             opacity: 1;
+          }
+          50% {
+            transform: translateX(calc(-50% + var(--arc-offset))) translateY(-40px);
           }
           85% {
             opacity: 1;
           }
           100% {
             opacity: 0;
-            top: -80px;
+            transform: translateX(calc(-50%)) translateY(-80px);
+          }
+        }
+
+        @keyframes depositBonus {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          70% {
+            opacity: 1;
+            transform: translateY(-120px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-150px) scale(0.8);
           }
         }
       `}</style>
