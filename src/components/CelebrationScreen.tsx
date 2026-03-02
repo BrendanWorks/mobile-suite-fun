@@ -165,7 +165,8 @@ export default function CelebrationScreen({
         setTimeout(() => {
           if (perfectBonus > 10) {
             setShowPerfectBonus(true);
-          } else {
+          }
+          if (timeBonus > 10) {
             setShowTimeBonus(true);
           }
           playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
