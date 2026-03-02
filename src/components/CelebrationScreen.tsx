@@ -76,7 +76,7 @@ export default function CelebrationScreen({
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);
   const [visibleScores, setVisibleScores] = useState<Set<number>>(new Set());
-  const [fadingOutNames, setFadingOutNames] = useState<Set<number>>(new Set());
+  const [currentNameIndex, setCurrentNameIndex] = useState<number>(-1);
   const [showMainCircle, setShowMainCircle] = useState(false);
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
@@ -111,7 +111,7 @@ export default function CelebrationScreen({
       }, 100)
     );
 
-    // Animate in tiles and scores, fill dial as they appear
+    // Animate in tiles and scores, one name at a time
     for (let i = 0; i < roundScores.length; i++) {
       const delay = ANIMATION_TIMINGS.TILE_INTERVAL * i;
 
@@ -126,6 +126,7 @@ export default function CelebrationScreen({
         setTimeout(
           () => {
             setVisibleScores((prev) => new Set([...prev, i]));
+            setCurrentNameIndex(i);
           },
           ANIMATION_TIMINGS.NAME_START + delay
         )
@@ -134,7 +135,7 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(
           () => {
-            setFadingOutNames((prev) => new Set([...prev, i]));
+            setCurrentNameIndex(-1);
           },
           hideAllNamesAt
         )
@@ -294,11 +295,11 @@ export default function CelebrationScreen({
             const icon = GAME_ICONS[gameKey] || <Star className="w-full h-full" />;
             const isVisible = index < visibleTiles;
             const showScore = visibleScores.has(index);
-            const nameIsFadingOut = fadingOutNames.has(index);
+            const showName = currentNameIndex === index;
 
             return (
               <div key={`${tile.gameId}-${index}`} className="relative">
-                {isVisible && !nameIsFadingOut && (
+                {isVisible && showName && (
                   <div
                     className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-500"
                     style={{
