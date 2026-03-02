@@ -430,21 +430,26 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
 
           {/* ── Color Buttons (playing only) ── */}
           {phase === 'playing' && (
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {COLORS.map(color => {
-                const { className, style } = getColorButtonClasses(color, feedback, stimulus);
-                return (
-                  <button key={color.id}
-                    onClick={() => handleTap(color.id)}
-                    disabled={!!feedback}
-                    className={className}
-                    style={style}
-                    data-color={color.id}>
-                    {color.label}
-                  </button>
-                );
-              })}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {COLORS.map(color => {
+                  const { className, style } = getColorButtonClasses(color, feedback, stimulus);
+                  return (
+                    <button key={color.id}
+                      onClick={() => handleTap(color.id)}
+                      disabled={!!feedback}
+                      className={className}
+                      style={style}
+                      data-color={color.id}>
+                      {color.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-center text-xs text-cyan-300">
+                Click the button that matches the font color
+              </div>
+            </>
           )}
 
         </div>
