@@ -12,6 +12,8 @@ export interface GameScore {
   breakdown: string;
   timeBonus?: number;
   totalWithBonus?: number;
+  perfectScoreBonus?: number;
+  isBonusApplied?: boolean;
 }
 
 export interface SessionScore {
@@ -279,6 +281,45 @@ export const calculateTimeBonus = (
   const bonus = (normalizedScore * timeRatio) / 2;
 
   return Math.round(bonus);
+};
+
+const CONTENT_PUZZLE_GAMES = [
+  'odd-man-out',
+  'rank-and-roll',
+  'photo-mystery',
+  'snapshot',
+  'snap-shot',
+  'split-decision',
+  'fake-out',
+  'hive-mind',
+  'double-fake',
+  'superlative',
+  'true-false',
+  'multiple-choice',
+];
+
+export const applyPerfectScoreBonus = (
+  gameScore: GameScore
+): GameScore => {
+  // Only apply 2X multiplier to content puzzles with 100% accuracy
+  const isContentPuzzle = CONTENT_PUZZLE_GAMES.includes(gameScore.gameId);
+  const isPerfectScore = gameScore.normalizedScore >= 100;
+
+  if (!isContentPuzzle || !isPerfectScore) {
+    return gameScore;
+  }
+
+  const baseScore = gameScore.totalWithBonus || gameScore.normalizedScore;
+  const perfectScoreBonus = baseScore; // 2X multiplier means adding the base score again
+  const totalWithPerfectBonus = baseScore + perfectScoreBonus;
+
+  return {
+    ...gameScore,
+    perfectScoreBonus: Math.round(perfectScoreBonus),
+    totalWithBonus: Math.round(totalWithPerfectBonus),
+    isBonusApplied: true,
+    grade: getGrade(Math.min(100, totalWithPerfectBonus)) // Cap grade at 100 visually but keep score
+  };
 };
 
 export const applyTimeBonus = (
