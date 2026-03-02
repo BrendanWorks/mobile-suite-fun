@@ -373,16 +373,13 @@ export default function CelebrationScreen({
 
                 {showName && (
                   <div
-                    className="absolute z-20 transition-opacity duration-500"
+                    className="fixed z-20 transition-opacity duration-500"
                     style={{
                       opacity: showName ? 1 : 0,
-                      left: '50%',
-                      top: '50%',
-                      '--tile-index': index,
-                      '--tile-offset-x': `${(index - 2) * 40}px`,
-                      '--tile-offset-y': `${Math.abs(index - 2) * 20 + 100}px`,
-                      transform: `translate(calc(-50% + var(--tile-offset-x)), calc(-50% + var(--tile-offset-y)))`,
-                    } as React.CSSProperties}
+                      left: `calc(50% + ${(index - 2) * 40}px)`,
+                      top: `calc(50% - 200px + ${Math.abs(index - 2) * 20}px)`,
+                      transform: 'translateX(-50%)',
+                    }}
                   >
                     <div
                       className="text-sm sm:text-base font-bold text-cyan-300 whitespace-nowrap"
