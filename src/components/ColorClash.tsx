@@ -228,7 +228,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     if (phase === 'idle') {
       idleTimeoutRef.current = window.setTimeout(() => {
         setPhase('countdown');
-      }, 3000);
+      }, 2000);
     }
     return () => {
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
@@ -360,17 +360,28 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
                 height: '420px',
                 boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
               }}>
-              <div className="text-center space-y-8 w-full">
-                <div className="text-cyan-300 text-sm">
-                  <p className="mb-4 leading-relaxed">Click the button that matches the COLOR of the displayed word,</p>
-                  <p className="text-cyan-400 font-semibold">not the word itself!</p>
+              <div className="text-center space-y-6 w-full">
+                <div className="text-cyan-300 text-xs sm:text-sm leading-snug">
+                  <p>Click the button that matches the<br/><strong className="text-cyan-400">COLOR</strong> of the displayed word,<br/>not the word itself.</p>
                 </div>
-                <div className="pt-4">
-                  <div className="text-xs text-cyan-300 mb-4">Example:</div>
-                  <div className="instruction-demo" style={{ color: '#FF4444' }}>
+                <div>
+                  <div className="text-xs text-cyan-300 mb-3">Example:</div>
+                  <div className="instruction-demo text-lg sm:text-2xl mb-3" style={{ color: '#FF4444' }}>
                     BLUE
                   </div>
-                  <div className="text-xs text-cyan-400 mt-4">is written in RED, so click the RED button</div>
+                  <div className="text-xs sm:text-sm text-cyan-300">
+                    is written in RED, so click the
+                  </div>
+                  <button className="inline-block mt-2 px-4 py-2 rounded-lg font-bold text-white text-sm sm:text-base transition-all active:scale-95"
+                    style={{
+                      backgroundColor: '#FF4444',
+                      borderColor: '#FF4444',
+                      border: '2px solid #FF4444',
+                      boxShadow: '0 0 12px rgba(255, 68, 68, 0.6)',
+                    }}>
+                    RED
+                  </button>
+                  <div className="text-xs text-cyan-300 mt-2">button</div>
                 </div>
               </div>
             </div>
