@@ -377,7 +377,9 @@ export default function CelebrationScreen({
                     style={{
                       animation: 'arcFloat 2s ease-in-out forwards',
                       left: '50%',
-                      '--arc-offset': `${(index - 2) * 35}px`,
+                      '--tile-index': index,
+                      '--tile-offset-x': `${(index - 2) * 35}px`,
+                      '--tile-offset-y': `${Math.abs(index - 2) * 15 + 60}px`,
                     } as React.CSSProperties}
                   >
                     <div
@@ -408,10 +410,11 @@ export default function CelebrationScreen({
             opacity: 1;
           }
           50% {
-            transform: translateX(calc(-50% + var(--arc-offset))) translateY(-40px);
+            transform: translateX(calc(-50% + var(--tile-offset-x))) translateY(var(--tile-offset-y));
           }
           85% {
             opacity: 1;
+            transform: translateX(calc(-50% + var(--tile-offset-x))) translateY(var(--tile-offset-y));
           }
           100% {
             opacity: 0;
