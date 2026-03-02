@@ -27,6 +27,7 @@ import Flashbang from './Flashbang';
 import Recall from './Recall';
 import ColorClash from './ColorClash';
 import GameSession from './GameSession';
+import CelebrationScreen from './CelebrationScreen';
 
 const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-full h-full" />,
@@ -86,7 +87,7 @@ interface Playlist {
 }
 
 export default function DebugMode({ onExit }: DebugModeProps) {
-  const [view, setView] = useState<'menu' | 'game' | 'playlist'>('menu');
+  const [view, setView] = useState<'menu' | 'game' | 'playlist' | 'celebration'>('menu');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -113,6 +114,65 @@ export default function DebugMode({ onExit }: DebugModeProps) {
 
     loadPlaylists();
   }, []);
+
+  if (view === 'celebration') {
+    const mockRoundScores = [
+      {
+        gameId: 'odd-man-out',
+        gameName: 'Odd Man Out',
+        score: { correct: 8, incorrect: 2, timeBonus: 50 }
+      },
+      {
+        gameId: 'photo-mystery',
+        gameName: 'Zooma',
+        score: { correct: 6, incorrect: 1, timeBonus: 75 }
+      },
+      {
+        gameId: 'rank-and-roll',
+        gameName: 'Ranky',
+        score: { correct: 9, incorrect: 0, timeBonus: 100 }
+      },
+      {
+        gameId: 'snapshot',
+        gameName: 'Jigsaw',
+        score: { correct: 5, incorrect: 3, timeBonus: 25 }
+      },
+      {
+        gameId: 'split-decision',
+        gameName: 'Split Decision',
+        score: { correct: 7, incorrect: 2, timeBonus: 60 }
+      },
+    ];
+
+    return (
+      <div className="h-screen w-screen bg-black flex flex-col">
+        <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
+          <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
+            <div className="text-white min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-400">Debug Mode</p>
+              <p className="text-base sm:text-lg font-bold truncate">Testing Celebration Animation</p>
+            </div>
+            <button
+              onClick={() => {
+                setView('menu');
+              }}
+              className="flex-shrink-0 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex items-center justify-center">
+          <CelebrationScreen
+            roundScores={mockRoundScores}
+            totalSessionScore={1520}
+            maxSessionScore={2000}
+            onPlayAgain={() => setView('menu')}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'playlist' && selectedPlaylistId) {
     return (
@@ -194,6 +254,21 @@ export default function DebugMode({ onExit }: DebugModeProps) {
             >
               Exit
             </button>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-green-400 mb-4" style={{ textShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }}>
+              Test Animations
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8">
+              <button
+                onClick={() => setView('celebration')}
+                className="bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-6 px-4 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-green-400/50 touch-manipulation"
+              >
+                <div className="text-2xl mb-2">✨</div>
+                <div>Test Celebration Animation</div>
+              </button>
+            </div>
           </div>
 
           <div className="mb-8">
