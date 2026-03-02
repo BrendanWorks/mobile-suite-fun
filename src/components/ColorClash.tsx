@@ -248,7 +248,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     },
     pauseTimer: false,
     canSkipQuestion: false,
-    hideTimer: false,
+    hideTimer: true,
   }), [props.timeRemaining]);
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
