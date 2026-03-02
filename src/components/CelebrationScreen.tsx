@@ -158,40 +158,97 @@ export default function CelebrationScreen({
       );
     }
 
-    // Bonus phase: show bonuses and fill remainder
+    // Bonus phase: show bonuses sequentially and fill remainder
     const totalBonus = timeBonus + perfectBonus;
     if (totalBonus > 10) {
-      timers.push(
-        setTimeout(() => {
-          if (perfectBonus > 10) {
+      // Show perfect bonus first
+      if (perfectBonus > 10) {
+        timers.push(
+          setTimeout(() => {
             setShowPerfectBonus(true);
-          }
-          if (timeBonus > 10) {
+            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+
+            let fillInterval2: NodeJS.Timeout | null = null;
+            let soundPlayed = false;
+
+            fillInterval2 = setInterval(() => {
+              setDialFill((prev) => {
+                const perfectPercentage = (perfectBonus / maxSessionScore) * 100;
+                const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                const next = Math.min(prev + increment, dialFillWithoutBonus + perfectPercentage);
+
+                if (next >= dialFillWithoutBonus + perfectPercentage && !soundPlayed) {
+                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                  soundPlayed = true;
+                  clearInterval(fillInterval2!);
+                  fillInterval2 = null;
+                  setShowPerfectBonus(false);
+
+                  // Show time bonus next
+                  if (timeBonus > 10) {
+                    timers.push(
+                      setTimeout(() => {
+                        setShowTimeBonus(true);
+                        playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+
+                        let fillInterval3: NodeJS.Timeout | null = null;
+                        let soundPlayed2 = false;
+
+                        fillInterval3 = setInterval(() => {
+                          setDialFill((prev) => {
+                            const timePercentage = (timeBonus / maxSessionScore) * 100;
+                            const increment = timePercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                            const next = Math.min(prev + increment, totalPercentage);
+
+                            if (next >= totalPercentage && !soundPlayed2) {
+                              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                              soundPlayed2 = true;
+                              clearInterval(fillInterval3!);
+                              fillInterval3 = null;
+                              setShowTimeBonus(false);
+                            }
+
+                            return next;
+                          });
+                        }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+                      }, ANIMATION_TIMINGS.BONUS_DELAY)
+                    );
+                  }
+                }
+
+                return next;
+              });
+            }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+          }, bonusStartAt)
+        );
+      } else if (timeBonus > 10) {
+        // Only time bonus, no perfect bonus
+        timers.push(
+          setTimeout(() => {
             setShowTimeBonus(true);
-          }
-          playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
 
-          let soundPlayed = false;
-          fillInterval = setInterval(() => {
-            setDialFill((prev) => {
-              const bonusPercentage = (totalBonus / maxSessionScore) * 100;
-              const increment = bonusPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-              const next = Math.min(prev + increment, totalPercentage);
+            let soundPlayed = false;
+            fillInterval = setInterval(() => {
+              setDialFill((prev) => {
+                const timePercentage = (timeBonus / maxSessionScore) * 100;
+                const increment = timePercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                const next = Math.min(prev + increment, totalPercentage);
 
-              if (next >= totalPercentage && !soundPlayed) {
-                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-                soundPlayed = true;
-                clearInterval(fillInterval);
-                fillInterval = null;
-                setShowTimeBonus(false);
-                setShowPerfectBonus(false);
-              }
+                if (next >= totalPercentage && !soundPlayed) {
+                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                  soundPlayed = true;
+                  clearInterval(fillInterval);
+                  fillInterval = null;
+                  setShowTimeBonus(false);
+                }
 
-              return next;
-            });
-          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-        }, bonusStartAt)
-      );
+                return next;
+              });
+            }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+          }, bonusStartAt)
+        );
+      }
     } else {
       // No bonus, just play sound when dial is full
       timers.push(
