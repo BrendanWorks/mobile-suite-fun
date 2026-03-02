@@ -53,8 +53,6 @@ const THEME = {
 
 const TOTAL_TIME        = 30;
 const CORRECT_PTS       = 100;
-const WRONG_PTS         = -50;
-const WRONG_SECS        = 1;
 const STREAK_EVERY      = 5;
 const MULTIPLIER        = 1.5;
 const INCONGRUENT_RATIO = 0.7;
@@ -160,31 +158,37 @@ function getColorButtonClasses(
   feedback: 'correct' | 'wrong' | null,
   stimulus: ReturnType<typeof nextStimulus>
 ): { className: string; style: React.CSSProperties } {
-  const baseClass = 'w-full py-4 rounded-lg font-bold text-base border-2 bg-black transition-all duration-150 active:scale-95 touch-manipulation';
+  const baseClass = 'w-full py-4 rounded-lg font-bold text-base border-2 transition-all duration-150 active:scale-95 touch-manipulation text-white';
 
   if (!feedback) {
     return {
-      className: `${baseClass} border-cyan-400 text-cyan-400 hover:opacity-80`,
+      className: `${baseClass} hover:opacity-90`,
       style: {
-        textShadow: `0 0 8px ${color.hex}`,
-        boxShadow: `0 0 15px rgba(${hexToRgb(color.hex).join(',')},0.4)`,
+        backgroundColor: color.hex,
+        borderColor: color.hex,
+        boxShadow: `0 0 15px rgba(${hexToRgb(color.hex).join(',')},0.5)`,
       },
     };
   }
 
   if (color.id === stimulus.inkColor.id) {
     return {
-      className: `${baseClass} border-green-500 text-green-400 ${feedback === 'correct' ? 'animate-pulse' : ''}`,
+      className: `${baseClass} ${feedback === 'correct' ? 'animate-pulse' : ''}`,
       style: {
-        boxShadow: THEME.green.boxShadow,
+        backgroundColor: color.hex,
+        borderColor: '#22c55e',
+        boxShadow: `0 0 25px rgba(34, 197, 94, 0.7), inset 0 0 10px rgba(255, 255, 255, 0.2)`,
       },
     };
   }
 
   return {
-    className: `${baseClass} border-cyan-400 text-cyan-400 opacity-30`,
+    className: `${baseClass}`,
     style: {
-      boxShadow: `0 0 15px rgba(0,255,255,0.2)`,
+      backgroundColor: color.hex,
+      borderColor: color.hex,
+      opacity: 0.3,
+      boxShadow: `0 0 10px rgba(${hexToRgb(color.hex).join(',')},0.2)`,
     },
   };
 }
@@ -273,7 +277,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     if (correct) {
       const pts = Math.round(CORRECT_PTS * multiplier);
       setScore(s => {
-        const next = s + pts;
+        const next = Math.max(0, s + pts);
         props.onScoreUpdate?.(next, MAX_SCORE);
         return next;
       });
@@ -286,11 +290,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       });
       playWin(0.7);
     } else {
-      setScore(s => {
-        const next = s + WRONG_PTS;
-        props.onScoreUpdate?.(next, MAX_SCORE);
-        return next;
-      });
       setStreak(0);
       setMultiplier(1);
       setShake(true);
@@ -363,18 +362,15 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
               }}>
               <div className="text-center space-y-8 w-full">
                 <div className="text-cyan-300 text-sm">
-                  <p className="mb-4">Tap the button matching the</p>
-                  <div className="instruction-demo" style={{ color: THEME.cyan.hex }}>
-                    FONT
-                  </div>
-                  <p className="text-xs mt-4 text-cyan-400">not what the word says</p>
+                  <p className="mb-4 leading-relaxed">Click the button that matches the COLOR of the displayed word,</p>
+                  <p className="text-cyan-400 font-semibold">not the word itself!</p>
                 </div>
                 <div className="pt-4">
                   <div className="text-xs text-cyan-300 mb-4">Example:</div>
                   <div className="instruction-demo" style={{ color: '#FF4444' }}>
                     BLUE
                   </div>
-                  <div className="text-xs text-cyan-400 mt-4">is written in RED, so tap RED</div>
+                  <div className="text-xs text-cyan-400 mt-4">is written in RED, so click the RED button</div>
                 </div>
               </div>
             </div>
