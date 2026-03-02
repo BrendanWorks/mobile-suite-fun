@@ -74,9 +74,10 @@ export default function CelebrationScreen({
   useEffect(() => {
     const timeline: { [key: string]: number } = {
       tileStart: 0,
-      nameStart: 300,
-      circleStart: roundScores.length * 400 + 300,
-      bonusStart: roundScores.length * 400 + 1500,
+      nameStart: 400,
+      nameHideStart: roundScores.length * 500 + 1200,
+      circleStart: roundScores.length * 500 + 1200,
+      bonusStart: roundScores.length * 500 + 2000,
     };
 
     const timers: NodeJS.Timeout[] = [];
@@ -85,13 +86,13 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(() => {
           setVisibleTiles(i + 1);
-        }, timeline.tileStart + i * 300)
+        }, timeline.tileStart + i * 350)
       );
 
       timers.push(
         setTimeout(() => {
           setVisibleNames((prev) => new Set([...prev, i]));
-        }, timeline.nameStart + i * 300)
+        }, timeline.nameStart + i * 350)
       );
 
       timers.push(
@@ -101,7 +102,7 @@ export default function CelebrationScreen({
             next.delete(i);
             return next;
           });
-        }, timeline.nameStart + i * 300 + 1500)
+        }, timeline.nameHideStart)
       );
     }
 
@@ -132,7 +133,10 @@ export default function CelebrationScreen({
               playWin(0.3);
               soundPlayed = true;
             }
-            if (next >= totalPercentage) clearInterval(fillTimer);
+            if (next >= totalPercentage) {
+              clearInterval(fillTimer);
+              setShowTimeBonus(false);
+            }
             return next;
           });
         }, 15);
@@ -200,21 +204,30 @@ export default function CelebrationScreen({
               </defs>
             </svg>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-4xl sm:text-6xl font-bold text-yellow-400" style={{ textShadow: '0 0 20px #fbbf24' }}>
                 {Math.round(totalSessionScore)}
               </div>
-              {showTimeBonus && timeBonus > 10 && (
-                <div className={`text-lg sm:text-2xl font-bold text-cyan-300 transition-all duration-500 ${showTimeBonus ? 'opacity-100' : 'opacity-0'}`} style={{ textShadow: '0 0 10px #06b6d4', letterSpacing: '0.05em' }}>
-                  +{Math.round(timeBonus)} Bonus
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="w-full flex-shrink-0">
+        {showTimeBonus && timeBonus > 10 && (
+          <div className="flex justify-center mb-6">
+            <div
+              className="text-2xl sm:text-3xl font-bold text-yellow-400 transition-opacity duration-1500"
+              style={{
+                textShadow: '0 0 15px #fbbf24',
+                letterSpacing: '0.05em',
+                opacity: showTimeBonus ? 1 : 0,
+              }}
+            >
+              +{Math.round(timeBonus)} Time Bonus
+            </div>
+          </div>
+        )}
         <div className="w-full grid grid-cols-5 gap-2">
           {roundScores.map((tile, index) => {
             const gameKey = tile.gameId.toLowerCase();
@@ -260,12 +273,14 @@ export default function CelebrationScreen({
 
                 {showName && (
                   <div
-                    className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap z-20 animate-pulse"
+                    className="absolute z-20"
                     style={{
-                      animation: showName ? 'fadeInOut 1.5s ease-in-out forwards' : 'none',
+                      animation: showName ? 'arcFloat 2s ease-in-out forwards' : 'none',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
                     }}
                   >
-                    <div className="text-sm sm:text-base font-bold text-cyan-300 bg-black/80 px-2 py-1 rounded border border-cyan-400/50" style={{ textShadow: '0 0 10px #06b6d4', letterSpacing: '0.05em' }}>
+                    <div className="text-sm sm:text-base font-bold text-cyan-300 whitespace-nowrap" style={{ textShadow: '0 0 10px #06b6d4', letterSpacing: '0.05em' }}>
                       {tile.gameName}
                     </div>
                   </div>
@@ -277,22 +292,20 @@ export default function CelebrationScreen({
       </div>
 
       <style>{`
-        @keyframes fadeInOut {
+        @keyframes arcFloat {
           0% {
             opacity: 0;
-            transform: translate(-50%, -20px);
+            top: -60px;
           }
-          20% {
+          15% {
             opacity: 1;
-            transform: translate(-50%, 0);
           }
-          80% {
+          85% {
             opacity: 1;
-            transform: translate(-50%, 0);
           }
           100% {
             opacity: 0;
-            transform: translate(-50%, 20px);
+            top: -80px;
           }
         }
       `}</style>
