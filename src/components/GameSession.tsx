@@ -621,6 +621,14 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         break;
 
+      case 'color-clash':
+        normalizedScore = scoringSystem.colorClash(rawScore, maxScore);
+        break;
+
+      case 'recall':
+        normalizedScore = scoringSystem.recall(rawScore, maxScore);
+        break;
+
       default:
         normalizedScore = {
           gameId: '',

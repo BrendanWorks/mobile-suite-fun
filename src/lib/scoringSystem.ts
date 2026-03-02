@@ -222,6 +222,32 @@ export const scoringSystem = {
       grade: getGrade(Math.round(normalized)),
       breakdown: `${rawScore} exploration points`
     };
+  },
+
+  // ColorClash: 3000 points = 100 (rawScore/maxScore direct percentage)
+  colorClash: (rawScore: number, maxScore: number): GameScore => {
+    const normalized = maxScore > 0 ? Math.min(100, (rawScore / maxScore) * 100) : 0;
+    return {
+      gameId: 'color-clash',
+      gameName: 'ColorClash',
+      rawScore,
+      normalizedScore: Math.round(normalized),
+      grade: getGrade(Math.round(normalized)),
+      breakdown: `${rawScore} / ${maxScore} points`
+    };
+  },
+
+  // Recall: rawScore/maxScore direct percentage
+  recall: (rawScore: number, maxScore: number): GameScore => {
+    const normalized = maxScore > 0 ? Math.min(100, (rawScore / maxScore) * 100) : 0;
+    return {
+      gameId: 'recall',
+      gameName: 'Recall',
+      rawScore,
+      normalizedScore: Math.round(normalized),
+      grade: getGrade(Math.round(normalized)),
+      breakdown: `${rawScore} / ${maxScore} points`
+    };
   }
 };
 
