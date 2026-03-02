@@ -35,7 +35,7 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ANIMATION_TIMINGS = {
-  TILE_INTERVAL: 1600,
+  TILE_INTERVAL: 1000,
   TILE_START: 0,
   NAME_START: 400,
   NAME_HIDE_OFFSET: 1200,
