@@ -133,13 +133,8 @@ function ColorClashIcon({ size = 20 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       xmlns="http://www.w3.org/2000/svg"
       style={{ filter: 'drop-shadow(0 0 6px rgba(0,255,255,0.6))' }}>
-      <circle cx="12" cy="12" r="10" fill="#00ffff" />
-      <circle cx="12" cy="12" r="10" fill="#ec4899" clipPath="url(#rightHalf)" />
-      <defs>
-        <clipPath id="rightHalf">
-          <rect x="12" y="0" width="12" height="24" />
-        </clipPath>
-      </defs>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <line x1="12" y1="2" x2="12" y2="22" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
     </svg>
   );
 }
