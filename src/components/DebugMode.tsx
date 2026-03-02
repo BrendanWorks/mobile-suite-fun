@@ -120,27 +120,27 @@ export default function DebugMode({ onExit }: DebugModeProps) {
       {
         gameId: 'odd-man-out',
         gameName: 'Odd Man Out',
-        score: { correct: 8, incorrect: 2, timeBonus: 50 }
+        score: { correct: 8, incorrect: 2, timeBonus: 50, perfectScoreBonus: 0 }
       },
       {
         gameId: 'photo-mystery',
         gameName: 'Zooma',
-        score: { correct: 6, incorrect: 1, timeBonus: 75 }
+        score: { correct: 6, incorrect: 1, timeBonus: 75, perfectScoreBonus: 0 }
       },
       {
         gameId: 'rank-and-roll',
         gameName: 'Ranky',
-        score: { correct: 9, incorrect: 0, timeBonus: 100 }
+        score: { correct: 9, incorrect: 0, timeBonus: 100, perfectScoreBonus: 100 }
       },
       {
         gameId: 'snapshot',
         gameName: 'Jigsaw',
-        score: { correct: 5, incorrect: 3, timeBonus: 25 }
+        score: { correct: 5, incorrect: 3, timeBonus: 25, perfectScoreBonus: 0 }
       },
       {
         gameId: 'split-decision',
         gameName: 'Split Decision',
-        score: { correct: 7, incorrect: 2, timeBonus: 60 }
+        score: { correct: 7, incorrect: 2, timeBonus: 60, perfectScoreBonus: 0 }
       },
     ];
 

@@ -79,6 +79,7 @@ export default function CelebrationScreen({
   const [currentNameIndex, setCurrentNameIndex] = useState<number>(-1);
   const [showMainCircle, setShowMainCircle] = useState(false);
   const [showTimeBonus, setShowTimeBonus] = useState(false);
+  const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
   const [dialPaused, setDialPaused] = useState(false);
 
@@ -89,6 +90,10 @@ export default function CelebrationScreen({
 
   const timeBonus = useMemo(() => {
     return roundScores.reduce((sum, tile) => sum + (tile.score.timeBonus || 0), 0);
+  }, [roundScores]);
+
+  const perfectBonus = useMemo(() => {
+    return roundScores.reduce((sum, tile) => sum + (tile.score.perfectScoreBonus || 0), 0);
   }, [roundScores]);
 
   const dialFillWithoutBonus = useMemo(() => {
@@ -153,17 +158,22 @@ export default function CelebrationScreen({
       );
     }
 
-    // Bonus phase: show bonus and fill remainder
-    if (timeBonus > 10) {
+    // Bonus phase: show bonuses and fill remainder
+    const totalBonus = timeBonus + perfectBonus;
+    if (totalBonus > 10) {
       timers.push(
         setTimeout(() => {
-          setShowTimeBonus(true);
+          if (perfectBonus > 10) {
+            setShowPerfectBonus(true);
+          } else {
+            setShowTimeBonus(true);
+          }
           playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
 
           let soundPlayed = false;
           fillInterval = setInterval(() => {
             setDialFill((prev) => {
-              const bonusPercentage = (timeBonus / maxSessionScore) * 100;
+              const bonusPercentage = (totalBonus / maxSessionScore) * 100;
               const increment = bonusPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
               const next = Math.min(prev + increment, totalPercentage);
 
@@ -173,6 +183,7 @@ export default function CelebrationScreen({
                 clearInterval(fillInterval);
                 fillInterval = null;
                 setShowTimeBonus(false);
+                setShowPerfectBonus(false);
               }
 
               return next;
@@ -193,7 +204,7 @@ export default function CelebrationScreen({
       timers.forEach((timer) => clearTimeout(timer));
       if (fillInterval) clearInterval(fillInterval);
     };
-  }, [roundScores.length, totalPercentage, timeBonus, dialFillWithoutBonus, maxSessionScore]);
+  }, [roundScores.length, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus, maxSessionScore]);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
@@ -272,22 +283,38 @@ export default function CelebrationScreen({
         </div>
       </div>
 
-      {/* SCORE TILES AND TIME BONUS */}
+      {/* SCORE TILES AND BONUSES */}
       <div className="w-full flex-shrink-0">
-        {showTimeBonus && timeBonus > 10 && (
-          <div className="flex justify-center mb-6">
-            <div
-              className="text-2xl sm:text-3xl font-bold text-yellow-400"
-              style={{
-                textShadow: getTextShadow(COLORS.yellow, '15px'),
-                letterSpacing: '0.05em',
-                animation: 'depositBonus 2s ease-in forwards',
-              }}
-            >
-              +{Math.round(timeBonus)} Speed Bonus
+        <div className="flex flex-col gap-3 mb-6">
+          {showTimeBonus && timeBonus > 10 && (
+            <div className="flex justify-center">
+              <div
+                className="text-2xl sm:text-3xl font-bold text-yellow-400"
+                style={{
+                  textShadow: getTextShadow(COLORS.yellow, '15px'),
+                  letterSpacing: '0.05em',
+                  animation: 'depositBonus 2s ease-in forwards',
+                }}
+              >
+                +{Math.round(timeBonus)} Speed Bonus
+              </div>
             </div>
-          </div>
-        )}
+          )}
+          {showPerfectBonus && perfectBonus > 10 && (
+            <div className="flex justify-center">
+              <div
+                className="text-2xl sm:text-3xl font-bold text-pink-400"
+                style={{
+                  textShadow: getTextShadow('#ec4899', '15px'),
+                  letterSpacing: '0.05em',
+                  animation: 'depositBonus 2s ease-in forwards',
+                }}
+              >
+                +{Math.round(perfectBonus)} Perfect Scores
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="w-full grid grid-cols-5 gap-2">
           {roundScores.map((tile, index) => {
