@@ -75,8 +75,8 @@ export default function CelebrationScreen({
   onPlayAgain,
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);
-  const [visibleNames, setVisibleNames] = useState<Set<number>>(new Set());
   const [visibleScores, setVisibleScores] = useState<Set<number>>(new Set());
+  const [fadingOutNames, setFadingOutNames] = useState<Set<number>>(new Set());
   const [showMainCircle, setShowMainCircle] = useState(false);
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
@@ -104,7 +104,7 @@ export default function CelebrationScreen({
     const circleStartAt = hideAllNamesAt;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
 
-    // Animate in tiles, names, and scores
+    // Animate in tiles and scores, then fade out names
     for (let i = 0; i < roundScores.length; i++) {
       const delay = ANIMATION_TIMINGS.TILE_INTERVAL * i;
 
@@ -118,7 +118,6 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(
           () => {
-            setVisibleNames((prev) => new Set([...prev, i]));
             setVisibleScores((prev) => new Set([...prev, i]));
           },
           ANIMATION_TIMINGS.NAME_START + delay
@@ -128,11 +127,7 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(
           () => {
-            setVisibleNames((prev) => {
-              const next = new Set(prev);
-              next.delete(i);
-              return next;
-            });
+            setFadingOutNames((prev) => new Set([...prev, i]));
           },
           hideAllNamesAt
         )
@@ -325,12 +320,31 @@ export default function CelebrationScreen({
           {roundScores.map((tile, index) => {
             const gameKey = tile.gameId.toLowerCase();
             const icon = GAME_ICONS[gameKey] || <Star className="w-full h-full" />;
-            const showName = visibleNames.has(index);
-            const showScore = visibleScores.has(index);
             const isVisible = index < visibleTiles;
+            const showScore = visibleScores.has(index);
+            const nameIsFadingOut = fadingOutNames.has(index);
 
             return (
               <div key={`${tile.gameId}-${index}`} className="relative">
+                {isVisible && !nameIsFadingOut && (
+                  <div
+                    className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-500"
+                    style={{
+                      opacity: 1,
+                    }}
+                  >
+                    <div
+                      className="text-xs sm:text-sm font-bold text-cyan-300 whitespace-nowrap"
+                      style={{
+                        textShadow: getTextShadow(COLORS.cyan, '8px'),
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      {tile.gameName}
+                    </div>
+                  </div>
+                )}
+
                 <div
                   className={`transition-all duration-500 ${
                     isVisible ? 'opacity-100' : 'opacity-0'
@@ -370,28 +384,6 @@ export default function CelebrationScreen({
                     </div>
                   </div>
                 </div>
-
-                {showName && (
-                  <div
-                    className="fixed z-20 transition-opacity duration-500"
-                    style={{
-                      opacity: showName ? 1 : 0,
-                      left: `calc(50% + ${(index - 2) * 40}px)`,
-                      top: `calc(50% - 200px + ${Math.abs(index - 2) * 20}px)`,
-                      transform: 'translateX(-50%)',
-                    }}
-                  >
-                    <div
-                      className="text-sm sm:text-base font-bold text-cyan-300 whitespace-nowrap"
-                      style={{
-                        textShadow: getTextShadow(COLORS.cyan, '10px'),
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {tile.gameName}
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
