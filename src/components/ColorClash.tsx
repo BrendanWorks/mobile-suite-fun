@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { GameHandle } from '../lib/gameTypes';
 import { playWin, playWrong, preloadGameSounds } from '../lib/sounds';
+import { RoundCountdown } from './RoundCountdown';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,14 +18,38 @@ interface ColorClashProps {
   timeRemaining?: number;
 }
 
+type GamePhase = 'idle' | 'countdown' | 'playing' | 'gameover';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COLORS = [
-  { id: 'red',    label: 'RED',    hex: '#FF4444', border: 'border-red-500',    text: 'text-red-400',    shadow: '0 0 15px rgba(255,68,68,0.4)',  glow: '#FF4444' },
-  { id: 'blue',   label: 'BLUE',   hex: '#4488FF', border: 'border-blue-400',   text: 'text-blue-400',   shadow: '0 0 15px rgba(68,136,255,0.4)', glow: '#4488FF' },
-  { id: 'green',  label: 'GREEN',  hex: '#22C55E', border: 'border-green-500',  text: 'text-green-400',  shadow: '0 0 15px rgba(34,197,94,0.4)',  glow: '#22c55e' },
-  { id: 'yellow', label: 'YELLOW', hex: '#FFD700', border: 'border-yellow-400', text: 'text-yellow-400', shadow: '0 0 15px rgba(255,215,0,0.4)',  glow: '#FFD700' },
+  { id: 'red',    label: 'RED',    hex: '#FF4444' },
+  { id: 'blue',   label: 'BLUE',   hex: '#4488FF' },
+  { id: 'green',  label: 'GREEN',  hex: '#22C55E' },
+  { id: 'yellow', label: 'YELLOW', hex: '#FFD700' },
 ];
+
+const THEME = {
+  cyan: {
+    hex: '#00ffff',
+    textShadow: '0 0 10px #00ffff',
+    glow: 'rgba(0, 255, 255, 0.4)',
+    boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+  },
+  yellow: {
+    hex: '#fbbf24',
+    textShadow: '0 0 10px #fbbf24',
+  },
+  pink: {
+    hex: '#ec4899',
+    textShadow: '0 0 8px #ec4899',
+    boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
+  },
+  green: {
+    hex: '#22c55e',
+    boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)',
+  },
+} as const;
 
 const TOTAL_TIME        = 30;
 const CORRECT_PTS       = 100;
@@ -33,12 +58,8 @@ const WRONG_SECS        = 1;
 const STREAK_EVERY      = 5;
 const MULTIPLIER        = 1.5;
 const INCONGRUENT_RATIO = 0.7;
-
-// Max theoretical score: ~1 tap/sec × 30s × 100pts × 1.5 multiplier ≈ 3000
-// Keeping it simple and honest:
-const MAX_SCORE = 3000;
-
-const GAME_STATES = { IDLE: 'IDLE', PLAYING: 'PLAYING' } as const;
+const MAX_SCORE         = 3000;
+const INSTRUCTION_DURATION = 1500; // 1.5 seconds
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -96,6 +117,15 @@ const styles = `
     text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
     user-select: none;
   }
+
+  .instruction-demo {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(40px, 10vw, 60px);
+    font-weight: 900;
+    letter-spacing: -1px;
+    text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+    user-select: none;
+  }
 `;
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
@@ -123,21 +153,62 @@ function ColorClashIcon({ size = 20 }: { size?: number }) {
   );
 }
 
+// ─── Button Style Helper (DRY) ────────────────────────────────────────────────
+
+function getColorButtonClasses(
+  color: typeof COLORS[0],
+  feedback: 'correct' | 'wrong' | null,
+  stimulus: ReturnType<typeof nextStimulus>
+): { className: string; style: React.CSSProperties } {
+  const baseClass = 'w-full py-4 rounded-lg font-bold text-base border-2 bg-black transition-all duration-150 active:scale-95 touch-manipulation';
+
+  if (!feedback) {
+    return {
+      className: `${baseClass} border-cyan-400 text-cyan-400 hover:opacity-80`,
+      style: {
+        textShadow: `0 0 8px ${color.hex}`,
+        boxShadow: `0 0 15px rgba(${hexToRgb(color.hex).join(',')},0.4)`,
+      },
+    };
+  }
+
+  if (color.id === stimulus.inkColor.id) {
+    return {
+      className: `${baseClass} border-green-500 text-green-400 ${feedback === 'correct' ? 'animate-pulse' : ''}`,
+      style: {
+        boxShadow: THEME.green.boxShadow,
+      },
+    };
+  }
+
+  return {
+    className: `${baseClass} border-cyan-400 text-cyan-400 opacity-30`,
+    style: {
+      boxShadow: `0 0 15px rgba(0,255,255,0.2)`,
+    },
+  };
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
-  const [gameState,  setGameState]  = useState<'IDLE' | 'PLAYING'>(GAME_STATES.IDLE);
-  const [score,      setScore]      = useState(0);
-  const [streak,     setStreak]     = useState(0);
+  const [phase, setPhase] = useState<GamePhase>('idle');
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
-  const [stimulus,   setStimulus]   = useState(() => nextStimulus());
-  const [feedback,   setFeedback]   = useState<'correct' | 'wrong' | null>(null);
-  const [scorePop,   setScorePop]   = useState(false);
-  const [wordKey,    setWordKey]    = useState(0);
-  const [shake,      setShake]      = useState(false);
+  const [stimulus, setStimulus] = useState(() => nextStimulus());
+  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [scorePop, setScorePop] = useState(false);
+  const [wordKey, setWordKey] = useState(0);
+  const [shake, setShake] = useState(false);
 
-  const feedbackRef   = useRef<number | null>(null);
-  const scoreRef      = useRef(score);
+  const feedbackRef = useRef<number | null>(null);
+  const scoreRef = useRef(score);
   const onCompleteRef = useRef(props.onComplete);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
@@ -154,9 +225,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       maxScore: MAX_SCORE,
     }),
     onGameEnd: () => {
-      // GameWrapper called time's up — stop everything and report
       if (feedbackRef.current) clearTimeout(feedbackRef.current);
-      setGameState(GAME_STATES.IDLE);
+      setPhase('gameover');
       onCompleteRef.current?.(scoreRef.current, MAX_SCORE, props.timeRemaining);
     },
     pauseTimer: false,
@@ -169,7 +239,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     if (feedbackRef.current) clearTimeout(feedbackRef.current);
   }, []);
 
-  // ── Start ───────────────────────────────────────────────────────────────────
+  // ── Start Game (from countdown) ──────────────────────────────────────────────
   const startGame = useCallback(() => {
     setScore(0);
     setStreak(0);
@@ -177,12 +247,17 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     setFeedback(null);
     setStimulus(nextStimulus());
     setWordKey(k => k + 1);
-    setGameState(GAME_STATES.PLAYING);
+    setPhase('playing');
+  }, []);
+
+  // ── Show Instructions ───────────────────────────────────────────────────────
+  const handleIdleToCountdown = useCallback(() => {
+    setPhase('countdown');
   }, []);
 
   // ── Tap handler ─────────────────────────────────────────────────────────────
   const handleTap = useCallback((colorId: string) => {
-    if (gameState !== GAME_STATES.PLAYING || feedback) return;
+    if (phase !== 'playing' || feedback) return;
 
     const correct = colorId === stimulus.inkColor.id;
 
@@ -220,11 +295,10 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       setStimulus(nextStimulus());
       setWordKey(k => k + 1);
     }, 300);
-  }, [gameState, feedback, stimulus, multiplier, props.onScoreUpdate]);
+  }, [phase, feedback, stimulus, multiplier, props]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const timerPct = props.timeRemaining ? (props.timeRemaining / TOTAL_TIME) * 100 : 0;
-  const isPlaying = gameState === GAME_STATES.PLAYING;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -238,79 +312,118 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
             <div className="flex items-center gap-1.5">
               <ColorClashIcon size={18} />
               <h2 className="text-xs sm:text-sm font-bold text-cyan-400"
-                style={{ textShadow: '0 0 10px #00ffff' }}>
+                style={{ textShadow: THEME.cyan.textShadow }}>
                 Color Clash
               </h2>
             </div>
             <div className="flex items-center gap-3">
               {multiplier > 1 && (
                 <span className="text-pink-400 text-xs font-bold"
-                  style={{ textShadow: '0 0 8px #ec4899' }}>
+                  style={{ textShadow: THEME.pink.textShadow }}>
                   ×{multiplier}
                 </span>
               )}
-              <span className="text-cyan-300 text-xs sm:text-sm">
-                Score: <strong
-                  className={`text-yellow-400 tabular-nums inline-block ${scorePop ? 'animate-score-pop' : ''}`}
-                  style={{ textShadow: '0 0 10px #fbbf24' }}
-                >{score}</strong>
-              </span>
+              {phase === 'playing' && (
+                <span className="text-cyan-300 text-xs sm:text-sm">
+                  Score: <strong
+                    className={`text-yellow-400 tabular-nums inline-block ${scorePop ? 'animate-score-pop' : ''}`}
+                    style={{ textShadow: THEME.yellow.textShadow }}
+                  >{score}</strong>
+                </span>
+              )}
             </div>
           </div>
 
-          {/* ── Timer Bar ── */}
-          <div className="w-full mb-3">
-            <div className="w-full h-2 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
-              style={{ boxShadow: '0 0 15px rgba(0,255,255,0.4), inset 0 0 10px rgba(0,255,255,0.1)' }}>
-              <div className="h-full bg-cyan-400 transition-all duration-1000"
-                style={{ width: `${timerPct}%`, boxShadow: '0 0 20px #00ffff' }} />
-            </div>
-          </div>
-
-          {/* ── Play Area ── */}
-          <div className={`relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex items-center justify-center ${shake ? 'animate-shake' : ''}`}
-            style={{
-              height: '180px',
-              boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
-            }}>
-            {gameState === GAME_STATES.IDLE && (
-              <div className="text-center px-4">
-                <p className="text-cyan-300 text-sm mb-1">Tap the button matching the</p>
-                <p className="text-cyan-400 font-bold text-sm">INK COLOR — not the word!</p>
+          {/* ── Timer Bar (only during gameplay) ── */}
+          {phase === 'playing' && (
+            <div className="w-full mb-3">
+              <div className="w-full h-2 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
+                style={{ boxShadow: '0 0 15px rgba(0,255,255,0.4), inset 0 0 10px rgba(0,255,255,0.1)' }}>
+                <div className="h-full bg-cyan-400 transition-all duration-1000"
+                  style={{ width: `${timerPct}%`, boxShadow: '0 0 20px #00ffff' }} />
               </div>
-            )}
-            {isPlaying && (
+            </div>
+          )}
+
+          {/* ── IDLE: Instructions Screen ── */}
+          {phase === 'idle' && (
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex flex-col items-center justify-center p-4"
+              style={{
+                height: '320px',
+                boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
+              }}>
+              <div className="text-center space-y-4">
+                <div className="text-cyan-300 text-sm">
+                  <p className="mb-2">Tap the button matching the</p>
+                  <div className="instruction-demo" style={{ color: THEME.cyan.hex }}>
+                    FONT
+                  </div>
+                  <p className="text-xs mt-3 text-cyan-400">not what the word says</p>
+                </div>
+                <div className="pt-2">
+                  <div className="text-xs text-cyan-300 mb-3">Example:</div>
+                  <div className="instruction-demo" style={{ color: '#FF4444' }}>
+                    BLUE
+                  </div>
+                  <div className="text-xs text-cyan-400 mt-2">is written in RED, so tap RED</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── COUNTDOWN: Starting screen ── */}
+          {phase === 'countdown' && (
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex items-center justify-center"
+              style={{
+                height: '280px',
+                boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
+              }}>
+              <RoundCountdown onComplete={startGame} />
+            </div>
+          )}
+
+          {/* ── PLAYING: Play Area ── */}
+          {phase === 'playing' && (
+            <div className={`relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex items-center justify-center ${shake ? 'animate-shake' : ''}`}
+              style={{
+                height: '180px',
+                boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
+              }}>
               <span key={wordKey} className="color-clash-word animate-word-in"
                 style={{ color: stimulus.inkColor.hex }}>
                 {stimulus.wordColor.label}
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* ── Color Buttons 2×2 ── */}
-          {isPlaying && (
+          {/* ── GAMEOVER: End state ── */}
+          {phase === 'gameover' && (
+            <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex flex-col items-center justify-center"
+              style={{
+                height: '200px',
+                boxShadow: '0 0 15px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
+              }}>
+              <div className="text-center">
+                <div className="text-red-500 text-lg font-bold mb-2">Game Over!</div>
+                <div className="text-cyan-300 text-sm">
+                  Final Score: <strong className="text-yellow-400 text-xl">{score}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Color Buttons (playing only) ── */}
+          {phase === 'playing' && (
             <div className="grid grid-cols-2 gap-2 mb-3">
               {COLORS.map(color => {
-                let btnClass = `w-full py-4 rounded-lg font-bold text-base border-2 bg-black transition-all duration-150 active:scale-95 touch-manipulation`;
-                let boxShadow = color.shadow;
-
-                if (feedback) {
-                  if (color.id === stimulus.inkColor.id) {
-                    btnClass += ` border-green-500 text-green-400${feedback === 'correct' ? ' animate-pulse' : ''}`;
-                    boxShadow = '0 0 20px rgba(34,197,94,0.5)';
-                  } else {
-                    btnClass += ` ${color.border} ${color.text} opacity-30`;
-                  }
-                } else {
-                  btnClass += ` ${color.border} ${color.text} hover:opacity-80`;
-                }
-
+                const { className, style } = getColorButtonClasses(color, feedback, stimulus);
                 return (
                   <button key={color.id}
                     onClick={() => handleTap(color.id)}
                     disabled={!!feedback}
-                    className={btnClass}
-                    style={{ textShadow: `0 0 8px ${color.glow}`, boxShadow, fontFamily: 'Inter, sans-serif' }}>
+                    className={className}
+                    style={style}
+                    data-color={color.id}>
                     {color.label}
                   </button>
                 );
@@ -318,12 +431,12 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
             </div>
           )}
 
-          {/* ── Start prompt (IDLE only) ── */}
-          {gameState === GAME_STATES.IDLE && (
-            <button onClick={startGame}
+          {/* ── Start Button (idle only) ── */}
+          {phase === 'idle' && (
+            <button onClick={handleIdleToCountdown}
               className="w-full py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold text-base rounded-lg transition-all hover:bg-cyan-400 hover:text-black active:scale-95 touch-manipulation"
-              style={{ textShadow: '0 0 8px #00ffff', boxShadow: '0 0 15px rgba(0,255,255,0.3)' }}>
-              TAP TO PLAY
+              style={{ textShadow: THEME.cyan.textShadow, boxShadow: THEME.cyan.boxShadow }}>
+              TAP TO START
             </button>
           )}
 
