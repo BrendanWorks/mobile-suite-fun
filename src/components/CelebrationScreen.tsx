@@ -160,6 +160,8 @@ export default function CelebrationScreen({
 
     // Bonus phase: show bonuses sequentially and fill remainder
     const totalBonus = timeBonus + perfectBonus;
+    const intervals: NodeJS.Timeout[] = [];
+
     if (totalBonus > 10) {
       // Show perfect bonus first
       if (perfectBonus > 10) {
@@ -168,10 +170,9 @@ export default function CelebrationScreen({
             setShowPerfectBonus(true);
             playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
 
-            let fillInterval2: NodeJS.Timeout | null = null;
             let soundPlayed = false;
 
-            fillInterval2 = setInterval(() => {
+            const fillInterval2 = setInterval(() => {
               setDialFill((prev) => {
                 const perfectPercentage = (perfectBonus / maxSessionScore) * 100;
                 const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
@@ -180,8 +181,7 @@ export default function CelebrationScreen({
                 if (next >= dialFillWithoutBonus + perfectPercentage && !soundPlayed) {
                   playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
                   soundPlayed = true;
-                  clearInterval(fillInterval2!);
-                  fillInterval2 = null;
+                  clearInterval(fillInterval2);
                   setShowPerfectBonus(false);
 
                   // Show time bonus next
@@ -191,10 +191,9 @@ export default function CelebrationScreen({
                         setShowTimeBonus(true);
                         playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
 
-                        let fillInterval3: NodeJS.Timeout | null = null;
                         let soundPlayed2 = false;
 
-                        fillInterval3 = setInterval(() => {
+                        const fillInterval3 = setInterval(() => {
                           setDialFill((prev) => {
                             const timePercentage = (timeBonus / maxSessionScore) * 100;
                             const increment = timePercentage / ANIMATION_TIMINGS.DIAL_SPEED;
@@ -203,14 +202,14 @@ export default function CelebrationScreen({
                             if (next >= totalPercentage && !soundPlayed2) {
                               playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
                               soundPlayed2 = true;
-                              clearInterval(fillInterval3!);
-                              fillInterval3 = null;
+                              clearInterval(fillInterval3);
                               setShowTimeBonus(false);
                             }
 
                             return next;
                           });
                         }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+                        intervals.push(fillInterval3);
                       }, ANIMATION_TIMINGS.BONUS_DELAY)
                     );
                   }
@@ -219,6 +218,7 @@ export default function CelebrationScreen({
                 return next;
               });
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+            intervals.push(fillInterval2);
           }, bonusStartAt)
         );
       } else if (timeBonus > 10) {
@@ -260,6 +260,7 @@ export default function CelebrationScreen({
 
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
+      intervals.forEach((interval) => clearInterval(interval));
       if (fillInterval) clearInterval(fillInterval);
     };
   }, [roundScores.length, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus, maxSessionScore]);
