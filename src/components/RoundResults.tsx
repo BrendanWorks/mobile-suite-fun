@@ -63,8 +63,11 @@ export default function RoundResults({
   const isTimedGame = gameScore.timeBonus !== undefined;
   const hasTimeBonus = !!gameScore.timeBonus && gameScore.timeBonus > 0;
   const timeBonus = gameScore.timeBonus || 0;
+  const hasPerfectScoreBonus = !!gameScore.perfectScoreBonus && gameScore.perfectScoreBonus > 0;
+  const perfectBonus = gameScore.perfectScoreBonus || 0;
 
   const animatedBonus = useCountUp(hasTimeBonus ? timeBonus : 0, 900, showBonus && hasTimeBonus);
+  const animatedPerfectBonus = useCountUp(hasPerfectScoreBonus ? perfectBonus : 0, 1200, showBonus && hasPerfectScoreBonus);
 
   const getGradeLabel = useCallback((score: number): string => {
     if (score >= 100) return "Perfect";
@@ -100,7 +103,7 @@ export default function RoundResults({
       playWin(0.5);
     }, 200);
 
-    if (isTimedGame) {
+    if (isTimedGame || hasPerfectScoreBonus) {
       showBonusTimerRef.current = window.setTimeout(() => setShowBonus(true), 800);
     }
 
@@ -151,20 +154,41 @@ export default function RoundResults({
           </div>
 
           <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
-            {isTimedGame && showBonus && (
-              <div className="text-center animate-fade-in">
-                <div
-                  className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
-                  style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}
-                >
-                  Speed Bonus
-                </div>
-                <div
-                  className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 animate-pulse-danger'}`}
-                  style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}
-                >
-                  +{hasTimeBonus ? Math.round(animatedBonus) : 0}
-                </div>
+            {showBonus && (
+              <div className="space-y-4">
+                {isTimedGame && (
+                  <div className="text-center animate-fade-in">
+                    <div
+                      className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
+                      style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}
+                    >
+                      Speed Bonus
+                    </div>
+                    <div
+                      className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 animate-pulse-danger'}`}
+                      style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}
+                    >
+                      +{hasTimeBonus ? Math.round(animatedBonus) : 0}
+                    </div>
+                  </div>
+                )}
+                {hasPerfectScoreBonus && (
+                  <div className="text-center animate-fade-in" style={{ animationDelay: hasTimeBonus ? '0.3s' : '0s' }}>
+                    <div
+                      className="text-sm mb-2 uppercase tracking-wide text-pink-300 font-bold"
+                      style={{ textShadow: '0 0 12px #ec4899' }}
+                    >
+                      Perfect Score Bonus
+                    </div>
+                    <div
+                      className="text-4xl sm:text-5xl font-bold mb-1 text-pink-400 animate-pulse"
+                      style={{ textShadow: '0 0 20px #ec4899' }}
+                    >
+                      +{Math.round(animatedPerfectBonus)}
+                    </div>
+                    <div className="text-sm text-pink-300">2X Multiplier</div>
+                  </div>
+                )}
               </div>
             )}
           </div>

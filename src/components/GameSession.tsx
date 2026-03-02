@@ -42,7 +42,7 @@ import Recall from './Recall';
 import RoundResults from './RoundResults';
 import CelebrationScreen from './CelebrationScreen';
 import AuthModal from './AuthModal';
-import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus } from '../lib/scoringSystem';
+import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
 import ReactGA from 'react-ga4';
 
@@ -644,6 +644,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
     }
+
+    // Apply perfect score bonus (2X multiplier) for content puzzles with 100% accuracy
+    normalizedScore = applyPerfectScoreBonus(normalizedScore);
 
     setRoundScores(prev => [...prev, {
       gameId: currentGame.id,
