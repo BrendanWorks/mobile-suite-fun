@@ -228,7 +228,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     if (phase === 'idle') {
       idleTimeoutRef.current = window.setTimeout(() => {
         setPhase('countdown');
-      }, 2000);
+      }, 3500);
     }
     return () => {
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
