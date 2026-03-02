@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Camera, Triangle, Users, Check,
   ChartBar, Shuffle, CircleX, Layers, BookOpen,
-  Gamepad2, Zap, ThumbsUp
+  Gamepad2, Zap, ThumbsUp, Star, Lightbulb
 } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import { playWin } from '../lib/sounds';
@@ -29,6 +29,8 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
   'clutch': <Gamepad2 className="w-full h-full" />,
   'flashbang': <Zap className="w-full h-full" />,
   'double-fake': <Shuffle className="w-full h-full" />,
+  'color-clash': <Star className="w-full h-full" />,
+  'recall': <Lightbulb className="w-full h-full" />,
 };
 
 interface ScoreTile {
