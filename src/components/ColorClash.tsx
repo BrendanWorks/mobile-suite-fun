@@ -134,7 +134,7 @@ function ColorClashIcon({ size = 20 }: { size?: number }) {
       xmlns="http://www.w3.org/2000/svg"
       style={{ filter: 'drop-shadow(0 0 6px rgba(0,255,255,0.6))' }}>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M 12 2 A 10 10 0 0 1 12 22" fill="#3b82f6" />
+      <path d="M 12 2 A 10 10 0 0 1 12 22" fill="currentColor" />
     </svg>
   );
 }
