@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Camera, Triangle, Users, Check,
-  ChartBar, Shuffle, CircleX, Layers, BookOpen,
+  ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
   Gamepad2, Zap, ThumbsUp, Lightbulb, Star
 } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
@@ -11,7 +11,7 @@ import { ColorClashIcon } from './ColorClash';
 const GAME_ICONS: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-full h-full" />,
   'photo-mystery': <Search className="w-full h-full" />,
-  'rank-and-roll': <ChartBar className="w-full h-full" />,
+  'rank-and-roll': <ArrowUpDown className="w-full h-full" />,
   'snapshot': <Camera className="w-full h-full" />,
   'snap-shot': <Camera className="w-full h-full" />,
   'split-decision': <Layers className="w-full h-full" />,
