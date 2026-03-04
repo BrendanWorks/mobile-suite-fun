@@ -640,8 +640,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         };
     }
 
-    // Apply time bonus if there's time remaining (but NOT for Snake or Gravity Ball)
-    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball') {
+    // Apply time bonus if there's time remaining (but NOT for Snake, Gravity Ball, or Word Surge)
+    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball' && currentGame.id !== 'word-rescue') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
     }
 
