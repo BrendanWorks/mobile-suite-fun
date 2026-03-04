@@ -81,7 +81,6 @@ export default function CelebrationScreen({
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
-  const [dialPaused, setDialPaused] = useState(false);
 
   const totalPercentage = useMemo(
     () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
@@ -97,14 +96,14 @@ export default function CelebrationScreen({
   }, [roundScores]);
 
   const dialFillWithoutBonus = useMemo(() => {
-    if (maxSessionScore <= 0 || timeBonus <= 0) return totalPercentage;
-    const bonusPercentage = (timeBonus / maxSessionScore) * 100;
-    return Math.max(0, totalPercentage - bonusPercentage);
-  }, [totalPercentage, timeBonus, maxSessionScore]);
+    if (maxSessionScore <= 0) return totalPercentage;
+    const totalBonusPercentage = ((timeBonus + perfectBonus) / maxSessionScore) * 100;
+    return Math.max(0, totalPercentage - totalBonusPercentage);
+  }, [totalPercentage, timeBonus, perfectBonus, maxSessionScore]);
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
-    let fillInterval: NodeJS.Timeout | null = null;
+    const intervals: NodeJS.Timeout[] = [];
 
     const hideAllNamesAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.NAME_HIDE_OFFSET;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
@@ -158,40 +157,98 @@ export default function CelebrationScreen({
       );
     }
 
-    // Bonus phase: show bonuses and fill remainder
+    // Bonus phase: show bonuses sequentially and fill remainder
     const totalBonus = timeBonus + perfectBonus;
+
     if (totalBonus > 10) {
-      timers.push(
-        setTimeout(() => {
-          if (perfectBonus > 10) {
+      // Show perfect bonus first if it exists
+      if (perfectBonus > 10) {
+        timers.push(
+          setTimeout(() => {
             setShowPerfectBonus(true);
-          }
-          if (timeBonus > 10) {
-            setShowTimeBonus(true);
-          }
-          playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
 
-          let soundPlayed = false;
-          fillInterval = setInterval(() => {
-            setDialFill((prev) => {
-              const bonusPercentage = (totalBonus / maxSessionScore) * 100;
-              const increment = bonusPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-              const next = Math.min(prev + increment, totalPercentage);
+            let soundPlayed = false;
 
-              if (next >= totalPercentage && !soundPlayed) {
-                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-                soundPlayed = true;
-                clearInterval(fillInterval);
-                fillInterval = null;
-                setShowTimeBonus(false);
-                setShowPerfectBonus(false);
+            const handlePerfectBonusComplete = () => {
+              setShowPerfectBonus(false);
+
+              if (timeBonus > 10) {
+                const timeoutId = setTimeout(() => {
+                  setShowTimeBonus(true);
+                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+
+                  let soundPlayed2 = false;
+
+                  const fillInterval3 = setInterval(() => {
+                    setDialFill((prev) => {
+                      const timePercentage = (timeBonus / maxSessionScore) * 100;
+                      const increment = timePercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                      const next = Math.min(prev + increment, totalPercentage);
+
+                      if (next >= totalPercentage && !soundPlayed2) {
+                        playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                        soundPlayed2 = true;
+                        clearInterval(fillInterval3);
+                        setShowTimeBonus(false);
+                      }
+
+                      return next;
+                    });
+                  }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+                  intervals.push(fillInterval3);
+                }, ANIMATION_TIMINGS.BONUS_DELAY);
+                timers.push(timeoutId);
               }
+            };
 
-              return next;
-            });
-          }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-        }, bonusStartAt)
-      );
+            const fillInterval2 = setInterval(() => {
+              setDialFill((prev) => {
+                const perfectPercentage = (perfectBonus / maxSessionScore) * 100;
+                const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                const next = Math.min(prev + increment, dialFillWithoutBonus + perfectPercentage);
+
+                if (next >= dialFillWithoutBonus + perfectPercentage && !soundPlayed) {
+                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                  soundPlayed = true;
+                  clearInterval(fillInterval2);
+                  handlePerfectBonusComplete();
+                }
+
+                return next;
+              });
+            }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+            intervals.push(fillInterval2);
+          }, bonusStartAt)
+        );
+      } else if (timeBonus > 10) {
+        // Only time bonus, no perfect bonus
+        timers.push(
+          setTimeout(() => {
+            setShowTimeBonus(true);
+            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+
+            let soundPlayed = false;
+            const fillInterval = setInterval(() => {
+              setDialFill((prev) => {
+                const timePercentage = (timeBonus / maxSessionScore) * 100;
+                const increment = timePercentage / ANIMATION_TIMINGS.DIAL_SPEED;
+                const next = Math.min(prev + increment, totalPercentage);
+
+                if (next >= totalPercentage && !soundPlayed) {
+                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                  soundPlayed = true;
+                  clearInterval(fillInterval);
+                  setShowTimeBonus(false);
+                }
+
+                return next;
+              });
+            }, ANIMATION_TIMINGS.DIAL_INTERVAL);
+            intervals.push(fillInterval);
+          }, bonusStartAt)
+        );
+      }
     } else {
       // No bonus, just play sound when dial is full
       timers.push(
@@ -203,7 +260,7 @@ export default function CelebrationScreen({
 
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
-      if (fillInterval) clearInterval(fillInterval);
+      intervals.forEach((interval) => clearInterval(interval));
     };
   }, [roundScores.length, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus, maxSessionScore]);
 
@@ -287,20 +344,6 @@ export default function CelebrationScreen({
       {/* SCORE TILES AND BONUSES */}
       <div className="w-full flex-shrink-0">
         <div className="flex flex-col gap-3 mb-6">
-          {showTimeBonus && timeBonus > 10 && (
-            <div className="flex justify-center">
-              <div
-                className="text-2xl sm:text-3xl font-bold text-yellow-400"
-                style={{
-                  textShadow: getTextShadow(COLORS.yellow, '15px'),
-                  letterSpacing: '0.05em',
-                  animation: 'depositBonus 2s ease-in forwards',
-                }}
-              >
-                +{Math.round(timeBonus)} Speed Bonus
-              </div>
-            </div>
-          )}
           {showPerfectBonus && perfectBonus > 10 && (
             <div className="flex justify-center">
               <div
@@ -312,6 +355,20 @@ export default function CelebrationScreen({
                 }}
               >
                 +{Math.round(perfectBonus)} Perfect Scores
+              </div>
+            </div>
+          )}
+          {showTimeBonus && timeBonus > 10 && (
+            <div className="flex justify-center">
+              <div
+                className="text-2xl sm:text-3xl font-bold text-yellow-400"
+                style={{
+                  textShadow: getTextShadow(COLORS.yellow, '15px'),
+                  letterSpacing: '0.05em',
+                  animation: 'depositBonus 2s ease-in forwards',
+                }}
+              >
+                +{Math.round(timeBonus)} Speed Bonus
               </div>
             </div>
           )}
