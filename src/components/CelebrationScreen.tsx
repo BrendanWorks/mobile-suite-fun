@@ -268,7 +268,8 @@ export default function CelebrationScreen({
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
-  const strokeDashoffset = circumference - (dialFill / 100) * circumference;
+  const clampedDialFill = Math.min(dialFill, 100);
+  const strokeDashoffset = circumference - (clampedDialFill / 100) * circumference;
 
   return (
     <div className="min-h-screen w-screen bg-black flex flex-col items-center justify-between p-4">
