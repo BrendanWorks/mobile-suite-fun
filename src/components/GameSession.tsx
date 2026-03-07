@@ -1,11 +1,8 @@
-/**
- * GameSession.tsx - NEON EDITION (with mobile audio unlock)
- */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Trophy, Star, Search, Camera, Triangle, Users, Check,
   ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
-  Gamepad2, Zap, ThumbsUp
+  Gamepad2, Zap, ThumbsUp, X
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import {
@@ -38,13 +35,13 @@ import Clutch from './Clutch';
 import Flashbang from './Flashbang';
 import ColorClash from './ColorClash';
 import Recall from './Recall';
+import DoubleFake from './DoubleFake';
 import RoundResults from './RoundResults';
 import CelebrationScreen from './CelebrationScreen';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
 import ReactGA from 'react-ga4';
-import { audioManager } from '../path/to/AudioManager';  // Adjust import path as needed
 
 interface GameConfig {
   id: string;
@@ -56,14 +53,46 @@ interface GameConfig {
 }
 
 const GAME_REGISTRY: GameConfig[] = [
-  // ... (your full GAME_REGISTRY array remains unchanged)
-  // Omitted for brevity — keep your original list here
+  { id: 'odd-man-out', name: 'Odd Man Out', component: OddManOut, duration: 45, instructions: 'Find what doesn\'t belong', dbId: 3 },
+  { id: 'photo-mystery', name: 'Zooma', component: PhotoMystery, duration: 45, instructions: 'Guess the hidden image', dbId: 4 },
+  { id: 'rank-and-roll', name: 'Ranky', component: RankAndRoll, duration: 30, instructions: 'Sort by superlatives', dbId: 5 },
+  { id: 'snapshot', name: 'SnapShot', component: SnapShot, duration: 60, instructions: 'Complete the jigsaw', dbId: 6 },
+  { id: 'split-decision', name: 'Split Decision', component: SplitDecision, duration: 30, instructions: 'Rapid categorization', dbId: 9 },
+  { id: 'word-rescue', name: 'Pop', component: WordRescue, duration: 45, instructions: 'Make words from falling letters', dbId: 10 },
+  { id: 'shape-sequence', name: 'Shape Sequence', component: ShapeSequence, duration: 45, instructions: 'Remember the pattern', dbId: 11 },
+  { id: 'snake', name: 'Snake', component: Snake, duration: 60, instructions: 'Eat pellets and grow', dbId: 12 },
+  { id: 'up-yours', name: 'Up Yours', component: UpYours, duration: 30, instructions: 'Guess higher or lower', dbId: 2 },
+  { id: 'fake-out', name: 'Fake Out', component: FakeOut, duration: 45, instructions: 'Real photo or AI fake?', dbId: 13 },
+  { id: 'hive-mind', name: 'Hive Mind', component: HiveMind, duration: 30, instructions: 'Guess what most people chose', dbId: 14 },
+  { id: 'slope-rider', name: 'Slope Rider', component: SlopeRider, duration: 45, instructions: 'Ride the slope without falling', dbId: 15 },
+  { id: 'neural-pulse', name: 'Neural Pulse', component: NeuralPulse, duration: 30, instructions: 'Match the pattern', dbId: 16 },
+  { id: 'zen-gravity', name: 'Zen Gravity', component: ZenGravity, duration: 45, instructions: 'Balance the objects', dbId: 17 },
+  { id: 'superlative', name: 'Superlative', component: Superlative, duration: 45, instructions: 'Pick the bigger, heavier, or older item', dbId: 18 },
+  { id: 'true-false', name: 'True/False', component: TrueFalse, duration: 30, instructions: 'Decide if the statement is true', dbId: 19 },
+  { id: 'multiple-choice', name: 'Multiple Choice', component: MultipleChoice, duration: 45, instructions: 'Choose the correct answer', dbId: 20 },
+  { id: 'tracer', name: 'Tracer', component: Tracer, duration: 45, instructions: 'Follow the pattern', dbId: 21 },
+  { id: 'clutch', name: 'Clutch', component: Clutch, duration: 30, instructions: 'Make the clutch decision', dbId: 22 },
+  { id: 'flashbang', name: 'Flashbang', component: Flashbang, duration: 45, instructions: 'React quickly to flashes', dbId: 23 },
+  { id: 'color-clash', name: 'Color Clash', component: ColorClash, duration: 30, instructions: 'Match colors quickly', dbId: 24 },
+  { id: 'recall', name: 'Recall', component: Recall, duration: 45, instructions: 'Remember what you saw', dbId: 25 },
+  { id: 'double-fake', name: 'Double Fake', component: DoubleFake, duration: 45, instructions: 'Find the real one among the fakes', dbId: 26 },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
 
 const GAME_ICONS: { [key: string]: JSX.Element } = {
-  // ... (your GAME_ICONS remain unchanged)
+  'odd-man-out': <CircleX className="w-full h-full" />,
+  'photo-mystery': <Search className="w-full h-full" />,
+  'rank-and-roll': <Trophy className="w-full h-full" />,
+  'snapshot': <Camera className="w-full h-full" />,
+  'split-decision': <Layers className="w-full h-full" />,
+  'word-rescue': <BookOpen className="w-full h-full" />,
+  'shape-sequence': <Triangle className="w-full h-full" />,
+  'snake': <Zap className="w-full h-full" />,
+  'up-yours': <ArrowUpDown className="w-full h-full" />,
+  'fake-out': <CircleX className="w-full h-full" />,
+  'hive-mind': <Users className="w-full h-full" />,
+  'superlative': <Check className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
@@ -125,73 +154,228 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
-  // NEW: Audio unlock on first user interaction (critical for iOS Safari)
-  useEffect(() => {
-    const unlockHandler = async () => {
-      console.log('User interacted — attempting audio unlock');
-      const unlocked = await audioManager.unlockAudio(true); // silent prime
-      if (unlocked) {
-        console.log('Audio unlocked successfully for mobile');
-        // Optional: If sounds were preloaded early, reload them post-unlock
-        // await audioManager.reloadAll();
-      } else {
-        console.warn('Audio unlock failed — sounds may not play on iOS');
-      }
-    };
-
-    // Listen for touch/click/pointer events (touchend is most reliable on iOS)
-    const events = ['touchend', 'click', 'pointerup'];
-    events.forEach(event => {
-      document.addEventListener(event, unlockHandler, { once: true, passive: true });
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, unlockHandler);
-      });
-    };
-  }, []);
-
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
     [roundScores]
   );
 
-  // ... (loadRound, loadPlaylist, useEffects for playlist, user, session creation, etc. remain mostly unchanged)
+  const loadPlaylist = useCallback(async () => {
+    if (!playlistId) return;
+    try {
+      const { data: playlist, error: playlistError } = await supabase
+        .from('playlists')
+        .select('name, rounds')
+        .eq('id', playlistId)
+        .maybeSingle();
 
-  // Keep your existing useEffects for loading, session creation, saving, etc.
-  // Omitted for brevity in this paste — insert your original logic here for:
-  // - loadPlaylist
-  // - useEffect for playlistId
-  // - useEffect for user/auth
-  // - useEffect for session creation
-  // - useEffect for 7-second timer
-  // - useEffect for saving on complete
-  // - selectRandomGame
-  // - startRound
-  // - handleScoreUpdate
-  // - handleGameComplete
-  // - handleNextRound
-  // - handleSkipGame
-  // - handleQuitAndSave
+      if (playlistError) throw playlistError;
+      if (!playlist) throw new Error('Playlist not found');
 
-  // Intro, results, complete, playing renders remain the same
-  // Just ensure GameWrapper and individual games use audioManager.play(...)
+      setPlaylistName(playlist.name || '');
+      setPlaylistRounds(playlist.rounds || []);
+    } catch (error) {
+      console.error('Error loading playlist:', error);
+      setLoadError('Failed to load playlist');
+      setPlaylistLoading(false);
+    }
+  }, [playlistId]);
+
+  useEffect(() => {
+    if (playlistId) {
+      loadPlaylist();
+    }
+  }, [playlistId, loadPlaylist]);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const createSession = async () => {
+      const result = await createGameSession(user.id);
+      if (result.success && result.data?.id) {
+        setSessionId(result.data.id);
+        sessionStartTimeRef.current = Date.now();
+      }
+    };
+
+    createSession();
+  }, [user]);
+
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const timer = setTimeout(() => setSevenSecondsElapsed(true), 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState]);
+
+  useEffect(() => {
+    if (gameState === 'complete' && sessionId && user && !sessionSaved) {
+      const saveSession = async () => {
+        const totalScore = currentSessionScore;
+        const maxScore = roundScores.length * 100;
+        const percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+        const grade = getSessionGrade(percentage);
+        const playtimeSeconds = sessionStartTimeRef.current ? Math.floor((Date.now() - sessionStartTimeRef.current) / 1000) : 0;
+
+        const roundResults = roundScores.map((round, idx) => ({
+          gameId: getGameId(round.gameId),
+          puzzleId: currentPuzzleIds?.[idx] || currentPuzzleId || 0,
+          roundNumber: idx + 1,
+          rawScore: round.rawScore,
+          maxScore: round.maxScore,
+          normalizedScore: round.normalizedScore.normalizedScore,
+          grade: 'A',
+        }));
+
+        const completeResult = await completeGameSession(
+          sessionId,
+          totalScore,
+          maxScore,
+          percentage,
+          grade,
+          roundScores.length,
+          playtimeSeconds
+        );
+
+        if (completeResult.success) {
+          await saveAllRoundResults(sessionId, user.id, roundResults);
+          setSessionSaved(true);
+          analytics.gameSessionCompleted(roundScores.length, totalScore, grade);
+        }
+      };
+
+      saveSession();
+    }
+  }, [gameState, sessionId, user, currentSessionScore, roundScores, sessionSaved, currentPuzzleId, currentPuzzleIds]);
+
+  const selectRandomGame = useCallback(() => {
+    const availableGames = AVAILABLE_GAMES.filter(game => !playedGames.includes(game.id));
+    if (availableGames.length === 0) return AVAILABLE_GAMES[Math.floor(Math.random() * AVAILABLE_GAMES.length)];
+    return availableGames[Math.floor(Math.random() * availableGames.length)];
+  }, [playedGames]);
+
+  const startRound = useCallback(() => {
+    const game = selectRandomGame();
+    setCurrentGame(game);
+    setCurrentGameSlug(game.id);
+    setPlayedGames(prev => [...prev, game.id]);
+    setGameState('playing');
+    setCurrentGameScore({ score: 0, maxScore: 0 });
+  }, [selectRandomGame]);
+
+  const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
+    setCurrentGameScore({ score, maxScore });
+  }, []);
+
+  const handleGameComplete = useCallback((finalScore: number, maxScore: number) => {
+    if (!currentGame) return;
+
+    const normalizedScore = scoringSystem.normalizeScore(finalScore, maxScore);
+    const scoreWithTimeBonus = applyTimeBonus(normalizedScore, 45);
+    const scoreWithPerfectBonus = applyPerfectScoreBonus(scoreWithTimeBonus);
+
+    setRoundScores(prev => [...prev, {
+      gameId: currentGame.id,
+      gameName: currentGame.name,
+      rawScore: finalScore,
+      maxScore: maxScore,
+      normalizedScore: scoreWithPerfectBonus,
+    }]);
+
+    setGameState('results');
+  }, [currentGame]);
+
+  const handleNextRound = useCallback(() => {
+    if (currentRound >= totalRounds) {
+      setGameState('complete');
+    } else {
+      setCurrentRound(prev => prev + 1);
+      setGameState('intro');
+      setCurrentGame(null);
+    }
+  }, [currentRound, totalRounds]);
+
+  const handleSkipGame = useCallback(() => {
+    handleGameComplete(0, 100);
+  }, [handleGameComplete]);
+
+  const handleQuitAndSave = useCallback(() => {
+    setGameState('complete');
+  }, []);
 
   if (gameState === 'intro') {
-    // ... (your intro screen JSX unchanged)
+    return (
+      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <h1 className="text-4xl font-bold text-cyan-400" style={{ textShadow: '0 0 20px #00ffff' }}>
+            Game Session
+          </h1>
+          <p className="text-xl text-gray-300">
+            Round {currentRound} of {totalRounds}
+          </p>
+          <button
+            onClick={startRound}
+            className="w-full bg-cyan-500 text-black font-bold py-3 px-4 rounded hover:bg-cyan-400 transition"
+          >
+            Start Round
+          </button>
+          <button
+            onClick={onExit}
+            className="w-full bg-gray-700 text-white font-bold py-3 px-4 rounded hover:bg-gray-600 transition"
+          >
+            Exit Session
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (gameState === 'results') {
-    // ... (your results JSX unchanged)
+    return (
+      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4">
+        <RoundResults
+          score={currentGameScore.score}
+          maxScore={currentGameScore.maxScore}
+          gameName={currentGame?.name || ''}
+          onNext={handleNextRound}
+        />
+      </div>
+    );
   }
 
   if (gameState === 'complete') {
-    // ... (your complete JSX unchanged)
+    return (
+      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4">
+        <CelebrationScreen
+          totalScore={currentSessionScore}
+          roundsCompleted={roundScores.length}
+          onExit={onExit}
+        />
+      </div>
+    );
   }
 
   if (gameState === 'playing' && !currentGame) {
-    // ... (loading screen unchanged)
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className="text-cyan-400 text-xl" style={{ textShadow: '0 0 20px #00ffff' }}>
+          Loading game...
+        </div>
+      </div>
+    );
   }
 
   if (gameState === 'playing' && currentGame) {
@@ -201,9 +385,23 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col">
-        {/* NEON NAV BAR */}
         <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
-          {/* ... your nav bar JSX unchanged */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+              <span className="text-cyan-400 font-semibold text-sm sm:text-base">{currentGame.name}</span>
+            </div>
+            <div className="text-cyan-400 text-xs sm:text-sm font-mono">
+              Round {currentRound}/{totalRounds}
+            </div>
+            <button
+              onClick={handleQuitAndSave}
+              className={neonButtonBase}
+              style={neonButtonStyle}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -214,9 +412,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             onScoreUpdate={handleScoreUpdate}
           >
             <GameComponent
-              puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
+              puzzleId={currentPuzzleId}
               puzzleIds={currentPuzzleIds}
               rankingPuzzleId={currentRankingPuzzleId}
+              superlativePuzzleId={currentSuperlativePuzzleId}
             />
           </GameWrapper>
         </div>
