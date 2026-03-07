@@ -226,7 +226,6 @@ export default function CelebrationScreen({
                 setTimeout(() => {
                   clearInterval(fillInterval);
                   setShowTimeBonus(false);
-                  audioManager.play('bonus-pizzaz', 0.6);
                 }, speedDuration)
               );
             }, speedStartAt)
@@ -255,7 +254,6 @@ export default function CelebrationScreen({
               setTimeout(() => {
                 clearInterval(fillInterval);
                 setShowTimeBonus(false);
-                audioManager.play('bonus-pizzaz', 0.6);
               }, speedDuration)
             );
           }, bonusStartAt)
