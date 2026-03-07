@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
 import { playWin } from '../lib/sounds';
+import { audioManager } from '../lib/audioManager';
 import { ColorClashIcon } from './ColorClash';
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
@@ -106,6 +107,12 @@ export default function CelebrationScreen({
     const timers: NodeJS.Timeout[] = [];
     const intervals: NodeJS.Timeout[] = [];
 
+    // Load celebration sounds on first mount
+    (async () => {
+      await audioManager.loadSound('tile-chink', '/sounds/snake/collect.mp3', 2);
+      await audioManager.loadSound('bonus-pizzaz', '/sounds/global/round-complete.mp3', 2);
+    })();
+
     const hideAllNamesAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.NAME_HIDE_OFFSET;
     const bonusStartAt = roundScores.length * ANIMATION_TIMINGS.TILE_INTERVAL + ANIMATION_TIMINGS.BONUS_OFFSET;
 
@@ -122,7 +129,10 @@ export default function CelebrationScreen({
 
       timers.push(
         setTimeout(
-          () => setVisibleTiles(i + 1),
+          () => {
+            setVisibleTiles(i + 1);
+            audioManager.play('tile-chink', 0.4);
+          },
           ANIMATION_TIMINGS.TILE_START + delay
         )
       );
@@ -170,7 +180,7 @@ export default function CelebrationScreen({
         timers.push(
           setTimeout(() => {
             setShowPerfectBonus(true);
-            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            audioManager.play('bonus-pizzaz', 0.5);
 
             let fillInterval = setInterval(() => {
               setDialFill((prev) => {
@@ -200,7 +210,7 @@ export default function CelebrationScreen({
           timers.push(
             setTimeout(() => {
               setShowTimeBonus(true);
-              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+              audioManager.play('bonus-pizzaz', 0.5);
 
               let fillInterval = setInterval(() => {
                 setDialFill((prev) => {
@@ -216,7 +226,7 @@ export default function CelebrationScreen({
                 setTimeout(() => {
                   clearInterval(fillInterval);
                   setShowTimeBonus(false);
-                  playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                  audioManager.play('bonus-pizzaz', 0.6);
                 }, speedDuration)
               );
             }, speedStartAt)
@@ -230,7 +240,7 @@ export default function CelebrationScreen({
         timers.push(
           setTimeout(() => {
             setShowTimeBonus(true);
-            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            audioManager.play('bonus-pizzaz', 0.5);
 
             let fillInterval = setInterval(() => {
               setDialFill((prev) => {
@@ -245,18 +255,31 @@ export default function CelebrationScreen({
               setTimeout(() => {
                 clearInterval(fillInterval);
                 setShowTimeBonus(false);
-                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+                audioManager.play('bonus-pizzaz', 0.6);
               }, speedDuration)
             );
           }, bonusStartAt)
         );
       }
     } else {
-      // No bonus
+      // No bonus - play final sound
       timers.push(
         setTimeout(() => {
           playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
         }, hideAllNamesAt + 500)
+      );
+    }
+
+    // Final celebration sound when all bonuses are done
+    const finalSoundAt = totalBonus > 10
+      ? bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION * (perfectBonus > 10 && timeBonus > 10 ? 2 : 1) + ANIMATION_TIMINGS.BONUS_DELAY + 200
+      : hideAllNamesAt + 500;
+
+    if (totalBonus > 10) {
+      timers.push(
+        setTimeout(() => {
+          playWin(ANIMATION_TIMINGS.SOUND_VOLUME * 1.2);
+        }, finalSoundAt)
       );
     }
 
