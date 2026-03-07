@@ -132,11 +132,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const fetchPuzzle = async () => {
     try {
       setGameState('loading');
+      const MAX_ITEMS = 4;
 
       // Check if rankingPuzzleId is provided (playlist mode)
       if (props.rankingPuzzleId) {
         console.log('🎯 Ranky: Loading specific puzzle ID:', props.rankingPuzzleId);
-        
+
         const { data: puzzleData, error: puzzleError } = await supabase
           .from('ranking_puzzles')
           .select('*')
@@ -161,12 +162,21 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           return;
         }
 
-        const loadedPuzzle = { ...puzzleData, items: itemsData || [] };
-        console.log('✅ Ranky: Loaded puzzle with', loadedPuzzle.items.length, 'items');
-        
+        let items = itemsData || [];
+        if (items.length > MAX_ITEMS) {
+          items = items.slice(0, MAX_ITEMS);
+          items = items.map((item, idx) => ({
+            ...item,
+            correct_position: idx + 1
+          }));
+        }
+
+        const loadedPuzzle = { ...puzzleData, items };
+        console.log('✅ Ranky: Loaded puzzle with', loadedPuzzle.items.length, 'items (max', MAX_ITEMS, ')');
+
         setPuzzle(loadedPuzzle);
         itemCountRef.current = loadedPuzzle.items.length;
-        
+
         if (loadedPuzzle.items.length > 0) {
           const shuffled = shuffleArray([...loadedPuzzle.items]);
           setItems(shuffled);
@@ -176,7 +186,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       } else {
         // Fallback: random puzzle (backwards compatibility)
         console.log('🎲 Ranky: No rankingPuzzleId provided, loading random puzzle');
-        
+
         const { data, error } = await supabase
           .from('ranking_puzzles')
           .select('*')
@@ -200,7 +210,16 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           return;
         }
 
-        const loadedPuzzle = { ...data[0], items: itemsData || [] };
+        let items = itemsData || [];
+        if (items.length > MAX_ITEMS) {
+          items = items.slice(0, MAX_ITEMS);
+          items = items.map((item, idx) => ({
+            ...item,
+            correct_position: idx + 1
+          }));
+        }
+
+        const loadedPuzzle = { ...data[0], items };
         setPuzzle(loadedPuzzle);
         itemCountRef.current = loadedPuzzle.items.length;
 
