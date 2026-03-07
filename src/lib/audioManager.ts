@@ -9,6 +9,8 @@ class AudioManager {
   private audioContext: AudioContext | null = null;
   private isIOS: boolean = false;
   private isMobile: boolean = false;
+  private lastPlayTime: Map<string, number> = new Map();
+  private readonly MIN_SOUND_INTERVAL = 50;
 
   initialize(): void {
     if (this.initialized) return;
@@ -170,6 +172,13 @@ class AudioManager {
 
   play(key: string, volume?: number): void {
     if (!this.enabled) return;
+
+    const now = Date.now();
+    const lastPlay = this.lastPlayTime.get(key) || 0;
+    if (now - lastPlay < this.MIN_SOUND_INTERVAL) {
+      return;
+    }
+    this.lastPlayTime.set(key, now);
 
     const pool = this.pools.get(key);
     if (!pool || pool.length === 0) {
