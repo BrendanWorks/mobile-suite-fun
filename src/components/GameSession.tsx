@@ -161,6 +161,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
   const loadPlaylist = useCallback(async () => {
     if (!playlistId) return;
+    console.log('Loading playlist:', playlistId);
     try {
       const { data: playlist, error: playlistError } = await supabase
         .from('playlists')
@@ -179,6 +180,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
       if (roundsError) throw roundsError;
 
+      console.log('Loaded playlist rounds:', rounds);
       setPlaylistName(playlist.name || '');
       setPlaylistRounds(rounds || []);
       setPlaylistLoading(false);
@@ -285,8 +287,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     if (playlistId && playlistRounds.length > 0) {
       const playlistRound = playlistRounds.find(r => r.round_number === currentRound);
+      console.log('Playlist round:', currentRound, playlistRound);
       if (playlistRound && playlistRound.game_id) {
+        console.log('Looking for game with dbId:', playlistRound.game_id);
         const gameRegistry = GAME_REGISTRY.find(g => g.dbId === playlistRound.game_id);
+        console.log('Found game:', gameRegistry);
         if (gameRegistry) {
           game = gameRegistry;
           puzzleId = playlistRound.puzzle_id;
@@ -299,6 +304,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       }
     }
 
+    console.log('Game selected:', game);
     if (!game) {
       game = selectRandomGame();
     }
@@ -357,20 +363,31 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
   if (gameState === 'intro') {
     const displayRounds = playlistId && playlistRounds.length > 0 ? playlistRounds.length : totalRounds;
+    const isReady = !playlistId || playlistRounds.length > 0;
+
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-6 max-w-md">
           <h1 className="text-4xl font-bold text-cyan-400" style={{ textShadow: '0 0 20px #00ffff' }}>
-            {playlistName || 'Game Session'}
+            {playlistLoading ? 'Loading...' : (playlistName || 'Game Session')}
           </h1>
-          <p className="text-xl text-gray-300">
-            Round {currentRound} of {displayRounds}
-          </p>
+          {playlistLoading ? (
+            <p className="text-xl text-gray-300">Preparing your playlist...</p>
+          ) : (
+            <p className="text-xl text-gray-300">
+              Round {currentRound} of {displayRounds}
+            </p>
+          )}
           <button
             onClick={startRound}
-            className="w-full bg-cyan-500 text-black font-bold py-3 px-4 rounded hover:bg-cyan-400 transition"
+            disabled={playlistLoading || !isReady}
+            className={`w-full font-bold py-3 px-4 rounded transition ${
+              playlistLoading || !isReady
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-cyan-500 text-black hover:bg-cyan-400'
+            }`}
           >
-            Start Round
+            {playlistLoading ? 'Loading...' : 'Start Round'}
           </button>
           <button
             onClick={onExit}
