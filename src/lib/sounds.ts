@@ -7,9 +7,28 @@ type ToneOpts = {
   type?: OscillatorType;
 };
 
+let sharedAudioContext: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (sharedAudioContext) return sharedAudioContext;
+
+  try {
+    const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+    sharedAudioContext = new AudioContextClass();
+    if (sharedAudioContext.state === 'suspended') {
+      sharedAudioContext.resume().catch(() => {});
+    }
+    return sharedAudioContext;
+  } catch {
+    return null;
+  }
+}
+
 function playTone({ frequency, duration, volume = 0.18, type = "sine" }: ToneOpts): void {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -20,7 +39,6 @@ function playTone({ frequency, duration, volume = 0.18, type = "sine" }: ToneOpt
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
     osc.start();
     osc.stop(ctx.currentTime + duration / 1000 + 0.05);
-    osc.onended = () => ctx.close();
   } catch {
     // audio context unavailable — silent fallback
   }

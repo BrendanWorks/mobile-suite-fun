@@ -5,14 +5,22 @@ class AudioManager {
   private sfxVolume: number = 0.7;
   private enabled: boolean = true;
   private initialized: boolean = false;
+  private audioContext: AudioContext | null = null;
 
   // Initialize on first user interaction (CRITICAL FOR iOS)
   initialize(): void {
     if (this.initialized) return;
 
-    // Resume any suspended audio contexts
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    audioContext.resume();
+    try {
+      // Resume any suspended audio contexts
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      this.audioContext = new AudioContextClass();
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('Failed to initialize audio context:', e);
+    }
 
     this.initialized = true;
     console.log('🔊 Audio initialized');
@@ -24,18 +32,38 @@ class AudioManager {
       const pool: HTMLAudioElement[] = [];
 
       for (let i = 0; i < poolSize; i++) {
-        const audio = new Audio(url);
+        const audio = new Audio();
         audio.preload = 'auto';
+        audio.crossOrigin = 'anonymous';
 
-        // Wait for it to actually load
-        await new Promise((resolve, reject) => {
-          audio.addEventListener('canplaythrough', () => resolve(null), { once: true });
-          audio.addEventListener('error', reject, { once: true });
+        // Wait for it to load with timeout
+        const loadPromise = new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => {
+            audio.removeEventListener('canplaythrough', onCanPlayThrough);
+            audio.removeEventListener('error', onError);
+            resolve();
+          }, 3000);
 
-          // Timeout fallback
-          setTimeout(() => resolve(null), 2000);
+          const onCanPlayThrough = () => {
+            clearTimeout(timeout);
+            audio.removeEventListener('canplaythrough', onCanPlayThrough);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+
+          const onError = () => {
+            clearTimeout(timeout);
+            audio.removeEventListener('canplaythrough', onCanPlayThrough);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+
+          audio.addEventListener('canplaythrough', onCanPlayThrough, { once: true });
+          audio.addEventListener('error', onError, { once: true });
+          audio.src = url;
         });
 
+        await loadPromise;
         pool.push(audio);
       }
 
@@ -59,21 +87,31 @@ class AudioManager {
     }
 
     // Find an available (not playing) instance
-    let audio = pool.find(a => a.paused || a.ended);
+    let audio = pool.find(a => {
+      try {
+        return a.paused || a.ended;
+      } catch {
+        return false;
+      }
+    });
 
     // If all are playing, use the first one anyway (will restart it)
     if (!audio) audio = pool[0];
 
-    audio.currentTime = 0;
-    audio.volume = volume ?? this.sfxVolume;
+    try {
+      // Ensure we can modify the audio element
+      audio.currentTime = 0;
+      audio.volume = Math.max(0, Math.min(1, volume ?? this.sfxVolume));
 
-    // Clone the play promise to catch errors silently
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(err => {
-        // Silently fail - this is expected on some browsers
-        console.log(`Play interrupted: ${key}`);
-      });
+      // Play with error handling
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          // Silent fail - expected on some platforms
+        });
+      }
+    } catch (error) {
+      console.warn(`Could not play sound: ${key}`, error);
     }
   }
 
@@ -82,17 +120,28 @@ class AudioManager {
 
     const music = this.sounds.get(key);
     if (music) {
-      music.loop = true;
-      music.volume = this.musicVolume;
-      music.play().catch(err => console.log('Music play failed:', err));
+      try {
+        music.loop = true;
+        music.volume = this.musicVolume;
+        const playPromise = music.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      } catch (error) {
+        console.warn('Music play failed:', error);
+      }
     }
   }
 
   stopMusic(key: string): void {
     const music = this.sounds.get(key);
     if (music) {
-      music.pause();
-      music.currentTime = 0;
+      try {
+        music.pause();
+        music.currentTime = 0;
+      } catch (error) {
+        console.warn('Could not stop music:', error);
+      }
     }
   }
 

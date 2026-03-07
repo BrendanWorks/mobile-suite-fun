@@ -3,6 +3,8 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { initGA, trackPageView, analytics } from './lib/analytics';
 import { anonymousSessionManager } from './lib/anonymousSession';
+import { audioManager } from './lib/audioManager';
+import { preloadGameSounds } from './lib/sounds';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 import LandingPage from './components/LandingPage';
@@ -56,10 +58,25 @@ export default function App() {
   const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
 
-  // Initialize analytics on mount
+  // Initialize audio and analytics on mount
   useEffect(() => {
     initGA();
     trackPageView('/');
+
+    const initAudio = () => {
+      audioManager.initialize();
+      preloadGameSounds();
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('touchstart', initAudio);
+    };
+
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('touchstart', initAudio, { once: true });
+
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('touchstart', initAudio);
+    };
   }, []);
 
   useEffect(() => {
