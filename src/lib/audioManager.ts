@@ -1,5 +1,3 @@
-// AudioManager.ts - Mobile-optimized version (2026 fixes)
-
 class AudioManager {
   private sounds: Map<string, HTMLAudioElement> = new Map();
   private pools: Map<string, HTMLAudioElement[]> = new Map();
@@ -10,89 +8,34 @@ class AudioManager {
   private initialized: boolean = false;
   private audioContext: AudioContext | null = null;
 
-  // Detect mobile once
-  private isMobile: boolean = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  private defaultPoolSize: number = this.isMobile ? 2 : 3;
-
   initialize(): void {
     if (this.initialized) return;
 
     try {
       const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
       this.audioContext = new AudioContextClass();
-
       if (this.audioContext.state === 'suspended') {
         this.audioContext.resume().catch(() => {});
       }
-
-      // Handle page visibility / background resume (helps both contexts and HTMLAudio)
-      document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     } catch (e) {
       console.warn('Failed to initialize audio context:', e);
     }
 
     this.initialized = true;
-    console.log('🔊 AudioManager initialized (mobile mode:', this.isMobile, ')');
-  }
-
-  private handleVisibilityChange(): void {
-    if (document.visibilityState === 'visible') {
-      if (this.audioContext?.state === 'suspended') {
-        this.audioContext.resume().catch(err => console.warn('Resume on foreground failed:', err));
-      }
-      // Optional: you could prime one audio here too, but better from gesture
-    }
+    console.log('🔊 Audio initialized');
   }
 
   private clampVolume(vol: number): number {
     return Math.max(0, Math.min(1, vol));
   }
 
-  private handlePlayPromise(promise: Promise<void> | undefined, key?: string): void {
-    if (!promise) return;
-    promise.catch(err => {
-      console.warn(`Play promise rejected for ${key || 'unknown'}:`, err.name, err.message);
-      // Common iOS error after unlock failure
-      if (err.name === 'NotAllowedError') {
-        console.warn('NotAllowedError - audio likely needs user gesture unlock');
-      }
-    });
+  private handlePlayPromise(promise: Promise<void> | undefined): void {
+    if (promise && typeof promise.catch === 'function') {
+      promise.catch(() => {});
+    }
   }
 
-  // Call this from a real user gesture (touchend/click) in your top-level component
-  async unlockAudio(silent: boolean = true): Promise<boolean> {
-    if (!this.initialized) this.initialize();
-
-    let success = false;
-
-    // 1. Resume context
-    if (this.audioContext?.state === 'suspended') {
-      try {
-        await this.audioContext.resume();
-        success = true;
-      } catch (err) {
-        console.warn('AudioContext resume failed during unlock:', err);
-      }
-    }
-
-    // 2. Prime HTMLAudioElement - critical for Safari
-    const primer = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-    primer.volume = silent ? 0 : 0.01;
-
-    try {
-      primer.currentTime = 0;
-      await primer.play();
-      primer.pause();
-      success = true;
-      console.log('🔓 Audio unlocked via HTMLAudio prime');
-    } catch (err) {
-      console.warn('HTMLAudio unlock prime failed:', err);
-    }
-
-    return success;
-  }
-
-  async loadSound(key: string, url: string, poolSize: number = this.defaultPoolSize): Promise<void> {
+  async loadSound(key: string, url: string, poolSize: number = 3): Promise<void> {
     if (!url) {
       console.warn(`Invalid URL for sound: ${key}`);
       return;
@@ -100,7 +43,7 @@ class AudioManager {
 
     try {
       const pool: HTMLAudioElement[] = [];
-      const failed: HTMLAudioElement[] = [];
+      const failedInstances: HTMLAudioElement[] = [];
 
       for (let i = 0; i < poolSize; i++) {
         const audio = new Audio();
@@ -111,12 +54,11 @@ class AudioManager {
           let resolved = false;
 
           const cleanup = () => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('canplaythrough', onCanPlayThrough);
             audio.removeEventListener('error', onError);
-            audio.removeEventListener('loadeddata', onLoadedData);
           };
 
-          const onCanPlay = () => {
+          const onCanPlayThrough = () => {
             if (!resolved) {
               resolved = true;
               cleanup();
@@ -125,23 +67,12 @@ class AudioManager {
             }
           };
 
-          const onLoadedData = () => {
-            // Fallback trigger - sometimes canplaythrough never fires on mobile
-            if (!resolved && audio.readyState >= 2) {
-              resolved = true;
-              cleanup();
-              this.readyStates.set(audio, true);
-              resolve();
-            }
-          };
-
-          const onError = (e: Event) => {
+          const onError = () => {
             if (!resolved) {
               resolved = true;
               cleanup();
               this.readyStates.set(audio, false);
-              failed.push(audio);
-              console.warn(`Audio load error for ${key} instance ${i+1}:`, (e.target as HTMLAudioElement)?.error);
+              failedInstances.push(audio);
               resolve();
             }
           };
@@ -150,15 +81,17 @@ class AudioManager {
             if (!resolved) {
               resolved = true;
               cleanup();
-              const ready = audio.readyState >= 2;
-              this.readyStates.set(audio, ready);
-              if (!ready) failed.push(audio);
+              if (audio.readyState >= 2) {
+                this.readyStates.set(audio, true);
+              } else {
+                this.readyStates.set(audio, false);
+                failedInstances.push(audio);
+              }
               resolve();
             }
-          }, 8000); // longer timeout for mobile networks
+          }, 5000);
 
-          audio.addEventListener('canplaythrough', onCanPlay, { once: true });
-          audio.addEventListener('loadeddata', onLoadedData, { once: true });
+          audio.addEventListener('canplaythrough', onCanPlayThrough, { once: true });
           audio.addEventListener('error', onError, { once: true });
           audio.src = url;
         });
@@ -171,15 +104,16 @@ class AudioManager {
       }
 
       if (pool.length === 0) {
-        console.warn(`Failed to load any instances of ${key}`);
+        console.warn(`Failed to load any instances of sound: ${key}`);
         return;
       }
 
       this.pools.set(key, pool);
       this.sounds.set(key, pool[0]);
-      console.log(`✅ Loaded ${key} pool: ${pool.length}/${poolSize} ready`);
+      console.log(`✅ Loaded sound pool: ${key} (${pool.length}/${poolSize} instances ready)`);
+
     } catch (error) {
-      console.warn(`Load failed for ${key}:`, error);
+      console.warn(`Could not load sound: ${key}`, error);
     }
   }
 
@@ -188,31 +122,30 @@ class AudioManager {
 
     const pool = this.pools.get(key);
     if (!pool || pool.length === 0) {
-      console.warn(`No pool for sound: ${key}`);
+      console.warn(`Sound pool not found: ${key}`);
       return;
     }
 
-    let audio = pool.find(a => (a.paused || a.ended) && this.readyStates.get(a)) ?? pool[0];
+    let audio = pool.find(a => {
+      try {
+        return (a.paused || a.ended) && this.readyStates.get(a);
+      } catch {
+        return false;
+      }
+    });
 
+    if (!audio) audio = pool[0];
     if (!this.readyStates.get(audio)) {
-      console.warn(`No ready instance for ${key}`);
+      console.warn(`Audio not ready: ${key}`);
       return;
     }
 
     try {
-      // Safari/iOS fix: reload before play to prevent skipping/clipping on repeats
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      if (isIOS) {
-        audio.load();
-      }
-
       audio.currentTime = 0;
       audio.volume = this.clampVolume(volume ?? this.sfxVolume);
-
-      const promise = audio.play();
-      this.handlePlayPromise(promise, key);
+      this.handlePlayPromise(audio.play());
     } catch (error) {
-      console.warn(`Play sync error for ${key}:`, error);
+      console.warn(`Could not play sound: ${key}`, error);
     }
   }
 
@@ -221,24 +154,16 @@ class AudioManager {
 
     const music = this.sounds.get(key);
     if (!music || !this.readyStates.get(music)) {
-      console.warn(`Music not ready: ${key}`);
+      console.warn(`Music not found or not ready: ${key}`);
       return;
     }
 
     try {
-      // Same iOS reset
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      if (isIOS) {
-        music.load();
-      }
-
       music.loop = true;
       music.volume = this.clampVolume(this.musicVolume);
-
-      const promise = music.play();
-      this.handlePlayPromise(promise, `${key} [music]`);
+      this.handlePlayPromise(music.play());
     } catch (error) {
-      console.warn(`Music play sync error:`, error);
+      console.warn('Music play failed:', error);
     }
   }
 
@@ -249,7 +174,7 @@ class AudioManager {
         music.pause();
         music.currentTime = 0;
       } catch (error) {
-        console.warn('Stop music error:', error);
+        console.warn('Could not stop music:', error);
       }
     }
   }
@@ -269,16 +194,6 @@ class AudioManager {
   setVolume(music: number, sfx: number): void {
     this.musicVolume = this.clampVolume(music);
     this.sfxVolume = this.clampVolume(sfx);
-  }
-
-  // Optional: call this after first gesture if you want to reload all pools
-  async reloadAll(): Promise<void> {
-    for (const [key, pool] of this.pools.entries()) {
-      for (const audio of pool) {
-        audio.load();
-        await new Promise(r => audio.addEventListener('loadeddata', r, { once: true }));
-      }
-    }
   }
 }
 
