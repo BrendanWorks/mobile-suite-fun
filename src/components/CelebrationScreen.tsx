@@ -109,7 +109,7 @@ export default function CelebrationScreen({
 
     // Load celebration sounds on first mount
     (async () => {
-      await audioManager.loadSound('tile-chink', '/sounds/snake/collect.mp3', 2);
+      await audioManager.loadSound('tile-chink', '/sounds/global/SoundBlowClub.mp3', 3);
       await audioManager.loadSound('bonus-pizzaz', '/sounds/global/round-complete.mp3', 2);
     })();
 
