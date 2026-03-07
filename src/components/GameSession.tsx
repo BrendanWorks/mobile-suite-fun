@@ -44,6 +44,7 @@ import CelebrationScreen from './CelebrationScreen';
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
+import { audioManager } from '../lib/audioManager';
 import ReactGA from 'react-ga4';
 
 interface GameConfig {
@@ -315,6 +316,33 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       setTimeout(onExit, 2000);
     }
   };
+
+  // Unlock audio on first user gesture
+  useEffect(() => {
+    let unlocked = false;
+
+    const unlock = async () => {
+      if (!unlocked) {
+        unlocked = true;
+        const success = await audioManager.unlockAudio();
+        console.log(`🔓 Audio unlock result: ${success ? 'success' : 'failed'}`);
+      }
+    };
+
+    const handleGesture = () => {
+      unlock();
+    };
+
+    document.addEventListener('touchend', handleGesture, { once: true });
+    document.addEventListener('click', handleGesture, { once: true });
+    document.addEventListener('pointerup', handleGesture, { once: true });
+
+    return () => {
+      document.removeEventListener('touchend', handleGesture);
+      document.removeEventListener('click', handleGesture);
+      document.removeEventListener('pointerup', handleGesture);
+    };
+  }, []);
 
   // Load playlist if playlistId is provided
   useEffect(() => {

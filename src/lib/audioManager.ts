@@ -7,6 +7,8 @@ class AudioManager {
   private enabled: boolean = true;
   private initialized: boolean = false;
   private audioContext: AudioContext | null = null;
+  private isIOS: boolean = false;
+  private isMobile: boolean = false;
 
   initialize(): void {
     if (this.initialized) return;
@@ -21,17 +23,64 @@ class AudioManager {
       console.warn('Failed to initialize audio context:', e);
     }
 
+    this.detectPlatform();
+    this.setupVisibilityListener();
+
     this.initialized = true;
     console.log('🔊 Audio initialized');
+  }
+
+  private detectPlatform(): void {
+    const userAgent = navigator.userAgent;
+    this.isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    this.isMobile = 'ontouchstart' in window;
+    if (this.isIOS) console.log('📱 iOS detected');
+    if (this.isMobile) console.log('📱 Mobile device detected');
+  }
+
+  private setupVisibilityListener(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden === false && this.audioContext?.state === 'suspended') {
+        this.audioContext.resume().catch(() => {});
+        console.log('🔊 AudioContext resumed on tab visibility');
+      }
+    });
+  }
+
+  async unlockAudio(): Promise<boolean> {
+    try {
+      if (this.audioContext?.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('🔊 AudioContext resumed via unlock');
+      }
+
+      const silentWav = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==';
+      const unlocker = new Audio();
+      unlocker.preload = 'auto';
+      unlocker.src = silentWav;
+      unlocker.volume = 0;
+
+      await unlocker.play();
+      unlocker.pause();
+      unlocker.currentTime = 0;
+
+      console.log('✅ Audio unlocked successfully');
+      return true;
+    } catch (error) {
+      console.warn('⚠️ Audio unlock failed:', (error as any).name, (error as any).message);
+      return false;
+    }
   }
 
   private clampVolume(vol: number): number {
     return Math.max(0, Math.min(1, vol));
   }
 
-  private handlePlayPromise(promise: Promise<void> | undefined): void {
+  private handlePlayPromise(promise: Promise<void> | undefined, soundKey: string = ''): void {
     if (promise && typeof promise.catch === 'function') {
-      promise.catch(() => {});
+      promise.catch((err) => {
+        console.warn(`Play promise rejected for ${soundKey}:`, err.name, err.message);
+      });
     }
   }
 
@@ -41,11 +90,13 @@ class AudioManager {
       return;
     }
 
+    const adjustedPoolSize = this.isMobile ? Math.max(1, poolSize) : poolSize;
+
     try {
       const pool: HTMLAudioElement[] = [];
       const failedInstances: HTMLAudioElement[] = [];
 
-      for (let i = 0; i < poolSize; i++) {
+      for (let i = 0; i < adjustedPoolSize; i++) {
         const audio = new Audio();
         audio.preload = 'auto';
         audio.crossOrigin = 'anonymous';
@@ -110,7 +161,7 @@ class AudioManager {
 
       this.pools.set(key, pool);
       this.sounds.set(key, pool[0]);
-      console.log(`✅ Loaded sound pool: ${key} (${pool.length}/${poolSize} instances ready)`);
+      console.log(`✅ Loaded sound pool: ${key} (${pool.length}/${adjustedPoolSize} instances ready)`);
 
     } catch (error) {
       console.warn(`Could not load sound: ${key}`, error);
@@ -141,9 +192,12 @@ class AudioManager {
     }
 
     try {
+      if (this.isIOS) {
+        audio.load();
+      }
       audio.currentTime = 0;
       audio.volume = this.clampVolume(volume ?? this.sfxVolume);
-      this.handlePlayPromise(audio.play());
+      this.handlePlayPromise(audio.play(), key);
     } catch (error) {
       console.warn(`Could not play sound: ${key}`, error);
     }
@@ -159,9 +213,12 @@ class AudioManager {
     }
 
     try {
+      if (this.isIOS) {
+        music.load();
+      }
       music.loop = true;
       music.volume = this.clampVolume(this.musicVolume);
-      this.handlePlayPromise(music.play());
+      this.handlePlayPromise(music.play(), key);
     } catch (error) {
       console.warn('Music play failed:', error);
     }
