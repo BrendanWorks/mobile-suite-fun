@@ -270,18 +270,6 @@ export default function CelebrationScreen({
       );
     }
 
-    // Final celebration sound when all bonuses are done
-    const finalSoundAt = totalBonus > 10
-      ? bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION * (perfectBonus > 10 && timeBonus > 10 ? 2 : 1) + ANIMATION_TIMINGS.BONUS_DELAY + 200
-      : hideAllNamesAt + 500;
-
-    if (totalBonus > 10) {
-      timers.push(
-        setTimeout(() => {
-          playWin(ANIMATION_TIMINGS.SOUND_VOLUME * 1.2);
-        }, finalSoundAt)
-      );
-    }
 
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
