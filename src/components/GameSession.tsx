@@ -164,15 +164,24 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     try {
       const { data: playlist, error: playlistError } = await supabase
         .from('playlists')
-        .select('name, rounds')
+        .select('name')
         .eq('id', playlistId)
         .maybeSingle();
 
       if (playlistError) throw playlistError;
       if (!playlist) throw new Error('Playlist not found');
 
+      const { data: rounds, error: roundsError } = await supabase
+        .from('playlist_rounds')
+        .select('*')
+        .eq('playlist_id', playlistId)
+        .order('round_number');
+
+      if (roundsError) throw roundsError;
+
       setPlaylistName(playlist.name || '');
-      setPlaylistRounds(playlist.rounds || []);
+      setPlaylistRounds(rounds || []);
+      setPlaylistLoading(false);
     } catch (error) {
       console.error('Error loading playlist:', error);
       setLoadError('Failed to load playlist');
@@ -268,13 +277,42 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }, [playedGames]);
 
   const startRound = useCallback(() => {
-    const game = selectRandomGame();
+    let game: GameConfig | null = null;
+    let puzzleId: number | null = null;
+    let puzzleIds: number[] | null = null;
+    let rankingPuzzleId: number | null = null;
+    let superlativePuzzleId: number | null = null;
+
+    if (playlistId && playlistRounds.length > 0) {
+      const playlistRound = playlistRounds.find(r => r.round_number === currentRound);
+      if (playlistRound && playlistRound.game_id) {
+        const gameRegistry = GAME_REGISTRY.find(g => g.dbId === playlistRound.game_id);
+        if (gameRegistry) {
+          game = gameRegistry;
+          puzzleId = playlistRound.puzzle_id;
+          rankingPuzzleId = playlistRound.ranking_puzzle_id;
+          superlativePuzzleId = playlistRound.superlative_puzzle_id;
+          if (playlistRound.metadata?.puzzle_ids) {
+            puzzleIds = playlistRound.metadata.puzzle_ids;
+          }
+        }
+      }
+    }
+
+    if (!game) {
+      game = selectRandomGame();
+    }
+
     setCurrentGame(game);
     setCurrentGameSlug(game.id);
+    setCurrentPuzzleId(puzzleId);
+    setCurrentPuzzleIds(puzzleIds);
+    setCurrentRankingPuzzleId(rankingPuzzleId);
+    setCurrentSuperlativePuzzleId(superlativePuzzleId);
     setPlayedGames(prev => [...prev, game.id]);
     setGameState('playing');
     setCurrentGameScore({ score: 0, maxScore: 0 });
-  }, [selectRandomGame]);
+  }, [currentRound, playlistId, playlistRounds, selectRandomGame]);
 
   const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
     setCurrentGameScore({ score, maxScore });
@@ -299,14 +337,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }, [currentGame]);
 
   const handleNextRound = useCallback(() => {
-    if (currentRound >= totalRounds) {
+    const displayRounds = playlistId && playlistRounds.length > 0 ? playlistRounds.length : totalRounds;
+    if (currentRound >= displayRounds) {
       setGameState('complete');
     } else {
       setCurrentRound(prev => prev + 1);
       setGameState('intro');
       setCurrentGame(null);
     }
-  }, [currentRound, totalRounds]);
+  }, [currentRound, totalRounds, playlistId, playlistRounds]);
 
   const handleSkipGame = useCallback(() => {
     handleGameComplete(0, 100);
@@ -317,14 +356,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }, []);
 
   if (gameState === 'intro') {
+    const displayRounds = playlistId && playlistRounds.length > 0 ? playlistRounds.length : totalRounds;
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-6 max-w-md">
           <h1 className="text-4xl font-bold text-cyan-400" style={{ textShadow: '0 0 20px #00ffff' }}>
-            Game Session
+            {playlistName || 'Game Session'}
           </h1>
           <p className="text-xl text-gray-300">
-            Round {currentRound} of {totalRounds}
+            Round {currentRound} of {displayRounds}
           </p>
           <button
             onClick={startRound}
@@ -382,6 +422,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     const GameComponent = currentGame.component;
     const neonButtonBase = "flex-shrink-0 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded text-xs sm:text-sm font-semibold transition-all hover:text-black active:scale-95 touch-manipulation";
     const neonButtonStyle = { textShadow: '0 0 8px #00ffff', boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' };
+    const displayRounds = playlistId && playlistRounds.length > 0 ? playlistRounds.length : totalRounds;
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col">
@@ -392,7 +433,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
               <span className="text-cyan-400 font-semibold text-sm sm:text-base">{currentGame.name}</span>
             </div>
             <div className="text-cyan-400 text-xs sm:text-sm font-mono">
-              Round {currentRound}/{totalRounds}
+              Round {currentRound}/{displayRounds}
             </div>
             <button
               onClick={handleQuitAndSave}
