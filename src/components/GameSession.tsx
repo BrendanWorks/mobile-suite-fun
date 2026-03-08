@@ -47,6 +47,8 @@ import { analytics } from '../lib/analytics';
 import { audioManager } from '../lib/audioManager';
 import ReactGA from 'react-ga4';
 
+const SPLIT_DECISION_POINTS_PER_ITEM = Math.round(1000 / 7);
+
 interface GameConfig {
   id: string;
   name: string;
@@ -609,7 +611,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         break;
 
       case 'split-decision':
-        normalizedScore = scoringSystem.splitDecision(rawScore, maxScore - rawScore);
+        // Use correctCount if available (from getGameScore), otherwise calculate from points
+        const splitCorrectCount = (currentGameScore as any)?.correctCount ?? Math.round(rawScore / SPLIT_DECISION_POINTS_PER_ITEM);
+        const splitTotalItems = (currentGameScore as any)?.totalItems ?? 7;
+        const splitWrongCount = splitTotalItems - splitCorrectCount;
+        normalizedScore = scoringSystem.splitDecision(splitCorrectCount, splitWrongCount);
         break;
 
       case 'word-rescue':

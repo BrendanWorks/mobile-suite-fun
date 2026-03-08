@@ -50,6 +50,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -59,6 +60,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
   const onCompleteRef = useRef(onComplete);
   const scoreRef = useRef(0);
+  const correctCountRef = useRef(0);
   const gameCompletedRef = useRef(false);
   const lastItemAnsweredRef = useRef(false);
 
@@ -70,6 +72,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  useEffect(() => {
+    correctCountRef.current = correctCount;
+  }, [correctCount]);
 
   // When the last item is answered, complete after score updates
   useEffect(() => {
@@ -191,6 +197,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     setFeedback(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
+      setCorrectCount(prev => {
+        correctCountRef.current = prev + 1;
+        return prev + 1;
+      });
       setScore(prev => {
         const newScore = prev + POINTS_PER_ITEM;
         scoreRef.current = newScore; // Update ref immediately
@@ -251,8 +261,10 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
       score: score,
-      maxScore: MAX_SCORE
-    }),
+      maxScore: MAX_SCORE,
+      correctCount: correctCount,
+      totalItems: puzzle?.items.length || 7
+    } as any),
     onGameEnd: () => {
       console.log('SplitDecision: onGameEnd called (time ran out), clearing timer');
       if (autoAdvanceTimer.current) {
