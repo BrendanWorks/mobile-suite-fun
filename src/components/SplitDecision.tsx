@@ -60,6 +60,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const onCompleteRef = useRef(onComplete);
   const scoreRef = useRef(0);
   const gameCompletedRef = useRef(false);
+  const lastItemAnsweredRef = useRef(false);
 
   // Keep refs up to date
   useEffect(() => {
@@ -69,6 +70,20 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  // When the last item is answered, complete after score updates
+  useEffect(() => {
+    if (lastItemAnsweredRef.current && !gameCompletedRef.current) {
+      gameCompletedRef.current = true;
+      const callback = onCompleteRef.current;
+      console.log('SplitDecision: Completing game with final score:', scoreRef.current);
+      if (callback) {
+        callback(scoreRef.current, MAX_SCORE, timeRemaining);
+        console.log('SplitDecision: onComplete called successfully');
+      }
+      lastItemAnsweredRef.current = false;
+    }
+  }, [score, timeRemaining]);
 
   // Load audio on mount
   useEffect(() => {
@@ -202,18 +217,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     console.log('SplitDecision: Item', currentItemIndex + 1, 'of', puzzle.items.length, '- isLastItem:', isLastItem);
 
     if (isLastItem) {
-      // Puzzle complete - immediately trigger fast countdown by calling onComplete
-      if (!gameCompletedRef.current) {
-        gameCompletedRef.current = true;
-        const callback = onCompleteRef.current;
-        const finalScore = scoreRef.current;
-        console.log('SplitDecision: Last item answered! Triggering fast countdown with timeRemaining:', timeRemaining);
-        console.log('SplitDecision: Puzzle complete, calling onComplete with score:', finalScore);
-        if (callback) {
-          callback(finalScore, MAX_SCORE, timeRemaining);
-          console.log('SplitDecision: onComplete called successfully');
-        }
-      }
+      // Mark that last item was answered, useEffect will handle onComplete after state updates
+      console.log('SplitDecision: Last item answered! Will trigger completion after state updates');
+      lastItemAnsweredRef.current = true;
 
       // Still show feedback for 1.5 seconds, but timer will count down fast
       autoAdvanceTimer.current = setTimeout(() => {
