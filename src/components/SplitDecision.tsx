@@ -179,6 +179,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setScore(prev => {
         const newScore = prev + POINTS_PER_ITEM;
         scoreRef.current = newScore; // Update ref immediately
+        console.log('SplitDecision: CORRECT! newScore:', newScore, 'itemsAnswered:', currentItemIndex + 1);
         if (onScoreUpdate) {
           onScoreUpdate(newScore, MAX_SCORE);
         }
@@ -188,7 +189,8 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       // Wrong answer: play wrong sound, no points, no penalty
       audioManager.initialize();
       audioManager.play('global-wrong', 0.3);
-      
+
+      console.log('SplitDecision: WRONG! currentScore:', score, 'itemsAnswered:', currentItemIndex + 1);
       if (onScoreUpdate) {
         onScoreUpdate(score, MAX_SCORE);
       }
