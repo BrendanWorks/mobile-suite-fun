@@ -668,13 +668,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         };
     }
 
+    // Apply perfect score bonus FIRST (before time bonus) for content puzzles with 100% accuracy
+    normalizedScore = applyPerfectScoreBonus(normalizedScore);
+
     // Apply time bonus if there's time remaining (but NOT for Snake, Gravity Ball, or Word Surge)
     if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball' && currentGame.id !== 'word-rescue') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
     }
-
-    // Apply perfect score bonus (2X multiplier) for content puzzles with 100% accuracy
-    normalizedScore = applyPerfectScoreBonus(normalizedScore);
 
     setRoundScores(prev => [...prev, {
       gameId: currentGame.id,
