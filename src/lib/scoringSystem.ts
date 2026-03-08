@@ -304,10 +304,9 @@ export const applyPerfectScoreBonus = (
   // Only apply 2X multiplier to content puzzles with 100% accuracy
   const isContentPuzzle = CONTENT_PUZZLE_GAMES.includes(gameScore.gameId);
 
-  // Check if the base score (before any bonuses) was exactly 100%
-  // If totalWithBonus exists, it means time bonus was already applied
+  // Check if the base score (before any bonuses) was 100% (with small tolerance for floating point)
   const baseScore = gameScore.normalizedScore;
-  const isPerfectScore = baseScore === 100;
+  const isPerfectScore = Math.abs(baseScore - 100) < 0.001;
 
   if (!isContentPuzzle || !isPerfectScore) {
     return gameScore;
