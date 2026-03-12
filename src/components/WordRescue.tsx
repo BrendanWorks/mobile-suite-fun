@@ -550,20 +550,6 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   if (gameState === 'countdown') {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-black text-white overflow-hidden">
-        <div className="text-center px-6 z-10">
-          <div className="flex items-center justify-center gap-1.5 mb-3">
-            <Type
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={{ color: THEME.color, filter: `drop-shadow(0 0 8px ${THEME.glow})` }}
-            />
-            <h2
-              className="text-xs sm:text-sm font-bold text-blue-400"
-              style={{ textShadow: THEME.textShadow }}
-            >
-              Pop
-            </h2>
-          </div>
-        </div>
         <RoundCountdown onComplete={startGame} />
       </div>
     );
