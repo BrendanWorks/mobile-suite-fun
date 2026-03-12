@@ -22,12 +22,121 @@ export interface SessionScore {
   percentage: number;
 }
 
+const SCORE_LABELS = [
+  "Didn't Even Try!", // 0
+  "Poor!", // 1
+  "Whoa There!", // 2
+  "Weak Sauce!", // 3
+  "Seriously Struggling!", // 4
+  "Not Even Close!", // 5
+  "Harsh!", // 6
+  "Geez!", // 7
+  "Major Issues!", // 8
+  "Fumbled It!", // 9
+  "Ouch!", // 10
+  "Yikes!", // 11
+  "Rough One!", // 12
+  "Better Luck Next Time!", // 13
+  "That Stung!", // 14
+  "Oof!", // 15
+  "Tough Round!", // 16
+  "Swing and a Miss!", // 17
+  "Close, but Not Quite!", // 18
+  "Need Some Work!", // 19
+  "Keep Trying!", // 20
+  "Don't Give Up!", // 21
+  "You're Learning!", // 22
+  "Push Harder!", // 23
+  "More Work Needed!", // 24
+  "Stay Focused!", // 25
+  "Keep At It!", // 26
+  "Progress Pending!", // 27
+  "Effort Encouraged!", // 28
+  "Persistence Pays!", // 29
+  "Needs Improvement!", // 30
+  "Keep Building!", // 31
+  "Getting Better!", // 32
+  "More Practice Needed!", // 33
+  "Room to Grow!", // 34
+  "Working Toward Better!", // 35
+  "Try Again!", // 36
+  "Still Learning!", // 37
+  "Room for Growth!", // 38
+  "Progress Coming!", // 39
+  "Pretty Good!", // 40
+  "Getting There!", // 41
+  "Making Headway!", // 42
+  "Solid Attempt!", // 43
+  "Worth the Effort!", // 44
+  "Decent Effort!", // 45
+  "Stepping Up!", // 46
+  "Fair Attempt!", // 47
+  "Commendable Try!", // 48
+  "On the Right Track!", // 49
+  "Above Average!", // 50
+  "Getting Stronger!", // 51
+  "Meh", // 52
+  "Moving Right Along!", // 53
+  "Making Progress!", // 54
+  "Steady Improvement!", // 55
+  "Gaining Ground!", // 56
+  "Fair Performance!", // 57
+  "Building Momentum!", // 58
+  "Acceptable Work!", // 59
+  "Well Done!", // 60
+  "Nice Work!", // 61
+  "Good Effort!", // 62
+  "Solid Performance!", // 63
+  "Respectable Job!", // 64
+  "Decently Done!", // 65
+  "Good Show!", // 66
+  "Fair Play!", // 67
+  "Noteworthy Work!", // 68
+  "Credible Effort!", // 69
+  "Very Good!", // 70
+  "Nicely Done!", // 71
+  "Solidly Strong!", // 72
+  "Well Executed!", // 73
+  "Quite Impressive!", // 74
+  "Really Nice Work!", // 75
+  "Solid Effort!", // 76
+  "Respectably Good!", // 77
+  "Genuinely Good!", // 78
+  "Competently Excellent!", // 79
+  "Exceptional!", // 80
+  "Remarkably Solid!", // 81
+  "Truly Impressive!", // 82
+  "Powerful!", // 83
+  "Notably Excellent!", // 84
+  "That Did Not Suck!", // 85
+  "Seriously Stellar!", // 86
+  "Distinctly Great!", // 87
+  "Magnificently Done!", // 88
+  "Impressively Excellent!", // 89
+  "Amazeballs!", // 90
+  "Absolutely Blazing!", // 91
+  "Grace Hopper Grade!", // 92
+  "Epic!", // 93
+  "Ate and Left No Crumbs!", // 94
+  "Wildly Incredible!", // 95
+  "Great Work, Einstein!", // 96
+  "Outrageously Brilliant!", // 97
+  "Most Excellent!", // 98
+  "Spectacularly Crushing It!", // 99
+  "Perfect!" // 100
+];
+
 function getGrade(score: number): string {
   if (score <= 20) return '★☆☆☆☆';
   if (score <= 40) return '★★☆☆☆';
   if (score <= 60) return '★★★☆☆';
   if (score <= 80) return '★★★★☆';
   return '★★★★★';
+}
+
+export function getScoreLabel(score: number): string {
+  const roundedScore = Math.round(Math.min(100, Math.max(0, score)));
+  return SCORE_LABELS[roundedScore];
 }
 
 export const scoringSystem = {

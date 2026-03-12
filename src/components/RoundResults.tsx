@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
-import { GameScore } from '../lib/scoringSystem';
+import { GameScore, getScoreLabel } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
 import { playWin } from '../lib/sounds';
 import ReactGA from 'react-ga4';
@@ -70,18 +70,7 @@ export default function RoundResults({
   const animatedPerfectBonus = useCountUp(hasPerfectScoreBonus ? perfectBonus : 0, 1200, showBonus && hasPerfectScoreBonus);
 
   const getGradeLabel = useCallback((score: number): string => {
-    if (score >= 100) return "Perfect";
-    if (score >= 90) return "Amazeballs!";
-    if (score >= 80) return "Exceptional";
-    if (score >= 70) return "Very Good";
-    if (score >= 60) return "Well Done";
-    if (score >= 50) return "Above Average";
-    if (score >= 40) return "Pretty Good";
-    if (score >= 30) return "Needs Improvement";
-    if (score >= 20) return "Keep Trying";
-    if (score >= 10) return "Ouch!";
-    if (score > 0) return "Poor";
-    return "Didn't Even Try!";
+    return getScoreLabel(score);
   }, []);
 
   const gameIcon = gameId ? GAME_ICONS[gameId.toLowerCase()] : null;
