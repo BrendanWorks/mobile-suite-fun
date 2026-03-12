@@ -301,6 +301,12 @@ const CONTENT_PUZZLE_GAMES = [
 export const applyPerfectScoreBonus = (
   gameScore: GameScore
 ): GameScore => {
+  // Exclude procedural games from getting perfect bonus (even if they score 100)
+  const proceduralGames = ['word-rescue', 'snake', 'gravity-ball', 'slope-rider', 'neural-pulse', 'zen-gravity', 'shape-sequence'];
+  if (proceduralGames.includes(gameScore.gameId)) {
+    return gameScore;
+  }
+
   // Only apply 2X multiplier to content puzzles with 100% accuracy
   const isContentPuzzle = CONTENT_PUZZLE_GAMES.includes(gameScore.gameId);
 
@@ -317,6 +323,7 @@ export const applyPerfectScoreBonus = (
   });
 
   if (!isContentPuzzle || !isPerfectScore) {
+    console.log(`[applyPerfectScoreBonus] Skipping bonus for ${gameScore.gameId}: isContentPuzzle=${isContentPuzzle}, isPerfectScore=${isPerfectScore}`);
     return gameScore;
   }
 
