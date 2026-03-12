@@ -71,8 +71,8 @@ export default function RoundResults({
   const hasPerfectScoreBonus = !!gameScore.perfectScoreBonus && gameScore.perfectScoreBonus > 0;
   const perfectBonus = gameScore.perfectScoreBonus || 0;
 
-  const animatedBonus = useCountUp(hasTimeBonus ? timeBonus : 0, 900, showBonus && hasTimeBonus);
-  const animatedPerfectBonus = useCountUp(hasPerfectScoreBonus ? perfectBonus : 0, 1200, showBonus && hasPerfectScoreBonus);
+  const animatedBonus = useCountUp(hasTimeBonus ? timeBonus : 0, 900, showSpeedBonus);
+  const animatedPerfectBonus = useCountUp(hasPerfectScoreBonus ? perfectBonus : 0, 1200, showPerfectBonus);
 
   const getGradeLabel = useCallback((score: number): string => {
     return getScoreLabel(score);
