@@ -51,9 +51,14 @@ export default function RoundResults({
   isLastRound
 }: RoundResultsProps) {
   const [showContent, setShowContent] = useState(false);
-  const [showBonus, setShowBonus] = useState(false);
+  const [showSpeedBonus, setShowSpeedBonus] = useState(false);
+  const [showPerfectBonus, setShowPerfectBonus] = useState(false);
+  const [showButton, setShowButton] = useState(false);
   const showContentTimerRef = useRef<number | null>(null);
-  const showBonusTimerRef = useRef<number | null>(null);
+  const showSpeedBonusTimerRef = useRef<number | null>(null);
+  const showPerfectBonusTimerRef = useRef<number | null>(null);
+  const hideBonusesTimerRef = useRef<number | null>(null);
+  const showButtonTimerRef = useRef<number | null>(null);
 
   const totalPercentage = useMemo(
     () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
@@ -92,13 +97,37 @@ export default function RoundResults({
       playWin(0.5);
     }, 200);
 
-    if (isTimedGame || hasPerfectScoreBonus) {
-      showBonusTimerRef.current = window.setTimeout(() => setShowBonus(true), 800);
+    if (hasTimeBonus) {
+      showSpeedBonusTimerRef.current = window.setTimeout(() => setShowSpeedBonus(true), 800);
+    }
+
+    if (hasPerfectScoreBonus) {
+      showPerfectBonusTimerRef.current = window.setTimeout(() => setShowPerfectBonus(true), hasTimeBonus ? 1300 : 800);
+    }
+
+    const bonusDisplayDuration = hasTimeBonus && hasPerfectScoreBonus ? 3500 : hasPerfectScoreBonus || hasTimeBonus ? 2800 : 0;
+
+    if (bonusDisplayDuration > 0) {
+      hideBonusesTimerRef.current = window.setTimeout(() => {
+        setShowSpeedBonus(false);
+        setShowPerfectBonus(false);
+      }, bonusDisplayDuration);
+
+      showButtonTimerRef.current = window.setTimeout(() => {
+        setShowButton(true);
+      }, bonusDisplayDuration + 400);
+    } else {
+      showButtonTimerRef.current = window.setTimeout(() => {
+        setShowButton(true);
+      }, 800);
     }
 
     return () => {
       if (showContentTimerRef.current) clearTimeout(showContentTimerRef.current);
-      if (showBonusTimerRef.current) clearTimeout(showBonusTimerRef.current);
+      if (showSpeedBonusTimerRef.current) clearTimeout(showSpeedBonusTimerRef.current);
+      if (showPerfectBonusTimerRef.current) clearTimeout(showPerfectBonusTimerRef.current);
+      if (hideBonusesTimerRef.current) clearTimeout(hideBonusesTimerRef.current);
+      if (showButtonTimerRef.current) clearTimeout(showButtonTimerRef.current);
     };
   }, []);
 
@@ -142,42 +171,42 @@ export default function RoundResults({
             </div>
           </div>
 
-          <div className="mb-4 pb-4 border-b border-cyan-400/30" style={{ minHeight: '100px' }}>
-            {showBonus && (
-              <div className="space-y-4">
-                {isTimedGame && (
-                  <div className="text-center animate-fade-in">
-                    <div
-                      className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
-                      style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}
-                    >
-                      Speed Bonus
-                    </div>
-                    <div
-                      className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 animate-pulse-danger'}`}
-                      style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}
-                    >
-                      +{hasTimeBonus ? Math.round(animatedBonus) : 0}
-                    </div>
+          <div style={{ minHeight: (showSpeedBonus || showPerfectBonus) ? '140px' : '60px', transition: 'min-height 0.3s ease-out' }}>
+            {showSpeedBonus && (
+              <div className="mb-4 pb-4 border-b border-cyan-400/30">
+                <div className="text-center animate-slide-up">
+                  <div
+                    className={`text-sm mb-2 uppercase tracking-wide ${hasTimeBonus ? 'text-yellow-300' : 'text-red-400'}`}
+                    style={{ textShadow: hasTimeBonus ? '0 0 8px #fbbf24' : '0 0 8px #ef4444' }}
+                  >
+                    Speed Bonus
                   </div>
-                )}
-                {hasPerfectScoreBonus && (
-                  <div className="text-center animate-fade-in" style={{ animationDelay: hasTimeBonus ? '0.3s' : '0s' }}>
-                    <div
-                      className="text-sm mb-2 uppercase tracking-wide text-pink-300 font-bold"
-                      style={{ textShadow: '0 0 12px #ec4899' }}
-                    >
-                      Perfect Score Bonus
-                    </div>
-                    <div
-                      className="text-4xl sm:text-5xl font-bold mb-1 text-pink-400 animate-pulse"
-                      style={{ textShadow: '0 0 20px #ec4899' }}
-                    >
-                      +{Math.round(animatedPerfectBonus)}
-                    </div>
-                    <div className="text-sm text-pink-300">2X Multiplier</div>
+                  <div
+                    className={`text-4xl sm:text-5xl font-bold mb-1 ${hasTimeBonus ? 'text-yellow-400' : 'text-red-400 animate-pulse-danger'}`}
+                    style={{ textShadow: hasTimeBonus ? '0 0 15px #fbbf24' : '0 0 15px #ef4444' }}
+                  >
+                    +{hasTimeBonus ? Math.round(animatedBonus) : 0}
                   </div>
-                )}
+                </div>
+              </div>
+            )}
+            {showPerfectBonus && (
+              <div className="pb-4">
+                <div className="text-center animate-slide-up">
+                  <div
+                    className="text-sm mb-2 uppercase tracking-wide text-pink-300 font-bold"
+                    style={{ textShadow: '0 0 12px #ec4899' }}
+                  >
+                    Perfect Score Bonus
+                  </div>
+                  <div
+                    className="text-4xl sm:text-5xl font-bold mb-1 text-pink-400 animate-pulse"
+                    style={{ textShadow: '0 0 20px #ec4899' }}
+                  >
+                    +{Math.round(animatedPerfectBonus)}
+                  </div>
+                  <div className="text-sm text-pink-300">2X Multiplier</div>
+                </div>
               </div>
             )}
           </div>
@@ -185,7 +214,8 @@ export default function RoundResults({
 
         <button
           onClick={onContinue}
-          className="w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wide"
+          disabled={!showButton}
+          className={`w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wide ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           style={{ textShadow: '0 0 15px #22c55e', boxShadow: '0 0 30px rgba(34, 197, 94, 0.4)' }}
         >
           {isLastRound ? (
