@@ -327,6 +327,8 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   }, [gameState]);
 
   useEffect(() => {
+    if (gameState !== 'playing') return;
+
     const interval = setInterval(() => {
       const now = Date.now();
       setPoppingLetters(prev => prev.filter(letter => now - letter.popTime < 800));
@@ -334,7 +336,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [gameState]);
 
   useEffect(() => {
     if (gameState !== 'playing' || !timerStarted) return;
