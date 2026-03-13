@@ -89,6 +89,7 @@ export default function CelebrationScreen({
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
+  const [displayedScore, setDisplayedScore] = useState(0);
 
   const MAX_RING_SCORE = 1000;
 
@@ -169,6 +170,7 @@ export default function CelebrationScreen({
           () => {
             const tilePercentage = (roundScores[i].score.normalizedScore / MAX_RING_SCORE) * 100;
             setDialFill((prev) => Math.min(prev + tilePercentage, dialFillWithoutBonus));
+            setDisplayedScore((prev) => prev + Math.round(roundScores[i].score.normalizedScore));
           },
           ANIMATION_TIMINGS.NAME_START + delay
         )
@@ -195,6 +197,10 @@ export default function CelebrationScreen({
                 const next = Math.min(prev + increment, dialFillWithoutBonus + perfectPercentage);
                 return next;
               });
+              setDisplayedScore((prev) => {
+                const scoreIncrement = perfectBonus / ANIMATION_TIMINGS.DIAL_SPEED;
+                return Math.min(prev + scoreIncrement, totalSessionScore);
+              });
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
 
@@ -208,7 +214,7 @@ export default function CelebrationScreen({
           }, bonusStartAt)
         );
 
-        // Show speed bonus after perfect bonus completes
+        // Show speed bonus after perfect bonus completes, or play win sound if no speed bonus
         if (timeBonus > 10) {
           const speedStartAt = bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + ANIMATION_TIMINGS.BONUS_DELAY;
           const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
@@ -225,6 +231,10 @@ export default function CelebrationScreen({
                   const next = Math.min(prev + increment, totalPercentage);
                   return next;
                 });
+                setDisplayedScore((prev) => {
+                  const scoreIncrement = timeBonus / ANIMATION_TIMINGS.DIAL_SPEED;
+                  return Math.min(prev + scoreIncrement, totalSessionScore);
+                });
               }, ANIMATION_TIMINGS.DIAL_INTERVAL);
               intervals.push(fillInterval);
 
@@ -236,6 +246,14 @@ export default function CelebrationScreen({
                 }, speedDuration)
               );
             }, speedStartAt)
+          );
+        } else {
+          // Perfect bonus only, no speed bonus - play win sound after perfect bonus
+          timers.push(
+            setTimeout(() => {
+              setDisplayedScore(Math.round(totalSessionScore));
+              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            }, bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + 500)
           );
         }
       } else if (timeBonus > 10) {
@@ -254,6 +272,10 @@ export default function CelebrationScreen({
                 const next = Math.min(prev + increment, totalPercentage);
                 return next;
               });
+              setDisplayedScore((prev) => {
+                const scoreIncrement = timeBonus / ANIMATION_TIMINGS.DIAL_SPEED;
+                return Math.min(prev + scoreIncrement, totalSessionScore);
+              });
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
 
@@ -261,6 +283,8 @@ export default function CelebrationScreen({
               setTimeout(() => {
                 clearInterval(fillInterval);
                 setShowTimeBonus(false);
+                setDisplayedScore(Math.round(totalSessionScore));
+                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
               }, speedDuration)
             );
           }, bonusStartAt)
@@ -270,6 +294,7 @@ export default function CelebrationScreen({
       // No bonus - play final sound
       timers.push(
         setTimeout(() => {
+          setDisplayedScore(Math.round(totalSessionScore));
           playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
         }, hideAllNamesAt + 500)
       );
@@ -362,7 +387,7 @@ export default function CelebrationScreen({
                 className="text-4xl sm:text-6xl font-bold text-yellow-400"
                 style={{ textShadow: getTextShadow(COLORS.yellow, '20px') }}
               >
-                {Math.round(totalSessionScore)}
+                {Math.round(displayedScore)}
               </div>
             </div>
           </div>
