@@ -203,12 +203,12 @@ export const scoringSystem = {
     };
   },
 
-  // WordSurge (WordRescue): 500 points = 100
+  // Pop: 500 points = 100
   pop: (wordScore: number): GameScore => {
     const normalized = Math.min(100, (wordScore / 500) * 100);
     return {
       gameId: 'word-rescue',
-      gameName: 'WordSurge',
+      gameName: 'Pop',
       rawScore: wordScore,
       normalizedScore: normalized,
       grade: getGrade(normalized),

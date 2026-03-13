@@ -64,7 +64,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'rank-and-roll',   dbId: 5,  name: 'Ranky',            component: RankAndRoll,     duration: 90,  instructions: 'Arrange items in the correct order' },
   { id: 'snapshot',        dbId: 6,  name: 'SnapShot',         component: SnapShot,        duration: 30,  instructions: 'Drag 4 pieces to complete the puzzle' },
   { id: 'split-decision',  dbId: 7,  name: 'Split Decision',   component: SplitDecision,   duration: 60,  instructions: 'Categorize items: A, B, or BOTH' },
-  { id: 'word-rescue',               name: 'WordSurge',        component: WordRescue,      duration: 90,  instructions: 'Click falling letters to make words' },
+  { id: 'word-rescue',               name: 'Pop',              component: WordRescue,      duration: 90,  instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence',            name: 'Simple',           component: ShapeSequence,   duration: 60,  instructions: 'Watch and repeat the pattern' },
   { id: 'snake',           dbId: 12, name: 'Snake',            component: Snake,           duration: 75,  instructions: 'Eat food, avoid walls and yourself' },
   { id: 'gravity-ball',              name: 'Gravity Ball',     component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
