@@ -114,10 +114,9 @@ export default function CelebrationScreen({
     [calculatedTotalScore]
   );
 
-  const dialFillWithoutBonus = useMemo(() => {
-    const totalBonusPercentage = ((timeBonus + perfectBonus) / MAX_RING_SCORE) * 100;
-    return Math.max(0, totalPercentage - totalBonusPercentage);
-  }, [totalPercentage, timeBonus, perfectBonus]);
+  const basePercentage = useMemo(() => {
+    return Math.min((baseScore / MAX_RING_SCORE) * 100, 100);
+  }, [baseScore]);
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -178,7 +177,7 @@ export default function CelebrationScreen({
           () => {
             const tileScore = roundScores[i].score.normalizedScore || 0;
             const tilePercentage = (tileScore / MAX_RING_SCORE) * 100;
-            setDialFill((prev) => Math.min(prev + tilePercentage, dialFillWithoutBonus));
+            setDialFill((prev) => Math.min(prev + tilePercentage, basePercentage));
             setDisplayedScore((prev) => prev + Math.round(tileScore));
           },
           ANIMATION_TIMINGS.NAME_START + delay
@@ -190,6 +189,14 @@ export default function CelebrationScreen({
     const totalBonus = timeBonus + perfectBonus;
 
     if (totalBonus > 10) {
+      // Ensure dial is at base percentage before bonuses start
+      timers.push(
+        setTimeout(() => {
+          setDialFill(basePercentage);
+          setDisplayedScore(Math.round(baseScore));
+        }, bonusStartAt - 50)
+      );
+
       // Perfect bonus first if it exists
       if (perfectBonus > 10) {
         const perfectDuration = ANIMATION_TIMINGS.BONUS_DURATION;
@@ -210,7 +217,7 @@ export default function CelebrationScreen({
 
               setDialFill((prev) => {
                 const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-                const next = Math.min(prev + increment, dialFillWithoutBonus + perfectPercentage);
+                const next = Math.min(prev + increment, basePercentage + perfectPercentage);
                 return next;
               });
 
@@ -327,7 +334,7 @@ export default function CelebrationScreen({
       timers.forEach((timer) => clearTimeout(timer));
       intervals.forEach((interval) => clearInterval(interval));
     };
-  }, [roundScores, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus, calculatedTotalScore]);
+  }, [roundScores, totalPercentage, timeBonus, perfectBonus, basePercentage, calculatedTotalScore]);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
