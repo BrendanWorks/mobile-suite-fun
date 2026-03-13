@@ -266,11 +266,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
     const newItems = [...items];
     [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
-    setItems(newItems);
 
-    if (showHint?.itemId === items[index].id) {
+    if (showHint?.itemId === newItems[index].id || showHint?.itemId === newItems[newIndex].id) {
       setShowHint(null);
     }
+
+    setItems(newItems);
   };
 
   const swapItems = (index1: number, index2: number) => {
