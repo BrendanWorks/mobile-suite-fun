@@ -70,6 +70,7 @@ interface CelebrationScreenProps {
   onPlayAgain: () => void;
   totalRounds?: number;
   levelName?: string;
+  levelNumber?: number;
 }
 
 export default function CelebrationScreen({
@@ -79,6 +80,7 @@ export default function CelebrationScreen({
   onPlayAgain,
   totalRounds,
   levelName,
+  levelNumber,
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);
   const [visibleScores, setVisibleScores] = useState<Set<number>>(new Set());
@@ -298,17 +300,21 @@ export default function CelebrationScreen({
 
       {/* MAIN CONTENT AREA */}
       <div className="flex flex-col items-center gap-6 w-full flex-1">
-        {levelName && (
-          <div className="text-cyan-400 text-sm sm:text-base" style={{ textShadow: '0 0 8px #00ffff' }}>
-            Level {levelName} Complete!
-          </div>
+        {levelNumber ? (
+          <h1
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in"
+            style={{ textShadow: getTextShadow(COLORS.cyan, '20px') }}
+          >
+            Level {levelNumber} Complete!
+          </h1>
+        ) : (
+          <h1
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in"
+            style={{ textShadow: getTextShadow(COLORS.cyan, '20px') }}
+          >
+            Game Complete!
+          </h1>
         )}
-        <h1
-          className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in"
-          style={{ textShadow: getTextShadow(COLORS.cyan, '20px') }}
-        >
-          Game Complete!
-        </h1>
 
         {/* DIAL CIRCLE */}
         <div className={showMainCircle ? 'block' : 'hidden'}>

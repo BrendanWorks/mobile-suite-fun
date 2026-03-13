@@ -171,6 +171,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showLevelIntro, setShowLevelIntro] = useState(false);
+  const [levelNumber, setLevelNumber] = useState<number | null>(null);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -245,7 +246,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     try {
       const { data: playlist, error: playlistError } = await supabase
         .from('playlists')
-        .select('id, name, description')
+        .select('id, name, description, sequence_order')
         .eq('id', playlistId)
         .maybeSingle();
 
@@ -263,7 +264,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       }
 
       setPlaylistName(playlist.name);
-      console.log('✅ Playlist found:', playlist.name);
+      setLevelNumber(playlist.sequence_order);
+      console.log('✅ Playlist found:', playlist.name, '- Level', playlist.sequence_order);
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
@@ -906,7 +908,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
 
     // LEVEL INTRO SCREEN - Show only at start of playlist
-    if (showLevelIntro && currentRound === 1 && playlistId && playlistName) {
+    if (showLevelIntro && currentRound === 1 && playlistId && playlistName && levelNumber) {
       return (
         <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
           <div className="mb-8 sm:mb-12">
@@ -917,7 +919,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
           <div className="text-center max-w-2xl w-full flex flex-col items-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-cyan-400 mb-6" style={{ textShadow: '0 0 20px #00ffff' }}>
-              {playlistName}
+              Level {levelNumber}: {playlistName}
             </h1>
 
             <p className="text-cyan-300 text-sm sm:text-base mb-8 max-w-md">
@@ -1070,6 +1072,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           onPlayAgain={handlePlayAgain}
           totalRounds={totalRounds}
           levelName={playlistName}
+          levelNumber={levelNumber}
         />
         <AuthModal
           isOpen={showAuthModal}
