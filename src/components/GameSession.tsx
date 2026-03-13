@@ -1051,7 +1051,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     const celebrationTiles = roundScores.map((round, idx) => ({
       gameId: round.gameId,
       gameName: round.gameName,
-      score: round.normalizedScore,
+      score: {
+        normalizedScore: round.normalizedScore.normalizedScore || 0,
+        timeBonus: round.normalizedScore.timeBonus || 0,
+        perfectScoreBonus: round.normalizedScore.perfectScoreBonus || 0,
+        totalWithBonus: round.normalizedScore.totalWithBonus || round.normalizedScore.normalizedScore || 0,
+      },
     }));
 
     const handlePlayAgain = () => {
