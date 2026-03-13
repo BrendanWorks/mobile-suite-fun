@@ -43,11 +43,15 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   }, [props.onComplete]);
 
   const successMessages = [
-    "Excellent! You found the odd ones out!",
-    "Perfect! Great logical thinking!",
-    "Brilliant! You nailed it!",
-    "Outstanding! You've got a keen eye!",
-    "Fantastic! Well reasoned!"
+  "Excellent! You found the odd ones out!",
+  "🎯 Nailed it!",
+  "That's the one!",
+  "Dead on.",
+  "You're untouchable.",
+  "Locked in.",
+  "That's the move.",
+  "You see things.",
+  "Great eye, Sherlock!"
   ];
 
   useImperativeHandle(ref, () => ({
