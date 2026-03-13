@@ -191,16 +191,22 @@ export default function CelebrationScreen({
             setShowPerfectBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
+            let startScore = displayedScore;
+            let startTime = Date.now();
+            const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
+
             let fillInterval = setInterval(() => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / animationDuration, 1);
+
               setDialFill((prev) => {
                 const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
                 const next = Math.min(prev + increment, dialFillWithoutBonus + perfectPercentage);
                 return next;
               });
-              setDisplayedScore((prev) => {
-                const scoreIncrement = perfectBonus / ANIMATION_TIMINGS.DIAL_SPEED;
-                return Math.min(prev + scoreIncrement, totalSessionScore);
-              });
+
+              const targetScore = startScore + perfectBonus;
+              setDisplayedScore(Math.round(startScore + (perfectBonus * progress)));
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
 
@@ -225,16 +231,20 @@ export default function CelebrationScreen({
               setShowTimeBonus(true);
               audioManager.play('bonus-pizzaz', 0.5);
 
+              let startScore = displayedScore;
+              let startTime = Date.now();
+              const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
+
               let fillInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+
                 setDialFill((prev) => {
                   const increment = speedPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
                   const next = Math.min(prev + increment, totalPercentage);
                   return next;
                 });
-                setDisplayedScore((prev) => {
-                  const scoreIncrement = timeBonus / ANIMATION_TIMINGS.DIAL_SPEED;
-                  return Math.min(prev + scoreIncrement, totalSessionScore);
-                });
+                setDisplayedScore(Math.round(startScore + (timeBonus * progress)));
               }, ANIMATION_TIMINGS.DIAL_INTERVAL);
               intervals.push(fillInterval);
 
@@ -266,16 +276,20 @@ export default function CelebrationScreen({
             setShowTimeBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
+            let startScore = displayedScore;
+            let startTime = Date.now();
+            const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
+
             let fillInterval = setInterval(() => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / animationDuration, 1);
+
               setDialFill((prev) => {
                 const increment = speedPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
                 const next = Math.min(prev + increment, totalPercentage);
                 return next;
               });
-              setDisplayedScore((prev) => {
-                const scoreIncrement = timeBonus / ANIMATION_TIMINGS.DIAL_SPEED;
-                return Math.min(prev + scoreIncrement, totalSessionScore);
-              });
+              setDisplayedScore(Math.round(startScore + (timeBonus * progress)));
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
 
