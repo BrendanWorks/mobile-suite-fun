@@ -914,7 +914,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
           {/* Round number - small */}
           <div className="text-cyan-400 text-sm sm:text-base mb-4" style={{ textShadow: '0 0 8px #00ffff' }}>
-            Round {currentRound}
+            Level {currentRound} of {totalRounds}
           </div>
 
           {/* Game icon - large line-art SVG */}
@@ -1028,6 +1028,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           totalSessionScore={sessionTotal.totalScore}
           maxSessionScore={sessionTotal.maxPossible}
           onPlayAgain={handlePlayAgain}
+          totalRounds={totalRounds}
         />
         <AuthModal
           isOpen={showAuthModal}

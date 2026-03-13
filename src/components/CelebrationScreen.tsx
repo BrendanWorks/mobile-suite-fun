@@ -68,6 +68,7 @@ interface CelebrationScreenProps {
   totalSessionScore: number;
   maxSessionScore: number;
   onPlayAgain: () => void;
+  totalRounds?: number;
 }
 
 export default function CelebrationScreen({
@@ -75,6 +76,7 @@ export default function CelebrationScreen({
   totalSessionScore,
   maxSessionScore,
   onPlayAgain,
+  totalRounds,
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);
   const [visibleScores, setVisibleScores] = useState<Set<number>>(new Set());
@@ -294,6 +296,11 @@ export default function CelebrationScreen({
 
       {/* MAIN CONTENT AREA */}
       <div className="flex flex-col items-center gap-6 w-full flex-1">
+        {totalRounds && (
+          <div className="text-cyan-400 text-sm sm:text-base" style={{ textShadow: '0 0 8px #00ffff' }}>
+            Completed All {totalRounds} Levels
+          </div>
+        )}
         <h1
           className="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 uppercase tracking-wider animate-fade-in"
           style={{ textShadow: getTextShadow(COLORS.cyan, '20px') }}

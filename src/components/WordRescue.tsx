@@ -554,29 +554,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   }
 
   if (gameState === 'roundEnd') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="text-center mb-8 border-2 border-blue-400 rounded-lg p-6 max-w-md" style={{ boxShadow: THEME.shadowStrong }}>
-          <h1 className="text-4xl font-bold mb-4 text-blue-400" style={{ textShadow: THEME.textShadow }}>🎉 Round Complete!</h1>
-          <p className="text-3xl mb-4 text-yellow-400" style={{ textShadow: '0 0 15px #fbbf24' }}>Final Score: {score}</p>
-          <p className="text-lg mb-6 text-blue-300">Words Found: {wordsFound.length}</p>
-          
-          {wordsFound.length > 0 && (
-            <div className="bg-black border-2 border-blue-400/50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto" style={{ boxShadow: 'inset 0 0 15px rgba(59, 130, 246, 0.2)' }}>
-              <h3 className="text-lg font-bold mb-2 text-blue-400">Your Words:</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {wordsFound.map((item, index) => (
-                  <div key={index} className="flex justify-between text-blue-300">
-                    <span className="uppercase font-bold">{item.word}</span>
-                    <span className="text-yellow-400">+{item.score}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
