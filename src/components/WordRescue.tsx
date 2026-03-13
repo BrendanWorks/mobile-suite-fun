@@ -153,20 +153,18 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
       maxScore: MAX_SCORE
     }),
     onGameEnd: () => {
+      if (gameState === 'roundEnd') return;
+
       console.log('Pop: onGameEnd called (GameWrapper timer hit 0)');
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
         console.log('Pop: Timeout cleared');
       }
-      const callback = onCompleteRef.current;
-      console.log('Pop: GameWrapper time up! Calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
-      if (callback) {
-        callback(score, MAX_SCORE, props.timeRemaining);
-      }
+      setGameState('roundEnd');
     },
     pauseTimer: gameState !== 'playing' || !timerStarted,
     canSkipQuestion: false
-  }), [score, gameState, timerStarted, props.timeRemaining]);
+  }), [gameState]);
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
@@ -289,11 +287,11 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
     const interval = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) {
+        const newTime = prev - 1;
+        if (newTime <= 0) {
           setGameState('roundEnd');
-          return 0;
         }
-        return prev - 1;
+        return Math.max(0, newTime);
       });
     }, 1000);
 
