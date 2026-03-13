@@ -170,6 +170,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLevelIntro, setShowLevelIntro] = useState(false);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -310,6 +311,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       console.log('✅ Playlist loaded:', playlist.name, transformedRounds.length, 'rounds');
 
       loadRound(1, transformedRounds);
+      setShowLevelIntro(true);
       setGameState('intro');
     } catch (error) {
       console.error('❌ Error loading playlist:', error);
@@ -863,14 +865,25 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     }
   }, [gameState, currentGame, playlistLoading]);
 
+  // Auto-advance from level intro after 4 seconds
+  useEffect(() => {
+    if (showLevelIntro && currentRound === 1 && gameState === 'intro') {
+      console.log(`⏱️ Level intro showing for ${playlistName}...`);
+      const timer = setTimeout(() => {
+        setShowLevelIntro(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLevelIntro, currentRound, gameState, playlistName]);
+
   // Auto-advance from intro to playing after 4 seconds (works for all rounds in intro)
   useEffect(() => {
-    if (gameState === 'intro' && currentGame) {
+    if (gameState === 'intro' && currentGame && !showLevelIntro) {
       console.log(`⏱️ Starting ${currentGame.name} in 4 seconds...`);
       const timer = setTimeout(() => startRound(), 4000);
       return () => clearTimeout(timer);
     }
-  }, [gameState, currentGame]);
+  }, [gameState, currentGame, showLevelIntro]);
 
   // Intro screen (shows before each round in playlist mode)
   if (gameState === 'intro') {
@@ -887,6 +900,33 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
                 ? <p className="text-cyan-300 text-sm">Loading playlist...</p>
                 : <p className="text-cyan-300 text-sm">Loading round...</p>
             }
+          </div>
+        </div>
+      );
+    }
+
+    // LEVEL INTRO SCREEN - Show only at start of playlist
+    if (showLevelIntro && currentRound === 1 && playlistId && playlistName) {
+      return (
+        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+          <div className="mb-8 sm:mb-12">
+            <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+              ROWDY
+            </p>
+          </div>
+
+          <div className="text-center max-w-2xl w-full flex flex-col items-center">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-cyan-400 mb-6" style={{ textShadow: '0 0 20px #00ffff' }}>
+              {playlistName}
+            </h1>
+
+            <p className="text-cyan-300 text-sm sm:text-base mb-8 max-w-md">
+              Get ready to tackle {totalRounds} challenges
+            </p>
+
+            <div className="bg-black border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
+              <p className="text-xs sm:text-sm text-cyan-400">Starting in a moment...</p>
+            </div>
           </div>
         </div>
       );
@@ -914,7 +954,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
           {/* Round number - small */}
           <div className="text-cyan-400 text-sm sm:text-base mb-4" style={{ textShadow: '0 0 8px #00ffff' }}>
-            Level {currentRound} of {totalRounds}
+            Round {currentRound} of {totalRounds}
           </div>
 
           {/* Game icon - large line-art SVG */}
@@ -1029,6 +1069,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           maxSessionScore={sessionTotal.maxPossible}
           onPlayAgain={handlePlayAgain}
           totalRounds={totalRounds}
+          levelName={playlistName}
         />
         <AuthModal
           isOpen={showAuthModal}
