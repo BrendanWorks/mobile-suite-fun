@@ -90,9 +90,11 @@ export default function CelebrationScreen({
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
 
+  const MAX_RING_SCORE = 1000;
+
   const totalPercentage = useMemo(
-    () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
-    [totalSessionScore, maxSessionScore]
+    () => Math.min((totalSessionScore / MAX_RING_SCORE) * 100, 100),
+    [totalSessionScore]
   );
 
   const timeBonus = useMemo(() => {
@@ -104,10 +106,9 @@ export default function CelebrationScreen({
   }, [roundScores]);
 
   const dialFillWithoutBonus = useMemo(() => {
-    if (maxSessionScore <= 0) return totalPercentage;
-    const totalBonusPercentage = ((timeBonus + perfectBonus) / maxSessionScore) * 100;
+    const totalBonusPercentage = ((timeBonus + perfectBonus) / MAX_RING_SCORE) * 100;
     return Math.max(0, totalPercentage - totalBonusPercentage);
-  }, [totalPercentage, timeBonus, perfectBonus, maxSessionScore]);
+  }, [totalPercentage, timeBonus, perfectBonus]);
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -166,7 +167,7 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(
           () => {
-            const tilePercentage = (roundScores[i].score.normalizedScore / maxSessionScore) * 100;
+            const tilePercentage = (roundScores[i].score.normalizedScore / MAX_RING_SCORE) * 100;
             setDialFill((prev) => Math.min(prev + tilePercentage, dialFillWithoutBonus));
           },
           ANIMATION_TIMINGS.NAME_START + delay
@@ -181,7 +182,7 @@ export default function CelebrationScreen({
       // Perfect bonus first if it exists
       if (perfectBonus > 10) {
         const perfectDuration = ANIMATION_TIMINGS.BONUS_DURATION;
-        const perfectPercentage = (perfectBonus / maxSessionScore) * 100;
+        const perfectPercentage = (perfectBonus / MAX_RING_SCORE) * 100;
 
         timers.push(
           setTimeout(() => {
@@ -210,7 +211,7 @@ export default function CelebrationScreen({
         // Show speed bonus after perfect bonus completes
         if (timeBonus > 10) {
           const speedStartAt = bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + ANIMATION_TIMINGS.BONUS_DELAY;
-          const speedPercentage = (timeBonus / maxSessionScore) * 100;
+          const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
           const speedDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
           timers.push(
@@ -239,7 +240,7 @@ export default function CelebrationScreen({
         }
       } else if (timeBonus > 10) {
         // Only speed bonus
-        const speedPercentage = (timeBonus / maxSessionScore) * 100;
+        const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
         const speedDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
         timers.push(
@@ -279,7 +280,7 @@ export default function CelebrationScreen({
       timers.forEach((timer) => clearTimeout(timer));
       intervals.forEach((interval) => clearInterval(interval));
     };
-  }, [roundScores.length, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus, maxSessionScore]);
+  }, [roundScores.length, totalPercentage, timeBonus, perfectBonus, dialFillWithoutBonus]);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
