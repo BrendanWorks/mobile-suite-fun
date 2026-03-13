@@ -68,7 +68,7 @@ export default function PlaylistSelector({ onSelectPlaylist, onBack }: PlaylistS
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2" style={{ textShadow: '0 0 20px #00ffff' }}>
-              Choose Your Playlist
+              Choose Your Level
             </h1>
             <p className="text-cyan-300 text-sm sm:text-base">
               5 rounds of curated games
@@ -77,17 +77,20 @@ export default function PlaylistSelector({ onSelectPlaylist, onBack }: PlaylistS
 
           {/* Playlists Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            {playlists.map((playlist) => (
+            {playlists.map((playlist, index) => (
               <button
                 key={playlist.id}
                 onClick={() => onSelectPlaylist(playlist.id)}
                 className="bg-black border-2 border-cyan-400/50 rounded-lg p-4 text-left transition-all hover:border-cyan-400 hover:shadow-lg active:scale-95 touch-manipulation"
                 style={{ boxShadow: '0 0 10px rgba(0, 255, 255, 0.2)' }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-bold text-cyan-400 flex-1" style={{ textShadow: '0 0 10px #00ffff' }}>
-                    {playlist.name}
-                  </h3>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="font-black text-cyan-300 mb-1" style={{ fontSize: 'clamp(1.5rem, 8vw, 2.5rem)', lineHeight: 1, textShadow: '0 0 15px rgba(0, 255, 255, 0.4)' }}>
+                      {index + 1}
+                    </div>
+                    <p className="text-cyan-400 text-sm font-semibold">Level</p>
+                  </div>
                   <span className={`text-xs px-2 py-1 border rounded uppercase font-semibold ${getDifficultyColor(playlist.difficulty)}`}>
                     {playlist.difficulty}
                   </span>
