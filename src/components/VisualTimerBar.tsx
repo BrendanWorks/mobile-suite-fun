@@ -26,7 +26,7 @@ export default function VisualTimerBar({
     <div className="w-full px-2 py-2">
       {/* Outer container - black with cyan border */}
       <div 
-        className="w-full h-2 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
+        className="w-full h-4 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
         style={{ 
           boxShadow: '0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1)'
         }}
