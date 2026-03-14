@@ -90,6 +90,7 @@ export default function CelebrationScreen({
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [dialFill, setDialFill] = useState(0);
   const [displayedScore, setDisplayedScore] = useState(0);
+  const [dialAnimating, setDialAnimating] = useState(true);
 
   const MAX_RING_SCORE = 1000;
 
@@ -179,6 +180,13 @@ export default function CelebrationScreen({
     const totalBonus = timeBonus + perfectBonus;
 
     if (totalBonus > 10) {
+      // Disable CSS transition before fast interval-driven bonus animations start
+      timers.push(
+        setTimeout(() => {
+          setDialAnimating(false);
+        }, bonusStartAt - 100)
+      );
+
       // Ensure dial is at base percentage before bonuses start
       timers.push(
         setTimeout(() => {
@@ -383,9 +391,9 @@ export default function CelebrationScreen({
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
                 style={{
-                  transition: 'stroke-dashoffset 1500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                   transform: 'rotate(-90deg)',
                   transformOrigin: '100px 100px',
+                  transition: dialAnimating ? 'stroke-dashoffset 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
                 }}
               />
               <defs>
