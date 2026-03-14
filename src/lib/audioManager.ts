@@ -279,6 +279,20 @@ class AudioManager {
     }
   }
 
+  stop(key: string): void {
+    const pool = this.pools.get(key);
+    if (!pool || pool.length === 0) return;
+
+    pool.forEach(audio => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (error) {
+        console.warn(`Could not stop sound: ${key}`, error);
+      }
+    });
+  }
+
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) {

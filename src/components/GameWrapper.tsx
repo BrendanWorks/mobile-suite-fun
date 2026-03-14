@@ -96,6 +96,8 @@ export default function GameWrapper({
 
   useEffect(() => {
     if (hideTimerBar) return;
+    const isPaused = childrenRef.current?.pauseTimer === true;
+    if (isPaused) return;
     if (timeRemaining <= 5 && timeRemaining > 0 && !hurryUpFiredRef.current) {
       hurryUpFiredRef.current = true;
       stopTimerCountdown();
@@ -104,16 +106,6 @@ export default function GameWrapper({
         countdownIntervalRef.current = null;
       }
       playHurryUp();
-    }
-    if (timeRemaining <= 0) {
-      stopTimerCountdown();
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-      }
-      if (!gameCompletedRef.current) {
-        playTimeUp();
-      }
     }
   }, [timeRemaining, hideTimerBar]);
 
@@ -142,6 +134,7 @@ export default function GameWrapper({
 
     if (hasReportedCompletion.current) return;
     hasReportedCompletion.current = true;
+    playTimeUp();
 
     const final = finalScoreRef.current;
     if (final) {

@@ -3,7 +3,7 @@ import { Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameHandle } from '../lib/gameTypes';
-import { playHiveMystery, stopTimerCountdown } from '../lib/sounds';
+import { playHiveMystery, stopTimerCountdown, stopHurryUp } from '../lib/sounds';
 
 interface Choice {
   text: string;
@@ -166,6 +166,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     if (revealState) return;
 
     stopTimerCountdown();
+    stopHurryUp();
     setTimeout(() => playHiveMystery(), 300);
 
     setSelectedChoice(choiceText);
