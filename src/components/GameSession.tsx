@@ -1105,6 +1105,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       return (
         <LeaderboardPostRound
           currentUserId={user?.id ?? null}
+          playerName={user?.email?.split('@')[0] ?? null}
+          playlistId={playlistId ?? null}
           playerScore={Math.round(sessionTotal.totalScore)}
           onContinue={handleLeaderboardContinue}
         />
