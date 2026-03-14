@@ -245,6 +245,40 @@ class AudioManager {
     }
   }
 
+  playLoop(key: string, volume?: number): void {
+    if (!this.enabled) return;
+
+    const pool = this.pools.get(key);
+    if (!pool || pool.length === 0) return;
+
+    const audio = pool[0];
+    if (!this.readyStates.get(audio)) return;
+
+    try {
+      if (!audio.paused) return;
+      audio.currentTime = 0;
+      audio.loop = true;
+      audio.volume = this.clampVolume(volume ?? this.sfxVolume);
+      this.handlePlayPromise(audio.play(), key);
+    } catch (error) {
+      console.warn(`Could not loop sound: ${key}`, error);
+    }
+  }
+
+  stopLoop(key: string): void {
+    const pool = this.pools.get(key);
+    if (!pool || pool.length === 0) return;
+
+    const audio = pool[0];
+    try {
+      audio.loop = false;
+      audio.pause();
+      audio.currentTime = 0;
+    } catch (error) {
+      console.warn(`Could not stop loop: ${key}`, error);
+    }
+  }
+
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) {

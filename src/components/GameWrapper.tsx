@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
+import { preloadTimerSounds, playTimerCountdown, stopTimerCountdown, playHurryUp } from '../lib/sounds';
 
 interface GameWrapperProps {
   duration: number;
@@ -29,6 +30,7 @@ export default function GameWrapper({
   const gameCompletedRef = useRef(false);
   const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
   const hasReportedCompletion = useRef(false);
+  const hurryUpFiredRef = useRef(false);
 
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
@@ -36,10 +38,44 @@ export default function GameWrapper({
     }
   }, [children]);
 
+  useEffect(() => {
+    if (hideTimerBar) return;
+    preloadTimerSounds();
+    playTimerCountdown();
+    return () => {
+      stopTimerCountdown();
+    };
+  }, [hideTimerBar]);
+
+  useEffect(() => {
+    if (hideTimerBar) return;
+    if (!isActive) {
+      stopTimerCountdown();
+      return;
+    }
+  }, [isActive, hideTimerBar]);
+
+  useEffect(() => {
+    if (hideTimerBar) return;
+    if (timeRemaining <= 5 && timeRemaining > 0 && !hurryUpFiredRef.current) {
+      hurryUpFiredRef.current = true;
+      stopTimerCountdown();
+      playHurryUp();
+      const resumeId = window.setTimeout(() => {
+        playTimerCountdown();
+      }, 100);
+      return () => clearTimeout(resumeId);
+    }
+    if (timeRemaining <= 0) {
+      stopTimerCountdown();
+    }
+  }, [timeRemaining, hideTimerBar]);
+
   const handleEarlyCompletion = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
+    stopTimerCountdown();
 
     const final = finalScoreRef.current;
     if (final) {
@@ -53,6 +89,7 @@ export default function GameWrapper({
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
+    stopTimerCountdown();
 
     if (hasReportedCompletion.current) return;
     hasReportedCompletion.current = true;
@@ -158,6 +195,7 @@ export default function GameWrapper({
       setIsActive(false);
       setIsFastCountdown(false);
       setTimeRemaining(0);
+      stopTimerCountdown();
       hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
     }
