@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
 import { GameScore, getScoreLabel } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
-import { playWin } from '../lib/sounds';
 import ReactGA from 'react-ga4';
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
@@ -94,7 +93,6 @@ export default function RoundResults({
 
     showContentTimerRef.current = window.setTimeout(() => {
       setShowContent(true);
-      if (!isLastRound) playWin(0.5);
     }, 200);
 
     if (hasTimeBonus) {
