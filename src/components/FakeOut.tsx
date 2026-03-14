@@ -69,6 +69,14 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(0);
   const hasEndedRef = useRef(false);
+  const isAnsweringRef = useRef(false);
+  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  const onScoreUpdateRef = useRef(onScoreUpdate);
+  const puzzleIdsKeyRef = useRef<string | null>(null);
+
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  useEffect(() => { onScoreUpdateRef.current = onScoreUpdate; }, [onScoreUpdate]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({
@@ -76,25 +84,29 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
       maxScore: maxScoreRef.current
     }),
     onGameEnd: () => {
-      console.log('FakeOut game ended');
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     },
-    pauseTimer: status === 'feedback'
-  }), [status, timeRemaining]);
+    get pauseTimer() { return status === 'feedback'; }
+  }), [status]);
 
   // Load puzzles from database using puzzle_ids
   useEffect(() => {
+    if (!puzzleIds || puzzleIds.length === 0) return;
+
+    const key = puzzleIds.slice().sort((a, b) => a - b).join(',');
+    if (puzzleIdsKeyRef.current === key) return;
+    puzzleIdsKeyRef.current = key;
+
+    let cancelled = false;
+
     async function fetchPuzzles() {
       try {
-        if (!puzzleIds || puzzleIds.length === 0) {
-          console.error('FakeOut: No puzzle_ids provided');
-          setStatus('finished');
-          return;
-        }
-
         const { data, error } = await supabase
           .from('puzzles')
           .select('id, image_url, correct_answer, prompt, metadata')
-          .in('id', puzzleIds);
+          .in('id', puzzleIds!);
+
+        if (cancelled) return;
 
         if (error || !data || data.length === 0) {
           console.error('FakeOut: Error fetching puzzles:', error);
@@ -102,7 +114,6 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           return;
         }
 
-        // Map DB rows to Puzzle interface
         const loaded: Puzzle[] = data.map(p => ({
           id: p.id,
           image_url: p.image_url,
@@ -111,21 +122,22 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           metadata: p.metadata || {}
         }));
 
-        // Shuffle for variety
         const shuffled = loaded.sort(() => Math.random() - 0.5);
 
         setPuzzles(shuffled);
         maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
         setStatus('playing');
-
-        console.log(`✅ FakeOut loaded ${shuffled.length} puzzles from DB`);
+        console.log(`FakeOut loaded ${shuffled.length} puzzles`);
       } catch (err) {
-        console.error('FakeOut: Exception loading puzzles:', err);
-        setStatus('finished');
+        if (!cancelled) {
+          console.error('FakeOut: Exception loading puzzles:', err);
+          setStatus('finished');
+        }
       }
     }
 
     fetchPuzzles();
+    return () => { cancelled = true; };
   }, [puzzleIds]);
 
   // Preload next image
@@ -140,15 +152,17 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   useEffect(() => {
     if (timeRemaining <= 0 && status === 'playing' && !hasEndedRef.current) {
       hasEndedRef.current = true;
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
       setStatus('finished');
-      if (onComplete) {
-        onComplete(scoreRef.current, maxScoreRef.current);
+      if (onCompleteRef.current) {
+        onCompleteRef.current(scoreRef.current, maxScoreRef.current);
       }
     }
-  }, [timeRemaining, status, onComplete]);
+  }, [timeRemaining, status]);
 
   const handleAnswer = (choice: 'real' | 'fake') => {
-    if (status !== 'playing' || hasEndedRef.current) return;
+    if (status !== 'playing' || hasEndedRef.current || isAnsweringRef.current) return;
+    isAnsweringRef.current = true;
 
     const currentPuzzle = puzzles[currentIndex];
     const isCorrect = choice === currentPuzzle.correct_answer;
@@ -166,11 +180,10 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     setStreak(newStreak);
     scoreRef.current = newScore;
 
-    if (onScoreUpdate) {
-      onScoreUpdate(newScore, maxScoreRef.current);
+    if (onScoreUpdateRef.current) {
+      onScoreUpdateRef.current(newScore, maxScoreRef.current);
     }
 
-    // Build reveal message from DB data
     const sourceLabel = currentPuzzle.correct_answer === 'fake'
       ? `AI — ${currentPuzzle.metadata.source?.toUpperCase() || 'AI GENERATED'}`
       : `REAL — ${currentPuzzle.prompt}`;
@@ -184,14 +197,16 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     setLastResult({ isCorrect, message: sourceLabel });
     setStatus('feedback');
 
-    setTimeout(() => {
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    autoAdvanceTimerRef.current = setTimeout(() => {
+      isAnsweringRef.current = false;
       if (hasEndedRef.current) return;
-      
+
       if (currentIndex === puzzles.length - 1) {
         hasEndedRef.current = true;
         setStatus('finished');
-        if (onComplete) {
-          onComplete(newScore, maxScoreRef.current);
+        if (onCompleteRef.current) {
+          onCompleteRef.current(newScore, maxScoreRef.current);
         }
       } else {
         setCurrentIndex(prev => prev + 1);
@@ -200,6 +215,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
       }
     }, 1500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, []);
 
   // --- RENDER ---
 
