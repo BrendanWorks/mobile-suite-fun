@@ -72,10 +72,10 @@ function EntryRow({ entry, isCurrentPlayer }: EntryRowProps) {
       style={
         isCurrentPlayer
           ? {
-              borderColor: '#00ffff',
-              background: 'rgba(0,255,255,0.07)',
-              boxShadow: '0 0 24px rgba(0,255,255,0.22), inset 0 0 16px rgba(0,255,255,0.06)',
-              animation: 'lbPulse 2.8s ease-in-out infinite',
+              borderColor: '#f97316',
+              background: 'rgba(249,115,22,0.09)',
+              boxShadow: '0 0 24px rgba(249,115,22,0.28), inset 0 0 16px rgba(249,115,22,0.06)',
+              animation: 'lbPulsePlayer 2.8s ease-in-out infinite',
             }
           : {
               borderColor: 'rgba(0,255,255,0.18)',
@@ -92,13 +92,13 @@ function EntryRow({ entry, isCurrentPlayer }: EntryRowProps) {
           className="text-sm sm:text-base font-semibold truncate"
           style={
             isCurrentPlayer
-              ? { color: '#00ffff', textShadow: glow('#00ffff', '8px') }
+              ? { color: '#fb923c', textShadow: glow('#f97316', '8px') }
               : { color: '#ffffff' }
           }
         >
           {entry.display_name}
           {isCurrentPlayer && (
-            <span className="ml-2 text-xs font-normal" style={{ color: 'rgba(0,255,255,0.55)' }}>you</span>
+            <span className="ml-2 text-xs font-normal" style={{ color: 'rgba(249,115,22,0.6)' }}>you</span>
           )}
         </span>
         <BadgeRow entry={entry} />
@@ -123,27 +123,27 @@ function GuestRow({ rank, score }: { rank: number | null; score: number }) {
     <div
       className="flex items-center gap-3 px-4 py-3.5 rounded-xl border"
       style={{
-        borderColor: 'rgba(0,255,255,0.35)',
-        background: 'rgba(0,255,255,0.05)',
-        boxShadow: '0 0 18px rgba(0,255,255,0.15)',
-        animation: 'lbPulse 2.8s ease-in-out infinite',
+        borderColor: '#f97316',
+        background: 'rgba(249,115,22,0.09)',
+        boxShadow: '0 0 24px rgba(249,115,22,0.28), inset 0 0 16px rgba(249,115,22,0.06)',
+        animation: 'lbPulsePlayer 2.8s ease-in-out infinite',
       }}
     >
       <div className="w-8 flex items-center justify-center flex-shrink-0">
         {rank != null ? (
-          <span className="text-base font-black text-cyan-400" style={{ textShadow: glow('#00ffff', '8px') }}>
+          <span className="text-base font-black" style={{ color: '#fb923c', textShadow: glow('#f97316', '8px') }}>
             {rank}
           </span>
         ) : (
-          <span className="text-base font-black text-cyan-400/40">—</span>
+          <span className="text-base font-black" style={{ color: 'rgba(249,115,22,0.4)' }}>—</span>
         )}
       </div>
 
       <div className="flex-1 min-w-0">
-        <span className="text-sm sm:text-base font-semibold italic" style={{ color: '#00cccc' }}>
+        <span className="text-sm sm:text-base font-semibold italic" style={{ color: '#fb923c', textShadow: glow('#f97316', '6px') }}>
           Your Name Here
         </span>
-        <span className="ml-2 text-xs font-normal" style={{ color: 'rgba(0,255,255,0.45)' }}>guest</span>
+        <span className="ml-2 text-xs font-normal" style={{ color: 'rgba(249,115,22,0.55)' }}>guest</span>
       </div>
 
       <div
@@ -268,7 +268,21 @@ export default function LeaderboardPostRound({
     ? entries.some(e => e.user_id === currentUserId)
     : false;
 
-  const showPlayerRow = !isLoading && playerScore > 0 && !playerInList;
+  const showStickyPlayer = !isLoading && playerScore > 0;
+
+  const playerEntry = currentUserId
+    ? {
+        id: '__player__',
+        user_id: currentUserId,
+        score: playerScore,
+        game_id: null as string | null,
+        display_name: playerName ?? 'You',
+        playlist_id: playlistId,
+        round_count: 0,
+        created_at: new Date().toISOString(),
+        rank: playerRank ?? undefined,
+      }
+    : null;
 
   return (
     <div
@@ -283,6 +297,10 @@ export default function LeaderboardPostRound({
         @keyframes lbPulse {
           0%, 100% { box-shadow: 0 0 24px rgba(0,255,255,0.22), inset 0 0 16px rgba(0,255,255,0.06); }
           50% { box-shadow: 0 0 38px rgba(0,255,255,0.38), inset 0 0 22px rgba(0,255,255,0.11); }
+        }
+        @keyframes lbPulsePlayer {
+          0%, 100% { box-shadow: 0 0 24px rgba(249,115,22,0.28), inset 0 0 16px rgba(249,115,22,0.06); }
+          50% { box-shadow: 0 0 38px rgba(249,115,22,0.45), inset 0 0 22px rgba(249,115,22,0.12); }
         }
         @keyframes lbFadeSlide {
           from { opacity: 0; transform: translateY(12px); }
@@ -339,52 +357,41 @@ export default function LeaderboardPostRound({
               );
             })
           )}
+        </div>
+      </div>
 
-          {/* Player row — always on screen if not already in list */}
-          {showPlayerRow && (
+      {/* Sticky footer — player row always visible above Continue button */}
+      <div
+        className="flex-shrink-0 px-4"
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+          paddingTop: '0',
+          background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.97) 20%)',
+        }}
+      >
+        <div className="w-full max-w-lg mx-auto flex flex-col gap-3 pt-3">
+          {/* Player row — always pinned here.
+              If already ranked in scrollable list, just echo it here (no divider).
+              If below the list, show a divider then the row. */}
+          {showStickyPlayer && (
             <>
-              {entries.length > 0 && (
-                <div className="flex items-center gap-3 py-1 px-2">
-                  <div className="flex-1 border-t" style={{ borderColor: 'rgba(0,255,255,0.2)' }} />
-                  <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'rgba(0,255,255,0.35)' }} />
-                  <div className="flex-1 border-t" style={{ borderColor: 'rgba(0,255,255,0.2)' }} />
+              {!playerInList && entries.length > 0 && (
+                <div className="flex items-center gap-3 px-1">
+                  <div className="flex-1 border-t" style={{ borderColor: 'rgba(249,115,22,0.25)' }} />
+                  <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'rgba(249,115,22,0.45)' }} />
+                  <div className="flex-1 border-t" style={{ borderColor: 'rgba(249,115,22,0.25)' }} />
                 </div>
               )}
-              <div className="lb-row-enter" style={{ animationDelay: `${entries.length * 45}ms` }}>
-                {currentUserId ? (
-                  <EntryRow
-                    entry={{
-                      id: '__player__',
-                      user_id: currentUserId,
-                      score: playerScore,
-                      game_id: null,
-                      display_name: playerName ?? 'You',
-                      playlist_id: playlistId,
-                      round_count: 0,
-                      created_at: new Date().toISOString(),
-                      rank: playerRank ?? undefined,
-                    }}
-                    isCurrentPlayer={true}
-                  />
+              <div className="lb-row-enter">
+                {currentUserId && playerEntry ? (
+                  <EntryRow entry={playerEntry} isCurrentPlayer={true} />
                 ) : (
                   <GuestRow rank={playerRank} score={playerScore} />
                 )}
               </div>
             </>
           )}
-        </div>
-      </div>
 
-      {/* Sticky footer — always visible */}
-      <div
-        className="flex-shrink-0 px-4 pb-safe"
-        style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
-          paddingTop: '12px',
-          background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.95) 30%)',
-        }}
-      >
-        <div className="w-full max-w-lg mx-auto">
           <button
             onClick={onContinue}
             disabled={isLoading}
