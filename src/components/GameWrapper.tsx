@@ -45,7 +45,7 @@ export default function GameWrapper({
     playTimerCountdown();
     countdownIntervalRef.current = window.setInterval(() => {
       playTimerCountdown();
-    }, 5000);
+    }, 3000);
     return () => {
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
@@ -78,7 +78,7 @@ export default function GameWrapper({
       playHurryUp();
       const resumeId = window.setTimeout(() => {
         playTimerCountdown();
-      }, 100);
+      }, 200);
       return () => clearTimeout(resumeId);
     }
     if (timeRemaining <= 0) {
