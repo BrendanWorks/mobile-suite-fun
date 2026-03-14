@@ -14,7 +14,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { Layers } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
-import { audioManager } from '../lib/audioManager';
+import { playWin, playWrong } from '../lib/sounds';
 
 interface PuzzleItem {
   id: number;
@@ -91,13 +91,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     }
   }, [score, timeRemaining]);
 
-  // Load audio on mount
-  useEffect(() => {
-    const loadAudio = async () => {
-      await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
-    };
-    loadAudio();
-  }, []);
 
   // Load all puzzle IDs on mount
   useEffect(() => {
@@ -197,13 +190,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     setFeedback(isCorrect ? 'correct' : 'wrong');
 
     if (isCorrect) {
+      playWin(0.5);
       setCorrectCount(prev => {
         correctCountRef.current = prev + 1;
         return prev + 1;
       });
       setScore(prev => {
         const newScore = prev + POINTS_PER_ITEM;
-        scoreRef.current = newScore; // Update ref immediately
+        scoreRef.current = newScore;
         console.log('SplitDecision: CORRECT! newScore:', newScore, 'itemsAnswered:', currentItemIndex + 1);
         if (onScoreUpdate) {
           onScoreUpdate(newScore, MAX_SCORE);
@@ -211,15 +205,11 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         return newScore;
       });
     } else {
-      // Wrong answer: play wrong sound, no points, no penalty
-      audioManager.initialize();
-      audioManager.play('global-wrong', 0.3);
-
+      playWrong(0.3);
       console.log('SplitDecision: WRONG! currentScore:', score, 'itemsAnswered:', currentItemIndex + 1);
       if (onScoreUpdate) {
         onScoreUpdate(score, MAX_SCORE);
       }
-      // scoreRef.current is already up to date (no change)
     }
 
     // Check if this is the last item
