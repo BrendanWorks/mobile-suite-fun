@@ -11,7 +11,12 @@ import LandingPage from './components/LandingPage';
 import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
 import TipJar from './components/TipJar';
+import TipPrompt from './components/TipPrompt';
 import { useUserStats } from './hooks/useUserStats';
+
+const TIP_PROMPT_ROUNDS = [5, 9];
+const TIP_ROUNDS_KEY = 'rowdy_rounds_played';
+const TIP_DISMISSED_KEY = 'rowdy_tip_dismissed_at';
 
 export type GameId =
   | 'odd-man-out'
@@ -56,6 +61,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAuthPage, setShowAuthPage] = useState(false);
   const [showTipJar, setShowTipJar] = useState(false);
+  const [showTipPrompt, setShowTipPrompt] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
@@ -188,20 +194,48 @@ export default function App() {
     );
   }
 
+  const handleRoundComplete = useCallback(() => {
+    const prev = parseInt(localStorage.getItem(TIP_ROUNDS_KEY) ?? '0', 10);
+    const next = prev + 1;
+    localStorage.setItem(TIP_ROUNDS_KEY, String(next));
+
+    if (!TIP_PROMPT_ROUNDS.includes(next)) return;
+
+    const dismissedAt = parseInt(localStorage.getItem(TIP_DISMISSED_KEY) ?? '0', 10);
+    const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60);
+    if (hoursSinceDismiss < 24) return;
+
+    setShowTipPrompt(true);
+  }, []);
+
   if (selectedPlaylistId) {
     return (
-      <GameSession
-        playlistId={selectedPlaylistId}
-        onExit={() => {
-          setSelectedPlaylistId(null);
-          if (session) {
-            trackPageView('/menu');
-          } else {
-            trackPageView('/');
-          }
-        }}
-        totalRounds={5}
-      />
+      <>
+        {showTipPrompt && !showTipJar && (
+          <TipPrompt
+            onOpenTipJar={() => { setShowTipPrompt(false); setShowTipJar(true); }}
+            onDismiss={() => {
+              localStorage.setItem(TIP_DISMISSED_KEY, String(Date.now()));
+              setShowTipPrompt(false);
+            }}
+          />
+        )}
+        {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
+        <GameSession
+          playlistId={selectedPlaylistId}
+          onExit={() => {
+            setSelectedPlaylistId(null);
+            setShowTipPrompt(false);
+            if (session) {
+              trackPageView('/menu');
+            } else {
+              trackPageView('/');
+            }
+          }}
+          onRoundComplete={handleRoundComplete}
+          totalRounds={5}
+        />
+      </>
     );
   }
 

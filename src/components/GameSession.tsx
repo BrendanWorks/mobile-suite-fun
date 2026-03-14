@@ -145,9 +145,10 @@ interface GameSessionProps {
   onExit: () => void;
   totalRounds?: number;
   playlistId?: number;
+  onRoundComplete?: () => void;
 }
 
-export default function GameSession({ onExit, totalRounds = 5, playlistId }: GameSessionProps) {
+export default function GameSession({ onExit, totalRounds = 5, playlistId, onRoundComplete }: GameSessionProps) {
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
@@ -765,6 +766,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     );
 
     setGameState('results');
+    onRoundComplete?.();
   };
 
   const handleNextRound = () => {
