@@ -1,7 +1,7 @@
 /**
  * Pop - Word Game
  * Blue theme, single-line header (per Game Component Style Reference)
- * - 90 second rounds
+ * - 60 second rounds
  * - Score can exceed 1000 (maxScore = 1000 baseline)
  * - Auto-advances after Round Complete screen
  */
@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Type } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
+import { audioManager } from '../lib/audioManager';
 
 interface PopProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
@@ -130,7 +131,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   const [level, setLevel] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(1800);
   const [nextId, setNextId] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(90);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [wordsFound, setWordsFound] = useState<any[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
@@ -141,6 +142,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   const audioInitialized = useRef(false);
   const roundEndTimeoutRef = useRef<any>(null);
   const onCompleteRef = useRef(props.onComplete);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   // Keep onComplete ref up to date
   useEffect(() => {
@@ -214,22 +216,29 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
   useEffect(() => {
     initAudio();
-    
+
     const handleFirstInteraction = () => {
       initAudioOnFirstTouch();
       document.removeEventListener('touchstart', handleFirstInteraction);
       document.removeEventListener('click', handleFirstInteraction);
     };
-    
+
     document.addEventListener('touchstart', handleFirstInteraction, { passive: true });
     document.addEventListener('click', handleFirstInteraction, { passive: true });
-    
+
+    const bgAudio = new Audio('/sounds/global/CountdownMusical60s.mp3');
+    bgAudio.loop = false;
+    bgAudio.volume = 0.4;
+    bgMusicRef.current = bgAudio;
+
     return () => {
       document.removeEventListener('touchstart', handleFirstInteraction);
       document.removeEventListener('click', handleFirstInteraction);
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
       }
+      bgAudio.pause();
+      bgAudio.src = '';
     };
   }, [initAudio, initAudioOnFirstTouch]);
 
@@ -339,14 +348,21 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   useEffect(() => {
     if (gameState !== 'playing' || !timerStarted) return;
 
-    const elapsedTime = 90 - timeLeft;
+    const elapsedTime = 60 - timeLeft;
 
-    if (elapsedTime === 30) {
+    if (elapsedTime === 20) {
       setGameSpeed(prev => Math.max(1500, prev - 200));
-    } else if (elapsedTime === 60) {
+    } else if (elapsedTime === 40) {
       setGameSpeed(prev => Math.max(1200, prev - 200));
     }
   }, [timeLeft, gameState, timerStarted]);
+
+  useEffect(() => {
+    if (gameState === 'roundEnd' && bgMusicRef.current) {
+      bgMusicRef.current.pause();
+      bgMusicRef.current.currentTime = 0;
+    }
+  }, [gameState]);
 
   // Auto-advance from roundEnd screen
   useEffect(() => {
@@ -515,9 +531,15 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
     setLetters(initialLetters);
     setNextId(numInitialLetters);
-    setTimeLeft(90);
+    setTimeLeft(60);
 
-    setTimeout(() => playSound('ambient', 0.1), 500);
+    setTimeout(() => {
+      playSound('ambient', 0.1);
+      if (bgMusicRef.current) {
+        bgMusicRef.current.currentTime = 0;
+        bgMusicRef.current.play().catch(() => {});
+      }
+    }, 500);
   };
 
   const resetGame = () => {
