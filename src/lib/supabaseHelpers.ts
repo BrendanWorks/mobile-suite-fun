@@ -182,6 +182,7 @@ export interface LeaderboardEntry {
   rank?: number;
   badge_most_rounds?: boolean;
   badge_perfect_score?: boolean;
+  badge_speed_demon?: boolean;
 }
 
 export async function fetchMostRoundsUserId(): Promise<string | null> {
@@ -197,6 +198,16 @@ export async function fetchMostRoundsUserId(): Promise<string | null> {
 export async function fetchPerfectScoreUserId(): Promise<string | null> {
   try {
     const { data, error } = await supabase.rpc('get_perfect_score_user_id');
+    if (error) throw error;
+    return data as string | null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchSpeedDemonUserId(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('get_speed_demon_user_id');
     if (error) throw error;
     return data as string | null;
   } catch {
@@ -252,10 +263,11 @@ export async function fetchTopLeaderboard(
       query = query.gte('created_at', since.toISOString());
     }
 
-    const [{ data, error }, mostRoundsUserId, perfectScoreUserId] = await Promise.all([
+    const [{ data, error }, mostRoundsUserId, perfectScoreUserId, speedDemonUserId] = await Promise.all([
       query,
       fetchMostRoundsUserId(),
       fetchPerfectScoreUserId(),
+      fetchSpeedDemonUserId(),
     ]);
 
     if (error) throw error;
@@ -265,6 +277,7 @@ export async function fetchTopLeaderboard(
       rank: idx + 1,
       badge_most_rounds: mostRoundsUserId != null && row.user_id === mostRoundsUserId,
       badge_perfect_score: perfectScoreUserId != null && row.user_id === perfectScoreUserId,
+      badge_speed_demon: speedDemonUserId != null && row.user_id === speedDemonUserId,
     }));
 
     return { success: true, data: entries };
