@@ -13,7 +13,6 @@ const LETTERS_DONE_AT = LETTERS.length * LETTER_STAGGER_MS + 200;
 
 export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: LandingPageProps) {
   const [visibleLetters, setVisibleLetters] = useState(0);
-  const [glowReady, setGlowReady] = useState(false);
   const [pulseActive, setPulseActive] = useState(false);
 
   useEffect(() => {
@@ -25,8 +24,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
       );
     }
 
-    timers.push(setTimeout(() => setGlowReady(true), LETTERS_DONE_AT));
-    timers.push(setTimeout(() => setPulseActive(true), LETTERS_DONE_AT + 600));
+    timers.push(setTimeout(() => setPulseActive(true), LETTERS_DONE_AT + 400));
 
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -38,19 +36,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
       <div className="relative z-10 text-center max-w-2xl w-full">
         <div className="mb-8">
 
-          {/* ROWDY title with letter-by-letter reveal + breathing pulse */}
-          <div className="relative inline-flex items-center justify-center mb-4">
-            {/* Celebration-screen-style radial glow — red instead of cyan */}
-            <div
-              className="absolute inset-0 rounded-full pointer-events-none"
-              style={{
-                opacity: glowReady ? 1 : 0,
-                transition: 'opacity 800ms ease',
-                boxShadow: '0 0 80px rgba(239,68,68,0.45), 0 0 160px rgba(239,68,68,0.18)',
-                animation: pulseActive ? 'rowdyGlowPulse 3s ease-in-out infinite' : 'none',
-              }}
-            />
-
+          {/* ROWDY title with letter-by-letter reveal + subtle breathing pulse */}
+          <div className="inline-flex items-center justify-center mb-4">
             <h1
               className="text-7xl sm:text-9xl font-black tracking-wider"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -64,10 +51,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
                     opacity: visibleLetters > i ? 1 : 0,
                     transform: visibleLetters > i ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.85)',
                     transition: 'opacity 320ms cubic-bezier(0.22,1,0.36,1), transform 380ms cubic-bezier(0.22,1,0.36,1)',
-                    textShadow: glowReady
-                      ? '0 0 30px rgba(239,68,68,0.9), 0 0 60px rgba(239,68,68,0.5)'
-                      : '0 0 20px rgba(239,68,68,0.5)',
-                    animation: pulseActive ? `rowdyTextPulse 3s ease-in-out infinite ${i * 60}ms` : 'none',
+                    textShadow: pulseActive ? undefined : 'none',
+                    animation: pulseActive ? `rowdyTextPulse 4s ease-in-out infinite ${i * 80}ms` : 'none',
                   }}
                 >
                   {letter}
@@ -133,13 +118,9 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
       </button>
 
       <style>{`
-        @keyframes rowdyGlowPulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 80px rgba(239,68,68,0.45), 0 0 160px rgba(239,68,68,0.18); }
-          50%       { opacity: 0.7; box-shadow: 0 0 50px rgba(239,68,68,0.25), 0 0 100px rgba(239,68,68,0.1); }
-        }
         @keyframes rowdyTextPulse {
-          0%, 100% { text-shadow: 0 0 30px rgba(239,68,68,0.9), 0 0 60px rgba(239,68,68,0.5); }
-          50%       { text-shadow: 0 0 15px rgba(239,68,68,0.5), 0 0 30px rgba(239,68,68,0.25); }
+          0%, 100% { text-shadow: 0 0 20px rgba(239,68,68,0.35), 0 0 40px rgba(239,68,68,0.12); }
+          50%       { text-shadow: 0 0 10px rgba(239,68,68,0.18), 0 0 20px rgba(239,68,68,0.06); }
         }
       `}</style>
     </div>
