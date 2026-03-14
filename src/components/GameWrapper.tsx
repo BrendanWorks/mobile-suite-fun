@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
-import { preloadTimerSounds, playTimerCountdown, stopTimerCountdown, playHurryUp } from '../lib/sounds';
+import { preloadTimerSounds, playTimerCountdown, stopTimerCountdown, playHurryUp, playTimeUp } from '../lib/sounds';
 
 interface GameWrapperProps {
   duration: number;
@@ -105,10 +105,6 @@ export default function GameWrapper({
         countdownIntervalRef.current = null;
       }
       playHurryUp();
-      const resumeId = window.setTimeout(() => {
-        playTimerCountdown();
-      }, 200);
-      return () => clearTimeout(resumeId);
     }
     if (timeRemaining <= 0) {
       stopTimerCountdown();
@@ -116,6 +112,7 @@ export default function GameWrapper({
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
+      playTimeUp();
     }
   }, [timeRemaining, hideTimerBar]);
 
