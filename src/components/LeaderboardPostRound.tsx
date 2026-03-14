@@ -4,6 +4,8 @@ import { fetchTopAllTime, LeaderboardEntry } from '../lib/supabaseHelpers';
 import { supabase } from '../lib/supabase';
 import { EagleEyeBadgeIcon } from './EagleEyeBadge';
 import { WordsmithBadgeIcon } from './WordsmithBadge';
+import { ZeitgeistBadgeIcon } from './ZeitgeistBadge';
+import { ArcadeKingBadgeIcon } from './ArcadeKingBadge';
 
 interface LeaderboardPostRoundProps {
   currentUserId: string | null;
@@ -44,6 +46,16 @@ function BadgeRow({ entry }: { entry: LeaderboardEntry }) {
       {entry.badge_wordsmith && (
         <span title="Wordsmith">
           <WordsmithBadgeIcon size={16} />
+        </span>
+      )}
+      {entry.badge_zeitgeist && (
+        <span title="Zeitgeist">
+          <ZeitgeistBadgeIcon size={16} />
+        </span>
+      )}
+      {entry.badge_arcade_king && (
+        <span title="Arcade King">
+          <ArcadeKingBadgeIcon size={16} />
         </span>
       )}
     </div>

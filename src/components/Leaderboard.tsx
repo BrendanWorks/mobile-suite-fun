@@ -3,6 +3,8 @@ import { Trophy, RefreshCw, Clock, Infinity, Zap, Star, Flame } from 'lucide-rea
 import { fetchTopAllTime, fetchTopThisWeek, LeaderboardEntry } from '../lib/supabaseHelpers';
 import { EagleEyeBadgeIcon } from './EagleEyeBadge';
 import { WordsmithBadgeIcon } from './WordsmithBadge';
+import { ZeitgeistBadgeIcon } from './ZeitgeistBadge';
+import { ArcadeKingBadgeIcon } from './ArcadeKingBadge';
 
 type Filter = 'alltime' | 'weekly';
 
@@ -150,6 +152,42 @@ function WordsmithLeaderboardBadge() {
     >
       <WordsmithBadgeIcon size={16} />
       <span className="font-black tracking-wider" style={{ fontSize: '0.6rem', color: '#67e8f9', textShadow: '0 0 6px rgba(0,255,255,0.8)' }}>WORDSMITH</span>
+    </div>
+  );
+}
+
+function ZeitgeistLeaderboardBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+      style={{
+        background: 'linear-gradient(135deg, rgba(0,255,255,0.08) 0%, rgba(255,0,255,0.08) 100%)',
+        border: '1px solid rgba(255,0,255,0.45)',
+        boxShadow: '0 0 8px rgba(255,0,255,0.3)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Zeitgeist — pop culture & word speed master"
+    >
+      <ZeitgeistBadgeIcon size={16} />
+      <span className="font-black tracking-wider" style={{ fontSize: '0.6rem', background: 'linear-gradient(90deg, #00ffff, #ff00ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ZEITGEIST</span>
+    </div>
+  );
+}
+
+function ArcadeKingLeaderboardBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+      style={{
+        background: 'linear-gradient(135deg, rgba(0,255,255,0.07) 0%, rgba(251,191,36,0.1) 100%)',
+        border: '1px solid rgba(251,191,36,0.5)',
+        boxShadow: '0 0 8px rgba(251,191,36,0.3)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Arcade King — procedural reflex game master"
+    >
+      <ArcadeKingBadgeIcon size={16} />
+      <span className="font-black tracking-wider" style={{ fontSize: '0.6rem', background: 'linear-gradient(90deg, #00ffff, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ARCADE KING</span>
     </div>
   );
 }
@@ -341,7 +379,7 @@ export default function Leaderboard() {
                       >
                         {entry.score.toLocaleString()}
                       </div>
-                      {(entry.badge_most_rounds || entry.badge_perfect_score || entry.badge_speed_demon || entry.badge_eagle_eye || entry.badge_trivia || entry.badge_wordsmith) && (
+                      {(entry.badge_most_rounds || entry.badge_perfect_score || entry.badge_speed_demon || entry.badge_eagle_eye || entry.badge_trivia || entry.badge_wordsmith || entry.badge_zeitgeist || entry.badge_arcade_king) && (
                         <div className="mt-2 flex flex-col gap-1 items-center">
                           {entry.badge_most_rounds && <MostRoundsBadge />}
                           {entry.badge_perfect_score && <PerfectScoreBadge />}
@@ -349,6 +387,8 @@ export default function Leaderboard() {
                           {entry.badge_eagle_eye && <EagleEyeLeaderboardBadge />}
                           {entry.badge_trivia && <TriviaBadge />}
                           {entry.badge_wordsmith && <WordsmithLeaderboardBadge />}
+                          {entry.badge_zeitgeist && <ZeitgeistLeaderboardBadge />}
+                          {entry.badge_arcade_king && <ArcadeKingLeaderboardBadge />}
                         </div>
                       )}
                     </div>
@@ -378,6 +418,8 @@ export default function Leaderboard() {
                     {entry.badge_eagle_eye && <EagleEyeLeaderboardBadge />}
                     {entry.badge_trivia && <TriviaBadge />}
                     {entry.badge_wordsmith && <WordsmithLeaderboardBadge />}
+                    {entry.badge_zeitgeist && <ZeitgeistLeaderboardBadge />}
+                    {entry.badge_arcade_king && <ArcadeKingLeaderboardBadge />}
                     <span
                       className="text-sm font-bold tabular-nums"
                       style={{ color: 'rgba(34,211,238,0.7)' }}
