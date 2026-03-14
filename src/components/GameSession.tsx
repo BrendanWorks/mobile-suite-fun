@@ -176,6 +176,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [showLevelIntro, setShowLevelIntro] = useState(false);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [introExiting, setIntroExiting] = useState(false);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -599,12 +600,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   }, [playlistId, currentGameSlug, playedGames]);
 
   const startRound = () => {
-    setCurrentGameScore({ score: 0, maxScore: 0 });
-    setGameState('playing');
-
-    if (currentGame) {
-      analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
-    }
+    setIntroExiting(true);
+    setTimeout(() => {
+      setCurrentGameScore({ score: 0, maxScore: 0 });
+      setGameState('playing');
+      setIntroExiting(false);
+      if (currentGame) {
+        analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
+      }
+    }, 380);
   };
 
   const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
@@ -918,7 +922,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     // Wait for game to be selected or playlist to load
     if (!currentGame || playlistLoading || loadError) {
       return (
-        <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className={`h-screen w-screen bg-black flex items-center justify-center${introExiting ? ' animate-intro-exit' : ''}`}>
           <div className="text-center">
             <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
             {loadError
@@ -935,7 +939,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     // LEVEL INTRO SCREEN - Show only at start of playlist
     if (showLevelIntro && currentRound === 1 && playlistId && playlistName && levelNumber) {
       return (
-        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+        <div className={`h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
           <div className="mb-8 sm:mb-12">
             <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
               ROWDY
@@ -961,7 +965,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     // ICON-FORWARD INTRO SCREEN
     return (
-      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className={`h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
         {/* ROWDY BRANDING - TOP */}
         <div className="mb-8 sm:mb-12">
           <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
@@ -1207,7 +1211,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
         </div>
 
         {/* Game Content */}
-        <div className="flex-1 overflow-auto">
+        <div key={`game-content-${currentRound}`} className="flex-1 overflow-auto animate-game-enter">
           <React.Suspense fallback={
             <div className="h-full w-full flex items-center justify-center bg-black">
               <div className="text-cyan-400 text-lg font-bold animate-pulse" style={{ textShadow: '0 0 10px #00ffff' }}>Loading...</div>
