@@ -10,10 +10,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-supabase': ['@supabase/supabase-js', '@supabase/auth-ui-react', '@supabase/auth-ui-shared'],
-          'vendor-motion': ['framer-motion'],
+        manualChunks: (id: string) => {
+          if (id.includes('react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
+          if (id.includes('@supabase/')) return 'vendor-supabase';
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion';
         },
       },
     },
