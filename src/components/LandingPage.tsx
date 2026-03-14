@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, LogIn, Coffee } from 'lucide-react';
 import TipJar from './TipJar';
+import SfxVolumeControl from './SfxVolumeControl';
 
 interface LandingPageProps {
   onPlayNow: () => void;
@@ -216,7 +217,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3 flex-wrap justify-center">
+        <SfxVolumeControl />
         <button
           onClick={onDebugMode}
           className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"

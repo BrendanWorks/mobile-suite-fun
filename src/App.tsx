@@ -5,11 +5,13 @@ import { initGA, trackPageView, analytics } from './lib/analytics';
 import { anonymousSessionManager } from './lib/anonymousSession';
 import { audioManager } from './lib/audioManager';
 import { preloadGameSounds, preloadTimerSounds } from './lib/sounds';
+import { getSavedSfxLevel, applySfxLevel } from './components/SfxVolumeControl';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 import LandingPage from './components/LandingPage';
 import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
+import SfxVolumeControl from './components/SfxVolumeControl';
 import TipJar from './components/TipJar';
 import TipPrompt from './components/TipPrompt';
 import { useUserStats } from './hooks/useUserStats';
@@ -73,6 +75,7 @@ export default function App() {
 
     const initAudio = () => {
       audioManager.initialize();
+      applySfxLevel(getSavedSfxLevel());
       preloadGameSounds();
       preloadTimerSounds();
       document.removeEventListener('click', initAudio);
@@ -360,7 +363,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mt-6">
+          <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
+            <SfxVolumeControl />
             <button
               onClick={handleDebugMode}
               className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
