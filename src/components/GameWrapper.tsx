@@ -32,6 +32,8 @@ export default function GameWrapper({
   const hasReportedCompletion = useRef(false);
   const hurryUpFiredRef = useRef(false);
   const countdownIntervalRef = useRef<number | null>(null);
+  const timerSoundPausedRef = useRef(false);
+  const timerSoundPollRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
@@ -46,11 +48,34 @@ export default function GameWrapper({
     countdownIntervalRef.current = window.setInterval(() => {
       playTimerCountdown();
     }, 3000);
+
+    timerSoundPollRef.current = window.setInterval(() => {
+      const wantsPause = childrenRef.current?.pauseTimer === true;
+      if (wantsPause && !timerSoundPausedRef.current) {
+        timerSoundPausedRef.current = true;
+        stopTimerCountdown();
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+      } else if (!wantsPause && timerSoundPausedRef.current) {
+        timerSoundPausedRef.current = false;
+        playTimerCountdown();
+        countdownIntervalRef.current = window.setInterval(() => {
+          playTimerCountdown();
+        }, 3000);
+      }
+    }, 100);
+
     return () => {
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
+      }
+      if (timerSoundPollRef.current) {
+        clearInterval(timerSoundPollRef.current);
+        timerSoundPollRef.current = null;
       }
     };
   }, [hideTimerBar]);
@@ -62,6 +87,10 @@ export default function GameWrapper({
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
+      }
+      if (timerSoundPollRef.current) {
+        clearInterval(timerSoundPollRef.current);
+        timerSoundPollRef.current = null;
       }
     }
   }, [isActive, hideTimerBar]);

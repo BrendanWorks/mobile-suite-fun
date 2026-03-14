@@ -284,7 +284,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         console.log('SplitDecision: Game already completed, skipping onComplete call');
       }
     },
-    pauseTimer: false, // Always let GameWrapper timer run
+    get pauseTimer() { return isAnswered; },
     canSkipQuestion: false,
     loadNextPuzzle: () => {
       const nextIndex = currentPuzzleIndex + 1;

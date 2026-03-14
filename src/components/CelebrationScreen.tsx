@@ -5,7 +5,6 @@ import {
   Gamepad2, Zap, ThumbsUp, Lightbulb, Star
 } from 'lucide-react';
 import { GameScore } from '../lib/scoringSystem';
-import { playWin } from '../lib/sounds';
 import { audioManager } from '../lib/audioManager';
 import { ColorClashIcon } from './ColorClashIcon';
 
@@ -256,7 +255,7 @@ export default function CelebrationScreen({
 
           const finalize = () => {
             setDisplayedScore(Math.round(calculatedTotalScore));
-            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            audioManager.play('bonus-pizzaz', ANIMATION_TIMINGS.SOUND_VOLUME);
           };
 
           runPerfectBonus(() => {
@@ -269,11 +268,10 @@ export default function CelebrationScreen({
             );
           });
         } else {
-          // No bonus - play final sound
           timers.push(
             setTimeout(() => {
               setDisplayedScore(Math.round(calculatedTotalScore));
-              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+              audioManager.play('bonus-pizzaz', ANIMATION_TIMINGS.SOUND_VOLUME);
             }, 500)
           );
         }
