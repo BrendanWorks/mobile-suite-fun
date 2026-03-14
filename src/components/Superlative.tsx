@@ -1,4 +1,4 @@
-import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
 import { useQuizRound } from "../lib/useQuizRound";
@@ -571,4 +571,15 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   );
 });
 
-export default Superlative;
+Superlative.displayName = 'Superlative';
+
+export default React.memo(Superlative, (prevProps, nextProps) => {
+  return (
+    prevProps.puzzleIds === nextProps.puzzleIds &&
+    prevProps.puzzleId === nextProps.puzzleId &&
+    prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
+    prevProps.onComplete === nextProps.onComplete &&
+    prevProps.timeRemaining === nextProps.timeRemaining &&
+    prevProps.duration === nextProps.duration
+  );
+});

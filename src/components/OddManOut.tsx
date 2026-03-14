@@ -577,4 +577,14 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
 OddManOut.displayName = 'OddManOut';
 
-export default OddManOut;
+export default React.memo(OddManOut, (prevProps, nextProps) => {
+  return (
+    prevProps.puzzleId === nextProps.puzzleId &&
+    prevProps.puzzleIds === nextProps.puzzleIds &&
+    prevProps.rankingPuzzleId === nextProps.rankingPuzzleId &&
+    prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
+    prevProps.onComplete === nextProps.onComplete &&
+    prevProps.timeRemaining === nextProps.timeRemaining &&
+    prevProps.duration === nextProps.duration
+  );
+});

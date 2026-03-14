@@ -78,7 +78,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
       console.log('FakeOut game ended');
     },
     pauseTimer: status === 'feedback'
-  }), [status]);
+  }), [status, timeRemaining]);
 
   // Load puzzles from database using puzzle_ids
   useEffect(() => {
@@ -359,4 +359,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
 FakeOut.displayName = 'FakeOut';
 
-export default FakeOut;
+export default React.memo(FakeOut, (prevProps, nextProps) => {
+  return (
+    prevProps.puzzleIds === nextProps.puzzleIds &&
+    prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
+    prevProps.onComplete === nextProps.onComplete &&
+    prevProps.timeRemaining === nextProps.timeRemaining &&
+    prevProps.duration === nextProps.duration
+  );
+});

@@ -469,4 +469,14 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
 SplitDecision.displayName = 'SplitDecision';
 
-export default SplitDecision;
+export default React.memo(SplitDecision, (prevProps, nextProps) => {
+  return (
+    prevProps.puzzleId === nextProps.puzzleId &&
+    prevProps.rankingPuzzleId === nextProps.rankingPuzzleId &&
+    prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
+    prevProps.onComplete === nextProps.onComplete &&
+    prevProps.timeRemaining === nextProps.timeRemaining &&
+    prevProps.duration === nextProps.duration &&
+    prevProps.userId === nextProps.userId
+  );
+});

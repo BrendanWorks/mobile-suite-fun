@@ -96,7 +96,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     },
     canSkipQuestion: false,
     hideTimer: true,
-  }));
+  }), [score, props.timeRemaining, props.onComplete]);
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -603,4 +603,12 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
 });
 
 Recall.displayName = 'Recall';
-export default Recall;
+
+export default React.memo(Recall, (prevProps, nextProps) => {
+  return (
+    prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
+    prevProps.onComplete === nextProps.onComplete &&
+    prevProps.timeRemaining === nextProps.timeRemaining &&
+    prevProps.duration === nextProps.duration
+  );
+});
