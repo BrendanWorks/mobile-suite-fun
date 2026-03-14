@@ -65,12 +65,14 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
   const [isStarted, setIsStarted] = useState(false);
   const [totalSpawned, setTotalSpawned] = useState(0);
   const scoreRef = useRef(0);
+  const timeRemainingRef = useRef(timeRemaining);
+  timeRemainingRef.current = timeRemaining;
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: scoreRef.current, maxScore: MAX_MARBLES }),
     onGameEnd: () => {
       gameState.current.active = false;
-      onComplete(scoreRef.current, MAX_MARBLES, timeRemaining);
+      onComplete(scoreRef.current, MAX_MARBLES, timeRemainingRef.current);
     },
     canSkipQuestion: false,
     hideTimer: false,
@@ -224,7 +226,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
     const render = (time: number) => {
       if (!gameState.current.active) return;
 
-      const timeElapsed = duration - timeRemaining;
+      const timeElapsed = duration - timeRemainingRef.current;
       gameState.current.spawnInterval = Math.max(800, 3000 - timeElapsed * 150);
 
       // Spawn
@@ -474,7 +476,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
 
       // ── Speed ramp indicator ─────────────────────────────────────────────
 
-      const speedFraction = Math.min(1, (duration - timeRemaining) / duration);
+      const speedFraction = Math.min(1, (duration - timeRemainingRef.current) / duration);
       if (speedFraction > 0.3) {
         const intensity = (speedFraction - 0.3) / 0.7;
         ctx.fillStyle = `rgba(239,68,68,${intensity * 0.12})`;
@@ -502,7 +504,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
       ) {
         if (gameState.current.active) {
           gameState.current.active = false;
-          onComplete(scoreRef.current, MAX_MARBLES, timeRemaining);
+          onComplete(scoreRef.current, MAX_MARBLES, timeRemainingRef.current);
         }
         return;
       }
@@ -516,7 +518,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
       window.removeEventListener('deviceorientation', handleOrientation);
       cancelAnimationFrame(animationFrame);
     };
-  }, [isStarted, timeRemaining]);
+  }, [isStarted]);
 
   // Tilt indicator value (live read from gameState)
   const tiltDisplay = gameState.current?.tiltX ?? 0;

@@ -93,14 +93,16 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   const [rewindUses, setRewindUses] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const gameStartedRef = useRef(false);
   const [showCountdown, setShowCountdown] = useState(true);
   const [activeEffects, setActiveEffects] = useState<{ slow: boolean; ghost: boolean }>({ slow: false, ghost: false });
+  const activeEffectsRef = useRef({ slow: false, ghost: false });
   const [audioLoaded, setAudioLoaded] = useState(false);
 
   // Visual Effects
   const [screenShake, setScreenShake] = useState(0);
-  const [shimmer, setShimmer] = useState(0);
-  const [backgroundHue, setBackgroundHue] = useState(0);
+  const shimmerRef = useRef(0);
+  const backgroundHueRef = useRef(0);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: scoreRef.current, maxScore: 200 }),
@@ -205,11 +207,13 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
       case 'ice':
         slowedUntilRef.current = Date.now() + SLOW_DURATION;
+        activeEffectsRef.current = { ...activeEffectsRef.current, slow: true };
         setActiveEffects(prev => ({ ...prev, slow: true }));
         break;
 
       case 'ghost':
         invincibleUntilRef.current = Date.now() + GHOST_DURATION;
+        activeEffectsRef.current = { ...activeEffectsRef.current, ghost: true };
         setActiveEffects(prev => ({ ...prev, ghost: true }));
         break;
 
@@ -279,12 +283,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
       foodRef.current = createFood();
       createParticleBurst(head.x, head.y, COLORS.red);
-      setShimmer(1);
+      shimmerRef.current = 1;
       grew = true;
 
       if (scoreRef.current % 50 === 0) {
         obstaclesRef.current.push(createFood());
-        setBackgroundHue(h => (h + 40) % 360);
+        backgroundHueRef.current = (backgroundHueRef.current + 40) % 360;
       }
 
       if (Math.random() < POWERUP_CHANCE && !powerUpRef.current) {
@@ -316,8 +320,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     if (historyRef.current.length > 8) historyRef.current.shift();
   };
 
-  const updateDirection = (newDir: Position) => {
-    if (gameOverRef.current || !gameStarted) return;
+  const updateDirection = useCallback((newDir: Position) => {
+    if (gameOverRef.current || !gameStartedRef.current) return;
 
     const lastQueued = inputQueueRef.current.length > 0
       ? inputQueueRef.current[inputQueueRef.current.length - 1]
@@ -328,7 +332,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     if (inputQueueRef.current.length < 3) {
       inputQueueRef.current.push(newDir);
     }
-  };
+  }, []);
 
   // Canvas Helpers (DRY - reusable rendering)
   const applyShadow = (ctx: CanvasRenderingContext2D, blur: number, color: string) => {
@@ -372,7 +376,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [gameStarted]);
+  }, [updateDirection]);
 
   // Game Ticker
   useEffect(() => {
@@ -391,21 +395,23 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         .map(t => ({ ...t, life: t.life - 1 }))
         .filter(t => t.life > 0);
 
-      // Effect timeouts (DRY - single expiry check pattern)
+      // Effect timeouts (check via refs to avoid stale closure)
       const now = Date.now();
-      if (now > slowedUntilRef.current && activeEffects.slow) {
+      if (now > slowedUntilRef.current && activeEffectsRef.current.slow) {
+        activeEffectsRef.current = { ...activeEffectsRef.current, slow: false };
         setActiveEffects(prev => ({ ...prev, slow: false }));
       }
-      if (now > invincibleUntilRef.current && activeEffects.ghost) {
+      if (now > invincibleUntilRef.current && activeEffectsRef.current.ghost) {
+        activeEffectsRef.current = { ...activeEffectsRef.current, ghost: false };
         setActiveEffects(prev => ({ ...prev, ghost: false }));
       }
-    }, activeEffects.slow 
-      ? INITIAL_SPEED * 1.5 
+    }, activeEffectsRef.current.slow
+      ? INITIAL_SPEED * 1.5
       : Math.max(MAX_SPEED, INITIAL_SPEED - Math.floor(scoreRef.current / 50) * SPEED_INCREMENT)
     );
 
     return () => clearInterval(ticker);
-  }, [gameStarted, isGameOver, activeEffects.slow, activeEffects.ghost]);
+  }, [gameStarted, isGameOver, activeEffects.slow]);
 
   // Render Loop
   useEffect(() => {
@@ -522,11 +528,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       clearShadow(ctx);
 
       // Shimmer border
-      if (shimmer > 0) {
-        ctx.strokeStyle = `rgba(74, 222, 128, ${shimmer})`;
+      if (shimmerRef.current > 0) {
+        ctx.strokeStyle = `rgba(74, 222, 128, ${shimmerRef.current})`;
         ctx.lineWidth = 5;
         ctx.strokeRect(2, 2, CANVAS_SIZE - 4, CANVAS_SIZE - 4);
-        setShimmer(s => Math.max(0, s - 0.018));
+        shimmerRef.current = Math.max(0, shimmerRef.current - 0.018);
       }
 
       animFrame = requestAnimationFrame(draw);
@@ -534,7 +540,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
     draw();
     return () => cancelAnimationFrame(animFrame);
-  }, [backgroundHue, shimmer]);
+  }, []);
 
   // Screen shake cleanup
   useEffect(() => {
@@ -594,6 +600,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
                 onComplete={() => {
                   setShowCountdown(false);
                   audioManager.initialize();
+                  gameStartedRef.current = true;
                   setGameStarted(true);
                   if (audioLoaded) audioManager.playMusic('snake_bg_music');
                 }}

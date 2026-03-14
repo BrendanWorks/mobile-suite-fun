@@ -9,6 +9,7 @@ interface SlopeRiderProps {
 export default function SlopeRider({ onComplete, onScoreUpdate, duration }: SlopeRiderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [tiltValue, setTiltValue] = useState(0);
   const [motionGranted, setMotionGranted] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'pending' | 'granted' | 'denied'>('pending');
@@ -102,6 +103,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
     accelerationRef.current = 0.002;
     playerHeightRef.current = 0;
     vyRef.current = 0;
+    scoreRef.current = 0;
     invincibleRef.current = false;
     nitroRef.current = false;
     fogRef.current = false;
@@ -136,7 +138,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       if (fogTimerRef.current) clearTimeout(fogTimerRef.current);
       const timeElapsed = (Date.now() - startTimeRef.current) / 1000;
       const timeRemaining = Math.max(0, duration - timeElapsed);
-      onComplete(Math.floor(score), 0, timeRemaining);
+      onComplete(Math.floor(scoreRef.current), 0, timeRemaining);
     };
 
     const loop = () => {
@@ -204,11 +206,9 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
               return;
             }
           } else if (o.type === 'coin') {
-            setScore(s => {
-              const newScore = s + 10;
-              onScoreUpdate(newScore, 0);
-              return newScore;
-            });
+            scoreRef.current += 10;
+            setScore(scoreRef.current);
+            onScoreUpdate(scoreRef.current, 0);
             obstaclesRef.current.splice(i, 1);
           } else if (o.type === 'ramp') {
             vyRef.current = 8;
@@ -361,7 +361,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       // HUD
       ctx.fillStyle = '#00ffff';
       ctx.font = 'bold 24px Arial';
-      ctx.fillText(`Score: ${score}`, 20, 40);
+      ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
       const timeRemaining = Math.max(0, duration - (now - startTimeRef.current) / 1000);
       ctx.fillText(`Time: ${Math.ceil(timeRemaining)}s`, 20, 70);
 
@@ -388,7 +388,7 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
       if (fogTimerRef.current) clearTimeout(fogTimerRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [onComplete, onScoreUpdate, duration, permissionStatus, score]);
+  }, [onComplete, onScoreUpdate, duration, permissionStatus]);
 
   return (
     <div className="relative w-full h-full bg-black" style={{ border: '2px solid #00ffff' }}>
