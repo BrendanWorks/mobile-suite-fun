@@ -111,7 +111,9 @@ export default function GameWrapper({
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
-      playTimeUp();
+      if (!gameCompletedRef.current) {
+        playTimeUp();
+      }
     }
   }, [timeRemaining, hideTimerBar]);
 
