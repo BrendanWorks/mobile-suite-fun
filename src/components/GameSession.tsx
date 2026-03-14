@@ -13,6 +13,7 @@ import {
   createGameSession,
   completeGameSession,
   saveAllRoundResults,
+  insertLeaderboardEntry,
   getGameId
 } from '../lib/supabaseHelpers';
 import { anonymousSessionManager } from '../lib/anonymousSession';
@@ -534,6 +535,24 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             if (resultsSuccess.success && !cancelled) {
               console.log('✅ Round results saved:', sessionData.results.length, 'rounds');
             }
+
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('email')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            const displayName = user.email?.split('@')[0]
+              || profile?.email?.split('@')[0]
+              || 'Anonymous';
+
+            await insertLeaderboardEntry({
+              userId: user.id,
+              score: Math.round(sessionData.session.totalScore),
+              displayName,
+              playlistId: playlistId ?? null,
+              roundCount: roundScores.length,
+            });
 
             if (!cancelled) {
               setSessionSaved(true);

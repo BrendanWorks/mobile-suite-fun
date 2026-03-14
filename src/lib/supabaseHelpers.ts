@@ -170,6 +170,94 @@ export async function completeGameSession(
   }
 }
 
+export interface LeaderboardEntry {
+  id: string;
+  user_id: string;
+  score: number;
+  game_id: number | null;
+  display_name: string;
+  playlist_id: number | null;
+  round_count: number;
+  created_at: string;
+  rank?: number;
+}
+
+export interface InsertLeaderboardEntryParams {
+  userId: string;
+  score: number;
+  displayName: string;
+  gameId?: number | null;
+  playlistId?: number | null;
+  roundCount?: number;
+}
+
+export async function insertLeaderboardEntry(
+  params: InsertLeaderboardEntryParams
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from('leaderboard_entries').insert({
+      user_id: params.userId,
+      score: Math.round(params.score),
+      display_name: params.displayName,
+      game_id: params.gameId ?? null,
+      playlist_id: params.playlistId ?? null,
+      round_count: params.roundCount ?? 0,
+    });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error inserting leaderboard entry:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+export async function fetchTopLeaderboard(
+  limit = 10,
+  since?: Date
+): Promise<{ success: boolean; data?: LeaderboardEntry[]; error?: string }> {
+  try {
+    let query = supabase
+      .from('leaderboard_entries')
+      .select('id, user_id, score, game_id, display_name, playlist_id, round_count, created_at')
+      .order('score', { ascending: false })
+      .limit(limit);
+
+    if (since) {
+      query = query.gte('created_at', since.toISOString());
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const entries: LeaderboardEntry[] = (data ?? []).map((row, idx) => ({
+      ...row,
+      rank: idx + 1,
+    }));
+
+    return { success: true, data: entries };
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+export async function fetchTopAllTime(limit = 10) {
+  return fetchTopLeaderboard(limit);
+}
+
+export async function fetchTopThisWeek(limit = 10) {
+  const since = new Date();
+  since.setDate(since.getDate() - 7);
+  return fetchTopLeaderboard(limit, since);
+}
+
 export async function saveAllRoundResults(
   sessionId: string,
   userId: string,
