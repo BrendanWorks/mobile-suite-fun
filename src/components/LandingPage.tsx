@@ -84,8 +84,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         >
           <button
             onClick={onPlayNow}
-            className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-xl transition-all active:scale-[0.98] touch-manipulation shadow-lg"
-            style={{ boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)' }}
+            className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 bg-red-600 text-white font-bold text-xl rounded-xl active:scale-[0.97] touch-manipulation shadow-lg landing-play-btn"
+            style={{ boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)', transition: 'transform 300ms ease, background-color 300ms ease, box-shadow 300ms ease' }}
           >
             <Play className="w-6 h-6" fill="currentColor" />
             Play Now
@@ -94,8 +94,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
           <div className="text-center">
             <button
               onClick={onSignIn}
-              className="inline-flex flex-col items-center gap-1 px-8 py-4 bg-transparent border-2 border-red-500/50 hover:border-red-500 text-red-400 hover:text-red-300 font-semibold text-lg rounded-xl transition-all active:scale-[0.98] touch-manipulation"
-              style={{ textShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}
+              className="inline-flex flex-col items-center gap-1 px-8 py-4 bg-transparent border-2 border-red-500/50 text-red-400 font-semibold text-lg rounded-xl active:scale-[0.98] touch-manipulation landing-signin-btn"
+              style={{ textShadow: '0 0 10px rgba(239, 68, 68, 0.4)', transition: 'transform 300ms ease, border-color 300ms ease, color 300ms ease, box-shadow 300ms ease' }}
             >
               <span className="flex items-center gap-2">
                 <LogIn className="w-5 h-5" />
@@ -121,6 +121,17 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         @keyframes rowdyTextPulse {
           0%, 100% { text-shadow: 0 0 20px rgba(239,68,68,0.35), 0 0 40px rgba(239,68,68,0.12); }
           50%       { text-shadow: 0 0 10px rgba(239,68,68,0.18), 0 0 20px rgba(239,68,68,0.06); }
+        }
+        .landing-play-btn:hover {
+          background-color: #ef4444;
+          box-shadow: 0 0 50px rgba(239,68,68,0.75), 0 0 90px rgba(239,68,68,0.3) !important;
+          transform: scale(1.03);
+        }
+        .landing-signin-btn:hover {
+          border-color: rgba(239,68,68,0.8);
+          color: #fca5a5;
+          box-shadow: 0 0 18px rgba(239,68,68,0.2);
+          transform: scale(1.02);
         }
       `}</style>
     </div>
