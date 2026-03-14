@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, LogIn, Coffee } from 'lucide-react';
 import TipJar from './TipJar';
 
@@ -12,10 +12,36 @@ const LETTERS = ['R', 'O', 'W', 'D', 'Y'];
 const LETTER_STAGGER_MS = 80;
 const LETTERS_DONE_AT = LETTERS.length * LETTER_STAGGER_MS + 200;
 
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  opacity: number;
+  fadeDir: number;
+}
+
+const PARTICLE_COUNT = 18;
+
+function initParticle(w: number, h: number): Particle {
+  return {
+    x: Math.random() * w,
+    y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.28,
+    vy: (Math.random() - 0.5) * 0.22,
+    radius: Math.random() * 1.6 + 0.6,
+    opacity: Math.random() * 0.35 + 0.08,
+    fadeDir: Math.random() > 0.5 ? 1 : -1,
+  };
+}
+
 export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: LandingPageProps) {
   const [visibleLetters, setVisibleLetters] = useState(0);
   const [pulseActive, setPulseActive] = useState(false);
   const [showTipJar, setShowTipJar] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -31,10 +57,70 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+
+    const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () =>
+      initParticle(canvas.width, canvas.height)
+    );
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let lastTime = 0;
+
+    const draw = (now: number) => {
+      const dt = Math.min(now - lastTime, 50);
+      lastTime = now;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of particles) {
+        p.x += p.vx * dt * 0.5;
+        p.y += p.vy * dt * 0.5;
+        p.opacity += p.fadeDir * 0.0008 * dt;
+
+        if (p.opacity > 0.43 || p.opacity < 0.05) p.fadeDir *= -1;
+
+        if (p.x < -4) p.x = canvas.width + 4;
+        else if (p.x > canvas.width + 4) p.x = -4;
+        if (p.y < -4) p.y = canvas.height + 4;
+        else if (p.y > canvas.height + 4) p.y = -4;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${p.opacity.toFixed(3)})`;
+        ctx.fill();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    rafRef.current = requestAnimationFrame(draw);
+
+    window.addEventListener('resize', resize);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
   return (
     <>
     {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
     <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ pointerEvents: 'none' }}
+      />
       <div className="absolute inset-0 bg-gradient-radial from-red-900/20 via-black to-black" />
 
       <div className="relative z-10 text-center max-w-2xl w-full">
