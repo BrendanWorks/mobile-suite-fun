@@ -94,7 +94,7 @@ export default function RoundResults({
 
     showContentTimerRef.current = window.setTimeout(() => {
       setShowContent(true);
-      playWin(0.5);
+      if (!isLastRound) playWin(0.5);
     }, 200);
 
     if (hasTimeBonus) {
