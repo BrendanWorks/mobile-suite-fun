@@ -365,12 +365,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
           </div>
 
           <div className="mt-8">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-4" style={{ textShadow: '0 0 15px rgba(251, 191, 36, 0.4)' }}>
-              Leaderboard Preview
-            </h2>
-            <div className="bg-black border-2 border-yellow-400/30 rounded-xl" style={{ boxShadow: '0 0 20px rgba(251,191,36,0.1)' }}>
-              <Leaderboard />
-            </div>
+            <Leaderboard />
           </div>
 
           <div className="mt-6 p-4 bg-yellow-500/20 border-2 border-yellow-500/30 rounded-lg">
