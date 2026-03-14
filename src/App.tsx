@@ -141,6 +141,8 @@ export default function App() {
 
   const handlePlayNow = useCallback(() => {
     trackPageView('/game-session');
+    setShowTipPrompt(false);
+    setShowTipJar(false);
     setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
@@ -155,6 +157,8 @@ export default function App() {
 
   const handlePlayGames = useCallback(() => {
     trackPageView('/game-session');
+    setShowTipPrompt(false);
+    setShowTipJar(false);
     setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
@@ -211,16 +215,6 @@ export default function App() {
   if (selectedPlaylistId) {
     return (
       <>
-        {showTipPrompt && !showTipJar && (
-          <TipPrompt
-            onOpenTipJar={() => { setShowTipPrompt(false); setShowTipJar(true); }}
-            onDismiss={() => {
-              localStorage.setItem(TIP_DISMISSED_KEY, String(Date.now()));
-              setShowTipPrompt(false);
-            }}
-          />
-        )}
-        {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
         <GameSession
           playlistId={selectedPlaylistId}
           onExit={() => {
@@ -268,6 +262,15 @@ export default function App() {
 
   return (
     <>
+    {showTipPrompt && !showTipJar && (
+      <TipPrompt
+        onOpenTipJar={() => { setShowTipPrompt(false); setShowTipJar(true); }}
+        onDismiss={() => {
+          localStorage.setItem(TIP_DISMISSED_KEY, String(Date.now()));
+          setShowTipPrompt(false);
+        }}
+      />
+    )}
     {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
     <div className="h-screen w-screen bg-black overflow-y-auto">
       <div className="min-h-full p-4 sm:p-6">
