@@ -63,7 +63,7 @@ export function preloadTimerSounds(): void {
   audioManager.loadSound(SOUND_KEYS.HURRY_UP,  "/sounds/global/SoundHurryUp.mp3",   1);
 }
 
-export function playTimerCountdown(): void { audioManager.playLoop(SOUND_KEYS.COUNTDOWN, 0.35); }
+export function playTimerCountdown(): void { audioManager.play(SOUND_KEYS.COUNTDOWN, 0.35); }
 export function stopTimerCountdown(): void { audioManager.stopLoop(SOUND_KEYS.COUNTDOWN); }
 export function playHurryUp(): void        { audioManager.play(SOUND_KEYS.HURRY_UP, 0.6); }
 

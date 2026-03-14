@@ -31,6 +31,7 @@ export default function GameWrapper({
   const finalScoreRef = useRef<{ score: number; maxScore: number; timeRemaining: number } | null>(null);
   const hasReportedCompletion = useRef(false);
   const hurryUpFiredRef = useRef(false);
+  const countdownIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
@@ -42,8 +43,15 @@ export default function GameWrapper({
     if (hideTimerBar) return;
     preloadTimerSounds();
     playTimerCountdown();
+    countdownIntervalRef.current = window.setInterval(() => {
+      playTimerCountdown();
+    }, 5000);
     return () => {
       stopTimerCountdown();
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
     };
   }, [hideTimerBar]);
 
@@ -51,7 +59,10 @@ export default function GameWrapper({
     if (hideTimerBar) return;
     if (!isActive) {
       stopTimerCountdown();
-      return;
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
     }
   }, [isActive, hideTimerBar]);
 
@@ -60,6 +71,10 @@ export default function GameWrapper({
     if (timeRemaining <= 5 && timeRemaining > 0 && !hurryUpFiredRef.current) {
       hurryUpFiredRef.current = true;
       stopTimerCountdown();
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
       playHurryUp();
       const resumeId = window.setTimeout(() => {
         playTimerCountdown();
@@ -68,11 +83,16 @@ export default function GameWrapper({
     }
     if (timeRemaining <= 0) {
       stopTimerCountdown();
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
     }
   }, [timeRemaining, hideTimerBar]);
 
   const handleEarlyCompletion = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     setIsActive(false);
     setIsFastCountdown(false);
     stopTimerCountdown();
@@ -87,6 +107,7 @@ export default function GameWrapper({
 
   const handleTimeUp = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     setIsActive(false);
     setIsFastCountdown(false);
     stopTimerCountdown();
