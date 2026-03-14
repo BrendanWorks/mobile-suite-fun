@@ -699,6 +699,22 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         normalizedScore = scoringSystem.recall(rawScore, maxScore);
         break;
 
+      case 'fake-out':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        break;
+
+      case 'double-fake':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        break;
+
+      case 'hive-mind':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        break;
+
+      case 'multiple-choice':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        break;
+
       default:
         normalizedScore = {
           gameId: '',

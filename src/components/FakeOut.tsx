@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
+import { playWin, playWrong } from '../lib/sounds';
 
 interface PuzzleMetadata {
   source?: string;
@@ -173,6 +174,12 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     const sourceLabel = currentPuzzle.correct_answer === 'fake'
       ? `AI — ${currentPuzzle.metadata.source?.toUpperCase() || 'AI GENERATED'}`
       : `REAL — ${currentPuzzle.prompt}`;
+
+    if (isCorrect) {
+      playWin(0.5);
+    } else {
+      playWrong(0.4);
+    }
 
     setLastResult({ isCorrect, message: sourceLabel });
     setStatus('feedback');

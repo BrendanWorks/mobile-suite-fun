@@ -113,6 +113,7 @@ export default function GameWrapper({
     if (timerRef.current) clearInterval(timerRef.current);
     if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     gameCompletedRef.current = true;
+    hasReportedCompletion.current = true;
     setIsActive(false);
     setIsFastCountdown(false);
     stopTimerCountdown();
@@ -193,10 +194,9 @@ export default function GameWrapper({
         if (newTime <= 0) {
           if (isFastCountdown) {
             if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
+            hasReportedCompletion.current = true;
 
             lingerTimeoutRef.current = window.setTimeout(() => {
-              if (hasReportedCompletion.current) return;
-              hasReportedCompletion.current = true;
               handleEarlyCompletion();
             }, POST_ZERO_LINGER_MS);
           } else {
