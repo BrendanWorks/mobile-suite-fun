@@ -127,7 +127,7 @@ export function useQuizRound<T>({
   }, [roundState]);
 
   useEffect(() => {
-    audioManager.loadSound(audioWinKey, "/sounds/global/win_optimized.mp3", 2);
+    audioManager.loadSound(audioWinKey, "/sounds/global/SmallWin.mp3", 2);
     audioManager.loadSound(audioWrongKey, "/sounds/global/wrong_optimized.mp3", 2);
   }, [audioWinKey, audioWrongKey]);
 

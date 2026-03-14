@@ -51,7 +51,7 @@ export const SOUND_KEYS = {
 } as const;
 
 export function preloadGameSounds(): void {
-  audioManager.loadSound(SOUND_KEYS.WIN,    "/sounds/global/win_optimized.mp3",    2);
+  audioManager.loadSound(SOUND_KEYS.WIN,    "/sounds/global/SmallWin.mp3",    2);
   audioManager.loadSound(SOUND_KEYS.WRONG,  "/sounds/global/wrong_optimized.mp3",  2);
   audioManager.loadSound(SOUND_KEYS.SELECT, "/sounds/ranky/select_optimized.mp3",  3);
 }

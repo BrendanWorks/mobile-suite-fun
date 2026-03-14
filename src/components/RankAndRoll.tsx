@@ -74,7 +74,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   useEffect(() => {
     const loadAudio = async () => {
       await audioManager.loadSound('ranky-select', '/sounds/ranky/select_optimized.mp3', 3);
-      await audioManager.loadSound('ranky-win', '/sounds/global/win_optimized.mp3', 2);
+      await audioManager.loadSound('ranky-win', '/sounds/global/SmallWin.mp3', 2);
       await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
     };
     loadAudio();

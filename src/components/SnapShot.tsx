@@ -74,7 +74,7 @@ const SnapShot = forwardRef((props: any, ref) => {
   // Load audio on mount
   useEffect(() => {
     const loadAudio = async () => {
-      await audioManager.loadSound('snapshot-correct', '/sounds/global/win_optimized.mp3', 2);
+      await audioManager.loadSound('snapshot-correct', '/sounds/global/SmallWin.mp3', 2);
       await audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
     };
     loadAudio();
