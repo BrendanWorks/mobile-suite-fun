@@ -157,6 +157,7 @@ export default function GameWrapper({
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
+      setTimeRemaining(0);
       hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
     }
