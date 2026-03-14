@@ -609,7 +609,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       if (currentGame) {
         analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
       }
-    }, 380);
+    }, 340);
   };
 
   const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
@@ -1239,5 +1239,5 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
   }
 
-  return null;
+  return <div className="h-screen w-screen bg-black" />;
 }

@@ -17,12 +17,14 @@
     overscroll-behavior: none;
     -webkit-user-select: none;
     user-select: none;
+    background-color: #000;
   }
 
   #root {
     height: 100dvh;
     width: 100vw;
     overflow: hidden;
+    background-color: #000;
   }
 
   @supports (padding: max(0px)) {
@@ -178,9 +180,10 @@
 
 /* ─── Game content enter: fade in + scale up from slightly smaller ───────────── */
 @keyframes game-enter {
-  0%   { opacity: 0; transform: scale(0.97); }
+  0%   { opacity: 0.15; transform: scale(0.98); }
   100% { opacity: 1; transform: scale(1); }
 }
 .animate-game-enter {
-  animation: game-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: game-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity, transform;
 }
