@@ -43,11 +43,14 @@ export default function GameWrapper({
 
   useEffect(() => {
     if (hideTimerBar) return;
-    preloadTimerSounds();
-    playTimerCountdown();
-    countdownIntervalRef.current = window.setInterval(() => {
+    let cancelled = false;
+    preloadTimerSounds().then(() => {
+      if (cancelled) return;
       playTimerCountdown();
-    }, 3000);
+      countdownIntervalRef.current = window.setInterval(() => {
+        playTimerCountdown();
+      }, 3000);
+    });
 
     timerSoundPollRef.current = window.setInterval(() => {
       const wantsPause = childrenRef.current?.pauseTimer === true;
@@ -68,6 +71,7 @@ export default function GameWrapper({
     }, 100);
 
     return () => {
+      cancelled = true;
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
