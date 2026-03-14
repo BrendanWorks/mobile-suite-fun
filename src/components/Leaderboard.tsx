@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, Clock, Infinity, Zap } from 'lucide-react';
+import { Trophy, RefreshCw, Clock, Infinity, Zap, Star } from 'lucide-react';
 import { fetchTopAllTime, fetchTopThisWeek, LeaderboardEntry } from '../lib/supabaseHelpers';
 
 type Filter = 'alltime' | 'weekly';
@@ -55,6 +55,25 @@ function MostRoundsBadge() {
     >
       <Zap className="w-2.5 h-2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(34,211,238,0.8))' }} />
       <span style={{ fontSize: '0.6rem' }}>GRINDER</span>
+    </div>
+  );
+}
+
+function PerfectScoreBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-black tracking-wider"
+      style={{
+        background: 'rgba(251,191,36,0.12)',
+        border: '1px solid rgba(251,191,36,0.5)',
+        color: '#fcd34d',
+        boxShadow: '0 0 8px rgba(251,191,36,0.3)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Most Perfect Scores"
+    >
+      <Star className="w-2.5 h-2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.9))' }} />
+      <span style={{ fontSize: '0.6rem' }}>PERFECT</span>
     </div>
   );
 }
@@ -246,9 +265,10 @@ export default function Leaderboard() {
                       >
                         {entry.score.toLocaleString()}
                       </div>
-                      {entry.badge_most_rounds && (
-                        <div className="mt-2">
-                          <MostRoundsBadge />
+                      {(entry.badge_most_rounds || entry.badge_perfect_score) && (
+                        <div className="mt-2 flex flex-col gap-1 items-center">
+                          {entry.badge_most_rounds && <MostRoundsBadge />}
+                          {entry.badge_perfect_score && <PerfectScoreBadge />}
                         </div>
                       )}
                     </div>
@@ -273,6 +293,7 @@ export default function Leaderboard() {
                       {entry.display_name}
                     </span>
                     {entry.badge_most_rounds && <MostRoundsBadge />}
+                    {entry.badge_perfect_score && <PerfectScoreBadge />}
                     <span
                       className="text-sm font-bold tabular-nums"
                       style={{ color: 'rgba(34,211,238,0.7)' }}

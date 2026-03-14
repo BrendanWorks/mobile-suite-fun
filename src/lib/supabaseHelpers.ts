@@ -181,11 +181,22 @@ export interface LeaderboardEntry {
   created_at: string;
   rank?: number;
   badge_most_rounds?: boolean;
+  badge_perfect_score?: boolean;
 }
 
 export async function fetchMostRoundsUserId(): Promise<string | null> {
   try {
     const { data, error } = await supabase.rpc('get_most_rounds_user_id');
+    if (error) throw error;
+    return data as string | null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPerfectScoreUserId(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('get_perfect_score_user_id');
     if (error) throw error;
     return data as string | null;
   } catch {
@@ -241,9 +252,10 @@ export async function fetchTopLeaderboard(
       query = query.gte('created_at', since.toISOString());
     }
 
-    const [{ data, error }, mostRoundsUserId] = await Promise.all([
+    const [{ data, error }, mostRoundsUserId, perfectScoreUserId] = await Promise.all([
       query,
       fetchMostRoundsUserId(),
+      fetchPerfectScoreUserId(),
     ]);
 
     if (error) throw error;
@@ -252,6 +264,7 @@ export async function fetchTopLeaderboard(
       ...row,
       rank: idx + 1,
       badge_most_rounds: mostRoundsUserId != null && row.user_id === mostRoundsUserId,
+      badge_perfect_score: perfectScoreUserId != null && row.user_id === perfectScoreUserId,
     }));
 
     return { success: true, data: entries };
