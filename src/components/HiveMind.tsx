@@ -166,7 +166,6 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     if (revealState) return;
 
     stopTimerCountdown();
-    setTimeout(() => playHiveMystery(), 300);
 
     setSelectedChoice(choiceText);
     setRevealState(true);
@@ -189,6 +188,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
 
     setTimeout(() => {
       setBarsComplete(true);
+      setTimeout(() => playHiveMystery(), 300);
     }, lastBarFinish * 1000);
 
     // Move to next or complete after bars finish + showcase time
