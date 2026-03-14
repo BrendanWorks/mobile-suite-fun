@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search, Camera, Triangle, Users, Check,
   ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
@@ -109,6 +109,9 @@ export default function CelebrationScreen({
     };
   }, [roundScores]);
 
+  const scoresRef = useRef({ baseScore, timeBonus, perfectBonus, calculatedTotalScore, totalPercentage, basePercentage });
+  scoresRef.current = { baseScore, timeBonus, perfectBonus, calculatedTotalScore, totalPercentage, basePercentage };
+
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
     const intervals: NodeJS.Timeout[] = [];
@@ -166,9 +169,10 @@ export default function CelebrationScreen({
       timers.push(
         setTimeout(
           () => {
+            const { basePercentage: bp } = scoresRef.current;
             const tileScore = roundScores[i].score.normalizedScore || 0;
             const tilePercentage = (tileScore / MAX_RING_SCORE) * 100;
-            setDialFill((prev) => Math.min(prev + tilePercentage, basePercentage));
+            setDialFill((prev) => Math.min(prev + tilePercentage, bp));
             setDisplayedScore((prev) => prev + Math.round(tileScore));
           },
           ANIMATION_TIMINGS.NAME_START + delay
@@ -176,32 +180,21 @@ export default function CelebrationScreen({
       );
     }
 
-    // Bonus phase with explicit timing
-    const totalBonus = timeBonus + perfectBonus;
+    // Bonus phase with explicit timing — read from ref to avoid stale closure issues
+    timers.push(
+      setTimeout(() => {
+        const { baseScore, timeBonus, perfectBonus, calculatedTotalScore, totalPercentage, basePercentage } = scoresRef.current;
+        const totalBonus = timeBonus + perfectBonus;
 
-    if (totalBonus > 10) {
-      // Disable CSS transition before fast interval-driven bonus animations start
-      timers.push(
-        setTimeout(() => {
+        if (totalBonus > 10) {
+          // Disable CSS transition before fast interval-driven bonus animations start
           setDialAnimating(false);
-        }, bonusStartAt - 100)
-      );
-
-      // Ensure dial is at base percentage before bonuses start
-      timers.push(
-        setTimeout(() => {
           setDialFill(basePercentage);
           setDisplayedScore(Math.round(baseScore));
-        }, bonusStartAt - 50)
-      );
 
-      // Perfect bonus first if it exists
-      if (perfectBonus > 10) {
-        const perfectDuration = ANIMATION_TIMINGS.BONUS_DURATION;
-        const perfectPercentage = (perfectBonus / MAX_RING_SCORE) * 100;
-
-        timers.push(
-          setTimeout(() => {
+          const runPerfectBonus = (onComplete: () => void) => {
+            if (perfectBonus <= 10) { onComplete(); return; }
+            const perfectPercentage = (perfectBonus / MAX_RING_SCORE) * 100;
             setShowPerfectBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
@@ -212,13 +205,10 @@ export default function CelebrationScreen({
             const fillInterval = setInterval(() => {
               const elapsed = Date.now() - startTime;
               const progress = Math.min(elapsed / animationDuration, 1);
-
               setDialFill((prev) => {
                 const increment = perfectPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-                const next = Math.min(prev + increment, basePercentage + perfectPercentage);
-                return next;
+                return Math.min(prev + increment, basePercentage + perfectPercentage);
               });
-
               setDisplayedScore(Math.round(startScore + (perfectBonus * progress)));
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
@@ -227,75 +217,27 @@ export default function CelebrationScreen({
               setTimeout(() => {
                 clearInterval(fillInterval);
                 setShowPerfectBonus(false);
-              }, perfectDuration)
+                onComplete();
+              }, ANIMATION_TIMINGS.BONUS_DURATION)
             );
-          }, bonusStartAt)
-        );
+          };
 
-        if (timeBonus > 10) {
-          const speedStartAt = bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + ANIMATION_TIMINGS.BONUS_DELAY;
-          const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
-          const speedDuration = ANIMATION_TIMINGS.BONUS_DURATION;
-
-          timers.push(
-            setTimeout(() => {
-              setShowTimeBonus(true);
-              audioManager.play('bonus-pizzaz', 0.5);
-
-              const startScore = Math.round(baseScore + perfectBonus);
-              const startTime = Date.now();
-              const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
-
-              const fillInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / animationDuration, 1);
-
-                setDialFill((prev) => {
-                  const increment = speedPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-                  const next = Math.min(prev + increment, totalPercentage);
-                  return next;
-                });
-                setDisplayedScore(Math.round(startScore + (timeBonus * progress)));
-              }, ANIMATION_TIMINGS.DIAL_INTERVAL);
-              intervals.push(fillInterval);
-
-              timers.push(
-                setTimeout(() => {
-                  clearInterval(fillInterval);
-                  setShowTimeBonus(false);
-                }, speedDuration)
-              );
-            }, speedStartAt)
-          );
-        } else {
-          timers.push(
-            setTimeout(() => {
-              setDisplayedScore(Math.round(calculatedTotalScore));
-              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-            }, bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + 500)
-          );
-        }
-      } else if (timeBonus > 10) {
-        const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
-        const speedDuration = ANIMATION_TIMINGS.BONUS_DURATION;
-
-        timers.push(
-          setTimeout(() => {
+          const runTimeBonus = (onComplete: () => void) => {
+            if (timeBonus <= 10) { onComplete(); return; }
+            const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
+            const startScore = Math.round(baseScore + perfectBonus);
             setShowTimeBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
-            const startScore = Math.round(baseScore);
             const startTime = Date.now();
             const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
             const fillInterval = setInterval(() => {
               const elapsed = Date.now() - startTime;
               const progress = Math.min(elapsed / animationDuration, 1);
-
               setDialFill((prev) => {
                 const increment = speedPercentage / ANIMATION_TIMINGS.DIAL_SPEED;
-                const next = Math.min(prev + increment, totalPercentage);
-                return next;
+                return Math.min(prev + increment, totalPercentage);
               });
               setDisplayedScore(Math.round(startScore + (timeBonus * progress)));
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
@@ -305,29 +247,43 @@ export default function CelebrationScreen({
               setTimeout(() => {
                 clearInterval(fillInterval);
                 setShowTimeBonus(false);
-                setDisplayedScore(Math.round(calculatedTotalScore));
-                playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-              }, speedDuration)
+                onComplete();
+              }, ANIMATION_TIMINGS.BONUS_DURATION)
             );
-          }, bonusStartAt)
-        );
-      }
-    } else {
-      // No bonus - play final sound
-      timers.push(
-        setTimeout(() => {
-          setDisplayedScore(Math.round(calculatedTotalScore));
-          playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
-        }, hideAllNamesAt + 500)
-      );
-    }
+          };
 
+          const finalize = () => {
+            setDisplayedScore(Math.round(calculatedTotalScore));
+            playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+          };
+
+          runPerfectBonus(() => {
+            timers.push(
+              setTimeout(() => {
+                runTimeBonus(() => {
+                  timers.push(setTimeout(finalize, 300));
+                });
+              }, ANIMATION_TIMINGS.BONUS_DELAY)
+            );
+          });
+        } else {
+          // No bonus - play final sound
+          timers.push(
+            setTimeout(() => {
+              setDisplayedScore(Math.round(calculatedTotalScore));
+              playWin(ANIMATION_TIMINGS.SOUND_VOLUME);
+            }, 500)
+          );
+        }
+      }, bonusStartAt)
+    );
 
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
       intervals.forEach((interval) => clearInterval(interval));
     };
-  }, [roundScores, totalPercentage, timeBonus, perfectBonus, basePercentage, calculatedTotalScore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
