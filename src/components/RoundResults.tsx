@@ -159,12 +159,9 @@ export default function RoundResults({
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
             <div
-              className={`text-6xl sm:text-7xl font-bold text-yellow-400 mb-3 ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
+              className={`text-2xl sm:text-3xl font-bold text-yellow-400 mb-3 uppercase tracking-wider ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
               style={{ textShadow: '0 0 20px #fbbf24' }}
             >
-              {gameScore.grade}
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-3 uppercase tracking-wider animate-fade-in-up" style={{ textShadow: '0 0 15px #00ffff', animationDelay: '0.15s', animationFillMode: 'both' }}>
               {getGradeLabel(gameScore.normalizedScore)}
             </div>
             <div className="text-lg sm:text-xl text-cyan-400 font-semibold">
