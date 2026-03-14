@@ -17,30 +17,31 @@ import {
 } from '../lib/supabaseHelpers';
 import { anonymousSessionManager } from '../lib/anonymousSession';
 import GameWrapper from './GameWrapper';
-import OddManOut from './OddManOut';
-import PhotoMystery from './PhotoMystery.jsx';
-import RankAndRoll from './RankAndRoll';
-import SnapShot from './SnapShot';
-import SplitDecision from './SplitDecision';
-import WordRescue from './WordRescue';
-import ShapeSequence from './ShapeSequence';
-import Snake from './Snake';
-import UpYours from './UpYours';
-import FakeOut from './FakeOut';
-import HiveMind from './HiveMind';
-import SlopeRider from './SlopeRider';
-import NeuralPulse from './NeuralPulse';
-import ZenGravity from './ZenGravity';
-import Superlative from './Superlative';
-import TrueFalse from './TrueFalse';
-import MultipleChoice from './MultipleChoice';
-import Tracer from './Tracer';
-import Clutch from './Clutch';
-import Flashbang from './Flashbang';
-import ColorClash from './ColorClash';
-import Recall from './Recall';
 import RoundResults from './RoundResults';
 import CelebrationScreen from './CelebrationScreen';
+
+const OddManOut = React.lazy(() => import('./OddManOut'));
+const PhotoMystery = React.lazy(() => import('./PhotoMystery.jsx'));
+const RankAndRoll = React.lazy(() => import('./RankAndRoll'));
+const SnapShot = React.lazy(() => import('./SnapShot'));
+const SplitDecision = React.lazy(() => import('./SplitDecision'));
+const WordRescue = React.lazy(() => import('./WordRescue'));
+const ShapeSequence = React.lazy(() => import('./ShapeSequence'));
+const Snake = React.lazy(() => import('./Snake'));
+const UpYours = React.lazy(() => import('./UpYours'));
+const FakeOut = React.lazy(() => import('./FakeOut'));
+const HiveMind = React.lazy(() => import('./HiveMind'));
+const SlopeRider = React.lazy(() => import('./SlopeRider'));
+const NeuralPulse = React.lazy(() => import('./NeuralPulse'));
+const ZenGravity = React.lazy(() => import('./ZenGravity'));
+const Superlative = React.lazy(() => import('./Superlative'));
+const TrueFalse = React.lazy(() => import('./TrueFalse'));
+const MultipleChoice = React.lazy(() => import('./MultipleChoice'));
+const Tracer = React.lazy(() => import('./Tracer'));
+const Clutch = React.lazy(() => import('./Clutch'));
+const Flashbang = React.lazy(() => import('./Flashbang'));
+const ColorClash = React.lazy(() => import('./ColorClash'));
+const Recall = React.lazy(() => import('./Recall'));
 import AuthModal from './AuthModal';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
@@ -1169,18 +1170,24 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
         {/* Game Content */}
         <div className="flex-1 overflow-auto">
-          <GameWrapper
-            duration={currentGame.duration}
-            onComplete={handleGameComplete}
-            gameName={currentGame.name}
-            onScoreUpdate={handleScoreUpdate}
-          >
-            <GameComponent
-              puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
-              puzzleIds={currentPuzzleIds}
-              rankingPuzzleId={currentRankingPuzzleId}
-            />
-          </GameWrapper>
+          <React.Suspense fallback={
+            <div className="h-full w-full flex items-center justify-center bg-black">
+              <div className="text-cyan-400 text-lg font-bold animate-pulse" style={{ textShadow: '0 0 10px #00ffff' }}>Loading...</div>
+            </div>
+          }>
+            <GameWrapper
+              duration={currentGame.duration}
+              onComplete={handleGameComplete}
+              gameName={currentGame.name}
+              onScoreUpdate={handleScoreUpdate}
+            >
+              <GameComponent
+                puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
+                puzzleIds={currentPuzzleIds}
+                rankingPuzzleId={currentRankingPuzzleId}
+              />
+            </GameWrapper>
+          </React.Suspense>
         </div>
       </div>
     );

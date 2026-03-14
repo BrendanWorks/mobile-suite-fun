@@ -7,7 +7,7 @@ import {
 import { GameScore } from '../lib/scoringSystem';
 import { playWin } from '../lib/sounds';
 import { audioManager } from '../lib/audioManager';
-import { ColorClashIcon } from './ColorClash';
+import { ColorClashIcon } from './ColorClashIcon';
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-full h-full" />,

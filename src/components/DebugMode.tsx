@@ -6,26 +6,27 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GameWrapper from './GameWrapper';
-import OddManOut from './OddManOut';
-import PhotoMystery from './PhotoMystery.jsx';
-import RankAndRoll from './RankAndRoll';
-import SnapShot from './SnapShot';
-import SplitDecision from './SplitDecision';
-import WordRescue from './WordRescue';
-import ShapeSequence from './ShapeSequence';
-import Snake from './Snake';
-import UpYours from './UpYours';
-import FakeOut from './FakeOut';
-import HiveMind from './HiveMind';
-import ZenGravity from './ZenGravity';
-import Superlative from './Superlative';
-import TrueFalse from './TrueFalse';
-import MultipleChoice from './MultipleChoice';
-import Tracer from './Tracer';
-import Clutch from './Clutch';
-import Flashbang from './Flashbang';
-import Recall from './Recall';
-import ColorClash from './ColorClash';
+
+const OddManOut = React.lazy(() => import('./OddManOut'));
+const PhotoMystery = React.lazy(() => import('./PhotoMystery.jsx'));
+const RankAndRoll = React.lazy(() => import('./RankAndRoll'));
+const SnapShot = React.lazy(() => import('./SnapShot'));
+const SplitDecision = React.lazy(() => import('./SplitDecision'));
+const WordRescue = React.lazy(() => import('./WordRescue'));
+const ShapeSequence = React.lazy(() => import('./ShapeSequence'));
+const Snake = React.lazy(() => import('./Snake'));
+const UpYours = React.lazy(() => import('./UpYours'));
+const FakeOut = React.lazy(() => import('./FakeOut'));
+const HiveMind = React.lazy(() => import('./HiveMind'));
+const ZenGravity = React.lazy(() => import('./ZenGravity'));
+const Superlative = React.lazy(() => import('./Superlative'));
+const TrueFalse = React.lazy(() => import('./TrueFalse'));
+const MultipleChoice = React.lazy(() => import('./MultipleChoice'));
+const Tracer = React.lazy(() => import('./Tracer'));
+const Clutch = React.lazy(() => import('./Clutch'));
+const Flashbang = React.lazy(() => import('./Flashbang'));
+const Recall = React.lazy(() => import('./Recall'));
+const ColorClash = React.lazy(() => import('./ColorClash'));
 import GameSession from './GameSession';
 import CelebrationScreen from './CelebrationScreen';
 
@@ -213,18 +214,24 @@ export default function DebugMode({ onExit }: DebugModeProps) {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <GameWrapper
-            duration={game.duration}
-            onComplete={() => {}}
-            gameName={game.name}
-            onScoreUpdate={() => {}}
-          >
-            {game.id === 'fake-out' ? (
-              <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
-            ) : (
-              <GameComponent />
-            )}
-          </GameWrapper>
+          <React.Suspense fallback={
+            <div className="h-full w-full flex items-center justify-center bg-gray-900">
+              <div className="text-gray-400 text-lg animate-pulse">Loading...</div>
+            </div>
+          }>
+            <GameWrapper
+              duration={game.duration}
+              onComplete={() => {}}
+              gameName={game.name}
+              onScoreUpdate={() => {}}
+            >
+              {game.id === 'fake-out' ? (
+                <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
+              ) : (
+                <GameComponent />
+              )}
+            </GameWrapper>
+          </React.Suspense>
         </div>
       </div>
     );

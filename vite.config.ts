@@ -7,4 +7,15 @@ export default defineConfig(({ mode }) => ({
     react(),
     ...(mode === 'production' ? [removeConsole({ includes: ['ts', 'tsx'] })] : []),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-supabase': ['@supabase/supabase-js', '@supabase/auth-ui-react', '@supabase/auth-ui-shared'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
+  },
 }));
