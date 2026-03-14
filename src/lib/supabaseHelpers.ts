@@ -183,6 +183,9 @@ export interface LeaderboardEntry {
   badge_most_rounds?: boolean;
   badge_perfect_score?: boolean;
   badge_speed_demon?: boolean;
+  badge_eagle_eye?: boolean;
+  badge_trivia?: boolean;
+  badge_wordsmith?: boolean;
 }
 
 export async function fetchMostRoundsUserId(): Promise<string | null> {
@@ -255,7 +258,7 @@ export async function fetchTopLeaderboard(
   try {
     let query = supabase
       .from('leaderboard_entries')
-      .select('id, user_id, score, game_id, display_name, playlist_id, round_count, created_at')
+      .select('id, user_id, score, game_id, display_name, playlist_id, round_count, created_at, badge_eagle_eye, badge_trivia, badge_wordsmith')
       .order('score', { ascending: false })
       .limit(limit);
 
@@ -278,6 +281,9 @@ export async function fetchTopLeaderboard(
       badge_most_rounds: mostRoundsUserId != null && row.user_id === mostRoundsUserId,
       badge_perfect_score: perfectScoreUserId != null && row.user_id === perfectScoreUserId,
       badge_speed_demon: speedDemonUserId != null && row.user_id === speedDemonUserId,
+      badge_eagle_eye: row.badge_eagle_eye ?? false,
+      badge_trivia: row.badge_trivia ?? false,
+      badge_wordsmith: row.badge_wordsmith ?? false,
     }));
 
     return { success: true, data: entries };

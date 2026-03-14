@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Zap, Star, Flame, Trophy, Crown } from 'lucide-react';
 import { fetchTopAllTime, LeaderboardEntry } from '../lib/supabaseHelpers';
 import { supabase } from '../lib/supabase';
+import { EagleEyeBadgeIcon } from './EagleEyeBadge';
+import { WordsmithBadgeIcon } from './WordsmithBadge';
 
 interface LeaderboardPostRoundProps {
   currentUserId: string | null;
@@ -27,6 +29,21 @@ function BadgeRow({ entry }: { entry: LeaderboardEntry }) {
       {entry.badge_speed_demon && (
         <span title="Speed Demon">
           <Flame className="w-4 h-4 text-orange-400" style={{ filter: 'drop-shadow(0 0 6px #fb923c)' }} />
+        </span>
+      )}
+      {entry.badge_eagle_eye && (
+        <span title="Eagle Eye">
+          <EagleEyeBadgeIcon size={16} />
+        </span>
+      )}
+      {entry.badge_trivia && (
+        <span title="Trivia Ace">
+          <Star className="w-4 h-4" style={{ color: '#a5b4fc', filter: 'drop-shadow(0 0 6px rgba(129,140,248,0.9))' }} />
+        </span>
+      )}
+      {entry.badge_wordsmith && (
+        <span title="Wordsmith">
+          <WordsmithBadgeIcon size={16} />
         </span>
       )}
     </div>

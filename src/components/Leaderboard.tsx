@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, Clock, Infinity, Zap, Star, Flame } from 'lucide-react';
 import { fetchTopAllTime, fetchTopThisWeek, LeaderboardEntry } from '../lib/supabaseHelpers';
+import { EagleEyeBadgeIcon } from './EagleEyeBadge';
+import { WordsmithBadgeIcon } from './WordsmithBadge';
 
 type Filter = 'alltime' | 'weekly';
 
@@ -93,6 +95,61 @@ function SpeedDemonBadge() {
     >
       <Flame className="w-2.5 h-2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(249,115,22,0.9))' }} />
       <span style={{ fontSize: '0.6rem' }}>SPEEDY</span>
+    </div>
+  );
+}
+
+function EagleEyeLeaderboardBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+      style={{
+        background: 'rgba(0,255,255,0.1)',
+        border: '1px solid rgba(0,255,255,0.45)',
+        boxShadow: '0 0 8px rgba(0,255,255,0.35)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Eagle Eye — 85%+ accuracy on 5+ visual rounds"
+    >
+      <EagleEyeBadgeIcon size={16} />
+      <span className="font-black tracking-wider" style={{ fontSize: '0.6rem', color: '#67e8f9', textShadow: '0 0 6px rgba(0,255,255,0.9)' }}>EAGLE EYE</span>
+    </div>
+  );
+}
+
+function TriviaBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-black tracking-wider"
+      style={{
+        background: 'rgba(99,102,241,0.12)',
+        border: '1px solid rgba(129,140,248,0.5)',
+        color: '#a5b4fc',
+        boxShadow: '0 0 8px rgba(99,102,241,0.3)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Trivia Ace"
+    >
+      <Star className="w-2.5 h-2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(129,140,248,0.9))' }} />
+      <span style={{ fontSize: '0.6rem' }}>TRIVIA ACE</span>
+    </div>
+  );
+}
+
+function WordsmithLeaderboardBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+      style={{
+        background: 'linear-gradient(135deg, rgba(0,255,255,0.08) 0%, rgba(251,191,36,0.08) 100%)',
+        border: '1px solid rgba(0,255,255,0.4)',
+        boxShadow: '0 0 8px rgba(0,255,255,0.25)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Wordsmith — word puzzle master"
+    >
+      <WordsmithBadgeIcon size={16} />
+      <span className="font-black tracking-wider" style={{ fontSize: '0.6rem', color: '#67e8f9', textShadow: '0 0 6px rgba(0,255,255,0.8)' }}>WORDSMITH</span>
     </div>
   );
 }
@@ -284,11 +341,14 @@ export default function Leaderboard() {
                       >
                         {entry.score.toLocaleString()}
                       </div>
-                      {(entry.badge_most_rounds || entry.badge_perfect_score || entry.badge_speed_demon) && (
+                      {(entry.badge_most_rounds || entry.badge_perfect_score || entry.badge_speed_demon || entry.badge_eagle_eye || entry.badge_trivia || entry.badge_wordsmith) && (
                         <div className="mt-2 flex flex-col gap-1 items-center">
                           {entry.badge_most_rounds && <MostRoundsBadge />}
                           {entry.badge_perfect_score && <PerfectScoreBadge />}
                           {entry.badge_speed_demon && <SpeedDemonBadge />}
+                          {entry.badge_eagle_eye && <EagleEyeLeaderboardBadge />}
+                          {entry.badge_trivia && <TriviaBadge />}
+                          {entry.badge_wordsmith && <WordsmithLeaderboardBadge />}
                         </div>
                       )}
                     </div>
@@ -315,6 +375,9 @@ export default function Leaderboard() {
                     {entry.badge_most_rounds && <MostRoundsBadge />}
                     {entry.badge_perfect_score && <PerfectScoreBadge />}
                     {entry.badge_speed_demon && <SpeedDemonBadge />}
+                    {entry.badge_eagle_eye && <EagleEyeLeaderboardBadge />}
+                    {entry.badge_trivia && <TriviaBadge />}
+                    {entry.badge_wordsmith && <WordsmithLeaderboardBadge />}
                     <span
                       className="text-sm font-bold tabular-nums"
                       style={{ color: 'rgba(34,211,238,0.7)' }}
