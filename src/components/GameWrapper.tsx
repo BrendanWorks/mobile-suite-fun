@@ -120,6 +120,7 @@ export default function GameWrapper({
   const handleEarlyCompletion = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
+    gameCompletedRef.current = true;
     setIsActive(false);
     setIsFastCountdown(false);
     stopTimerCountdown();
