@@ -293,7 +293,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         fetchPuzzleById(puzzleIds[nextIndex]);
       }
     }
-  }), [score, currentPuzzleIndex, puzzleIds, timeRemaining]);
+  }), [score, correctCount, currentPuzzleIndex, puzzleIds, timeRemaining, isAnswered]);
 
   // Early returns AFTER all hooks
   if (loading) {
