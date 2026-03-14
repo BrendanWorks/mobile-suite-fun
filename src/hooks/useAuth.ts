@@ -85,6 +85,17 @@ export function useAuth() {
     return { data, error };
   };
 
+  const signInWithMagicLink = async (email: string) => {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+        shouldCreateUser: true,
+      },
+    });
+    return { data, error };
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -125,6 +136,7 @@ export function useAuth() {
     loading,
     signUp,
     signIn,
+    signInWithMagicLink,
     signOut,
     clearSession,
   };
