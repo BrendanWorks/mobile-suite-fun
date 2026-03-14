@@ -230,7 +230,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
           style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
         >
           <Coffee className="w-4 h-4" />
-          Buy a coffee
+          Tip Jar
         </button>
       </div>
 
