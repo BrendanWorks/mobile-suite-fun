@@ -10,6 +10,7 @@ import GameSession from './components/GameSession';
 import LandingPage from './components/LandingPage';
 import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
+import TipJar from './components/TipJar';
 import { useUserStats } from './hooks/useUserStats';
 
 export type GameId =
@@ -54,6 +55,7 @@ export default function App() {
   const [debugMode, setDebugMode] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAuthPage, setShowAuthPage] = useState(false);
+  const [showTipJar, setShowTipJar] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
@@ -231,6 +233,8 @@ export default function App() {
   }
 
   return (
+    <>
+    {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
     <div className="h-screen w-screen bg-black overflow-y-auto">
       <div className="min-h-full p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
@@ -319,7 +323,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="text-center mt-6">
+          <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={handleDebugMode}
               className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
@@ -327,9 +331,16 @@ export default function App() {
             >
               Debug Mode
             </button>
+            <button
+              onClick={() => setShowTipJar(true)}
+              className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+            >
+              ☕ Buy a coffee
+            </button>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }

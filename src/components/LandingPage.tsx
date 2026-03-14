@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Play, LogIn } from 'lucide-react';
+import { Play, LogIn, Coffee } from 'lucide-react';
+import TipJar from './TipJar';
 
 interface LandingPageProps {
   onPlayNow: () => void;
@@ -14,6 +15,7 @@ const LETTERS_DONE_AT = LETTERS.length * LETTER_STAGGER_MS + 200;
 export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: LandingPageProps) {
   const [visibleLetters, setVisibleLetters] = useState(0);
   const [pulseActive, setPulseActive] = useState(false);
+  const [showTipJar, setShowTipJar] = useState(false);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -30,6 +32,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
   }, []);
 
   return (
+    <>
+    {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
     <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-radial from-red-900/20 via-black to-black" />
 
@@ -126,13 +130,23 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         </div>
       </div>
 
-      <button
-        onClick={onDebugMode}
-        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-        style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.4)', boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)' }}
-      >
-        Debug Mode
-      </button>
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+        <button
+          onClick={onDebugMode}
+          className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+          style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.4)', boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)' }}
+        >
+          Debug Mode
+        </button>
+        <button
+          onClick={() => setShowTipJar(true)}
+          className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+          style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
+        >
+          <Coffee className="w-4 h-4" />
+          Buy a coffee
+        </button>
+      </div>
 
       <style>{`
         @keyframes rowdyTextPulse {
@@ -156,5 +170,6 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         }
       `}</style>
     </div>
+    </>
   );
 }
