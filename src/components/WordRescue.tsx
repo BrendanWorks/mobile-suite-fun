@@ -367,15 +367,10 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   // Auto-advance from roundEnd screen
   useEffect(() => {
     if (gameState === 'roundEnd') {
-      console.log('Pop: Setting auto-advance timeout for 2.5s');
       roundEndTimeoutRef.current = setTimeout(() => {
         const callback = onCompleteRef.current;
-        console.log('Pop: Auto-advance timeout fired, calling onComplete with score:', score, 'timeRemaining:', props.timeRemaining);
         if (callback) {
-          callback(score, MAX_SCORE, props.timeRemaining);
-          console.log('Pop: Auto-advance onComplete called successfully');
-        } else {
-          console.error('Pop: Auto-advance onComplete callback is undefined!');
+          callback(score, MAX_SCORE, 0);
         }
       }, 2500);
 
