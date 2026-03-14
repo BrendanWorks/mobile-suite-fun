@@ -17,8 +17,8 @@ interface Question {
 
 interface HiveMindProps {
   puzzleId?: string;
-  onScoreUpdate: (score: number) => void;
-  onComplete: (finalScore: number) => void;
+  onScoreUpdate: (score: number, maxScore: number) => void;
+  onComplete: (finalScore: number, maxScore: number) => void;
   timeRemaining: number;
 }
 
@@ -127,7 +127,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: totalScore, maxScore: questions.length * 200 }),
     onGameEnd: () => {
-      onComplete(totalScore);
+      onComplete(totalScore, questions.length * 200);
     },
     canSkipQuestion: false,
     pauseTimer: revealState
@@ -181,8 +181,9 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     const points = rank < 3 ? pointsMap[rank] : 0;
 
     const newScore = totalScore + points;
+    const maxScore = questions.length * 200;
     setTotalScore(newScore);
-    onScoreUpdate(newScore);
+    onScoreUpdate(newScore, maxScore);
 
     // Calculate when the last bar finishes animating
     const numChoices = currentQuestion.choices.length;
@@ -200,7 +201,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
         setSelectedChoice(null);
         setCurrentIndex(prev => prev + 1);
       } else {
-        onComplete(newScore);
+        onComplete(newScore, questions.length * 200);
       }
     }, (lastBarFinish + TIMING.REVEAL_PAUSE) * 1000);
   };
