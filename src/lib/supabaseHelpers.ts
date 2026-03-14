@@ -231,7 +231,7 @@ export interface InsertLeaderboardEntryParams {
 
 export async function insertLeaderboardEntry(
   params: InsertLeaderboardEntryParams
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; rateLimited?: boolean }> {
   try {
     const { error } = await supabase.from('leaderboard_entries').insert({
       user_id: params.userId,
@@ -245,10 +245,20 @@ export async function insertLeaderboardEntry(
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error('Error inserting leaderboard entry:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const isRateLimit = message.includes('rate_limit');
+    const isValidation = message.includes('score_validation');
+    if (!isRateLimit && !isValidation) {
+      console.error('Error inserting leaderboard entry:', error);
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: isRateLimit
+        ? 'Score not saved: too many submissions. Please wait a moment.'
+        : isValidation
+          ? 'Score not saved: submission failed validation.'
+          : message,
+      rateLimited: isRateLimit,
     };
   }
 }
