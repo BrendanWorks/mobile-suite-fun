@@ -157,12 +157,18 @@ export default function RoundResults({
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
             <div
-              className={`text-2xl sm:text-3xl font-bold text-yellow-400 mb-3 uppercase tracking-wider ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
-              style={{ textShadow: '0 0 20px #fbbf24' }}
+              className={`text-5xl sm:text-6xl mb-3 tracking-wide ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
+              style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))' }}
+            >
+              {gameScore.grade}
+            </div>
+            <div
+              className={`text-2xl sm:text-3xl font-bold text-cyan-300 mb-2 uppercase tracking-wider ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
+              style={{ textShadow: '0 0 15px #00ffff' }}
             >
               {getGradeLabel(gameScore.normalizedScore)}
             </div>
-            <div className="text-lg sm:text-xl text-cyan-400 font-semibold">
+            <div className="text-lg sm:text-xl text-white/70 font-semibold tabular-nums">
               {Math.round(gameScore.normalizedScore + (hasTimeBonus ? animatedBonus : 0))}/100
             </div>
           </div>
@@ -211,7 +217,7 @@ export default function RoundResults({
         <button
           onClick={onContinue}
           disabled={!showButton}
-          className={`w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wide ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`w-full py-4 sm:py-5 bg-transparent border-2 border-green-500 text-green-400 font-bold rounded-xl text-lg sm:text-xl transition-all active:scale-95 active:bg-green-500 active:text-black flex items-center justify-center gap-3 uppercase tracking-wide ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           style={{ textShadow: '0 0 15px #22c55e', boxShadow: '0 0 30px rgba(34, 197, 94, 0.4)' }}
         >
           {isLastRound ? (
