@@ -59,12 +59,10 @@ export function preloadGameSounds(): void {
   audioManager.loadSound(SOUND_KEYS.SELECT,    "/sounds/ranky/select_optimized.mp3",    3);
 }
 
-export async function preloadTimerSounds(): Promise<void> {
-  await Promise.all([
-    audioManager.loadSound(SOUND_KEYS.COUNTDOWN, "/sounds/global/SoundCountdown.mp3", 1),
-    audioManager.loadSound(SOUND_KEYS.HURRY_UP,  "/sounds/global/SoundHurryUp.mp3",   1),
-    audioManager.loadSound(SOUND_KEYS.TIME_UP,   "/sounds/ranky/FailOtimized.mp3",    1),
-  ]);
+export function preloadTimerSounds(): void {
+  audioManager.loadSound(SOUND_KEYS.COUNTDOWN, "/sounds/global/SoundCountdown.mp3", 1);
+  audioManager.loadSound(SOUND_KEYS.HURRY_UP,  "/sounds/global/SoundHurryUp.mp3",   1);
+  audioManager.loadSound(SOUND_KEYS.TIME_UP,   "/sounds/ranky/FailOtimized.mp3",    1);
 }
 
 export function playTimerCountdown(): void { audioManager.play(SOUND_KEYS.COUNTDOWN, 0.35); }

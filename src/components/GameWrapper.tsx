@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
-import { preloadTimerSounds, playTimerCountdown, stopTimerCountdown, playHurryUp, playTimeUp } from '../lib/sounds';
+import { playTimerCountdown, stopTimerCountdown, playHurryUp, playTimeUp } from '../lib/sounds';
 
 interface GameWrapperProps {
   duration: number;
@@ -43,14 +43,10 @@ export default function GameWrapper({
 
   useEffect(() => {
     if (hideTimerBar) return;
-    let cancelled = false;
-    preloadTimerSounds().then(() => {
-      if (cancelled) return;
+    playTimerCountdown();
+    countdownIntervalRef.current = window.setInterval(() => {
       playTimerCountdown();
-      countdownIntervalRef.current = window.setInterval(() => {
-        playTimerCountdown();
-      }, 3000);
-    });
+    }, 3000);
 
     timerSoundPollRef.current = window.setInterval(() => {
       const wantsPause = childrenRef.current?.pauseTimer === true;
@@ -71,7 +67,6 @@ export default function GameWrapper({
     }, 100);
 
     return () => {
-      cancelled = true;
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);

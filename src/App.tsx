@@ -4,7 +4,7 @@ import { supabase } from './lib/supabase';
 import { initGA, trackPageView, analytics } from './lib/analytics';
 import { anonymousSessionManager } from './lib/anonymousSession';
 import { audioManager } from './lib/audioManager';
-import { preloadGameSounds } from './lib/sounds';
+import { preloadGameSounds, preloadTimerSounds } from './lib/sounds';
 import AuthPage from './components/AuthPage';
 import GameSession from './components/GameSession';
 import LandingPage from './components/LandingPage';
@@ -74,6 +74,7 @@ export default function App() {
     const initAudio = () => {
       audioManager.initialize();
       preloadGameSounds();
+      preloadTimerSounds();
       document.removeEventListener('click', initAudio);
       document.removeEventListener('touchstart', initAudio);
     };
