@@ -155,16 +155,14 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     onGameEnd: () => {
       if (gameState === 'roundEnd') return;
 
-      console.log('Pop: onGameEnd called (GameWrapper timer hit 0)');
       if (roundEndTimeoutRef.current) {
         clearTimeout(roundEndTimeoutRef.current);
-        console.log('Pop: Timeout cleared');
       }
       setGameState('roundEnd');
     },
     pauseTimer: gameState !== 'playing' || !timerStarted,
     canSkipQuestion: false
-  }), [gameState]);
+  }), [gameState, timerStarted]);
 
   const letterPool = 'AAAAAAAAEEEEEEEEIIIIIIIIOOOOOOOOUURRBBBCCCDDDFFFFGGGHHHJKKLLLMMMNNNNPPQRRRSSSSTTTTVWWXYZ';
 
