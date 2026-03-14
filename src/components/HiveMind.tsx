@@ -166,7 +166,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     if (revealState) return;
 
     stopTimerCountdown();
-    setTimeout(() => playHiveMystery(), 100);
+    setTimeout(() => playHiveMystery(), 300);
 
     setSelectedChoice(choiceText);
     setRevealState(true);
