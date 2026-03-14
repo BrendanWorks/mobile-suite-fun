@@ -199,10 +199,7 @@ export default function LeaderboardPostRound({
             return data ?? [];
           };
 
-          let rows = playlistId != null ? await runQuery(true) : await runQuery(false);
-          if (rows.length === 0 && playlistId != null) {
-            rows = await runQuery(false);
-          }
+          const rows = await runQuery(false);
 
           return rows.map((row, idx) => ({
             id: row.id,

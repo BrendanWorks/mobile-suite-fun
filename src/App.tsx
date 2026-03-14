@@ -369,7 +369,7 @@ export default function App() {
               onClick={() => setShowTipJar(true)}
               className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
             >
-              ☕ Buy a coffee
+              ☕ Tip Jar
             </button>
           </div>
         </div>
