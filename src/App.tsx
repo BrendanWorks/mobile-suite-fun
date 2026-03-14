@@ -158,6 +158,20 @@ export default function App() {
     setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
+  const handleRoundComplete = useCallback(() => {
+    const prev = parseInt(localStorage.getItem(TIP_ROUNDS_KEY) ?? '0', 10);
+    const next = prev + 1;
+    localStorage.setItem(TIP_ROUNDS_KEY, String(next));
+
+    if (!TIP_PROMPT_ROUNDS.includes(next)) return;
+
+    const dismissedAt = parseInt(localStorage.getItem(TIP_DISMISSED_KEY) ?? '0', 10);
+    const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60);
+    if (hoursSinceDismiss < 24) return;
+
+    setShowTipPrompt(true);
+  }, []);
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center">
@@ -193,20 +207,6 @@ export default function App() {
       />
     );
   }
-
-  const handleRoundComplete = useCallback(() => {
-    const prev = parseInt(localStorage.getItem(TIP_ROUNDS_KEY) ?? '0', 10);
-    const next = prev + 1;
-    localStorage.setItem(TIP_ROUNDS_KEY, String(next));
-
-    if (!TIP_PROMPT_ROUNDS.includes(next)) return;
-
-    const dismissedAt = parseInt(localStorage.getItem(TIP_DISMISSED_KEY) ?? '0', 10);
-    const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60);
-    if (hoursSinceDismiss < 24) return;
-
-    setShowTipPrompt(true);
-  }, []);
 
   if (selectedPlaylistId) {
     return (
