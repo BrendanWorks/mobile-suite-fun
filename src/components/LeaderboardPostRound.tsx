@@ -156,6 +156,8 @@ function GuestRow({ rank, score }: { rank: number | null; score: number }) {
   );
 }
 
+const AUTO_ADVANCE_DELAY_MS = 15000;
+
 export default function LeaderboardPostRound({
   currentUserId,
   playerName,
@@ -183,20 +185,26 @@ export default function LeaderboardPostRound({
     const load = async () => {
       try {
         const fetchEntries = async (): Promise<LeaderboardEntry[]> => {
-          let query = supabase
-            .from('leaderboard_entries')
-            .select('*')
-            .order('score', { ascending: false })
-            .limit(20);
+          const runQuery = async (filterByPlaylist: boolean) => {
+            let q = supabase
+              .from('leaderboard_entries')
+              .select('*')
+              .order('score', { ascending: false })
+              .limit(20);
+            if (filterByPlaylist && playlistId != null) {
+              q = q.eq('playlist_id', playlistId);
+            }
+            const { data, error } = await q;
+            if (error) throw error;
+            return data ?? [];
+          };
 
-          if (playlistId != null) {
-            query = query.eq('playlist_id', playlistId);
+          let rows = playlistId != null ? await runQuery(true) : await runQuery(false);
+          if (rows.length === 0 && playlistId != null) {
+            rows = await runQuery(false);
           }
 
-          const { data, error } = await query;
-          if (error) throw error;
-
-          return (data ?? []).map((row, idx) => ({
+          return rows.map((row, idx) => ({
             id: row.id,
             user_id: row.user_id,
             score: row.score,
@@ -251,6 +259,13 @@ export default function LeaderboardPostRound({
     load();
     return () => { cancelled = true; };
   }, [playerScore, playlistId]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onContinue();
+    }, AUTO_ADVANCE_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [onContinue]);
 
   const playerInList = currentUserId
     ? entries.some(e => e.user_id === currentUserId)

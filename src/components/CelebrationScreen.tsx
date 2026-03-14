@@ -63,6 +63,8 @@ interface ScoreTile {
   score: GameScore;
 }
 
+const AUTO_ADVANCE_DELAY_MS = 14000;
+
 interface CelebrationScreenProps {
   roundScores: ScoreTile[];
   totalSessionScore: number;
@@ -284,6 +286,13 @@ export default function CelebrationScreen({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onPlayAgain();
+    }, AUTO_ADVANCE_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [onPlayAgain]);
 
   const dialRadius = 80;
   const circumference = 2 * Math.PI * dialRadius;
@@ -507,7 +516,7 @@ export default function CelebrationScreen({
             boxShadow: '0 0 30px rgba(0, 255, 255, 0.3)',
           }}
         >
-          Play Again
+          Continue
         </button>
 
         <div className="flex items-center gap-2 text-green-400 text-xs sm:text-sm">
