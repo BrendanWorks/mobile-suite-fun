@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, Clock, Infinity } from 'lucide-react';
+import { Trophy, RefreshCw, Clock, Infinity, Zap } from 'lucide-react';
 import { fetchTopAllTime, fetchTopThisWeek, LeaderboardEntry } from '../lib/supabaseHelpers';
 
 type Filter = 'alltime' | 'weekly';
@@ -39,6 +39,25 @@ const DEFAULT_STYLE = {
   label: 'text-gray-200',
   scoreCx: 'text-cyan-300',
 };
+
+function MostRoundsBadge() {
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-black tracking-wider"
+      style={{
+        background: 'rgba(34,211,238,0.12)',
+        border: '1px solid rgba(34,211,238,0.45)',
+        color: '#67e8f9',
+        boxShadow: '0 0 8px rgba(34,211,238,0.35)',
+        whiteSpace: 'nowrap',
+      }}
+      title="Most Rounds Played"
+    >
+      <Zap className="w-2.5 h-2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(34,211,238,0.8))' }} />
+      <span style={{ fontSize: '0.6rem' }}>GRINDER</span>
+    </div>
+  );
+}
 
 function RankBadge({ rank }: { rank: number }) {
   const s = RANK_STYLES[rank] ?? DEFAULT_STYLE;
@@ -227,6 +246,11 @@ export default function Leaderboard() {
                       >
                         {entry.score.toLocaleString()}
                       </div>
+                      {entry.badge_most_rounds && (
+                        <div className="mt-2">
+                          <MostRoundsBadge />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -248,6 +272,7 @@ export default function Leaderboard() {
                     <span className="flex-1 text-sm font-medium text-gray-300 truncate">
                       {entry.display_name}
                     </span>
+                    {entry.badge_most_rounds && <MostRoundsBadge />}
                     <span
                       className="text-sm font-bold tabular-nums"
                       style={{ color: 'rgba(34,211,238,0.7)' }}

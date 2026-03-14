@@ -180,6 +180,17 @@ export interface LeaderboardEntry {
   round_count: number;
   created_at: string;
   rank?: number;
+  badge_most_rounds?: boolean;
+}
+
+export async function fetchMostRoundsUserId(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('get_most_rounds_user_id');
+    if (error) throw error;
+    return data as string | null;
+  } catch {
+    return null;
+  }
 }
 
 export interface InsertLeaderboardEntryParams {
@@ -230,12 +241,17 @@ export async function fetchTopLeaderboard(
       query = query.gte('created_at', since.toISOString());
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, mostRoundsUserId] = await Promise.all([
+      query,
+      fetchMostRoundsUserId(),
+    ]);
+
     if (error) throw error;
 
     const entries: LeaderboardEntry[] = (data ?? []).map((row, idx) => ({
       ...row,
       rank: idx + 1,
+      badge_most_rounds: mostRoundsUserId != null && row.user_id === mostRoundsUserId,
     }));
 
     return { success: true, data: entries };
