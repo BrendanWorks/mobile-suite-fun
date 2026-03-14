@@ -4,6 +4,7 @@ import {
   ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2,
   ThumbsUp, Zap, ArrowUpDown
 } from 'lucide-react';
+import Leaderboard from './Leaderboard';
 import { supabase } from '../lib/supabase';
 import GameWrapper from './GameWrapper';
 
@@ -360,6 +361,15 @@ export default function DebugMode({ onExit }: DebugModeProps) {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-4" style={{ textShadow: '0 0 15px rgba(251, 191, 36, 0.4)' }}>
+              Leaderboard Preview
+            </h2>
+            <div className="bg-black border-2 border-yellow-400/30 rounded-xl" style={{ boxShadow: '0 0 20px rgba(251,191,36,0.1)' }}>
+              <Leaderboard />
             </div>
           </div>
 
