@@ -93,30 +93,20 @@ export default function CelebrationScreen({
 
   const MAX_RING_SCORE = 1000;
 
-  const baseScore = useMemo(() => {
-    return roundScores.reduce((sum, tile) => sum + (tile.score.normalizedScore || 0), 0);
+  const { baseScore, timeBonus, perfectBonus, calculatedTotalScore, totalPercentage, basePercentage } = useMemo(() => {
+    const base = roundScores.reduce((sum, tile) => sum + (tile.score.normalizedScore || 0), 0);
+    const time = roundScores.reduce((sum, tile) => sum + (tile.score.timeBonus || 0), 0);
+    const perfect = roundScores.reduce((sum, tile) => sum + (tile.score.perfectScoreBonus || 0), 0);
+    const total = base + time + perfect;
+    return {
+      baseScore: base,
+      timeBonus: time,
+      perfectBonus: perfect,
+      calculatedTotalScore: total,
+      totalPercentage: Math.min((total / MAX_RING_SCORE) * 100, 100),
+      basePercentage: Math.min((base / MAX_RING_SCORE) * 100, 100),
+    };
   }, [roundScores]);
-
-  const timeBonus = useMemo(() => {
-    return roundScores.reduce((sum, tile) => sum + (tile.score.timeBonus || 0), 0);
-  }, [roundScores]);
-
-  const perfectBonus = useMemo(() => {
-    return roundScores.reduce((sum, tile) => sum + (tile.score.perfectScoreBonus || 0), 0);
-  }, [roundScores]);
-
-  const calculatedTotalScore = useMemo(() => {
-    return baseScore + timeBonus + perfectBonus;
-  }, [baseScore, timeBonus, perfectBonus]);
-
-  const totalPercentage = useMemo(
-    () => Math.min((calculatedTotalScore / MAX_RING_SCORE) * 100, 100),
-    [calculatedTotalScore]
-  );
-
-  const basePercentage = useMemo(() => {
-    return Math.min((baseScore / MAX_RING_SCORE) * 100, 100);
-  }, [baseScore]);
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -207,11 +197,11 @@ export default function CelebrationScreen({
             setShowPerfectBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
-            let startScore = displayedScore;
-            let startTime = Date.now();
+            const startScore = Math.round(baseScore);
+            const startTime = Date.now();
             const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
-            let fillInterval = setInterval(() => {
+            const fillInterval = setInterval(() => {
               const elapsed = Date.now() - startTime;
               const progress = Math.min(elapsed / animationDuration, 1);
 
@@ -225,7 +215,6 @@ export default function CelebrationScreen({
             }, ANIMATION_TIMINGS.DIAL_INTERVAL);
             intervals.push(fillInterval);
 
-            // Stop perfect bonus and hide it after duration
             timers.push(
               setTimeout(() => {
                 clearInterval(fillInterval);
@@ -235,7 +224,6 @@ export default function CelebrationScreen({
           }, bonusStartAt)
         );
 
-        // Show speed bonus after perfect bonus completes, or play win sound if no speed bonus
         if (timeBonus > 10) {
           const speedStartAt = bonusStartAt + ANIMATION_TIMINGS.BONUS_DURATION + ANIMATION_TIMINGS.BONUS_DELAY;
           const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
@@ -246,11 +234,11 @@ export default function CelebrationScreen({
               setShowTimeBonus(true);
               audioManager.play('bonus-pizzaz', 0.5);
 
-              let startScore = displayedScore;
-              let startTime = Date.now();
+              const startScore = Math.round(baseScore + perfectBonus);
+              const startTime = Date.now();
               const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
-              let fillInterval = setInterval(() => {
+              const fillInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / animationDuration, 1);
 
@@ -263,7 +251,6 @@ export default function CelebrationScreen({
               }, ANIMATION_TIMINGS.DIAL_INTERVAL);
               intervals.push(fillInterval);
 
-              // Stop speed bonus after duration
               timers.push(
                 setTimeout(() => {
                   clearInterval(fillInterval);
@@ -273,7 +260,6 @@ export default function CelebrationScreen({
             }, speedStartAt)
           );
         } else {
-          // Perfect bonus only, no speed bonus - play win sound after perfect bonus
           timers.push(
             setTimeout(() => {
               setDisplayedScore(Math.round(calculatedTotalScore));
@@ -282,7 +268,6 @@ export default function CelebrationScreen({
           );
         }
       } else if (timeBonus > 10) {
-        // Only speed bonus
         const speedPercentage = (timeBonus / MAX_RING_SCORE) * 100;
         const speedDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
@@ -291,11 +276,11 @@ export default function CelebrationScreen({
             setShowTimeBonus(true);
             audioManager.play('bonus-pizzaz', 0.5);
 
-            let startScore = displayedScore;
-            let startTime = Date.now();
+            const startScore = Math.round(baseScore);
+            const startTime = Date.now();
             const animationDuration = ANIMATION_TIMINGS.BONUS_DURATION;
 
-            let fillInterval = setInterval(() => {
+            const fillInterval = setInterval(() => {
               const elapsed = Date.now() - startTime;
               const progress = Math.min(elapsed / animationDuration, 1);
 

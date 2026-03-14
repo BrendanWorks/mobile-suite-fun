@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
 
 interface GameWrapperProps {
@@ -36,58 +36,7 @@ export default function GameWrapper({
     }
   }, [children]);
 
-  useEffect(() => {
-    if (!isActive) return;
-
-    const intervalTime = isFastCountdown ? 25 : 1000;
-    const decrement = isFastCountdown ? 3 : 1;
-
-    timerRef.current = window.setInterval(() => {
-      setTimeRemaining((prev) => {
-        let newTime = prev;
-
-        if (newTime <= 0) {
-          if (!hasReportedCompletion.current) {
-            handleTimeUp();
-          }
-          return 0;
-        }
-
-        if (isFastCountdown) {
-          newTime = Math.max(0, prev - decrement);
-        } else {
-          // pauseTimer: true → paused, false/undefined → running
-          const isPaused = childrenRef.current?.pauseTimer === true;
-          if (!isPaused) {
-            newTime = Math.max(0, prev - decrement);
-          }
-        }
-
-        if (newTime <= 0) {
-          if (isFastCountdown) {
-            if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
-
-            lingerTimeoutRef.current = window.setTimeout(() => {
-              if (hasReportedCompletion.current) return;
-              hasReportedCompletion.current = true;
-              handleEarlyCompletion();
-            }, POST_ZERO_LINGER_MS);
-          } else {
-            handleTimeUp();
-          }
-        }
-
-        return newTime;
-      });
-    }, intervalTime);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
-    };
-  }, [isActive, isFastCountdown]);
-
-  const handleEarlyCompletion = () => {
+  const handleEarlyCompletion = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
@@ -98,9 +47,9 @@ export default function GameWrapper({
     } else {
       onComplete(0, 100, 0);
     }
-  };
+  }, [onComplete]);
 
-  const handleTimeUp = () => {
+  const handleTimeUp = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setIsFastCountdown(false);
@@ -134,9 +83,59 @@ export default function GameWrapper({
         onComplete(0, 100, 0);
       }
     }
-  };
+  }, [onComplete]);
 
-  const handleGameComplete = (score: number, maxScore: number, remaining?: number) => {
+  useEffect(() => {
+    if (!isActive) return;
+
+    const intervalTime = isFastCountdown ? 25 : 1000;
+    const decrement = isFastCountdown ? 3 : 1;
+
+    timerRef.current = window.setInterval(() => {
+      setTimeRemaining((prev) => {
+        let newTime = prev;
+
+        if (newTime <= 0) {
+          if (!hasReportedCompletion.current) {
+            handleTimeUp();
+          }
+          return 0;
+        }
+
+        if (isFastCountdown) {
+          newTime = Math.max(0, prev - decrement);
+        } else {
+          const isPaused = childrenRef.current?.pauseTimer === true;
+          if (!isPaused) {
+            newTime = Math.max(0, prev - decrement);
+          }
+        }
+
+        if (newTime <= 0) {
+          if (isFastCountdown) {
+            if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
+
+            lingerTimeoutRef.current = window.setTimeout(() => {
+              if (hasReportedCompletion.current) return;
+              hasReportedCompletion.current = true;
+              handleEarlyCompletion();
+            }, POST_ZERO_LINGER_MS);
+          } else {
+            handleTimeUp();
+          }
+        }
+
+        return newTime;
+      });
+    }, intervalTime);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
+    };
+  }, [isActive, isFastCountdown, handleTimeUp, handleEarlyCompletion]);
+
+  const handleGameComplete = useCallback((score: number, maxScore: number, remaining?: number) => {
     if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
 
@@ -161,7 +160,7 @@ export default function GameWrapper({
       hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
     }
-  };
+  }, [onComplete, timeRemaining, hideTimerBar]);
 
   const clonedChildren = useMemo(() => {
     if (!children) return null;
@@ -177,7 +176,7 @@ export default function GameWrapper({
       });
     }
     return children;
-  }, [children, onScoreUpdate, timeRemaining, duration]);
+  }, [children, onScoreUpdate, timeRemaining, duration, handleGameComplete]);
 
   return (
     <div className="h-full w-full flex flex-col bg-black" style={{ position: 'relative' }}>

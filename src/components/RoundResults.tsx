@@ -129,7 +129,8 @@ export default function RoundResults({
       if (hideBonusesTimerRef.current) clearTimeout(hideBonusesTimerRef.current);
       if (showButtonTimerRef.current) clearTimeout(showButtonTimerRef.current);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundNumber]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">

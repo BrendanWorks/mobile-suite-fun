@@ -288,19 +288,21 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         setCombo((c) => c + 1);
         if (nextPlayerIndex === sequence.length) {
           playSuccessSound();
-          const newScore = score + level * 20;
-          setScore(newScore);
-          if (newScore > highScore) {
-            setHighScore(newScore);
-            try {
-              localStorage.setItem(
-                GAME_CONFIG.STORAGE_KEY,
-                newScore.toString()
-              );
-            } catch {
-              // ignore storage errors
+          setScore((prev) => {
+            const newScore = prev + level * 20;
+            if (newScore > highScore) {
+              setHighScore(newScore);
+              try {
+                localStorage.setItem(
+                  GAME_CONFIG.STORAGE_KEY,
+                  newScore.toString()
+                );
+              } catch {
+                // ignore storage errors
+              }
             }
-          }
+            return newScore;
+          });
           const nextSeq = [
             ...sequence,
             Math.floor(Math.random() * SHAPES.length),
@@ -349,7 +351,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
         }
       }
     },
-    [phase, sequence, playerIndex, score, level, highScore, lives, playSound, playSuccessSound, props]
+    [phase, sequence, playerIndex, level, highScore, lives, playSound, playSuccessSound, props]
   );
 
   useEffect(() => {

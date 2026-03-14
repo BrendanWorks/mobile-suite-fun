@@ -191,6 +191,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
 
   const feedbackRef = useRef<number | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
+  const scorePopTimerRef = useRef<number | null>(null);
+  const shakeTimerRef = useRef<number | null>(null);
   const scoreRef = useRef(score);
   const onCompleteRef = useRef(props.onComplete);
 
@@ -233,6 +235,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   useEffect(() => () => {
     if (feedbackRef.current) clearTimeout(feedbackRef.current);
     if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+    if (scorePopTimerRef.current) clearTimeout(scorePopTimerRef.current);
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
   }, []);
 
   // ── Start Game (from countdown) ──────────────────────────────────────────────
@@ -260,7 +264,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
         return next;
       });
       setScorePop(true);
-      setTimeout(() => setScorePop(false), 400);
+      if (scorePopTimerRef.current) clearTimeout(scorePopTimerRef.current);
+      scorePopTimerRef.current = window.setTimeout(() => setScorePop(false), 400);
       setStreak(prev => {
         const next = prev + 1;
         setMultiplier(next % STREAK_EVERY === 0 ? MULTIPLIER : 1);
@@ -272,7 +277,8 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       setMultiplier(1);
       setShake(true);
       playWrong(0.5);
-      setTimeout(() => setShake(false), 300);
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = window.setTimeout(() => setShake(false), 300);
     }
 
     setFeedback(correct ? 'correct' : 'wrong');

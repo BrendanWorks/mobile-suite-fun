@@ -179,7 +179,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     [roundScores]
   );
 
-  const loadRound = (roundNumber: number, rounds: PlaylistRound[]) => {
+  const loadRound = useCallback((roundNumber: number, rounds: PlaylistRound[]) => {
     const round = rounds.find(r => r.round_number === roundNumber);
     if (!round) {
       console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
@@ -232,9 +232,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
     setCurrentRankingPuzzleId(round.ranking_puzzle_id);
     setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
     setPlaylistLoading(false);
-  };
+  }, []);
 
-  const loadPlaylist = async () => {
+  const loadPlaylist = useCallback(async () => {
     if (!playlistId) {
       console.error('❌ No playlist ID provided');
       setPlaylistLoading(false);
@@ -322,7 +322,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       setPlaylistLoading(false);
       setTimeout(onExit, 2000);
     }
-  };
+  }, [playlistId, onExit, loadRound]);
 
   // Unlock audio on first user gesture
   useEffect(() => {
@@ -353,14 +353,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
   // Load playlist if playlistId is provided
   useEffect(() => {
-    console.log('📋 GameSession mounted/updated. playlistId:', playlistId);
     if (playlistId) {
       loadPlaylist();
     } else {
-      console.log('⚠️ No playlistId provided, using random game mode');
       setPlaylistLoading(false);
     }
-  }, [playlistId]);
+  }, [playlistId, loadPlaylist]);
 
   // Get current user on mount
   useEffect(() => {
@@ -449,6 +447,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   // Save complete session when finished
   useEffect(() => {
     if (gameState === 'complete' && !sessionSaved) {
+      let cancelled = false;
+
       const gameScores = roundScores.map(r => r.normalizedScore);
       const session = calculateSessionScore(gameScores);
       const grade = getSessionGrade(session.percentage);
@@ -489,21 +489,23 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       );
 
       if (!user?.id) {
-        setPendingSessionData(sessionData);
+        if (!cancelled) {
+          setPendingSessionData(sessionData);
 
-        if (playlistId) {
-          anonymousSessionManager.update({
-            currentPlaylistId: playlistId,
-            completedRounds: roundScores.length,
-            roundScores: sessionData.results.map(r => ({
-              gameId: r.gameId.toString(),
-              gameName: roundScores.find(rs => getGameId(rs.gameId) === r.gameId)?.gameName || '',
-              rawScore: r.rawScore,
-              maxScore: r.maxScore,
-              normalizedScore: r.normalizedScore,
-              grade: r.grade
-            }))
-          });
+          if (playlistId) {
+            anonymousSessionManager.update({
+              currentPlaylistId: playlistId,
+              completedRounds: roundScores.length,
+              roundScores: sessionData.results.map(r => ({
+                gameId: r.gameId.toString(),
+                gameName: roundScores.find(rs => getGameId(rs.gameId) === r.gameId)?.gameName || '',
+                rawScore: r.rawScore,
+                maxScore: r.maxScore,
+                normalizedScore: r.normalizedScore,
+                grade: r.grade
+              }))
+            });
+          }
         }
       } else if (sessionId) {
         const saveToSupabase = async () => {
@@ -518,7 +520,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
               sessionData.playtimeSeconds
             );
 
-            if (completeResult.success) {
+            if (completeResult.success && !cancelled) {
               console.log('✅ Session completed:', {
                 sessionId,
                 totalScore: sessionData.session.totalScore,
@@ -529,37 +531,41 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
             }
 
             const resultsSuccess = await saveAllRoundResults(sessionId, user.id, sessionData.results);
-            if (resultsSuccess.success) {
+            if (resultsSuccess.success && !cancelled) {
               console.log('✅ Round results saved:', sessionData.results.length, 'rounds');
             }
 
-            setSessionSaved(true);
+            if (!cancelled) {
+              setSessionSaved(true);
+            }
           } catch (error) {
-            console.error('Error saving session:', error);
+            if (!cancelled) {
+              console.error('Error saving session:', error);
+            }
           }
         };
 
         saveToSupabase();
       }
+
+      return () => {
+        cancelled = true;
+      };
     }
   }, [gameState, user?.id, sessionId, roundScores, sessionSaved, playlistId]);
 
-  const selectRandomGame = () => {
+  const selectRandomGame = useCallback(() => {
     if (playlistId && currentGameSlug) {
-      console.log(`🎯 Looking for playlist game with slug: "${currentGameSlug}"`);
       const nextGame = AVAILABLE_GAMES.find(g => g.id === currentGameSlug);
       if (nextGame) {
         setCurrentGame(nextGame);
         setPlayedGames(prev => [...prev, nextGame.id]);
-        console.log(`✅ Playing playlist game (Round ${currentRound}):`, nextGame.name, `(${nextGame.id})`);
         return;
       } else {
         console.error('❌ Game not found for slug:', currentGameSlug);
-        console.log('Available game IDs:', AVAILABLE_GAMES.map(g => g.id));
       }
     }
 
-    console.log(`🎲 Selecting random game for round ${currentRound}`);
     const availableGames = AVAILABLE_GAMES.filter(
       game => !playedGames.includes(game.id)
     );
@@ -569,8 +575,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     setCurrentGame(randomGame);
     setPlayedGames(prev => [...prev, randomGame.id]);
-    console.log(`✅ Selected random game:`, randomGame.name, `(${randomGame.id})`);
-  };
+  }, [playlistId, currentGameSlug, playedGames]);
 
   const startRound = () => {
     setCurrentGameScore({ score: 0, maxScore: 0 });
@@ -855,18 +860,16 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   // CRITICAL: Don't select game while playlist is loading to avoid race condition
   useEffect(() => {
     if (gameState === 'intro' && !currentGame && !playlistLoading) {
-      console.log(`🎬 Intro screen: Selecting game for round ${currentRound}`);
       selectRandomGame();
     }
-  }, [gameState, currentRound, currentGame, playlistLoading]);
+  }, [gameState, currentRound, currentGame, playlistLoading, selectRandomGame]);
 
   // Fallback: Select game when entering playing state without a game (shouldn't happen with playlist)
   useEffect(() => {
     if (gameState === 'playing' && !currentGame && !playlistLoading) {
-      console.log(`🎮 No game selected for round ${currentRound}, selecting now`);
       selectRandomGame();
     }
-  }, [gameState, currentGame, playlistLoading]);
+  }, [gameState, currentGame, playlistLoading, selectRandomGame]);
 
   // Auto-advance from level intro after 4 seconds
   useEffect(() => {

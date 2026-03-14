@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Gamepad2 } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
@@ -229,7 +229,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     }
   };
 
-  const gameLoop = () => {
+  const gameLoop = useCallback(() => {
     if (gameOverRef.current) return;
 
     if (inputQueueRef.current.length > 0) {
@@ -318,7 +318,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       dir: { ...directionRef.current }
     });
     if (historyRef.current.length > 8) historyRef.current.shift();
-  };
+  }, [onComplete, onScoreUpdate, timeRemaining]);
 
   const updateDirection = useCallback((newDir: Position) => {
     if (gameOverRef.current || !gameStartedRef.current) return;
@@ -411,7 +411,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     );
 
     return () => clearInterval(ticker);
-  }, [gameStarted, isGameOver, activeEffects.slow]);
+  }, [gameStarted, isGameOver, activeEffects.slow, gameLoop]);
 
   // Render Loop
   useEffect(() => {

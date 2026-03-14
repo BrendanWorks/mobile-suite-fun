@@ -17,6 +17,7 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
   const [player, setPlayer] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [startTime] = useState(Date.now());
   const [tileSize, setTileSize] = useState(16);
@@ -105,7 +106,11 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
     setMap(newMap);
     setVisited(Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false)));
     setPlayer(start);
-    setScore((prev) => prev + level * 50); // Bonus for reaching exit
+    setScore((prev) => {
+      const next = prev + level * 50;
+      scoreRef.current = next;
+      return next;
+    });
     setTimeout(() => setIsGenerating(false), 400);
   }, [level]);
 
@@ -141,8 +146,12 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
 
       if (map[ny][nx] === FLOOR || map[ny][nx] === EXIT) {
         setPlayer({ x: nx, y: ny });
-        setScore((prev) => prev + 1); // +1 per step
-        onScoreUpdate(score + 1, 1000); // arbitrary max for normalization
+        setScore((prev) => {
+          const next = prev + 1;
+          scoreRef.current = next;
+          return next;
+        });
+        onScoreUpdate(scoreRef.current + 1, 1000);
       }
 
       if (map[ny][nx] === EXIT) {
@@ -190,16 +199,16 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
     touchStartRef.current = null;
   };
 
-  // Timer-based game end
+  // Timer-based game end - use scoreRef to avoid resetting timer on every score change
   useEffect(() => {
     const timer = setTimeout(() => {
       const timeElapsed = (Date.now() - startTime) / 1000;
       const timeRemaining = Math.max(0, duration - timeElapsed);
-      onComplete(score, 1000, timeRemaining); // maxScore arbitrary – normalize in scoringSystem
+      onComplete(scoreRef.current, 1000, timeRemaining);
     }, duration * 1000);
 
     return () => clearTimeout(timer);
-  }, [duration, score, startTime, onComplete]);
+  }, [duration, startTime, onComplete]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full bg-black flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden">

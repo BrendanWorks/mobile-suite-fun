@@ -27,6 +27,8 @@ export function useUserStats(userId: string | undefined): UserStats {
       return;
     }
 
+    let cancelled = false;
+
     const fetchStats = async () => {
       try {
         const { data: sessions, error } = await supabase
@@ -35,6 +37,8 @@ export function useUserStats(userId: string | undefined): UserStats {
           .eq('user_id', userId)
           .not('completed_at', 'is', null)
           .order('completed_at', { ascending: false });
+
+        if (cancelled) return;
 
         if (error) {
           console.error('Error fetching user stats:', error);
@@ -70,12 +74,18 @@ export function useUserStats(userId: string | undefined): UserStats {
           loading: false,
         });
       } catch (error) {
-        console.error('Error calculating stats:', error);
-        setStats({ ...DEFAULT_STATS });
+        if (!cancelled) {
+          console.error('Error calculating stats:', error);
+          setStats({ ...DEFAULT_STATS });
+        }
       }
     };
 
     fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   return stats;
