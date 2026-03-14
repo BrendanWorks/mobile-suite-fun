@@ -44,6 +44,7 @@ const Flashbang = React.lazy(() => import('./Flashbang'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
 import AuthModal from './AuthModal';
+import LeaderboardPostRound from './LeaderboardPostRound';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
 import { audioManager } from '../lib/audioManager';
@@ -174,6 +175,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
   const [showMenu, setShowMenu] = useState(false);
   const [showLevelIntro, setShowLevelIntro] = useState(false);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -1067,11 +1069,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
 
     const gameScores = roundScores.map(r => r.normalizedScore);
     const sessionTotal = calculateSessionScore(gameScores);
-    const sessionGrade = getSessionGrade(sessionTotal.percentage);
     console.log('🎊 COMPLETE SCREEN - Game Scores:', gameScores);
     console.log('🎊 Session Total:', sessionTotal);
 
-    const celebrationTiles = roundScores.map((round, idx) => ({
+    const celebrationTiles = roundScores.map((round) => ({
       gameId: round.gameId,
       gameName: round.gameName,
       score: {
@@ -1082,14 +1083,29 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
       },
     }));
 
-    const handlePlayAgain = () => {
+    const handleShowLeaderboard = () => {
       if (!user && !sessionSaved) {
         if (playlistId && !anonymousSessionManager.isLastPlaylist()) {
           anonymousSessionManager.advanceToNextPlaylist();
         }
       }
+      setShowLeaderboard(true);
+    };
+
+    const handleLeaderboardContinue = () => {
+      setShowLeaderboard(false);
       onExit();
     };
+
+    if (showLeaderboard) {
+      return (
+        <LeaderboardPostRound
+          currentUserId={user?.id ?? null}
+          playerScore={Math.round(sessionTotal.totalScore)}
+          onContinue={handleLeaderboardContinue}
+        />
+      );
+    }
 
     return (
       <div>
@@ -1097,7 +1113,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId }: Gam
           roundScores={celebrationTiles}
           totalSessionScore={sessionTotal.totalScore}
           maxSessionScore={sessionTotal.maxPossible}
-          onPlayAgain={handlePlayAgain}
+          onPlayAgain={handleShowLeaderboard}
           totalRounds={totalRounds}
           levelName={playlistName}
           levelNumber={levelNumber}
