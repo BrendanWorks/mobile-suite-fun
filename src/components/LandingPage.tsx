@@ -37,9 +37,22 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         <div className="mb-8">
 
           {/* ROWDY title with letter-by-letter reveal + subtle breathing pulse */}
-          <div className="inline-flex items-center justify-center mb-4">
+          <div className="inline-flex items-center justify-center mb-4 relative">
+            {/* background glow disc that fades in after animation completes */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: '-40px -60px',
+                borderRadius: '50%',
+                background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.28) 0%, rgba(239,68,68,0.10) 40%, transparent 72%)',
+                opacity: pulseActive ? 1 : 0,
+                transition: 'opacity 1200ms ease',
+                pointerEvents: 'none',
+                animation: pulseActive ? 'rowdyGlowPulse 4s ease-in-out infinite' : 'none',
+              }}
+            />
             <h1
-              className="text-7xl sm:text-9xl font-black tracking-wider"
+              className="text-7xl sm:text-9xl font-black tracking-wider relative"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {LETTERS.map((letter, i) => (
@@ -51,7 +64,11 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
                     opacity: visibleLetters > i ? 1 : 0,
                     transform: visibleLetters > i ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.85)',
                     transition: 'opacity 320ms cubic-bezier(0.22,1,0.36,1), transform 380ms cubic-bezier(0.22,1,0.36,1)',
-                    textShadow: pulseActive ? undefined : 'none',
+                    textShadow: pulseActive
+                      ? undefined
+                      : visibleLetters > i
+                        ? '0 0 30px rgba(239,68,68,0.5), 0 0 60px rgba(239,68,68,0.2)'
+                        : 'none',
                     animation: pulseActive ? `rowdyTextPulse 4s ease-in-out infinite ${i * 80}ms` : 'none',
                   }}
                 >
@@ -119,8 +136,12 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
 
       <style>{`
         @keyframes rowdyTextPulse {
-          0%, 100% { text-shadow: 0 0 20px rgba(239,68,68,0.35), 0 0 40px rgba(239,68,68,0.12); }
-          50%       { text-shadow: 0 0 10px rgba(239,68,68,0.18), 0 0 20px rgba(239,68,68,0.06); }
+          0%, 100% { text-shadow: 0 0 24px rgba(239,68,68,0.65), 0 0 50px rgba(239,68,68,0.28), 0 0 80px rgba(239,68,68,0.10); }
+          50%       { text-shadow: 0 0 14px rgba(239,68,68,0.40), 0 0 30px rgba(239,68,68,0.16), 0 0 55px rgba(239,68,68,0.06); }
+        }
+        @keyframes rowdyGlowPulse {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.55; }
         }
         .landing-play-btn:hover {
           background-color: #ef4444;
