@@ -14,8 +14,8 @@ import TipJar from './components/TipJar';
 import TipPrompt from './components/TipPrompt';
 import { useUserStats } from './hooks/useUserStats';
 
-const TIP_PROMPT_ROUNDS = [5, 9];
-const TIP_ROUNDS_KEY = 'rowdy_rounds_played';
+const TIP_PROMPT_LEVELS = [5, 9];
+const TIP_LEVELS_KEY = 'rowdy_levels_completed';
 const TIP_DISMISSED_KEY = 'rowdy_tip_dismissed_at';
 
 export type GameId =
@@ -162,12 +162,12 @@ export default function App() {
     setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
-  const handleRoundComplete = useCallback(() => {
-    const prev = parseInt(localStorage.getItem(TIP_ROUNDS_KEY) ?? '0', 10);
+  const handleLevelComplete = useCallback(() => {
+    const prev = parseInt(localStorage.getItem(TIP_LEVELS_KEY) ?? '0', 10);
     const next = prev + 1;
-    localStorage.setItem(TIP_ROUNDS_KEY, String(next));
+    localStorage.setItem(TIP_LEVELS_KEY, String(next));
 
-    if (!TIP_PROMPT_ROUNDS.includes(next)) return;
+    if (!TIP_PROMPT_LEVELS.includes(next)) return;
 
     const dismissedAt = parseInt(localStorage.getItem(TIP_DISMISSED_KEY) ?? '0', 10);
     const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60);
@@ -218,15 +218,14 @@ export default function App() {
         <GameSession
           playlistId={selectedPlaylistId}
           onExit={() => {
+            handleLevelComplete();
             setSelectedPlaylistId(null);
-            setShowTipPrompt(false);
             if (session) {
               trackPageView('/menu');
             } else {
               trackPageView('/');
             }
           }}
-          onRoundComplete={handleRoundComplete}
           totalRounds={5}
         />
       </>
