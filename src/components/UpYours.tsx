@@ -97,7 +97,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
       await audioManager.loadSound('uy_spring',   '/sounds/snake/powerup_gold.mp3', 2);
       await audioManager.loadSound('uy_powerup',  '/sounds/snake/powerup_special.mp3', 2);
       await audioManager.loadSound('uy_shield',   '/sounds/snake/gobble_optimized.mp3', 2);
-      await audioManager.loadSound('uy_life_lost','/sounds/ranky/fail.mp3', 2);
+      await audioManager.loadSound('uy_life_lost','/sounds/global/lose_1.mp3', 2);
       await audioManager.loadSound('uy_gameover', '/sounds/snake/game_end.mp3', 1);
     };
     loadAudio();
