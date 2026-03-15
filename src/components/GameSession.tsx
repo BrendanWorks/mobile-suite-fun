@@ -182,7 +182,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [showLevelIntro, setShowLevelIntro] = useState(false);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [introExiting, setIntroExiting] = useState(false);
+  const [introExiting] = useState(false);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -616,15 +616,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, [playlistId, currentGameSlug, playedGames]);
 
   const startRound = () => {
-    setIntroExiting(true);
-    setTimeout(() => {
-      setCurrentGameScore({ score: 0, maxScore: 0 });
-      setGameState('playing');
-      setIntroExiting(false);
-      if (currentGame) {
-        analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
-      }
-    }, 340);
+    setCurrentGameScore({ score: 0, maxScore: 0 });
+    setGameState('playing');
+    if (currentGame) {
+      analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
+    }
   };
 
   const handleScoreUpdate = useCallback((score: number, maxScore: number) => {
