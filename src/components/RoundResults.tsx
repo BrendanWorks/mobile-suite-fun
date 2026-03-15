@@ -157,10 +157,26 @@ export default function RoundResults({
         <div className="bg-black backdrop-blur rounded-xl p-4 sm:p-6 mb-3 border-2 border-cyan-400/40" style={{ boxShadow: '0 0 25px rgba(0, 255, 255, 0.3)' }}>
           <div className="text-center mb-4 pb-4 border-b border-cyan-400/30">
             <div
-              className={`text-5xl sm:text-6xl mb-3 tracking-wide ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
-              style={{ filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))' }}
+              className={`flex items-center justify-center gap-1 sm:gap-2 mb-3 ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
             >
-              {gameScore.grade}
+              {Array.from({ length: 5 }, (_, i) => {
+                const filled = i < (gameScore.grade.match(/★/g)?.length ?? 0);
+                return (
+                  <svg
+                    key={i}
+                    viewBox="0 0 24 24"
+                    className="w-10 h-10 sm:w-12 sm:h-12"
+                    style={filled ? { filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.6))' } : undefined}
+                  >
+                    <polygon
+                      points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
+                      fill={filled ? '#eab308' : 'none'}
+                      stroke={filled ? '#ca8a04' : 'rgba(234,179,8,0.35)'}
+                      strokeWidth={filled ? '1' : '1.5'}
+                    />
+                  </svg>
+                );
+              })}
             </div>
             <div
               className={`text-2xl sm:text-3xl font-bold text-cyan-300 mb-2 uppercase tracking-wider ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
