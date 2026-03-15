@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 interface Props {
   children: ReactNode;
   onReset?: () => void;
+  onSkipRound?: () => void;
   context?: Record<string, unknown>;
 }
 
@@ -65,10 +66,16 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.props.onReset?.();
   };
 
+  handleSkipRound = () => {
+    this.setState({ hasError: false, error: null, logged: false });
+    this.props.onSkipRound?.();
+  };
+
   render() {
     if (!this.state.hasError) return this.props.children;
 
     const msg = this.state.error?.message;
+    const canSkip = !!this.props.onSkipRound;
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
@@ -91,13 +98,24 @@ export default class ErrorBoundary extends Component<Props, State> {
               This error has been logged automatically.
             </p>
           </div>
-          <button
-            onClick={this.handleReset}
-            className="px-8 py-3 bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
-            style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.3)' }}
-          >
-            Return to Menu
-          </button>
+          <div className="flex flex-col gap-3">
+            {canSkip && (
+              <button
+                onClick={this.handleSkipRound}
+                className="px-8 py-3 bg-transparent border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
+                style={{ textShadow: '0 0 8px rgba(0,255,255,0.5)', boxShadow: '0 0 15px rgba(0,255,255,0.3)' }}
+              >
+                Skip Round &amp; Continue
+              </button>
+            )}
+            <button
+              onClick={this.handleReset}
+              className="px-8 py-3 bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
+              style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.3)' }}
+            >
+              Return to Menu
+            </button>
+          </div>
         </div>
       </div>
     );

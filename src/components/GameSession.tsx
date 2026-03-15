@@ -1161,6 +1161,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
                 ranking_puzzle_id: currentRankingPuzzleId,
                 superlative_puzzle_id: currentSuperlativePuzzleId,
               }}
+              onSkipRound={() => handleGameComplete(0, 100, 0)}
               onReset={handleQuitAndSave}
             >
               <GameWrapper
