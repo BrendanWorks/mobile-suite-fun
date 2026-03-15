@@ -212,6 +212,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
         if (itemsError) {
           console.error('Error fetching items:', itemsError);
+          setGameState('playing');
           return;
         }
 
@@ -439,13 +440,18 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   }
 
   if (!puzzle) {
+    if (!hasCompletedRef.current) {
+      hasCompletedRef.current = true;
+      setTimeout(() => {
+        onCompleteRef.current?.(0, 1, timeRemainingRef.current);
+      }, 0);
+    }
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-3">
-        <div className="text-center text-white">
-          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>
-            ❌ No puzzle available
+        <div className="text-center text-cyan-400">
+          <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
+            Loading...
           </div>
-          <div className="text-sm text-green-300 mt-2">Check your database</div>
         </div>
       </div>
     );

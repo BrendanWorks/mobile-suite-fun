@@ -191,64 +191,67 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const loadRound = useCallback(async (roundNumber: number, rounds: PlaylistRound[]) => {
     setPlaylistLoading(true);
-    const round = rounds.find(r => r.round_number === roundNumber);
-    if (!round) {
-      console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
-      setPlaylistLoading(false);
-      return;
-    }
-
-    let gameSlug: string | null = null;
-
-    if (round.game_id) {
-      gameSlug = GAME_ID_TO_SLUG[round.game_id];
-      if (!gameSlug) {
-        console.error('❌ No mapping found for game_id:', round.game_id, 'Available mappings:', Object.keys(GAME_ID_TO_SLUG));
+    try {
+      const round = rounds.find(r => r.round_number === roundNumber);
+      if (!round) {
+        console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
+        return;
       }
-    } else if ('game_slug' in round.metadata) {
-      gameSlug = round.metadata.game_slug;
-    }
 
-    if (!gameSlug) {
-      console.error('❌ Could not determine game slug for round:', {
-        round_number: roundNumber,
-        game_id: round.game_id,
-        game_name: round.game_name,
-        metadata: round.metadata
-      });
-      setPlaylistLoading(false);
-      return;
-    }
+      let gameSlug: string | null = null;
 
-    setCurrentGameSlug(gameSlug);
+      if (round.game_id) {
+        gameSlug = GAME_ID_TO_SLUG[round.game_id];
+        if (!gameSlug) {
+          console.error('❌ No mapping found for game_id:', round.game_id, 'Available mappings:', Object.keys(GAME_ID_TO_SLUG));
+        }
+      } else if ('game_slug' in round.metadata) {
+        gameSlug = round.metadata.game_slug;
+      }
 
-    if ('puzzle_ids' in round.metadata) {
-      const ids = (round.metadata as { puzzle_ids: number[] }).puzzle_ids;
-      setCurrentPuzzleIds(ids);
-      setCurrentPuzzleId(null);
+      if (!gameSlug) {
+        console.error('❌ Could not determine game slug for round:', {
+          round_number: roundNumber,
+          game_id: round.game_id,
+          game_name: round.game_name,
+          metadata: round.metadata
+        });
+        return;
+      }
 
-      if (gameSlug === 'fake-out') {
-        try {
-          const { data } = await supabase
-            .from('puzzles')
-            .select('id, image_url, correct_answer, prompt, metadata')
-            .in('id', ids);
-          setPrefetchedPuzzles(data && data.length > 0 ? data : null);
-        } catch {
+      setCurrentGameSlug(gameSlug);
+
+      if ('puzzle_ids' in round.metadata) {
+        const ids = (round.metadata as { puzzle_ids: number[] }).puzzle_ids;
+        setCurrentPuzzleIds(ids);
+        setCurrentPuzzleId(null);
+
+        if (gameSlug === 'fake-out') {
+          try {
+            const { data } = await supabase
+              .from('puzzles')
+              .select('id, image_url, correct_answer, prompt, metadata')
+              .in('id', ids);
+            setPrefetchedPuzzles(data && data.length > 0 ? data : null);
+          } catch {
+            setPrefetchedPuzzles(null);
+          }
+        } else {
           setPrefetchedPuzzles(null);
         }
       } else {
+        setCurrentPuzzleId(round.puzzle_id);
+        setCurrentPuzzleIds(null);
         setPrefetchedPuzzles(null);
       }
-    } else {
-      setCurrentPuzzleId(round.puzzle_id);
-      setCurrentPuzzleIds(null);
-      setPrefetchedPuzzles(null);
-    }
 
-    setCurrentRankingPuzzleId(round.ranking_puzzle_id);
-    setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
-    setPlaylistLoading(false);
+      setCurrentRankingPuzzleId(round.ranking_puzzle_id);
+      setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
+    } catch (err) {
+      console.error('❌ loadRound threw unexpectedly:', err);
+    } finally {
+      setPlaylistLoading(false);
+    }
   }, []);
 
   const loadPlaylist = useCallback(async () => {
