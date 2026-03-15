@@ -27,7 +27,6 @@ interface FakeOutProps {
 }
 
 const BASE_POINTS = 100;
-const STREAK_BONUS = 50;
 
 // SVG Icons - Camera for REAL
 const CameraIcon = () => (
@@ -64,7 +63,6 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
   const [status, setStatus] = useState<'loading' | 'playing' | 'feedback' | 'finished'>('loading');
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -112,7 +110,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
     const shuffled = processPuzzleData(prefetchedPuzzles);
     setPuzzles(shuffled);
-    maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
+    maxScoreRef.current = shuffled.length * BASE_POINTS;
     setImageLoaded(false);
     setStatus('playing');
   }, [prefetchedPuzzles]);
@@ -139,7 +137,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
         const shuffled = processPuzzleData(data);
         setPuzzles(shuffled);
-        maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
+        maxScoreRef.current = shuffled.length * BASE_POINTS;
         setImageLoaded(false);
         setStatus('playing');
       } catch {
@@ -177,17 +175,10 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     const currentPuzzle = puzzles[currentIndex];
     const isCorrect = choice === currentPuzzle.correct_answer;
 
-    let pointsGained = isCorrect ? BASE_POINTS : 0;
-    const newStreak = isCorrect ? streak + 1 : 0;
-
-    if (isCorrect && newStreak >= 3) {
-      pointsGained += STREAK_BONUS;
-    }
-
+    const pointsGained = isCorrect ? BASE_POINTS : 0;
     const newScore = score + pointsGained;
 
     setScore(newScore);
-    setStreak(newStreak);
     scoreRef.current = newScore;
 
     if (onScoreUpdateRef.current) {
@@ -261,24 +252,13 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const currentPuzzle = puzzles[currentIndex];
 
   return (
-    <div className="h-full bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none overflow-y-auto">
-      <div className="text-center max-w-2xl w-full flex flex-col h-full">
+    <div className="h-full bg-black flex flex-col items-center justify-start p-3 text-white select-none overflow-y-auto">
+      <div className="text-center max-w-2xl w-full flex flex-col gap-3">
 
-        {/* Game Area - fixed height */}
-        <div className="relative mb-2 flex flex-col justify-center">
-          {/* Streak Indicator */}
-          {streak >= 3 && (
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
-              <span className="inline-block bg-black border-2 border-yellow-400 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ boxShadow: '0 0 10px #fbbf24' }}>
-                🔥 ×{streak}
-              </span>
-            </div>
-          )}
-
-          {/* Image Container */}
+        {/* Image Container */}
+        <div className="relative">
           <div
-            className={`relative w-full h-64 sm:h-80 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+            className={`relative w-full h-56 sm:h-72 md:h-80 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
               status === 'feedback'
                 ? lastResult?.isCorrect
                   ? 'border-green-500'
