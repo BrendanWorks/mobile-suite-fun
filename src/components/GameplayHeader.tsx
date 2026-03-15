@@ -226,12 +226,15 @@ export default function GameplayHeader({
         {/* Right: Score + menu */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right leading-tight">
-            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-500">
-              Level
+            <span
+              className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest"
+              style={{ color: '#00cfff', textShadow: '0 0 6px rgba(0,207,255,0.5)' }}
+            >
+              Score
             </span>
             <p
-              className="text-sm sm:text-base font-black text-white tabular-nums"
-              style={{ textShadow: '0 0 6px rgba(255,255,255,0.3)' }}
+              className="text-sm sm:text-base font-black tabular-nums"
+              style={{ color: '#facc15', textShadow: '0 0 8px rgba(251,191,36,0.6)' }}
             >
               {score.toLocaleString()}
             </p>
