@@ -226,10 +226,10 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       setPhase('gameover');
       onCompleteRef.current?.(scoreRef.current, MAX_SCORE, props.timeRemaining);
     },
-    pauseTimer: false,
+    pauseTimer: phase !== 'playing',
     canSkipQuestion: false,
-    hideTimer: true,
-  }), [props.timeRemaining]);
+    hideTimer: false,
+  }), [props.timeRemaining, phase]);
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
   useEffect(() => () => {
@@ -289,9 +289,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
     }, 300);
   }, [phase, feedback, stimulus, multiplier, props]);
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
-  const timerPct = props.timeRemaining ? (props.timeRemaining / TOTAL_TIME) * 100 : 0;
-
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
@@ -325,17 +322,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
               )}
             </div>
           </div>
-
-          {/* ── Timer Bar (only during gameplay) ── */}
-          {phase === 'playing' && (
-            <div className="w-full mb-3">
-              <div className="w-full h-2 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
-                style={{ boxShadow: '0 0 15px rgba(0,255,255,0.4), inset 0 0 10px rgba(0,255,255,0.1)' }}>
-                <div className="h-full bg-cyan-400 transition-all duration-1000"
-                  style={{ width: `${timerPct}%`, boxShadow: '0 0 20px #00ffff' }} />
-              </div>
-            </div>
-          )}
 
           {/* ── IDLE: Instructions Screen ── */}
           {phase === 'idle' && (

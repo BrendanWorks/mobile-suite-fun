@@ -86,7 +86,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'tracer',          dbId: 22, name: 'Tracer',           component: Tracer,          duration: 120, instructions: 'Memorize the shape, then trace it from memory!' },
   { id: 'clutch',          dbId: 23, name: 'Clutch',           component: Clutch,          duration: 60,  instructions: 'Tap when the ring hits the sweet spot!' },
   { id: 'flashbang',       dbId: 24, name: 'Flashbang',        component: Flashbang,       duration: 45,  instructions: 'Memorize the lit tiles, then tap them from memory!' },
-  { id: 'color-clash',     dbId: 17, name: 'ColorClash',       component: ColorClash,      duration: 60,  instructions: 'Tap the button matching the ink color, not the word!' },
+  { id: 'color-clash',     dbId: 17, name: 'ColorClash',       component: ColorClash,      duration: 30,  instructions: 'Tap the button matching the ink color, not the word!' },
   { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
 ];
 
