@@ -227,30 +227,31 @@ function ReturningUserScreen({
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 flex-wrap justify-center z-10" style={{
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-10" style={{
           opacity: contentVisible ? 1 : 0,
           transition: 'opacity 500ms ease 500ms',
         }}>
-          <SfxVolumeControl />
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <SfxVolumeControl />
+            <button
+              onClick={onOpenTipJar}
+              className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+              style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
+            >
+              ☕ Tip Jar
+            </button>
+            <button
+              onClick={onLogout}
+              className="px-5 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/50 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+            >
+              Sign Out
+            </button>
+          </div>
           <button
             onClick={onDebugMode}
-            className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-            style={{ textShadow: '0 0 8px rgba(251,191,36,0.4)', boxShadow: '0 0 10px rgba(251,191,36,0.2)' }}
+            className="px-4 py-1.5 bg-transparent text-white/15 hover:text-white/40 transition-colors active:scale-95 text-xs touch-manipulation"
           >
             Debug Mode
-          </button>
-          <button
-            onClick={onOpenTipJar}
-            className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-            style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
-          >
-            ☕ Tip Jar
-          </button>
-          <button
-            onClick={onLogout}
-            className="px-5 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/50 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-          >
-            Sign Out
           </button>
         </div>
 

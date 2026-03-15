@@ -217,22 +217,23 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3 flex-wrap justify-center">
-        <SfxVolumeControl />
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          <SfxVolumeControl />
+          <button
+            onClick={() => setShowTipJar(true)}
+            className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+            style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
+          >
+            <Coffee className="w-4 h-4" />
+            Tip Jar
+          </button>
+        </div>
         <button
           onClick={onDebugMode}
-          className="px-6 py-3 bg-transparent border-2 border-yellow-400/50 hover:border-yellow-400 text-yellow-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-          style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.4)', boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)' }}
+          className="px-4 py-1.5 bg-transparent text-white/15 hover:text-white/40 transition-colors active:scale-95 text-xs touch-manipulation"
         >
           Debug Mode
-        </button>
-        <button
-          onClick={() => setShowTipJar(true)}
-          className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
-          style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
-        >
-          <Coffee className="w-4 h-4" />
-          Tip Jar
         </button>
       </div>
 
