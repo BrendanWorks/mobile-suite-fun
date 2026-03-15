@@ -366,10 +366,16 @@ export default function App() {
 
   useEffect(() => {
     if (session && autoStartAfterLogin) {
-      setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
       setAutoStartAfterLogin(false);
+      if (session.user?.id) {
+        getNextPlaylistForUser(session.user.id).then(nextId => {
+          setSelectedPlaylistId(nextId);
+        });
+      } else {
+        setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+      }
     }
-  }, [session, autoStartAfterLogin]);
+  }, [session, autoStartAfterLogin, getNextPlaylistForUser]);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -382,6 +388,51 @@ export default function App() {
     setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
+  const getNextPlaylistForUser = useCallback(async (userId: string): Promise<number> => {
+    try {
+      const { data } = await supabase
+        .from('game_sessions')
+        .select('id')
+        .eq('user_id', userId)
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false })
+        .limit(50);
+
+      if (!data || data.length === 0) {
+        return anonymousSessionManager.getCurrentPlaylistId();
+      }
+
+      const { data: leaderboardRows } = await supabase
+        .from('leaderboard_entries')
+        .select('playlist_id, created_at')
+        .eq('user_id', userId)
+        .not('playlist_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (!leaderboardRows || leaderboardRows.length === 0) {
+        return anonymousSessionManager.getCurrentPlaylistId();
+      }
+
+      const playedPlaylistIds = new Set(leaderboardRows.map(r => r.playlist_id as number));
+      const sequence = anonymousSessionManager.getPlaylistSequence();
+      const lastPlayedIndex = sequence.reduce((maxIdx, pid, idx) => {
+        return playedPlaylistIds.has(pid) ? idx : maxIdx;
+      }, -1);
+
+      if (lastPlayedIndex === -1) {
+        return sequence[0];
+      }
+
+      const nextIndex = lastPlayedIndex >= sequence.length - 1 ? 0 : lastPlayedIndex + 1;
+      const nextPlaylistId = sequence[nextIndex];
+      anonymousSessionManager.update({ currentPlaylistId: nextPlaylistId, completedRounds: 0, roundScores: [] });
+      return nextPlaylistId;
+    } catch {
+      return anonymousSessionManager.getCurrentPlaylistId();
+    }
+  }, []);
+
   const handleSignIn = useCallback(() => {
     setShowAuthPage(true);
   }, []);
@@ -391,12 +442,18 @@ export default function App() {
     setDebugMode(true);
   }, []);
 
-  const handlePlayGames = useCallback(() => {
+  const handlePlayGames = useCallback(async () => {
     trackPageView('/game-session');
     setShowTipPrompt(false);
     setShowTipJar(false);
-    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
-  }, []);
+    const currentSession = (await supabase.auth.getSession()).data.session;
+    if (currentSession?.user?.id) {
+      const nextId = await getNextPlaylistForUser(currentSession.user.id);
+      setSelectedPlaylistId(nextId);
+    } else {
+      setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+    }
+  }, [getNextPlaylistForUser]);
 
   const handleLevelComplete = useCallback(() => {
     const prev = parseInt(localStorage.getItem(TIP_LEVELS_KEY) ?? '0', 10);

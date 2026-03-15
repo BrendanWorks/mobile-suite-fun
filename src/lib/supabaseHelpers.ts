@@ -10,13 +10,23 @@ const GAME_SLUG_TO_ID: Record<string, number> = {
   'word-rescue': 10,
   'shape-sequence': 11,
   'snake': 12,
-  'fake-out': 13,
+  'hive-mind': 13,
+  'fake-out': 15,
+  'double-fake': 16,
+  'color-clash': 17,
+  'recall': 18,
+  'superlative': 19,
+  'true-false': 20,
+  'multiple-choice': 21,
+  'tracer': 22,
+  'clutch': 23,
+  'flashbang': 24,
 };
 
 export function getGameId(slug: string): number {
   const gameId = GAME_SLUG_TO_ID[slug];
   if (!gameId) {
-    return 1;
+    return 3;
   }
   return gameId;
 }

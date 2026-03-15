@@ -16,8 +16,8 @@ const STORAGE_KEY = 'rowdy_anonymous_session';
 
 // Ordered playlist sequence - DO NOT MODIFY THIS ORDER!
 // 1=Wildly Inappropriate(22), 2=Junk Food(42), 3=Music(43), 4=Plot Twist(44),
-// 5=Booze(45), 6=Sports(46), 7=Money(47), 8=Hipsters(48), 9=Health(49)
-const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49];
+// 5=Booze(45), 6=Sports(46), 7=Money(47), 8=Hipsters(48), 9=Health(49), 10=Crazy World(52)
+const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49, 52];
 
 export const anonymousSessionManager = {
   get(): AnonymousSession | null {
