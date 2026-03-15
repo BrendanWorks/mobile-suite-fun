@@ -1056,7 +1056,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }
 
   const getGradeLabel = (score: number): string => {
-    if (score >= 100) return "Perfect";
+    if (score >= 100) return "Maxed Out!";
     if (score >= 90) return "Amazeballs!";
     if (score >= 80) return "Exceptional";
     if (score >= 70) return "Very Good";

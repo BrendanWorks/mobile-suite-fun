@@ -182,7 +182,7 @@ export default function RoundResults({
               className={`text-2xl sm:text-3xl font-bold text-cyan-300 mb-2 uppercase tracking-wider ${showContent ? 'animate-pop-in' : 'opacity-0'}`}
               style={{ textShadow: '0 0 15px #00ffff' }}
             >
-              {getGradeLabel(gameScore.normalizedScore)}
+              {hasPerfectScoreBonus ? 'Perfect!' : getGradeLabel(gameScore.normalizedScore)}
             </div>
             <div className="text-lg sm:text-xl text-white/70 font-semibold tabular-nums">
               {Math.round(gameScore.normalizedScore + (hasTimeBonus ? animatedBonus : 0))}/100

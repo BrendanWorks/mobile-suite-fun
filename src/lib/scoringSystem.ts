@@ -123,7 +123,7 @@ const SCORE_LABELS = [
   "Outrageously Brilliant!", // 97
   "Most Excellent!", // 98
   "Spectacularly Crushing It!", // 99
-  "Perfect!" // 100
+  "Maxed Out!" // 100
 ];
 
 function getGrade(score: number): string {
