@@ -42,6 +42,18 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error, info.componentStack);
+
+    const isStaleChunk =
+      error.message?.includes('MIME type') ||
+      error.message?.includes('Failed to fetch dynamically imported module') ||
+      error.message?.includes('Importing a module script failed') ||
+      (error as any)?.name === 'ChunkLoadError';
+
+    if (isStaleChunk) {
+      window.location.reload();
+      return;
+    }
+
     if (!this.state.logged) {
       this.setState({ logged: true });
       logErrorBoundaryError(error, info.componentStack ?? null, this.props.context);
