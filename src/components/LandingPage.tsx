@@ -116,7 +116,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
   return (
     <>
     {showTipJar && <TipJar onClose={() => setShowTipJar(false)} />}
-    <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ minHeight: '100dvh' }}>
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
@@ -125,7 +125,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
       <div className="absolute inset-0 bg-gradient-radial from-red-900/20 via-black to-black" />
 
       <div className="relative z-10 text-center max-w-2xl w-full">
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-8">
 
           {/* ROWDY title with letter-by-letter reveal + subtle breathing pulse */}
           <div className="inline-flex items-center justify-center mb-4 relative">
@@ -143,8 +143,8 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
               }}
             />
             <h1
-              className="text-7xl sm:text-9xl font-black tracking-wider relative"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              className="font-black tracking-wider relative"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: 'clamp(4rem, 18vw, 9rem)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
             >
               {LETTERS.map((letter, i) => (
                 <span
@@ -183,7 +183,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         </div>
 
         <div
-          className="space-y-4 mb-12"
+          className="space-y-3 mb-4 sm:mb-8"
           style={{
             opacity: visibleLetters >= LETTERS.length ? 1 : 0,
             transform: visibleLetters >= LETTERS.length ? 'translateY(0)' : 'translateY(16px)',
@@ -192,7 +192,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         >
           <button
             onClick={onPlayNow}
-            className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-5 bg-red-600 text-white font-bold text-xl rounded-xl active:scale-[0.97] touch-manipulation shadow-lg landing-play-btn"
+            className="w-full max-w-md mx-auto flex items-center justify-center gap-3 px-8 py-4 sm:py-5 bg-red-600 text-white font-bold text-xl rounded-xl active:scale-[0.97] touch-manipulation shadow-lg landing-play-btn"
             style={{ boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)', transition: 'transform 300ms ease, background-color 300ms ease, box-shadow 300ms ease' }}
           >
             <Play className="w-6 h-6" fill="currentColor" />
@@ -217,7 +217,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3">
+      <div className="relative z-10 flex flex-col items-center gap-3 pb-4 sm:pb-6 mt-2">
         <div className="flex items-center gap-3 flex-wrap justify-center">
           <SfxVolumeControl />
           <button

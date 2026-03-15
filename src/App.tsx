@@ -153,7 +153,7 @@ function ReturningUserScreen({
       )}
       {showTipJar && <TipJar onClose={onCloseTipJar} />}
 
-      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ minHeight: '100dvh' }}>
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />
         <div className="absolute inset-0 bg-gradient-radial from-red-900/20 via-black to-black" />
 
@@ -167,7 +167,7 @@ function ReturningUserScreen({
                 opacity: pulseActive ? 1 : 0, transition: 'opacity 1200ms ease', pointerEvents: 'none',
                 animation: pulseActive ? 'rowdyGlowPulse 4s ease-in-out infinite' : 'none',
               }} />
-              <h1 className="text-7xl sm:text-9xl font-black tracking-wider relative" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <h1 className="font-black tracking-wider relative" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: 'clamp(4rem, 18vw, 9rem)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                 {LETTERS.map((letter, i) => (
                   <span key={letter + i} style={{
                     display: 'inline-block', color: '#ef4444',
@@ -192,14 +192,14 @@ function ReturningUserScreen({
             </p>
           </div>
 
-          <div className="w-full space-y-3 mb-8" style={{
+          <div className="w-full space-y-3 mb-4 sm:mb-8" style={{
             opacity: contentVisible ? 1 : 0,
             transform: contentVisible ? 'translateY(0)' : 'translateY(16px)',
             transition: 'opacity 500ms ease 300ms, transform 500ms ease 300ms',
           }}>
             <button
               onClick={onPlay}
-              className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-red-600 text-white font-bold text-xl rounded-xl active:scale-[0.97] touch-manipulation returning-play-btn"
+              className="w-full flex items-center justify-center gap-3 px-8 py-4 sm:py-5 bg-red-600 text-white font-bold text-xl rounded-xl active:scale-[0.97] touch-manipulation returning-play-btn"
               style={{ boxShadow: '0 0 30px rgba(239,68,68,0.5)', transition: 'transform 300ms ease, background-color 300ms ease, box-shadow 300ms ease' }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -207,7 +207,7 @@ function ReturningUserScreen({
             </button>
 
             {!userStats.loading && userStats.totalGamesPlayed > 0 && (
-              <div className="flex items-center justify-center gap-6 py-2">
+              <div className="flex items-center justify-center gap-6 py-1 sm:py-2">
                 <div className="text-center">
                   <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(251,191,36,0.5)' }}>Games</p>
                   <p className="text-xl font-black tabular-nums" style={{ color: '#facc15', textShadow: '0 0 10px rgba(251,191,36,0.6)' }}>{userStats.totalGamesPlayed}</p>
@@ -227,7 +227,7 @@ function ReturningUserScreen({
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-10" style={{
+        <div className="relative z-10 flex flex-col items-center gap-2 pb-4 sm:pb-6" style={{
           opacity: contentVisible ? 1 : 0,
           transition: 'opacity 500ms ease 500ms',
         }}>
@@ -235,14 +235,14 @@ function ReturningUserScreen({
             <SfxVolumeControl />
             <button
               onClick={onOpenTipJar}
-              className="flex items-center gap-1.5 px-4 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+              className="flex items-center gap-1.5 px-4 py-2.5 sm:py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/60 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
               style={{ boxShadow: '0 0 8px rgba(239,68,68,0.1)' }}
             >
-              ☕ Tip Jar
+              Tip Jar
             </button>
             <button
               onClick={onLogout}
-              className="px-5 py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/50 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
+              className="px-5 py-2.5 sm:py-3 bg-transparent border-2 border-red-500/30 hover:border-red-500/60 text-red-400/50 hover:text-red-400 font-semibold rounded-lg transition-all active:scale-95 text-sm touch-manipulation"
             >
               Sign Out
             </button>
