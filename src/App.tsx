@@ -118,6 +118,7 @@ export default function App() {
 
       if (event === 'SIGNED_IN' && session?.user) {
         analytics.signedIn('email');
+        setShowAuthPage(false);
         setAutoStartAfterLogin(true);
       }
 

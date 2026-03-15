@@ -224,16 +224,10 @@ export default function LeaderboardPostRound({
 
         const fetchRank = async (): Promise<number | null> => {
           if (playerScore <= 0) return null;
-          let query = supabase
+          const { count } = await supabase
             .from('leaderboard_entries')
             .select('id', { count: 'exact', head: true })
             .gt('score', playerScore);
-
-          if (playlistId != null) {
-            query = query.eq('playlist_id', playlistId);
-          }
-
-          const { count } = await query;
           return (count ?? 0) + 1;
         };
 
