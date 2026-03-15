@@ -156,7 +156,8 @@ function GuestRow({ rank, score }: { rank: number | null; score: number }) {
   );
 }
 
-const AUTO_ADVANCE_DELAY_MS = 5000;
+const AUTO_ADVANCE_INITIAL_MS = 10000;
+const AUTO_ADVANCE_RESET_MS = 5000;
 
 export default function LeaderboardPostRound({
   currentUserId,
@@ -253,16 +254,21 @@ export default function LeaderboardPostRound({
   useEffect(() => { onContinueRef.current = onContinue; }, [onContinue]);
 
   useEffect(() => {
-    const scheduleAdvance = () => {
+    const hasInteracted = { value: false };
+
+    const scheduleAdvance = (delay: number) => {
       if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
       autoAdvanceTimerRef.current = window.setTimeout(() => {
         onContinueRef.current();
-      }, AUTO_ADVANCE_DELAY_MS);
+      }, delay);
     };
 
-    const resetTimer = () => scheduleAdvance();
+    const resetTimer = () => {
+      hasInteracted.value = true;
+      scheduleAdvance(AUTO_ADVANCE_RESET_MS);
+    };
 
-    scheduleAdvance();
+    scheduleAdvance(AUTO_ADVANCE_INITIAL_MS);
 
     window.addEventListener('touchstart', resetTimer, { passive: true });
     window.addEventListener('touchmove', resetTimer, { passive: true });
