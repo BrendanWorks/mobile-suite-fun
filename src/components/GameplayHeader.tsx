@@ -13,6 +13,28 @@ interface GameplayHeaderProps {
   onSkipRound?: () => void;
 }
 
+function useIsLandscapeSmallPhone() {
+  const [isLandscapeSmall, setIsLandscapeSmallPhone] = useState(() => {
+    return window.innerHeight < 500 && window.innerWidth > window.innerHeight && window.innerWidth < 900;
+  });
+
+  useEffect(() => {
+    const check = () => {
+      setIsLandscapeSmallPhone(
+        window.innerHeight < 500 && window.innerWidth > window.innerHeight && window.innerWidth < 900
+      );
+    };
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
+  }, []);
+
+  return isLandscapeSmall;
+}
+
 export default function GameplayHeader({
   gameName,
   score,
@@ -26,6 +48,7 @@ export default function GameplayHeader({
 }: GameplayHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isLandscapeSmall = useIsLandscapeSmallPhone();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -40,6 +63,79 @@ export default function GameplayHeader({
   }, [showMenu]);
 
   const progressPct = Math.round(((currentRound - 1) / totalRounds) * 100);
+
+  if (isLandscapeSmall) {
+    return (
+      <div
+        className="flex-shrink-0 flex items-center gap-3 px-3 bg-black/95 border-b border-cyan-500/40"
+        style={{ height: '28px', boxShadow: '0 1px 8px rgba(0,255,255,0.1)' }}
+      >
+        <div
+          className="flex-1 h-1 rounded-full overflow-hidden"
+          style={{ background: 'rgba(0,255,255,0.15)' }}
+        >
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${progressPct}%`,
+              background: '#00ffff',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)',
+            }}
+          />
+        </div>
+        <span
+          className="text-[11px] font-black tabular-nums whitespace-nowrap"
+          style={{ color: '#facc15', textShadow: '0 0 6px rgba(251,191,36,0.5)' }}
+        >
+          {score.toLocaleString()}
+        </span>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(v => !v)}
+            className="flex items-center justify-center w-5 h-5 rounded border border-cyan-400/50 text-cyan-400 transition-all active:scale-90 touch-manipulation"
+            aria-label="Game menu"
+          >
+            <MoreVertical className="w-3 h-3" />
+          </button>
+          {showMenu && (
+            <div
+              className="absolute right-0 top-full mt-1 bg-black border-2 border-cyan-500 rounded-lg z-50 overflow-hidden min-w-[130px]"
+              style={{ boxShadow: '0 0 20px rgba(0,255,255,0.3)' }}
+            >
+              <button
+                onClick={() => onSoundToggle(!soundEnabled)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-cyan-300 hover:bg-cyan-500/10 transition-colors whitespace-nowrap"
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                ) : (
+                  <VolumeX className="w-3.5 h-3.5 text-cyan-400/50 flex-shrink-0" />
+                )}
+                Sound: {soundEnabled ? 'On' : 'Off'}
+              </button>
+              {debugMode && (
+                <button
+                  onClick={() => { onSkipRound?.(); setShowMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-yellow-400 hover:bg-yellow-500/20 flex items-center gap-2 transition-colors text-xs border-t border-yellow-500/30"
+                >
+                  <SkipForward size={14} />
+                  Skip Round
+                </button>
+              )}
+              <div className="border-t border-cyan-500/30" />
+              <button
+                onClick={() => { setShowMenu(false); onQuit(); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors whitespace-nowrap"
+              >
+                <span className="text-red-400 text-sm leading-none flex-shrink-0">✕</span>
+                Quit & Save
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -67,9 +163,7 @@ export default function GameplayHeader({
       <div className="flex items-center justify-between px-3 sm:px-4 py-2">
         {/* Left: Round info */}
         <div className="flex flex-col leading-tight min-w-0">
-          <span
-            className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-500/70"
-          >
+          <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-500/70">
             Round {currentRound}/{totalRounds}
           </span>
           <span
@@ -93,9 +187,7 @@ export default function GameplayHeader({
         {/* Right: Score + menu */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right leading-tight">
-            <span
-              className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-yellow-500/70"
-            >
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-yellow-500/70">
               Score
             </span>
             <p
@@ -122,7 +214,6 @@ export default function GameplayHeader({
                 className="absolute right-0 mt-1.5 bg-black border-2 border-cyan-500 rounded-lg z-50 overflow-hidden min-w-[140px]"
                 style={{ boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)' }}
               >
-                {/* Sound toggle */}
                 <button
                   onClick={() => onSoundToggle(!soundEnabled)}
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs sm:text-sm font-medium text-cyan-300 hover:bg-cyan-500/10 transition-colors whitespace-nowrap"
@@ -137,10 +228,7 @@ export default function GameplayHeader({
 
                 {debugMode && (
                   <button
-                    onClick={() => {
-                      onSkipRound?.();
-                      setShowMenu(false);
-                    }}
+                    onClick={() => { onSkipRound?.(); setShowMenu(false); }}
                     className="w-full text-left px-3 py-2 text-yellow-400 hover:bg-yellow-500/20 rounded flex items-center gap-2 transition-colors text-sm border-t border-yellow-500/30"
                   >
                     <SkipForward size={16} />
@@ -150,12 +238,8 @@ export default function GameplayHeader({
 
                 <div className="border-t border-cyan-500/30" />
 
-                {/* Quit */}
                 <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onQuit();
-                  }}
+                  onClick={() => { setShowMenu(false); onQuit(); }}
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs sm:text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors whitespace-nowrap"
                 >
                   <span className="text-red-400 text-base leading-none flex-shrink-0">✕</span>
