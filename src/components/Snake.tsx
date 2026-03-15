@@ -639,7 +639,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         </div>
 
         {/* DPAD */}
-        <div className="grid grid-cols-3 gap-2 mt-8 w-44 sm:hidden">
+        <div className="grid grid-cols-3 gap-2 mt-4 w-44 touch-none">
           <div />
           <button onClick={() => updateDirection({ x: 0, y: -1 })} className="h-12 bg-green-900/30 border border-green-500 rounded-xl text-white text-2xl active:bg-green-800">↑</button>
           <div />
