@@ -208,7 +208,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
 
   if (loading || !currentQuestion) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
           <div style={{ textShadow: '0 0 10px #00ffff' }}>
             LOADING SWARM...
@@ -223,7 +223,7 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   const winnerText = [...currentQuestion.choices].sort((a, b) => b.percentage - a.percentage)[0].text;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center pt-4 p-3 sm:p-4">
+    <div className="h-full bg-black flex items-start justify-center pt-4 p-3 sm:p-4 overflow-y-auto">
       <div className="text-center max-w-2xl w-full text-white select-none space-y-3">
         
         {/* HEADER - Compact single line */}

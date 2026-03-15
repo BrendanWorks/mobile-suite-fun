@@ -131,10 +131,10 @@ export default function RoundResults({
   }, [roundNumber]);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="w-full bg-black flex flex-col items-center justify-center p-4 sm:p-6" style={{ minHeight: '100dvh' }}>
       {/* ROWDY BRANDING - TOP */}
-      <div className="mb-8 sm:mb-12">
-        <p className="text-5xl sm:text-7xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+      <div className="mb-4 sm:mb-8">
+        <p className="text-4xl sm:text-6xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
           ROWDY
         </p>
       </div>

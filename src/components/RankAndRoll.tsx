@@ -427,7 +427,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
   if (gameState === 'loading') {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-green-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #22c55e' }}>
             <ArrowUpDown className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
@@ -447,7 +447,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       }, 0);
     }
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #00ffff' }}>
             Loading...
@@ -460,7 +460,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const remainingHints = MAX_HINTS - hintsUsed;
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4">
+    <div className="h-full bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto">
       <div className="text-center max-w-2xl w-full text-white space-y-3">
         <style>{`
           @keyframes pulse-twice {

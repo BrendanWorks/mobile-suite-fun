@@ -964,7 +964,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // Wait for game to be selected or playlist to load
     if (!currentGame || playlistLoading || loadError) {
       return (
-        <div className={`h-screen w-screen bg-black flex items-center justify-center${introExiting ? ' animate-intro-exit' : ''}`}>
+        <div className={`w-screen bg-black flex items-center justify-center${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
           <div className="text-center">
             <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
             {loadError
@@ -981,23 +981,23 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // LEVEL INTRO SCREEN - Show only at start of playlist
     if (showLevelIntro && currentRound === 1 && playlistId && playlistName && levelNumber) {
       return (
-        <div className={`h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
-          <div className="mb-8 sm:mb-12">
-            <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+        <div className={`w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
+          <div className="mb-6 sm:mb-12">
+            <p className="text-5xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
               ROWDY
             </p>
           </div>
 
           <div className="text-center max-w-2xl w-full flex flex-col items-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-cyan-400 mb-6" style={{ textShadow: '0 0 20px #00ffff' }}>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-cyan-400 mb-4 sm:mb-6" style={{ textShadow: '0 0 20px #00ffff' }}>
               Level {levelNumber}: {playlistName}
             </h1>
 
-            <p className="text-cyan-300 text-sm sm:text-base mb-8 max-w-md">
+            <p className="text-cyan-300 text-sm sm:text-base mb-6 sm:mb-8 max-w-md">
               Get ready to tackle {totalRounds} challenges
             </p>
 
-            <div className="bg-black border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
+            <div className="bg-black border-2 border-cyan-400 rounded-lg p-4 sm:p-8 backdrop-blur" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}>
               <p className="text-xs sm:text-sm text-cyan-400">Starting in a moment...</p>
             </div>
           </div>
@@ -1007,10 +1007,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     // ICON-FORWARD INTRO SCREEN
     return (
-      <div className={`h-screen w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
+      <div className={`w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
         {/* ROWDY BRANDING - TOP */}
-        <div className="mb-8 sm:mb-12">
-          <p className="text-6xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
+        <div className="mb-6 sm:mb-12">
+          <p className="text-5xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
             ROWDY
           </p>
         </div>
@@ -1178,7 +1178,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Loading screen between rounds
   if (gameState === 'playing' && !currentGame) {
     return (
-      <div className="h-screen w-screen bg-black flex items-center justify-center">
+      <div className="w-screen bg-black flex items-center justify-center" style={{ minHeight: '100dvh' }}>
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.5)' }}></div>
           <p className="text-cyan-400 text-base" style={{ textShadow: '0 0 10px #00ffff' }}>Loading Round {currentRound}...</p>
@@ -1202,7 +1202,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     };
 
     return (
-      <div className="h-screen w-screen bg-black flex flex-col">
+      <div className="w-screen bg-black flex flex-col" style={{ height: '100dvh' }}>
         <GameplayHeader
           gameName={currentGame.name}
           score={currentGameScore.score}
@@ -1254,5 +1254,5 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
   }
 
-  return <div className="h-screen w-screen bg-black" />;
+  return <div className="w-screen bg-black" style={{ height: '100dvh' }} />;
 }

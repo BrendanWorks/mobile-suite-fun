@@ -586,8 +586,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
         <div
           className="relative border-4 border-green-900 rounded-2xl overflow-hidden bg-black"
           style={{
-            width: '340px',
-            height: '340px',
+            width: 'min(340px, calc(100vw - 32px))',
+            height: 'min(340px, calc(100vw - 32px))',
             transform: `translate(${(Math.random() - 0.5) * screenShake * 1.6}px, ${(Math.random() - 0.5) * screenShake * 1.6}px)`,
             boxShadow: '0 0 50px rgba(0,0,0,0.6)'
           }}

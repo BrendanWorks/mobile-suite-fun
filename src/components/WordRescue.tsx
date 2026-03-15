@@ -577,7 +577,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
   if (gameState === 'countdown') {
     return (
-      <div className="relative flex flex-col items-center justify-center min-h-screen bg-black text-white overflow-hidden">
+      <div className="relative flex flex-col items-center justify-center h-full bg-black text-white overflow-hidden">
         <RoundCountdown onComplete={startGame} />
       </div>
     );
@@ -588,7 +588,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   }
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto h-screen bg-black overflow-hidden border-2 border-blue-400/30" style={{ height: '600px' }}>
+    <div className="relative w-full max-w-2xl mx-auto bg-black overflow-hidden border-2 border-blue-400/30 h-full">
       {/* Header - Single line (per Game Component Style Reference) */}
       <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-blue-400/50 text-white p-2 sm:p-3 z-10">
         <div className="flex items-center justify-between">

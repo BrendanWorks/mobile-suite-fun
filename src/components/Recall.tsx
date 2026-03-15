@@ -414,7 +414,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
       : null;
 
   return (
-    <div className="min-h-screen bg-black text-white p-2 sm:p-4 flex flex-col items-center">
+    <div className="h-full bg-black text-white p-2 sm:p-4 flex flex-col items-center overflow-y-auto">
       <div className="max-w-2xl w-full text-center space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-cyan-500/50 pb-3 gap-3">
           <div className="flex items-center gap-2">

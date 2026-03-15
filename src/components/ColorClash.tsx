@@ -296,7 +296,7 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   return (
     <>
       <style>{styles}</style>
-      <div className="min-h-screen bg-black flex items-start justify-center p-2 pt-3">
+      <div className="h-full bg-black flex items-start justify-center p-2 pt-3 overflow-y-auto">
         <div className="w-full max-w-sm text-white">
 
           {/* ── Header ── */}

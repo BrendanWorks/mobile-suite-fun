@@ -527,10 +527,10 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
   const slowmoPct  = activeEffects.slowmo  / 300;
 
   return (
-    <div className="flex flex-col min-h-screen bg-black items-center justify-center font-mono touch-none">
+    <div className="flex flex-col h-full bg-black items-center justify-center font-mono touch-none overflow-hidden">
 
       {/* HUD */}
-      <div className="w-[400px] px-4 pt-3 pb-2 border-b border-cyan-900/50 bg-black">
+      <div className="w-full max-w-[400px] px-4 pt-3 pb-2 border-b border-cyan-900/50 bg-black">
 
         {/* Score row */}
         <div className="flex justify-between items-center mb-2">

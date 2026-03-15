@@ -50,7 +50,7 @@ export default function AuthPage({ onPlayAsGuest }: AuthPageProps) {
   };
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-red-900/40 via-black to-black flex items-center justify-center p-4 sm:p-6">
+    <div className="w-screen bg-gradient-to-br from-red-900/40 via-black to-black flex items-center justify-center p-4 sm:p-6" style={{ minHeight: '100dvh' }}>
       <div className="w-full max-w-md text-center">
         <div className="mb-8 sm:mb-12">
           <h1 className="text-5xl sm:text-6xl font-black text-red-500 mb-2 sm:mb-3" style={{ textShadow: '0 0 30px rgba(239, 68, 68, 0.8)' }}>ROWDY</h1>

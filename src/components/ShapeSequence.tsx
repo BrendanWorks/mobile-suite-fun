@@ -399,7 +399,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   }, [render, cleanup]);
 
   return (
-    <div className="min-h-screen bg-black text-white p-3 sm:p-4 flex flex-col items-center">
+    <div className="h-full bg-black text-white p-3 sm:p-4 flex flex-col items-center overflow-y-auto">
       <div className="max-w-2xl w-full text-center space-y-3">
         {/* Header - Single line (per Game Component Style Reference) */}
         <div className="flex items-center justify-between border-b-2 border-cyan-500/50 pb-2 sm:pb-3">

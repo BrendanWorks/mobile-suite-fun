@@ -239,7 +239,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
           <p className="animate-pulse tracking-widest" style={{ textShadow: '0 0 10px #00ffff' }}>
             LOADING...
@@ -251,7 +251,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
   if (!puzzles.length || currentIndex >= puzzles.length) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-red-400">
           <p className="text-2xl font-bold mb-2">⚠️ ERROR</p>
           <p className="text-sm">No puzzles available</p>
@@ -263,8 +263,8 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const currentPuzzle = puzzles[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none">
-      <div className="text-center max-w-2xl w-full flex flex-col h-screen">
+    <div className="h-full bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none overflow-y-auto">
+      <div className="text-center max-w-2xl w-full flex flex-col h-full">
 
         {/* Header - icon + name left, score right (matches OddManOut) */}
         <div className="flex items-center justify-between mb-2">

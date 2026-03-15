@@ -369,7 +369,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   if (gameState === 'loading') {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-purple-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
             <CircleX className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
@@ -387,7 +387,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   if (gameState === 'error') {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
           <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ Error loading puzzle</div>
           <div className="text-sm text-purple-300 mt-2">Check your Supabase connection</div>
@@ -405,7 +405,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-purple-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #a855f7' }}>
             <CircleX className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))' }} />
@@ -419,7 +419,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4">
+    <div className="h-full bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto">
       <div className="text-center max-w-2xl w-full text-white space-y-3">
         {/* Header - single line, compact (matches SplitDecision) */}
         <div className="flex items-center justify-between">

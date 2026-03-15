@@ -297,11 +297,11 @@ export default function CelebrationScreen({
   const strokeDashoffset = circumference - (clampedDialFill / 100) * circumference;
 
   return (
-    <div className="min-h-screen w-screen bg-black flex flex-col items-center justify-between p-4">
+    <div className="w-screen bg-black flex flex-col items-center justify-between p-4" style={{ minHeight: '100dvh' }}>
       {/* ROWDY BRANDING */}
       <div className="flex-shrink-0 pt-4 sm:pt-6">
         <p
-          className="text-6xl sm:text-8xl font-black text-red-500 uppercase tracking-widest"
+          className="text-4xl sm:text-7xl font-black text-red-500 uppercase tracking-widest"
           style={{ textShadow: getTextShadow(COLORS.red, '40px') }}
         >
           ROWDY
