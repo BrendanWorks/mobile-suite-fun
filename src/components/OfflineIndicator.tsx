@@ -4,9 +4,9 @@ import { WifiOff, RefreshCw, CircleCheck as CheckCircle } from 'lucide-react';
 import { useOffline } from '../context/OfflineContext';
 
 export function OfflineIndicator() {
-  const { isOnline, isSyncing, queueCount } = useOffline();
+  const { isOnline, isSyncing, queueCount, justSynced } = useOffline();
 
-  const showBanner = !isOnline || isSyncing || (isOnline && queueCount > 0 && !isSyncing);
+  const showBanner = !isOnline || isSyncing || justSynced;
 
   let text = '';
   let icon = <WifiOff size={14} />;
@@ -21,8 +21,8 @@ export function OfflineIndicator() {
   } else if (isSyncing) {
     icon = <RefreshCw size={14} className="animate-spin" />;
     colorClass = 'bg-gray-900/90 border-cyan-400/60 text-cyan-200';
-    text = `Syncing ${queueCount} score${queueCount !== 1 ? 's' : ''}...`;
-  } else if (queueCount > 0) {
+    text = `Syncing scores...`;
+  } else if (justSynced) {
     icon = <CheckCircle size={14} />;
     colorClass = 'bg-gray-900/90 border-green-500/50 text-green-300';
     text = 'Scores synced';

@@ -16,6 +16,7 @@ interface OfflineContextValue {
   isOnline: boolean;
   isSyncing: boolean;
   queueCount: number;
+  justSynced: boolean;
   syncNow: () => void;
 }
 
@@ -23,6 +24,7 @@ const OfflineContext = createContext<OfflineContextValue>({
   isOnline: true,
   isSyncing: false,
   queueCount: 0,
+  justSynced: false,
   syncNow: () => {},
 });
 
@@ -60,7 +62,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [queueCount, setQueueCount] = useState(() => getQueue().length);
+  const [justSynced, setJustSynced] = useState(false);
   const syncLockRef = useRef(false);
+  const justSyncedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshCount = useCallback(() => {
     setQueueCount(getQueue().length);
@@ -77,10 +81,12 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     syncLockRef.current = true;
     setIsSyncing(true);
 
+    let syncedCount = 0;
     for (const item of items) {
       try {
         await submitQueued(item);
         removeFromQueue(item.id);
+        syncedCount++;
       } catch {
         incrementRetryCount(item.id);
       }
@@ -89,6 +95,12 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     setIsSyncing(false);
     syncLockRef.current = false;
     refreshCount();
+
+    if (syncedCount > 0) {
+      setJustSynced(true);
+      if (justSyncedTimerRef.current) clearTimeout(justSyncedTimerRef.current);
+      justSyncedTimerRef.current = setTimeout(() => setJustSynced(false), 3000);
+    }
   }, [refreshCount]);
 
   useEffect(() => {
@@ -119,8 +131,14 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, [refreshCount]);
 
+  useEffect(() => {
+    return () => {
+      if (justSyncedTimerRef.current) clearTimeout(justSyncedTimerRef.current);
+    };
+  }, []);
+
   return (
-    <OfflineContext.Provider value={{ isOnline, isSyncing, queueCount, syncNow: syncQueue }}>
+    <OfflineContext.Provider value={{ isOnline, isSyncing, queueCount, justSynced, syncNow: syncQueue }}>
       {children}
     </OfflineContext.Provider>
   );
