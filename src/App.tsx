@@ -358,35 +358,21 @@ export default function App() {
 
   const getNextPlaylistForUser = useCallback(async (userId: string): Promise<number> => {
     try {
-      const { data } = await supabase
-        .from('game_sessions')
-        .select('id')
-        .eq('user_id', userId)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false })
-        .limit(50);
-
-      if (!data || data.length === 0) {
-        return anonymousSessionManager.getCurrentPlaylistId();
-      }
-
       const { data: leaderboardRows } = await supabase
         .from('leaderboard_entries')
         .select('playlist_id, created_at')
         .eq('user_id', userId)
         .not('playlist_id', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(1);
 
       if (!leaderboardRows || leaderboardRows.length === 0) {
         return anonymousSessionManager.getCurrentPlaylistId();
       }
 
-      const playedPlaylistIds = new Set(leaderboardRows.map(r => r.playlist_id as number));
+      const lastPlayedPlaylistId = leaderboardRows[0].playlist_id as number;
       const sequence = anonymousSessionManager.getPlaylistSequence();
-      const lastPlayedIndex = sequence.reduce((maxIdx, pid, idx) => {
-        return playedPlaylistIds.has(pid) ? idx : maxIdx;
-      }, -1);
+      const lastPlayedIndex = sequence.indexOf(lastPlayedPlaylistId);
 
       if (lastPlayedIndex === -1) {
         return sequence[0];
