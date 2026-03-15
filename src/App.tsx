@@ -286,17 +286,30 @@ export default function App() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
+  const reverbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioReadyRef = useRef(false);
 
   // Initialize audio and analytics on mount
   useEffect(() => {
     initGA();
     trackPageView('/');
 
-    const initAudio = () => {
+    const startReverbInterval = () => {
+      if (reverbIntervalRef.current) clearInterval(reverbIntervalRef.current);
+      reverbIntervalRef.current = setInterval(() => {
+        if (audioReadyRef.current) audioManager.play('reverb_glow', 0.7);
+      }, 30000);
+    };
+
+    const initAudio = async () => {
       audioManager.initialize();
       applySfxLevel(getSavedSfxLevel());
       preloadGameSounds();
       preloadTimerSounds();
+      await audioManager.loadSound('reverb_glow', '/sounds/global/Reverb_Glow.mp3', 1);
+      audioReadyRef.current = true;
+      audioManager.play('reverb_glow', 0.7);
+      startReverbInterval();
       document.removeEventListener('click', initAudio);
       document.removeEventListener('touchstart', initAudio);
     };
@@ -307,8 +320,21 @@ export default function App() {
     return () => {
       document.removeEventListener('click', initAudio);
       document.removeEventListener('touchstart', initAudio);
+      if (reverbIntervalRef.current) clearInterval(reverbIntervalRef.current);
     };
   }, []);
+
+  const prevPlaylistIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevPlaylistIdRef.current !== null && selectedPlaylistId === null && audioReadyRef.current) {
+      audioManager.play('reverb_glow', 0.7);
+      if (reverbIntervalRef.current) clearInterval(reverbIntervalRef.current);
+      reverbIntervalRef.current = setInterval(() => {
+        if (audioReadyRef.current) audioManager.play('reverb_glow', 0.7);
+      }, 30000);
+    }
+    prevPlaylistIdRef.current = selectedPlaylistId;
+  }, [selectedPlaylistId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
