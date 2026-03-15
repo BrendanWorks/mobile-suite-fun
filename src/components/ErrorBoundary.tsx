@@ -1,33 +1,62 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   children: ReactNode;
   onReset?: () => void;
+  context?: Record<string, unknown>;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  logged: boolean;
+}
+
+async function logErrorBoundaryError(
+  error: Error,
+  componentStack: string | null,
+  context?: Record<string, unknown>
+) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    await supabase.from('client_errors').insert({
+      user_id: session?.user?.id ?? null,
+      error_message: error.message || String(error),
+      error_stack: error.stack ?? null,
+      component_stack: componentStack ?? null,
+      context: context ?? null,
+      url: typeof window !== 'undefined' ? window.location.href : null,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+    });
+  } catch {
+  }
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null };
+  state: State = { hasError: false, error: null, logged: false };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error, info.componentStack);
+    if (!this.state.logged) {
+      this.setState({ logged: true });
+      logErrorBoundaryError(error, info.componentStack ?? null, this.props.context);
+    }
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, logged: false });
     this.props.onReset?.();
   };
 
   render() {
     if (!this.state.hasError) return this.props.children;
+
+    const msg = this.state.error?.message;
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
@@ -43,8 +72,11 @@ export default class ErrorBoundary extends Component<Props, State> {
             style={{ boxShadow: '0 0 20px rgba(239,68,68,0.2)' }}
           >
             <p className="text-red-400 text-lg font-semibold mb-2">Something went wrong</p>
-            <p className="text-red-300/70 text-sm">
-              An unexpected error occurred. Your progress may not have been saved.
+            {msg ? (
+              <p className="text-red-300/90 text-sm font-mono break-all mb-2">{msg}</p>
+            ) : null}
+            <p className="text-red-300/50 text-xs mt-2">
+              This error has been logged automatically.
             </p>
           </div>
           <button

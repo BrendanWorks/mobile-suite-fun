@@ -48,6 +48,7 @@ import LeaderboardPostRound from './LeaderboardPostRound';
 import GameplayHeader from './GameplayHeader';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
+import { logClientError } from '../lib/errorLogger';
 import { audioManager } from '../lib/audioManager';
 import { getSavedSfxLevel, applySfxLevel } from './SfxVolumeControl';
 import ReactGA from 'react-ga4';
@@ -333,6 +334,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setGameState('intro');
     } catch (error) {
       console.error('❌ Error loading playlist:', error);
+      logClientError(error, { source: 'loadPlaylist', playlist_id: playlistId });
       setLoadError('Could not load playlist. Returning to menu...');
       setPlaylistLoading(false);
       setTimeout(onExit, 2000);
@@ -418,6 +420,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           }
         } catch (error) {
           console.error('Error saving pending session:', error);
+          logClientError(error, { source: 'savePendingSession' });
         }
       }
     });
@@ -574,6 +577,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           } catch (error) {
             if (!cancelled) {
               console.error('Error saving session:', error);
+              logClientError(error, { source: 'saveSession', session_id: sessionId });
             }
           }
         };

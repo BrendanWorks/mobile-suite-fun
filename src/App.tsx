@@ -437,7 +437,7 @@ export default function App() {
 
   if (selectedPlaylistId) {
     return (
-      <ErrorBoundary onReset={() => setSelectedPlaylistId(null)}>
+      <ErrorBoundary onReset={() => setSelectedPlaylistId(null)} context={{ playlist_id: selectedPlaylistId, user_id: session?.user?.id ?? null }}>
         <GameSession
           playlistId={selectedPlaylistId}
           onExit={() => {
