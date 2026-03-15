@@ -62,7 +62,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   const scoreRef = useRef(0);
   const correctCountRef = useRef(0);
   const gameCompletedRef = useRef(false);
-  const lastItemAnsweredRef = useRef(false);
 
   // Keep refs up to date
   useEffect(() => {
@@ -76,21 +75,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   useEffect(() => {
     correctCountRef.current = correctCount;
   }, [correctCount]);
-
-  // When the last item is answered, complete after score updates
-  useEffect(() => {
-    if (lastItemAnsweredRef.current && !gameCompletedRef.current) {
-      gameCompletedRef.current = true;
-      const callback = onCompleteRef.current;
-      console.log('SplitDecision: Completing game with final score:', scoreRef.current);
-      if (callback) {
-        callback(scoreRef.current, MAX_SCORE, timeRemaining);
-        console.log('SplitDecision: onComplete called successfully');
-      }
-      lastItemAnsweredRef.current = false;
-    }
-  }, [score, timeRemaining]);
-
 
   // Load all puzzle IDs on mount
   useEffect(() => {
@@ -217,14 +201,15 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
     console.log('SplitDecision: Item', currentItemIndex + 1, 'of', puzzle.items.length, '- isLastItem:', isLastItem);
 
     if (isLastItem) {
-      // Mark that last item was answered, useEffect will handle onComplete after state updates
-      console.log('SplitDecision: Last item answered! Will trigger completion after state updates');
-      lastItemAnsweredRef.current = true;
-
-      // Still show feedback for 1.5 seconds, but timer will count down fast
+      // Show feedback for 1.5 seconds then trigger completion
       autoAdvanceTimer.current = setTimeout(() => {
-        // Just clear the feedback after delay, completion already triggered
-        console.log('SplitDecision: Feedback display complete');
+        if (!gameCompletedRef.current) {
+          gameCompletedRef.current = true;
+          const callback = onCompleteRef.current;
+          if (callback) {
+            callback(scoreRef.current, MAX_SCORE, timeRemaining);
+          }
+        }
       }, 1500);
     } else {
       // More items - auto-advance after 1.5 seconds
