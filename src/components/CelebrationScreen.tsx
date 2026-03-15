@@ -255,7 +255,6 @@ export default function CelebrationScreen({
 
           const finalize = () => {
             setDisplayedScore(Math.round(calculatedTotalScore));
-            audioManager.play('bonus-pizzaz', ANIMATION_TIMINGS.SOUND_VOLUME);
           };
 
           runPerfectBonus(() => {
