@@ -34,6 +34,16 @@ export default function GameWrapper({
   const countdownIntervalRef = useRef<number | null>(null);
   const timerSoundPausedRef = useRef(false);
   const timerSoundPollRef = useRef<number | null>(null);
+  const timeRemainingRef = useRef(duration);
+  const hideTimerBarRef = useRef(false);
+
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
+
+  useEffect(() => {
+    hideTimerBarRef.current = hideTimerBar;
+  }, [hideTimerBar]);
 
   useEffect(() => {
     if (childrenRef.current?.hideTimer) {
@@ -218,10 +228,10 @@ export default function GameWrapper({
     if (gameCompletedRef.current) return;
     gameCompletedRef.current = true;
 
-    const effectiveRemaining = remaining ?? timeRemaining;
+    const effectiveRemaining = remaining ?? timeRemainingRef.current;
     finalScoreRef.current = { score, maxScore, timeRemaining: effectiveRemaining };
 
-    if (hideTimerBar) {
+    if (hideTimerBarRef.current) {
       if (timerRef.current) clearInterval(timerRef.current);
       setIsActive(false);
       setIsFastCountdown(false);
@@ -241,7 +251,7 @@ export default function GameWrapper({
       hasReportedCompletion.current = true;
       onComplete(score, maxScore, effectiveRemaining);
     }
-  }, [onComplete, timeRemaining, hideTimerBar]);
+  }, [onComplete]);
 
   const clonedChildren = useMemo(() => {
     if (!children) return null;

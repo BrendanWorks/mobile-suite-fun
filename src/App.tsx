@@ -12,6 +12,7 @@ import LandingPage from './components/LandingPage';
 import DebugMode from './components/DebugMode';
 import AdminTools from './components/AdminTools';
 import SfxVolumeControl from './components/SfxVolumeControl';
+import ErrorBoundary from './components/ErrorBoundary';
 import TipJar from './components/TipJar';
 import TipPrompt from './components/TipPrompt';
 import { useUserStats } from './hooks/useUserStats';
@@ -218,7 +219,7 @@ export default function App() {
 
   if (selectedPlaylistId) {
     return (
-      <>
+      <ErrorBoundary onReset={() => setSelectedPlaylistId(null)}>
         <GameSession
           playlistId={selectedPlaylistId}
           onExit={() => {
@@ -232,7 +233,7 @@ export default function App() {
           }}
           totalRounds={5}
         />
-      </>
+      </ErrorBoundary>
     );
   }
 

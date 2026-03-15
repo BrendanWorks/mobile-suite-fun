@@ -16,6 +16,11 @@ const SnapShot = forwardRef((props: any, ref) => {
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(60);
   const hasCalledOnComplete = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  const timeRemainingRef = useRef(timeRemaining);
+
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
 
   const maxTimePerPuzzle = 60;
 
@@ -29,23 +34,22 @@ const SnapShot = forwardRef((props: any, ref) => {
       };
     },
     onGameEnd: () => {
-      console.log('SnapShot: onGameEnd called (time ran out)');
-      // Time ran out - complete with partial score based on pieces placed
+      if (hasCalledOnComplete.current) return;
+      hasCalledOnComplete.current = true;
       const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
       const partialScore = Math.round(percentComplete * MAX_SCORE);
-      console.log('SnapShot: Time up! Pieces placed:', gameStateRef.current.completedSlots, 'Score:', partialScore, 'timeRemaining:', timeRemaining);
-      if (onComplete) {
-        onComplete(partialScore, MAX_SCORE, timeRemaining);
+      const cb = onCompleteRef.current;
+      if (cb) {
+        cb(partialScore, MAX_SCORE, timeRemainingRef.current);
       }
     },
     skipQuestion: () => nextPuzzle(),
     canSkipQuestion: true,
     loadNextPuzzle: () => nextPuzzle(),
     get pauseTimer() {
-      // Pause if image not loaded or still loading puzzles, but NOT if won/lost (let countdown continue)
       return !isImageLoaded || loading;
     }
-  }), [isImageLoaded, loading, gameState, onComplete]);
+  }), [isImageLoaded, loading]);
 
   // Game state variables (using refs to maintain state across renders)
   const gameStateRef = useRef({
@@ -579,25 +583,23 @@ const SnapShot = forwardRef((props: any, ref) => {
   // Handle puzzle completion/timeout - call onComplete immediately
   useEffect(() => {
     if (gameState === 'won' && !hasCalledOnComplete.current) {
-      // Puzzle complete - call onComplete immediately to trigger fast countdown
-      console.log('SnapShot: Puzzle complete! Calling onComplete with timeRemaining:', timeRemaining);
       hasCalledOnComplete.current = true;
-      if (onComplete) {
-        onComplete(MAX_SCORE, MAX_SCORE, timeRemaining);
+      const cb = onCompleteRef.current;
+      if (cb) {
+        cb(MAX_SCORE, MAX_SCORE, timeRemainingRef.current);
       }
     }
 
     if (gameState === 'lost' && !hasCalledOnComplete.current) {
-      // Time ran out - call onComplete immediately with partial score
-      console.log('SnapShot: Time up! Calling onComplete with timeRemaining:', timeRemaining);
       hasCalledOnComplete.current = true;
-      if (onComplete) {
+      const cb = onCompleteRef.current;
+      if (cb) {
         const percentComplete = gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES;
         const score = Math.round(percentComplete * MAX_SCORE);
-        onComplete(score, MAX_SCORE, timeRemaining);
+        cb(score, MAX_SCORE, timeRemainingRef.current);
       }
     }
-  }, [gameState, onComplete, timeRemaining]);
+  }, [gameState]);
 
   // Initialize puzzles
   useEffect(() => {

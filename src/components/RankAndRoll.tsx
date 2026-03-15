@@ -47,6 +47,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   });
   const feedbackTimeoutRef = useRef<number | null>(null);
   const onCompleteRef = useRef(props.onComplete);
+  const timeRemainingRef = useRef(props.timeRemaining ?? 0);
   const correctCountRef = useRef(0);
   const gameStateRef = useRef(gameState);
   const itemCountRef = useRef(0);
@@ -61,6 +62,10 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   useEffect(() => {
     onCompleteRef.current = props.onComplete;
   }, [props.onComplete]);
+
+  useEffect(() => {
+    timeRemainingRef.current = props.timeRemaining ?? 0;
+  }, [props.timeRemaining]);
 
   useEffect(() => {
     correctCountRef.current = correctCount;
@@ -102,7 +107,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       const totalItems = itemCountRef.current;
       console.log('RankAndRoll: Time up! Calling onComplete with correct:', finalCorrect, 'out of', totalItems);
       if (callback) {
-        callback(finalCorrect, totalItems, props.timeRemaining);
+        callback(finalCorrect, totalItems, timeRemainingRef.current);
       }
     },
     skipQuestion: () => {
@@ -120,7 +125,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       const callback = onCompleteRef.current;
       if (callback) {
         console.log('RankAndRoll: Skipping with current score:', correctCountRef.current, '/', itemCountRef.current);
-        callback(correctCountRef.current, itemCountRef.current, props.timeRemaining);
+        callback(correctCountRef.current, itemCountRef.current, timeRemainingRef.current);
       }
     },
     canSkipQuestion: true,
@@ -414,7 +419,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       console.log('RankAndRoll: ✅ Feedback complete - Calling onComplete');
       const callback = onCompleteRef.current;
       if (callback) {
-        callback(correct, items.length, props.timeRemaining);
+        callback(correct, items.length, timeRemainingRef.current);
       }
     }, FEEDBACK_DISPLAY_TIME);
   };
