@@ -521,7 +521,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           style={{
             borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
             boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
-            height: "5rem",
+            minHeight: "5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -545,7 +545,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
               Guess
             </p>
           ) : (
-            <p className="text-cyan-300 text-xs leading-relaxed line-clamp-3">
+            <p className="text-cyan-300 text-xs leading-relaxed">
               {currentPuzzle.reveal_note}
             </p>
           )}
