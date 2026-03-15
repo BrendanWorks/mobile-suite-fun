@@ -364,30 +364,6 @@ export default function App() {
     return () => subscription?.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (session && autoStartAfterLogin) {
-      setAutoStartAfterLogin(false);
-      if (session.user?.id) {
-        getNextPlaylistForUser(session.user.id).then(nextId => {
-          setSelectedPlaylistId(nextId);
-        });
-      } else {
-        setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
-      }
-    }
-  }, [session, autoStartAfterLogin, getNextPlaylistForUser]);
-
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
-  }, []);
-
-  const handlePlayNow = useCallback(() => {
-    trackPageView('/game-session');
-    setShowTipPrompt(false);
-    setShowTipJar(false);
-    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
-  }, []);
-
   const getNextPlaylistForUser = useCallback(async (userId: string): Promise<number> => {
     try {
       const { data } = await supabase
@@ -431,6 +407,30 @@ export default function App() {
     } catch {
       return anonymousSessionManager.getCurrentPlaylistId();
     }
+  }, []);
+
+  useEffect(() => {
+    if (session && autoStartAfterLogin) {
+      setAutoStartAfterLogin(false);
+      if (session.user?.id) {
+        getNextPlaylistForUser(session.user.id).then(nextId => {
+          setSelectedPlaylistId(nextId);
+        });
+      } else {
+        setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
+      }
+    }
+  }, [session, autoStartAfterLogin, getNextPlaylistForUser]);
+
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  const handlePlayNow = useCallback(() => {
+    trackPageView('/game-session');
+    setShowTipPrompt(false);
+    setShowTipJar(false);
+    setSelectedPlaylistId(anonymousSessionManager.getCurrentPlaylistId());
   }, []);
 
   const handleSignIn = useCallback(() => {
