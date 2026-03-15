@@ -174,7 +174,7 @@ const SnapShot = forwardRef((props: any, ref) => {
     const container = canvas.parentElement;
     if (!container) return;
 
-    const size = Math.min(container.offsetWidth, window.innerHeight * 0.7);
+    const size = Math.min(container.offsetWidth, container.offsetHeight);
     canvas.width = size;
     canvas.height = size;
     gameStateRef.current.canvasWidth = canvas.width;
@@ -729,7 +729,7 @@ const SnapShot = forwardRef((props: any, ref) => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-pink-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #ec4899' }}>
             <Camera className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
@@ -744,7 +744,7 @@ const SnapShot = forwardRef((props: any, ref) => {
   // Image not loaded yet
   if (!isImageLoaded) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-pink-400">
           <div className="text-lg" style={{ textShadow: '0 0 10px #ec4899' }}>
             <Camera className="inline-block w-5 h-5 mr-2" style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))' }} />
@@ -761,9 +761,9 @@ const SnapShot = forwardRef((props: any, ref) => {
   // No puzzles available
   if (!currentPuzzle) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-white">
-          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>❌ No puzzles available</div>
+          <div className="text-lg text-red-500" style={{ textShadow: '0 0 10px #ff0066' }}>No puzzles available</div>
           <div className="text-sm text-pink-300 mt-2">Check your Supabase connection</div>
           <button
             onClick={fetchPuzzles}
@@ -780,86 +780,91 @@ const SnapShot = forwardRef((props: any, ref) => {
   const currentScore = Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-3 sm:p-4">
-      <div className="text-center max-w-4xl w-full text-white space-y-3">
-      
-        {/* Header - single line, compact (matches other games) */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Camera
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={{
-                color: '#ec4899',
-                filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
-                strokeWidth: 2
-              }}
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-pink-400" style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</h2>
-          </div>
-          <div className="text-pink-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{currentScore}</strong>
-          </div>
+    <div className="h-full bg-black flex flex-col p-2 sm:p-3" style={{ minHeight: 0 }}>
+
+      {/* Header */}
+      <div className="flex items-center justify-between flex-shrink-0 mb-2">
+        <div className="flex items-center gap-1.5">
+          <Camera
+            className="w-4 h-4 sm:w-5 sm:h-5"
+            style={{
+              color: '#ec4899',
+              filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
+              strokeWidth: 2
+            }}
+          />
+          <h2 className="text-xs sm:text-sm font-bold text-pink-400" style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</h2>
         </div>
+        <div className="text-pink-300 text-xs sm:text-sm">
+          Score: <strong className="text-yellow-400 tabular-nums">{currentScore}</strong>
+        </div>
+      </div>
 
-        <div className="w-full flex flex-col items-center">
-          {/* Puzzle Canvas */}
-          <div className="w-full md:w-2/3 mb-3 sm:mb-6 bg-black rounded-xl p-2 transition-all duration-300 transform scale-100 md:hover:scale-105 aspect-square border-2 border-pink-400/40 relative" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)' }}>
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full border-2 border-pink-500 rounded-lg"
-              style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
-            />
-            
-            {/* Completion Overlay */}
-            {gameState === 'won' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
-                <div className="text-center">
-                  <div className="text-4xl sm:text-5xl mb-2">🎉</div>
-                  <div className="text-2xl sm:text-3xl font-bold text-green-400 mb-2" style={{ textShadow: '0 0 20px #22c55e' }}>
-                    Puzzle Complete!
-                  </div>
-                  <div className="text-lg text-green-300">
-                    +{MAX_SCORE} points
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Time Out Overlay */}
-            {gameState === 'lost' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
-                <div className="text-center">
-                  <div className="text-4xl sm:text-5xl mb-2">⏱️</div>
-                  <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2" style={{ textShadow: '0 0 20px #fbbf24' }}>
-                    Time's Up!
-                  </div>
-                  <div className="text-lg text-yellow-300">
-                    +{Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE)} points
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Draggable pieces container */}
-          <div
-            ref={draggableContainerRef}
-            id="draggable-pieces-container"
-            className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-4 mb-3 sm:mb-4"
-            style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)', minHeight: '100px' }}
+      {/* Puzzle Canvas — flex-1 so it takes remaining space but shrinks */}
+      <div className="flex-1 flex items-center justify-center min-h-0 mb-2">
+        <div
+          className="relative bg-black rounded-xl p-1.5 border-2 border-pink-400/40"
+          style={{
+            boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)',
+            aspectRatio: '1 / 1',
+            maxHeight: '100%',
+            maxWidth: '100%',
+            width: 'min(100%, 60vh)',
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full border-2 border-pink-500 rounded-lg"
+            style={{ touchAction: 'none', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)', display: 'block' }}
           />
 
-          {/* Controls */}
-          <div className="w-full flex justify-center">
-            <button
-              onClick={resetGame}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-transparent border-2 border-pink-400 text-pink-400 text-xs sm:text-sm font-bold rounded-lg hover:bg-pink-400 hover:text-black transition-all"
-              style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
-            >
-              🔄 Reset Puzzle
-            </button>
-          </div>
+          {/* Completion Overlay */}
+          {gameState === 'won' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
+              <div className="text-center">
+                <div className="text-3xl sm:text-5xl mb-2">!</div>
+                <div className="text-xl sm:text-3xl font-bold text-green-400 mb-2" style={{ textShadow: '0 0 20px #22c55e' }}>
+                  Puzzle Complete!
+                </div>
+                <div className="text-base text-green-300">+{MAX_SCORE} points</div>
+              </div>
+            </div>
+          )}
+
+          {/* Time Out Overlay */}
+          {gameState === 'lost' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl">
+              <div className="text-center">
+                <div className="text-3xl sm:text-5xl mb-2">T</div>
+                <div className="text-xl sm:text-3xl font-bold text-yellow-400 mb-2" style={{ textShadow: '0 0 20px #fbbf24' }}>
+                  Time's Up!
+                </div>
+                <div className="text-base text-yellow-300">
+                  +{Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE)} points
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Draggable pieces tray — fixed height, always visible */}
+      <div
+        ref={draggableContainerRef}
+        id="draggable-pieces-container"
+        className="flex-shrink-0 w-full flex flex-wrap justify-center gap-2 sm:gap-3 bg-black border-2 border-pink-400/40 rounded-xl p-2 sm:p-3 mb-1.5"
+        style={{ boxShadow: 'inset 0 0 20px rgba(236, 72, 153, 0.1)', minHeight: '80px' }}
+      />
+
+      {/* Reset button */}
+      <div className="flex-shrink-0 flex justify-center">
+        <button
+          onClick={resetGame}
+          className="px-4 py-1.5 sm:py-2 bg-transparent border-2 border-pink-400 text-pink-400 text-xs sm:text-sm font-bold rounded-lg hover:bg-pink-400 hover:text-black transition-all"
+          style={{ textShadow: '0 0 8px #ec4899', boxShadow: '0 0 15px rgba(236, 72, 153, 0.3)' }}
+        >
+          Reset Puzzle
+        </button>
       </div>
     </div>
   );
