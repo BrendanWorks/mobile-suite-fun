@@ -339,8 +339,9 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         .animate-pulse-twice { animation: pulse-twice 1s ease-in-out; }
         @media (orientation: landscape) and (max-height: 500px) {
           .split-landscape { flex-direction: row !important; gap: 8px !important; }
-          .split-landscape-word { flex: 1; min-height: 0; }
-          .split-landscape-btns { flex: 0 0 45%; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+          .split-landscape-word { flex: 1 1 0 !important; min-height: 0; align-self: stretch; }
+          .split-landscape-word > div { height: 100% !important; }
+          .split-landscape-btns { flex: 0 0 44% !important; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
           .split-landscape-header { margin-bottom: 4px !important; }
           .split-landscape-prompt { font-size: 0.7rem !important; padding: 2px 0 !important; }
           .split-landscape-wordtext { font-size: clamp(1.4rem, 6vw, 2.5rem) !important; }
@@ -373,12 +374,12 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       <div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-3 split-landscape">
 
         {/* Word card */}
-        <div className="split-landscape-word flex items-center justify-center min-h-0" style={{ flex: '1 1 0' }}>
+        <div className="split-landscape-word flex items-center justify-center" style={{ flex: '0 0 auto' }}>
           <div
-            className="w-full bg-black border-2 border-yellow-500 rounded-xl p-3 sm:p-5 text-center flex items-center justify-center h-full"
+            className="w-full bg-black border-2 border-yellow-500 rounded-xl px-4 py-5 sm:py-8 text-center flex items-center justify-center"
             style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
           >
-            <h2 className="font-bold text-yellow-400 break-words leading-tight split-landscape-wordtext" style={{ fontSize: 'clamp(1.6rem, 8vw, 4.5rem)', textShadow: '0 0 20px #fbbf24' }}>
+            <h2 className="font-bold text-yellow-400 break-words leading-tight split-landscape-wordtext" style={{ fontSize: 'clamp(1.8rem, 8vw, 3.5rem)', textShadow: '0 0 20px #fbbf24' }}>
               {currentItem.item_text}
             </h2>
           </div>
