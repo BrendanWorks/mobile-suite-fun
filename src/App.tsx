@@ -21,19 +21,7 @@ const TIP_PROMPT_LEVELS = [5, 9];
 const TIP_LEVELS_KEY = 'rowdy_levels_completed';
 const TIP_DISMISSED_KEY = 'rowdy_tip_dismissed_at';
 
-export type GameId =
-  | 'odd-man-out'
-  | 'photo-mystery'
-  | 'rank-and-roll'
-  | 'snapshot'
-  | 'split-decision'
-  | 'word-rescue'
-  | 'shape-sequence'
-  | 'snake'
-  | 'gravity-ball'
-  | 'fake-out'
-  | 'hive-mind'
-  | 'superlative';
+export type { GameId } from './lib/gameTypes';
 
 const GLOW_STYLES = {
   cyan: {

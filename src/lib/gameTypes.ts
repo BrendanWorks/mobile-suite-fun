@@ -2,6 +2,20 @@
  * Game Types - Core interfaces for Game Box architecture
  */
 
+export type GameId =
+  | 'odd-man-out'
+  | 'photo-mystery'
+  | 'rank-and-roll'
+  | 'snapshot'
+  | 'split-decision'
+  | 'word-rescue'
+  | 'shape-sequence'
+  | 'snake'
+  | 'gravity-ball'
+  | 'fake-out'
+  | 'hive-mind'
+  | 'superlative';
+
 /**
  * Score data returned by each game
  */

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameId } from '../App';
+import { GameId } from '../lib/gameTypes';
 import { analytics } from '../lib/analytics';
 import {
   Search, Camera, Triangle, Users, Check,
