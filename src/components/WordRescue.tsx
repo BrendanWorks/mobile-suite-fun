@@ -171,46 +171,47 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
   const initAudio = useCallback(async () => {
     if (audioInitialized.current) return;
-    
     try {
-      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioInitialized.current = true;
     } catch {
     }
   }, []);
 
-  const playSound = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
-    if (!audioContext.current || !audioInitialized.current) return;
-    if (!audioManager.isEnabled()) return;
-    generateTone(soundName, volume);
-  }, []);
-
   const generateTone = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
-    if (!audioContext.current) return;
-    
     const ctx = audioContext.current;
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+      return;
+    }
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
-    
     const config = TONE_CONFIG[soundName] || TONE_CONFIG.select;
-    
     oscillator.frequency.setValueAtTime(config.freq, ctx.currentTime);
     oscillator.type = config.type;
-    
     gainNode.gain.setValueAtTime(0, ctx.currentTime);
     gainNode.gain.linearRampToValueAtTime(volume * 0.3, ctx.currentTime + 0.01);
     gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + config.duration);
-    
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-    
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + config.duration);
   }, []);
 
+  const playSound = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
+    if (!audioManager.isEnabled()) return;
+    if (!audioInitialized.current || !audioContext.current) return;
+    if (audioContext.current.state === 'suspended') {
+      audioContext.current.resume().then(() => generateTone(soundName, volume)).catch(() => {});
+      return;
+    }
+    generateTone(soundName, volume);
+  }, [generateTone]);
+
   const initAudioOnFirstTouch = useCallback(() => {
-    if (!audioInitialized.current && audioContext.current) {
-      audioContext.current.resume();
+    if (audioContext.current?.state === 'suspended') {
+      audioContext.current.resume().catch(() => {});
     }
     initAudio();
   }, [initAudio]);
@@ -542,10 +543,26 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     setTimeLeft(60);
 
     setTimeout(() => {
+      if (audioContext.current?.state === 'suspended') {
+        audioContext.current.resume().catch(() => {});
+      }
       playSound('ambient', 0.1);
       if (bgMusicRef.current && audioManager.isEnabled()) {
         bgMusicRef.current.currentTime = 0;
-        bgMusicRef.current.play().catch(() => {});
+        const playPromise = bgMusicRef.current.play();
+        if (playPromise) {
+          playPromise.catch(() => {
+            const retryPlay = () => {
+              if (bgMusicRef.current && audioManager.isEnabled()) {
+                bgMusicRef.current.play().catch(() => {});
+              }
+              document.removeEventListener('touchstart', retryPlay);
+              document.removeEventListener('click', retryPlay);
+            };
+            document.addEventListener('touchstart', retryPlay, { once: true });
+            document.addEventListener('click', retryPlay, { once: true });
+          });
+        }
       }
     }, 500);
   };
