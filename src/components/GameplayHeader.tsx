@@ -1,8 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, MoveVertical as MoreVertical, SkipForward } from 'lucide-react';
+import {
+  Volume2, VolumeX, MoveVertical as MoreVertical, SkipForward,
+  Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle,
+  CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp, Brain,
+  Target, Grid3x3, Eye,
+} from 'lucide-react';
+
+const GAME_ICONS: Record<string, React.ReactNode> = {
+  'odd-man-out':     <CircleX className="w-full h-full" />,
+  'photo-mystery':   <Search className="w-full h-full" />,
+  'rank-and-roll':   <ArrowUpDown className="w-full h-full" />,
+  'snapshot':        <Camera className="w-full h-full" />,
+  'split-decision':  <Layers className="w-full h-full" />,
+  'word-rescue':     <BookOpen className="w-full h-full" />,
+  'shape-sequence':  <Triangle className="w-full h-full" />,
+  'snake':           <Gamepad2 className="w-full h-full" />,
+  'gravity-ball':    <Zap className="w-full h-full" />,
+  'fake-out':        <Eye className="w-full h-full" />,
+  'hive-mind':       <Users className="w-full h-full" />,
+  'double-fake':     <Shuffle className="w-full h-full" />,
+  'zen-gravity':     <Target className="w-full h-full" />,
+  'superlative':     <ThumbsUp className="w-full h-full" />,
+  'true-false':      <Check className="w-full h-full" />,
+  'multiple-choice': <Brain className="w-full h-full" />,
+  'tracer':          <Grid3x3 className="w-full h-full" />,
+  'clutch':          <Target className="w-full h-full" />,
+  'flashbang':       <Zap className="w-full h-full" />,
+  'slope-rider':     <Zap className="w-full h-full" />,
+  'neural-pulse':    <Brain className="w-full h-full" />,
+  'color-clash':     <Layers className="w-full h-full" />,
+  'recall':          <Eye className="w-full h-full" />,
+};
 
 interface GameplayHeaderProps {
   gameName: string;
+  gameId?: string;
   score: number;
   currentRound: number;
   totalRounds: number;
@@ -37,6 +69,7 @@ function useIsLandscapeSmallPhone() {
 
 export default function GameplayHeader({
   gameName,
+  gameId,
   score,
   currentRound,
   totalRounds,
@@ -166,11 +199,18 @@ export default function GameplayHeader({
           <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-500/70">
             Round {currentRound}/{totalRounds}
           </span>
-          <span
-            className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-700/60"
-          >
-            {gameName}
-          </span>
+          <div className="flex items-center gap-1">
+            {gameId && GAME_ICONS[gameId] && (
+              <span
+                className="flex-shrink-0 w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-500/60"
+              >
+                {GAME_ICONS[gameId]}
+              </span>
+            )}
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-700/60">
+              {gameName}
+            </span>
+          </div>
         </div>
 
         {/* Center: ROWDY branding */}

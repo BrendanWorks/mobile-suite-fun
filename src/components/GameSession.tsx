@@ -1167,6 +1167,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       <div className="w-screen bg-black flex flex-col" style={{ height: '100dvh' }}>
         <GameplayHeader
           gameName={currentGame.name}
+          gameId={currentGame.id}
           score={currentGameScore.score}
           currentRound={currentRound}
           totalRounds={totalRounds}
