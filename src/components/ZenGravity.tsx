@@ -157,6 +157,23 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
     };
     window.addEventListener('deviceorientation', handleOrientation);
 
+    const keys = { left: false, right: false };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+    };
+    const keyTick = setInterval(() => {
+      if (keys.left && !keys.right) gameState.current.tiltX = Math.max(-3, gameState.current.tiltX - 0.25);
+      else if (keys.right && !keys.left) gameState.current.tiltX = Math.min(3, gameState.current.tiltX + 0.25);
+      else gameState.current.tiltX = gameState.current.tiltX * 0.8;
+    }, 16);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
@@ -516,6 +533,9 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
 
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      clearInterval(keyTick);
       cancelAnimationFrame(animationFrame);
     };
   }, [isStarted]);
@@ -540,7 +560,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
               </h2>
               <div className="w-16 h-0.5 bg-cyan-400 mx-auto mb-4" style={{ boxShadow: '0 0 8px #00ffff' }} />
               <p className="text-white/50 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                Tilt to steer each marble<br />into its matching color zone
+                Tilt or ← → keys to steer<br />Sort each marble by color
               </p>
             </div>
 

@@ -258,7 +258,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
     return () => clearInterval(timer);
   }, [gameState]);
 
-  // Tilt
+  // Tilt (device orientation)
   useEffect(() => {
     const handleOrientation = (e: DeviceOrientationEvent) => {
       if (e.gamma !== null) {
@@ -267,6 +267,31 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
     };
     window.addEventListener('deviceorientation', handleOrientation);
     return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, []);
+
+  // Keyboard tilt
+  useEffect(() => {
+    const keys = { left: false, right: false };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+    };
+    const tick = setInterval(() => {
+      if (keys.left && !keys.right) tiltRef.current = Math.max(-1, tiltRef.current - 0.08);
+      else if (keys.right && !keys.left) tiltRef.current = Math.min(1, tiltRef.current + 0.08);
+      else tiltRef.current = tiltRef.current * 0.85;
+    }, 16);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      clearInterval(tick);
+    };
   }, []);
 
   // Game loop
@@ -609,7 +634,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
               </h1>
               <div className="w-16 h-0.5 bg-cyan-400 mx-auto mb-4" style={{ boxShadow: '0 0 8px #00ffff' }} />
               <p className="text-white/40 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                Tilt to steer · Climb forever<br />Don't fall
+                Tilt or ← → keys to steer<br />Climb forever · Don't fall
               </p>
             </div>
 
