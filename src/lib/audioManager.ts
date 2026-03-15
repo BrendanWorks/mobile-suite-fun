@@ -11,6 +11,7 @@ class AudioManager {
   private isMobile: boolean = false;
   private lastPlayTime: Map<string, number> = new Map();
   private readonly MIN_SOUND_INTERVAL = 50;
+  private enabledListeners: Set<(enabled: boolean) => void> = new Set();
 
   initialize(): void {
     if (this.initialized) return;
@@ -303,6 +304,16 @@ class AudioManager {
         });
       });
     }
+    this.enabledListeners.forEach(cb => cb(enabled));
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  onEnabledChange(cb: (enabled: boolean) => void): () => void {
+    this.enabledListeners.add(cb);
+    return () => this.enabledListeners.delete(cb);
   }
 
   setVolume(music: number, sfx: number): void {

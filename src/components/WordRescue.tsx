@@ -181,6 +181,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
   const playSound = useCallback((soundName: keyof typeof TONE_CONFIG, volume = 0.3) => {
     if (!audioContext.current || !audioInitialized.current) return;
+    if (!audioManager.isEnabled()) return;
     generateTone(soundName, volume);
   }, []);
 
@@ -213,6 +214,18 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     }
     initAudio();
   }, [initAudio]);
+
+  useEffect(() => {
+    const unsubscribe = audioManager.onEnabledChange((enabled) => {
+      if (!bgMusicRef.current) return;
+      if (enabled) {
+        if (!bgMusicRef.current.paused) return;
+      } else {
+        bgMusicRef.current.pause();
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     initAudio();
@@ -530,7 +543,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
     setTimeout(() => {
       playSound('ambient', 0.1);
-      if (bgMusicRef.current) {
+      if (bgMusicRef.current && audioManager.isEnabled()) {
         bgMusicRef.current.currentTime = 0;
         bgMusicRef.current.play().catch(() => {});
       }

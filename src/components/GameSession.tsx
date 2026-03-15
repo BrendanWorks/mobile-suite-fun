@@ -49,6 +49,7 @@ import GameplayHeader from './GameplayHeader';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
 import { audioManager } from '../lib/audioManager';
+import { getSavedSfxLevel, applySfxLevel } from './SfxVolumeControl';
 import ReactGA from 'react-ga4';
 
 const SPLIT_DECISION_POINTS_PER_ITEM = Math.round(1000 / 7);
@@ -175,7 +176,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(() => getSavedSfxLevel() !== 'off');
   const [showLevelIntro, setShowLevelIntro] = useState(false);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -1178,7 +1179,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     const handleSoundToggle = (enabled: boolean) => {
       setSoundEnabled(enabled);
-      audioManager.setEnabled(enabled);
+      const savedLevel = getSavedSfxLevel();
+      if (enabled) {
+        applySfxLevel(savedLevel === 'off' ? 'full' : savedLevel);
+      } else {
+        applySfxLevel('off');
+      }
     };
 
     return (
