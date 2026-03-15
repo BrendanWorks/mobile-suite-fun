@@ -278,6 +278,11 @@ class AudioManager {
     return this.enabled;
   }
 
+  isReady(key: string): boolean {
+    const pool = this.pools.get(key);
+    return !!(pool && pool.length > 0);
+  }
+
   onEnabledChange(cb: (enabled: boolean) => void): () => void {
     this.enabledListeners.add(cb);
     return () => this.enabledListeners.delete(cb);

@@ -69,6 +69,7 @@ export function preloadTimerSounds(): void {
 
 export function playTimerCountdown(): void  { audioManager.play(SOUND_KEYS.COUNTDOWN,    0.35); }
 export function stopTimerCountdown(): void  { audioManager.stopLoop(SOUND_KEYS.COUNTDOWN); }
+export function isTimerCountdownReady(): boolean { return audioManager.isReady(SOUND_KEYS.COUNTDOWN); }
 export function playHurryUp(): void         { audioManager.play(SOUND_KEYS.HURRY_UP,     0.6); }
 export function stopHurryUp(): void         { audioManager.stop(SOUND_KEYS.HURRY_UP); }
 export function playTimeUp(): void          { audioManager.play(SOUND_KEYS.TIME_UP,       0.7); }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import VisualTimerBar from './VisualTimerBar';
-import { playTimerCountdown, stopTimerCountdown, playHurryUp, playTimeUp } from '../lib/sounds';
+import { playTimerCountdown, stopTimerCountdown, playHurryUp, playTimeUp, isTimerCountdownReady } from '../lib/sounds';
 
 interface GameWrapperProps {
   duration: number;
@@ -59,30 +59,49 @@ export default function GameWrapper({
 
   useEffect(() => {
     if (soundsMuted) return;
-    playTimerCountdown();
-    countdownIntervalRef.current = window.setInterval(() => {
-      playTimerCountdown();
-    }, 3000);
 
-    timerSoundPollRef.current = window.setInterval(() => {
-      const wantsPause = childrenRef.current?.pauseTimer === true;
-      if (wantsPause && !timerSoundPausedRef.current) {
-        timerSoundPausedRef.current = true;
-        stopTimerCountdown();
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-          countdownIntervalRef.current = null;
-        }
-      } else if (!wantsPause && timerSoundPausedRef.current) {
-        timerSoundPausedRef.current = false;
+    let retryTimeoutId: number | null = null;
+
+    const startCountdownAndPoll = () => {
+      playTimerCountdown();
+      countdownIntervalRef.current = window.setInterval(() => {
         playTimerCountdown();
-        countdownIntervalRef.current = window.setInterval(() => {
+      }, 3000);
+
+      timerSoundPollRef.current = window.setInterval(() => {
+        const wantsPause = childrenRef.current?.pauseTimer === true;
+        if (wantsPause && !timerSoundPausedRef.current) {
+          timerSoundPausedRef.current = true;
+          stopTimerCountdown();
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+        } else if (!wantsPause && timerSoundPausedRef.current) {
+          timerSoundPausedRef.current = false;
           playTimerCountdown();
-        }, 3000);
-      }
-    }, 100);
+          countdownIntervalRef.current = window.setInterval(() => {
+            playTimerCountdown();
+          }, 3000);
+        }
+      }, 100);
+    };
+
+    if (isTimerCountdownReady()) {
+      startCountdownAndPoll();
+    } else {
+      const retry = () => {
+        if (isTimerCountdownReady()) {
+          startCountdownAndPoll();
+        } else {
+          retryTimeoutId = window.setTimeout(retry, 100);
+        }
+      };
+      retryTimeoutId = window.setTimeout(retry, 100);
+    }
 
     return () => {
+      if (retryTimeoutId !== null) window.clearTimeout(retryTimeoutId);
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
