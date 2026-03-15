@@ -416,27 +416,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   return (
     <div className="h-full bg-black text-white p-2 sm:p-4 flex flex-col items-center overflow-y-auto">
       <div className="max-w-2xl w-full text-center space-y-3 sm:space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-cyan-500/50 pb-3 gap-3">
-          <div className="flex items-center gap-2">
-            <Zap
-              className="w-5 h-5 sm:w-6 sm:h-6"
-              style={{
-                color: THEME.color,
-                filter: `drop-shadow(0 0 8px ${THEME.glow})`,
-              }}
-            />
-            <h2
-              className="text-base sm:text-lg font-bold text-cyan-400"
-              style={{ textShadow: THEME.textShadow }}
-            >
-              Recall
-            </h2>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <div className="text-cyan-300 text-sm">
-              Score:{' '}
-              <strong className="text-yellow-400">{score}</strong>
-            </div>
+        <div className="flex items-center justify-end border-b-2 border-cyan-500/50 pb-3 gap-2">
             <button
               onClick={() => setShowHints((p) => !p)}
               className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm transition-all ${
@@ -461,7 +441,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
               <span className="hidden sm:inline">Debug {debugMode ? 'ON' : 'OFF'}</span>
               <span className="sm:hidden">{debugMode ? 'ON' : 'OFF'}</span>
             </button>
-          </div>
         </div>
         <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm mb-2 gap-2">
           <div>

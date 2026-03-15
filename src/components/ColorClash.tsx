@@ -296,33 +296,6 @@ const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
       <div className="h-full bg-black flex items-start justify-center p-2 pt-3 overflow-y-auto">
         <div className="w-full max-w-sm text-white">
 
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <ColorClashIcon size={18} />
-              <h2 className="text-xs sm:text-sm font-bold text-cyan-400"
-                style={{ textShadow: THEME.cyan.textShadow }}>
-                Color Clash
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              {multiplier > 1 && (
-                <span className="text-pink-400 text-xs font-bold"
-                  style={{ textShadow: THEME.pink.textShadow }}>
-                  ×{multiplier}
-                </span>
-              )}
-              {phase === 'playing' && (
-                <span className="text-cyan-300 text-xs sm:text-sm">
-                  Score: <strong
-                    className={`text-yellow-400 tabular-nums inline-block ${scorePop ? 'animate-score-pop' : ''}`}
-                    style={{ textShadow: THEME.yellow.textShadow }}
-                  >{score}</strong>
-                </span>
-              )}
-            </div>
-          </div>
-
           {/* ── IDLE: Instructions Screen ── */}
           {phase === 'idle' && (
             <div className="relative bg-black border-2 border-cyan-400 rounded-lg overflow-hidden mb-3 flex flex-col items-center justify-center p-6"

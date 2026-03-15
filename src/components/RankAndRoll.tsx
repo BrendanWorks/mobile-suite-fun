@@ -466,24 +466,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           }
         `}</style>
 
-        {/* Header - single line, compact (matches other games) */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <ArrowUpDown
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={{
-                color: '#22c55e',
-                filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))',
-                strokeWidth: 2
-              }}
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>Ranky</h2>
-          </div>
-          <div className="text-green-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{correctCount}/{items.length}</strong>
-          </div>
-        </div>
-
         {/* Puzzle Info */}
         <div className="bg-black/50 border-2 border-green-500 rounded-lg p-2" style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}>
           <h3 className="text-sm sm:text-base font-bold text-green-400 mb-0.5 break-words" style={{ textShadow: '0 0 10px #22c55e' }}>

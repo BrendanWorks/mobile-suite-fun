@@ -334,20 +334,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         }
       `}</style>
 
-      {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0 split-landscape-header mb-1 sm:mb-2">
-        <div className="flex items-center gap-1.5">
-          <Layers
-            className="w-4 h-4 sm:w-5 sm:h-5"
-            style={{ color: '#fbbf24', filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))', strokeWidth: 2 }}
-          />
-          <h2 className="text-xs sm:text-sm font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>Split Decision</h2>
-        </div>
-        <div className="text-yellow-300 text-xs sm:text-sm">
-          Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-        </div>
-      </div>
-
       {/* Prompt */}
       <div className="text-center flex-shrink-0 py-1 split-landscape-prompt">
         <h3 className="text-sm sm:text-xl font-bold text-yellow-400 break-words leading-snug" style={{ textShadow: '0 0 15px #fbbf24' }}>

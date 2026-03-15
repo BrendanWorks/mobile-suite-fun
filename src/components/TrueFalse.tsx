@@ -307,20 +307,6 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
     <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
       <div className="max-w-sm w-full text-white">
 
-        {/* Header - icon + name left, score right (matches OddManOut/FakeOut/Superlative) */}
-        <div className="flex items-center justify-between mb-3 pt-2">
-          <div className="flex items-center gap-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9 12l2 2 4-4" />
-            </svg>
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>True or False</h2>
-          </div>
-          <div className="text-cyan-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{totalScore.toLocaleString()}</strong>
-          </div>
-        </div>
-
         {/* Timer bar */}
         <div
           className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"

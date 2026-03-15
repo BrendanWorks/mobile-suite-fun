@@ -264,19 +264,6 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     <div className="h-full bg-black flex flex-col items-center justify-center p-2 pt-2 text-white select-none overflow-y-auto">
       <div className="text-center max-w-2xl w-full flex flex-col h-full">
 
-        {/* Header - icon + name left, score right (matches OddManOut) */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}>
-              <CameraIcon />
-            </div>
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Fake Out</h2>
-          </div>
-          <div className="text-cyan-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{score.toLocaleString()}</strong>
-          </div>
-        </div>
-
         {/* Game Area - fixed height */}
         <div className="relative mb-2 flex flex-col justify-center">
           {/* Streak Indicator */}

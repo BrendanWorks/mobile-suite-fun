@@ -1,5 +1,4 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameHandle } from '../lib/gameTypes';
@@ -224,24 +223,6 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
     <div className="h-full bg-black flex items-start justify-center pt-4 p-3 sm:p-4 overflow-y-auto">
       <div className="text-center max-w-2xl w-full text-white select-none space-y-3">
         
-        {/* HEADER - Compact single line */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Users
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={ICON_STYLES}
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400"
-                style={{ textShadow: '0 0 10px #00ffff' }}>
-              Hive Mind
-            </h2>
-          </div>
-          
-          <div className="text-cyan-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{totalScore}</strong>
-          </div>
-        </div>
-
         {/* QUESTION - Direct, no subtitle */}
         <h3 className="text-2xl sm:text-3xl font-bold text-white" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}>
           {currentQuestion.question}

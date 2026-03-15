@@ -167,8 +167,7 @@ export default function GameplayHeader({
             Round {currentRound}/{totalRounds}
           </span>
           <span
-            className="text-sm sm:text-base font-bold text-cyan-300 truncate"
-            style={{ textShadow: '0 0 8px rgba(0, 255, 255, 0.5)' }}
+            className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-700/60"
           >
             {gameName}
           </span>
@@ -187,12 +186,12 @@ export default function GameplayHeader({
         {/* Right: Score + menu */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right leading-tight">
-            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-yellow-500/70">
-              Score
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-500">
+              Level
             </span>
             <p
-              className="text-sm sm:text-base font-black text-yellow-400 tabular-nums"
-              style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.6)' }}
+              className="text-sm sm:text-base font-black text-white tabular-nums"
+              style={{ textShadow: '0 0 6px rgba(255,255,255,0.3)' }}
             >
               {score.toLocaleString()}
             </p>

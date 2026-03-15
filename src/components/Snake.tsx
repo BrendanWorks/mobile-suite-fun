@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Gamepad2 } from 'lucide-react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 import { RoundCountdown } from './RoundCountdown';
@@ -557,24 +556,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
   return (
     <div className="flex flex-col h-full bg-black select-none overflow-hidden touch-none">
-      {/* Header - Recall style: icon + title left, score right */}
-      <div className="px-4 sm:px-6 py-3 border-b border-green-900/50">
-        <div className="flex items-center justify-between gap-2">
-          {/* Left: Icon + Title */}
-          <div className="flex items-center gap-1.5">
-            <Gamepad2 className="w-4 sm:w-5 h-4 sm:h-5 text-green-400" style={{ filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' }} />
-            <h2 className="text-xs sm:text-sm font-bold text-green-400" style={{ textShadow: '0 0 10px #22c55e' }}>
-              KINGSNAKE
-            </h2>
-          </div>
-
-          {/* Right: Score */}
-          <div className="text-green-300 text-xs sm:text-sm flex items-center gap-2">
-            <span>Score: <strong className="text-yellow-400 font-bold">{displayScore}</strong></span>
-            {displayCombo > 1 && (
-              <span className="text-pink-400 text-[10px] sm:text-xs font-black tracking-widest">×{displayCombo} 🔥</span>
-            )}
-          </div>
+      {/* Header */}
+      <div className="px-4 sm:px-6 py-2 border-b border-green-900/50">
+        <div className="flex items-center justify-end gap-2">
+          {displayCombo > 1 && (
+            <span className="text-pink-400 text-[10px] sm:text-xs font-black tracking-widest">×{displayCombo} 🔥</span>
+          )}
         </div>
 
         {/* Lives - below header */}

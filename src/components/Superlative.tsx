@@ -444,23 +444,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     <div className="h-full bg-black flex items-start justify-center p-2 pt-0 overflow-y-auto">
       <div className="max-w-sm w-full text-white">
 
-        {/* Header - icon + name left, score right (matches OddManOut/FakeOut) */}
-        <div className="flex items-center justify-between mb-3 pt-2">
-          <div className="flex items-center gap-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}>
-              <line x1="12" y1="3" x2="12" y2="21" />
-              <line x1="5" y1="6" x2="19" y2="6" />
-              <path d="M5 6 L2 12 Q5 15 8 12 L5 6" />
-              <path d="M19 6 L22 12 Q19 15 16 12 L19 6" />
-              <line x1="9" y1="21" x2="15" y2="21" />
-            </svg>
-            <h2 className="text-xs sm:text-sm font-bold text-cyan-400" style={{ textShadow: '0 0 10px #00ffff' }}>Superlative</h2>
-          </div>
-          <div className="text-cyan-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{totalScore.toLocaleString()}</strong>
-          </div>
-        </div>
-
         {/* Timer bar */}
         <div
           className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"

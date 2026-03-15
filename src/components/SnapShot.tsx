@@ -770,24 +770,6 @@ const SnapShot = forwardRef((props: any, ref) => {
   return (
     <div className="h-full bg-black flex flex-col p-2 sm:p-3" style={{ minHeight: 0 }}>
 
-      {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-2">
-        <div className="flex items-center gap-1.5">
-          <Camera
-            className="w-4 h-4 sm:w-5 sm:h-5"
-            style={{
-              color: '#ec4899',
-              filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6))',
-              strokeWidth: 2
-            }}
-          />
-          <h2 className="text-xs sm:text-sm font-bold text-pink-400" style={{ textShadow: '0 0 10px #ec4899' }}>SnapShot</h2>
-        </div>
-        <div className="text-pink-300 text-xs sm:text-sm">
-          Score: <strong className="text-yellow-400 tabular-nums">{currentScore}</strong>
-        </div>
-      </div>
-
       {/* Puzzle Canvas — fixed square based on width only, never resizes with tray */}
       <div className="flex-shrink-0 flex justify-center mb-2">
         <div

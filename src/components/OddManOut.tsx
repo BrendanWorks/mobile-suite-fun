@@ -379,24 +379,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   return (
     <div className="h-full bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto">
       <div className="text-center max-w-2xl w-full text-white space-y-3">
-        {/* Header - single line, compact (matches SplitDecision) */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <CircleX
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              style={{
-                color: '#a855f7',
-                filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.6))',
-                strokeWidth: 2
-              }}
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-purple-400" style={{ textShadow: '0 0 10px #a855f7' }}>Odd Man Out</h2>
-          </div>
-          <div className="text-purple-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-          </div>
-        </div>
-
         {/* Item options grid */}
         <div>
           <div className="grid grid-cols-1 gap-2">

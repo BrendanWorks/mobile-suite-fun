@@ -7,7 +7,6 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Type } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 import { audioManager } from '../lib/audioManager';
 
@@ -606,30 +605,9 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto bg-black overflow-hidden border-2 border-blue-400/30 h-full">
-      {/* Header - Single line (per Game Component Style Reference) */}
-      <div className="absolute top-0 left-0 right-0 bg-black border-b-2 border-blue-400/50 text-white p-2 sm:p-3 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Type 
-              className="w-4 h-4 sm:w-5 sm:h-5" 
-              style={{ 
-                color: THEME.color,
-                filter: `drop-shadow(0 0 8px ${THEME.glow})`,
-                strokeWidth: 2
-              }} 
-            />
-            <h2 className="text-xs sm:text-sm font-bold text-blue-400" style={{ textShadow: THEME.textShadow }}>
-              Pop
-            </h2>
-          </div>
-          <div className="text-blue-300 text-xs sm:text-sm">
-            Score: <strong className="text-yellow-400 tabular-nums">{score}</strong>
-          </div>
-        </div>
-      </div>
 
       {/* Game Area */}
-      <div className="relative w-full pt-16 sm:pt-20 pb-20" style={{ height: '300px' }}>
+      <div className="relative w-full pt-2 pb-20" style={{ height: '300px' }}>
         {/* Regular falling letters */}
         {letters.map(letter => (
           <div
