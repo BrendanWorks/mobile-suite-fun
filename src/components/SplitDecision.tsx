@@ -328,38 +328,32 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
   };
 
   return (
-    <div className="flex flex-col h-full bg-black p-2 sm:p-4 space-y-2 sm:space-y-3">
-      {/* Add custom animation for double pulse */}
+    <div className="flex flex-col h-full bg-black p-2 sm:p-3 overflow-hidden">
       <style>{`
         @keyframes pulse-twice {
-          0%, 100% {
-            opacity: 1;
-          }
-          25% {
-            opacity: 0.5;
-          }
-          50% {
-            opacity: 1;
-          }
-          75% {
-            opacity: 0.5;
-          }
+          0%, 100% { opacity: 1; }
+          25% { opacity: 0.5; }
+          50% { opacity: 1; }
+          75% { opacity: 0.5; }
         }
-        .animate-pulse-twice {
-          animation: pulse-twice 1s ease-in-out;
+        .animate-pulse-twice { animation: pulse-twice 1s ease-in-out; }
+        @media (orientation: landscape) and (max-height: 500px) {
+          .split-landscape { flex-direction: row !important; gap: 8px !important; }
+          .split-landscape-word { flex: 1; min-height: 0; }
+          .split-landscape-btns { flex: 0 0 45%; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+          .split-landscape-header { margin-bottom: 4px !important; }
+          .split-landscape-prompt { font-size: 0.7rem !important; padding: 2px 0 !important; }
+          .split-landscape-wordtext { font-size: clamp(1.4rem, 6vw, 2.5rem) !important; }
+          .split-landscape-btn { padding-top: 6px !important; padding-bottom: 6px !important; font-size: 0.7rem !important; }
         }
       `}</style>
 
-      {/* Header - single line, compact */}
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-shrink-0 split-landscape-header mb-1 sm:mb-2">
         <div className="flex items-center gap-1.5">
           <Layers
             className="w-4 h-4 sm:w-5 sm:h-5"
-            style={{
-              color: '#fbbf24',
-              filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))',
-              strokeWidth: 2
-            }}
+            style={{ color: '#fbbf24', filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))', strokeWidth: 2 }}
           />
           <h2 className="text-xs sm:text-sm font-bold text-yellow-400" style={{ textShadow: '0 0 10px #fbbf24' }}>Split Decision</h2>
         </div>
@@ -368,75 +362,46 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         </div>
       </div>
 
-      {/* Puzzle Question - larger font with breathing room */}
-      <div className="text-center py-1 sm:py-2">
-        <h3 className="text-base sm:text-2xl font-bold text-yellow-400 break-words leading-snug" style={{ textShadow: '0 0 15px #fbbf24' }}>
+      {/* Prompt */}
+      <div className="text-center flex-shrink-0 py-1 split-landscape-prompt">
+        <h3 className="text-sm sm:text-xl font-bold text-yellow-400 break-words leading-snug" style={{ textShadow: '0 0 15px #fbbf24' }}>
           {puzzle.prompt}
         </h3>
       </div>
 
-      {/* Item to categorize - main focus (~40% height) */}
-      <div className="flex-1 flex items-center justify-center min-h-0">
-        <div
-          className="w-full bg-black border-2 border-yellow-500 rounded-xl p-3 sm:p-6 text-center flex items-center justify-center"
-          style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)', minHeight: 0 }}
-        >
-          <h2 className="font-bold text-yellow-400 break-words leading-tight" style={{ fontSize: 'clamp(1.8rem, 10vw, 4.5rem)', textShadow: '0 0 20px #fbbf24' }}>
-            {currentItem.item_text}
-          </h2>
+      {/* Main area: word card + buttons — row in landscape, column in portrait */}
+      <div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-3 split-landscape">
+
+        {/* Word card */}
+        <div className="split-landscape-word flex items-center justify-center min-h-0" style={{ flex: '1 1 0' }}>
+          <div
+            className="w-full bg-black border-2 border-yellow-500 rounded-xl p-3 sm:p-5 text-center flex items-center justify-center h-full"
+            style={{ boxShadow: '0 0 25px rgba(251, 191, 36, 0.3)' }}
+          >
+            <h2 className="font-bold text-yellow-400 break-words leading-tight split-landscape-wordtext" style={{ fontSize: 'clamp(1.6rem, 8vw, 4.5rem)', textShadow: '0 0 20px #fbbf24' }}>
+              {currentItem.item_text}
+            </h2>
+          </div>
         </div>
-      </div>
 
-      {/* Category buttons - readable size */}
-      <div className="space-y-1.5 sm:space-y-2">
-        {/* Category A */}
-        <button
-          onClick={() => handleAnswer(puzzle.category_1)}
-          disabled={isAnswered}
-          className={`
-            w-full py-2.5 sm:py-3 px-3 rounded-lg text-sm sm:text-base font-bold transition-all
-            text-yellow-400 uppercase tracking-wide
-            ${getButtonStyle(puzzle.category_1)}
-            ${!isAnswered && 'cursor-pointer'}
-            ${isAnswered && 'cursor-default'}
-          `}
-          style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
-        >
-          <span className="block break-words">{puzzle.category_1}</span>
-        </button>
-
-        {/* Category B */}
-        <button
-          onClick={() => handleAnswer(puzzle.category_2)}
-          disabled={isAnswered}
-          className={`
-            w-full py-2.5 sm:py-3 px-3 rounded-lg text-sm sm:text-base font-bold transition-all
-            text-yellow-400 uppercase tracking-wide
-            ${getButtonStyle(puzzle.category_2)}
-            ${!isAnswered && 'cursor-pointer'}
-            ${isAnswered && 'cursor-default'}
-          `}
-          style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
-        >
-          <span className="block break-words">{puzzle.category_2}</span>
-        </button>
-
-        {/* BOTH Category */}
-        <button
-          onClick={() => handleAnswer('BOTH')}
-          disabled={isAnswered}
-          className={`
-            w-full py-2.5 sm:py-3 px-3 rounded-lg text-sm sm:text-base font-bold transition-all
-            uppercase tracking-wide
-            text-yellow-400
-            ${getButtonStyle('BOTH')}
-            ${!isAnswered && 'cursor-pointer'}
-            ${isAnswered && 'cursor-default'}
-          `}
-          style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
-        >
-          <span className="block">BOTH</span>
-        </button>
+        {/* Buttons */}
+        <div className="split-landscape-btns flex-shrink-0 space-y-1.5">
+          {[
+            { label: puzzle.category_1, value: puzzle.category_1 },
+            { label: puzzle.category_2, value: puzzle.category_2 },
+            { label: 'BOTH', value: 'BOTH' },
+          ].map(({ label, value }) => (
+            <button
+              key={value}
+              onClick={() => handleAnswer(value)}
+              disabled={isAnswered}
+              className={`split-landscape-btn w-full py-2.5 sm:py-3 px-3 rounded-lg text-sm sm:text-base font-bold transition-all text-yellow-400 uppercase tracking-wide ${getButtonStyle(value)} ${!isAnswered ? 'cursor-pointer' : 'cursor-default'}`}
+              style={{ textShadow: isAnswered ? 'none' : '0 0 10px #fbbf24', boxShadow: isAnswered ? 'none' : '0 0 15px rgba(251, 191, 36, 0.3)' }}
+            >
+              <span className="block break-words">{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -23,24 +23,25 @@ export default function VisualTimerBar({
   const percentage = (timeRemaining / totalTime) * 100;
 
   return (
-    <div className="w-full px-2 py-2">
-      {/* Outer container - black with cyan border */}
-      <div 
-        className="w-full h-4 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
-        style={{ 
-          boxShadow: '0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1)'
-        }}
-      >
-        {/* Inner bar - cyan with glow */}
+    <>
+      <style>{`
+        @media (orientation: landscape) and (max-height: 500px) {
+          .timer-bar-wrap { padding-top: 2px !important; padding-bottom: 2px !important; }
+          .timer-bar-inner { height: 8px !important; }
+        }
+      `}</style>
+      <div className="timer-bar-wrap w-full px-2 py-1.5">
         <div
-          className="h-full bg-cyan-400 transition-all duration-300"
-          style={{ 
-            width: `${percentage}%`,
-            boxShadow: '0 0 20px #00ffff'
-          }}
-        />
+          className="timer-bar-inner w-full h-4 bg-black rounded-lg border-2 border-cyan-400 overflow-hidden"
+          style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1)' }}
+        >
+          <div
+            className="h-full bg-cyan-400 transition-all duration-300"
+            style={{ width: `${percentage}%`, boxShadow: '0 0 20px #00ffff' }}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
