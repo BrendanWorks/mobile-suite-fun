@@ -156,7 +156,7 @@ function GuestRow({ rank, score }: { rank: number | null; score: number }) {
   );
 }
 
-const AUTO_ADVANCE_DELAY_MS = 15000;
+const AUTO_ADVANCE_DELAY_MS = 5000;
 
 export default function LeaderboardPostRound({
   currentUserId,
@@ -170,6 +170,7 @@ export default function LeaderboardPostRound({
   const [isLoading, setIsLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const cache = useRef<{ entries: LeaderboardEntry[]; playerRank: number | null } | null>(null);
+  const autoAdvanceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -248,12 +249,36 @@ export default function LeaderboardPostRound({
     return () => { cancelled = true; };
   }, [playerScore, playlistId]);
 
+  const onContinueRef = useRef(onContinue);
+  useEffect(() => { onContinueRef.current = onContinue; }, [onContinue]);
+
   useEffect(() => {
-    const t = setTimeout(() => {
-      onContinue();
-    }, AUTO_ADVANCE_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [onContinue]);
+    const scheduleAdvance = () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = window.setTimeout(() => {
+        onContinueRef.current();
+      }, AUTO_ADVANCE_DELAY_MS);
+    };
+
+    const resetTimer = () => scheduleAdvance();
+
+    scheduleAdvance();
+
+    window.addEventListener('touchstart', resetTimer, { passive: true });
+    window.addEventListener('touchmove', resetTimer, { passive: true });
+    window.addEventListener('scroll', resetTimer, { passive: true, capture: true });
+    window.addEventListener('mousemove', resetTimer, { passive: true });
+    window.addEventListener('click', resetTimer, { passive: true });
+
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+      window.removeEventListener('touchstart', resetTimer);
+      window.removeEventListener('touchmove', resetTimer);
+      window.removeEventListener('scroll', resetTimer, { capture: true });
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('click', resetTimer);
+    };
+  }, []);
 
   const playerInList = currentUserId
     ? entries.some(e => e.user_id === currentUserId)
