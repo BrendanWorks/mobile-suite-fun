@@ -23,6 +23,7 @@ interface FakeOutProps {
   timeRemaining?: number;
   puzzleId?: number | null;
   puzzleIds?: number[] | null;
+  prefetchedPuzzles?: any[] | null;
 }
 
 const BASE_POINTS = 100;
@@ -58,7 +59,7 @@ const StarsBurstIcon = () => (
 );
 
 const FakeOut = forwardRef((props: FakeOutProps, ref) => {
-  const { onScoreUpdate, onComplete, puzzleIds, timeRemaining = 0 } = props;
+  const { onScoreUpdate, onComplete, puzzleIds, prefetchedPuzzles, timeRemaining = 0 } = props;
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -74,7 +75,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCompleteRef = useRef(onComplete);
   const onScoreUpdateRef = useRef(onScoreUpdate);
-  const puzzleIdsKeyRef = useRef<string | null>(null);
+  const fetchedRef = useRef(false);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
   useEffect(() => { onScoreUpdateRef.current = onScoreUpdate; }, [onScoreUpdate]);
@@ -90,56 +91,65 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
     get pauseTimer() { return status === 'feedback'; }
   }), [status]);
 
-  // Load puzzles from database using puzzle_ids
+  const puzzleIdsRef = useRef(puzzleIds);
+  useEffect(() => { puzzleIdsRef.current = puzzleIds; }, [puzzleIds]);
+
+  function processPuzzleData(data: any[]): Puzzle[] {
+    return data.map(p => ({
+      id: p.id,
+      image_url: p.image_url,
+      correct_answer: p.correct_answer as 'real' | 'fake',
+      prompt: p.prompt || 'Unknown',
+      metadata: p.metadata || {}
+    })).sort(() => Math.random() - 0.5);
+  }
+
+  // Use prefetched puzzles if available (pre-loaded by GameSession before round starts)
+  useEffect(() => {
+    if (!prefetchedPuzzles || prefetchedPuzzles.length === 0) return;
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    const shuffled = processPuzzleData(prefetchedPuzzles);
+    setPuzzles(shuffled);
+    maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
+    setImageLoaded(false);
+    setStatus('playing');
+  }, [prefetchedPuzzles]);
+
+  // Fallback: Load puzzles from database using puzzle_ids if no prefetched data
   useEffect(() => {
     if (!puzzleIds || puzzleIds.length === 0) return;
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
-    const key = puzzleIds.slice().sort((a, b) => a - b).join(',');
-    if (puzzleIdsKeyRef.current === key) return;
-    puzzleIdsKeyRef.current = key;
-
-    let cancelled = false;
+    const ids = puzzleIds;
 
     async function fetchPuzzles() {
       try {
         const { data, error } = await supabase
           .from('puzzles')
           .select('id, image_url, correct_answer, prompt, metadata')
-          .in('id', puzzleIds!);
-
-        if (cancelled) return;
+          .in('id', ids);
 
         if (error || !data || data.length === 0) {
-          console.error('FakeOut: Error fetching puzzles:', error);
+          console.error('FakeOut: Error fetching puzzles:', error, 'IDs:', ids);
           setStatus('finished');
           return;
         }
 
-        const loaded: Puzzle[] = data.map(p => ({
-          id: p.id,
-          image_url: p.image_url,
-          correct_answer: p.correct_answer as 'real' | 'fake',
-          prompt: p.prompt || 'Unknown',
-          metadata: p.metadata || {}
-        }));
-
-        const shuffled = loaded.sort(() => Math.random() - 0.5);
-
+        const shuffled = processPuzzleData(data);
         setPuzzles(shuffled);
         maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
         setImageLoaded(false);
         setStatus('playing');
-        console.log(`FakeOut loaded ${shuffled.length} puzzles`);
       } catch (err) {
-        if (!cancelled) {
-          console.error('FakeOut: Exception loading puzzles:', err);
-          setStatus('finished');
-        }
+        console.error('FakeOut: Exception loading puzzles:', err);
+        setStatus('finished');
       }
     }
 
     fetchPuzzles();
-    return () => { cancelled = true; };
   }, [puzzleIds]);
 
   // Preload next image
@@ -401,6 +411,7 @@ FakeOut.displayName = 'FakeOut';
 export default React.memo(FakeOut, (prevProps, nextProps) => {
   return (
     prevProps.puzzleIds === nextProps.puzzleIds &&
+    prevProps.prefetchedPuzzles === nextProps.prefetchedPuzzles &&
     prevProps.onScoreUpdate === nextProps.onScoreUpdate &&
     prevProps.onComplete === nextProps.onComplete &&
     prevProps.timeRemaining === nextProps.timeRemaining &&

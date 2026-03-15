@@ -171,6 +171,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [currentGameSlug, setCurrentGameSlug] = useState<string | null>(null);
   const [currentPuzzleId, setCurrentPuzzleId] = useState<number | null>(null);
   const [currentPuzzleIds, setCurrentPuzzleIds] = useState<number[] | null>(null);
+  const [prefetchedPuzzles, setPrefetchedPuzzles] = useState<any[] | null>(null);
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -185,7 +186,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     [roundScores]
   );
 
-  const loadRound = useCallback((roundNumber: number, rounds: PlaylistRound[]) => {
+  const loadRound = useCallback(async (roundNumber: number, rounds: PlaylistRound[]) => {
+    setPlaylistLoading(true);
     const round = rounds.find(r => r.round_number === roundNumber);
     if (!round) {
       console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
@@ -215,24 +217,30 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       return;
     }
 
-    console.log(`📍 Loading Round ${roundNumber}:`, {
-      gameSlug,
-      game_id: round.game_id,
-      puzzle_id: round.puzzle_id,
-      ranking_puzzle_id: round.ranking_puzzle_id,
-      game_name: round.game_name,
-      metadata: round.metadata
-    });
-
     setCurrentGameSlug(gameSlug);
 
     if ('puzzle_ids' in round.metadata) {
-      console.log(`✅ Found ${round.metadata.puzzle_ids.length} puzzle IDs in metadata:`, round.metadata.puzzle_ids);
-      setCurrentPuzzleIds(round.metadata.puzzle_ids);
+      const ids = (round.metadata as { puzzle_ids: number[] }).puzzle_ids;
+      setCurrentPuzzleIds(ids);
       setCurrentPuzzleId(null);
+
+      if (gameSlug === 'fake-out') {
+        try {
+          const { data } = await supabase
+            .from('puzzles')
+            .select('id, image_url, correct_answer, prompt, metadata')
+            .in('id', ids);
+          setPrefetchedPuzzles(data && data.length > 0 ? data : null);
+        } catch {
+          setPrefetchedPuzzles(null);
+        }
+      } else {
+        setPrefetchedPuzzles(null);
+      }
     } else {
       setCurrentPuzzleId(round.puzzle_id);
-      setCurrentPuzzleIds(null);  // Clear array
+      setCurrentPuzzleIds(null);
+      setPrefetchedPuzzles(null);
     }
 
     setCurrentRankingPuzzleId(round.ranking_puzzle_id);
@@ -1202,6 +1210,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
                 puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
                 puzzleIds={currentPuzzleIds}
                 rankingPuzzleId={currentRankingPuzzleId}
+                prefetchedPuzzles={currentGame.id === 'fake-out' ? prefetchedPuzzles : undefined}
               />
             </GameWrapper>
           </React.Suspense>
