@@ -45,6 +45,7 @@ const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
 import AuthModal from './AuthModal';
 import LeaderboardPostRound from './LeaderboardPostRound';
+import GameplayHeader from './GameplayHeader';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
 import { analytics } from '../lib/analytics';
 import { audioManager } from '../lib/audioManager';
@@ -173,7 +174,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [currentRankingPuzzleId, setCurrentRankingPuzzleId] = useState<number | null>(null);
   const [currentSuperlativePuzzleId, setCurrentSuperlativePuzzleId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [showLevelIntro, setShowLevelIntro] = useState(false);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -1163,70 +1164,26 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
   }
 
-  // Playing state - NEON NAV BAR (MINIMAL)
+  // Playing state - GAMEPLAY HEADER
   if (gameState === 'playing' && currentGame) {
     const GameComponent = currentGame.component;
 
-    // Shared neon button styling - DRY consolidation
-    const neonButtonBase = "flex-shrink-0 bg-transparent border-2 border-cyan-400 text-cyan-400 rounded text-xs sm:text-sm font-semibold transition-all hover:text-black active:scale-95 touch-manipulation";
-    const neonButtonStyle = { textShadow: '0 0 8px #00ffff', boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)' };
+    const handleSoundToggle = (enabled: boolean) => {
+      setSoundEnabled(enabled);
+      audioManager.setEnabled(enabled);
+    };
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col">
-        {/* NEON NAVIGATION BAR - MINIMAL */}
-        <div className="flex-shrink-0 bg-black px-2 sm:px-4 py-2 border-b-2 border-cyan-400/40" style={{ boxShadow: '0 2px 15px rgba(0, 255, 255, 0.2)' }}>
-          <div className="flex justify-between items-center max-w-6xl mx-auto relative">
-            {/* Center: Rowdy Branding (RED) - Absolutely centered */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <p className="text-2xl sm:text-4xl font-black text-red-500" style={{ textShadow: '0 0 25px #ef4444', letterSpacing: '0.08em' }}>
-                ROWDY
-              </p>
-            </div>
-
-            {/* Right: Action buttons */}
-            <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2 ml-auto">
-              {/* Skip button */}
-              <button
-                onClick={handleSkipGame}
-                className={`${neonButtonBase} px-2 sm:px-2.5 py-1 sm:py-1.5`}
-                style={neonButtonStyle}
-                title="Skip to next game"
-              >
-                →
-              </button>
-
-              {/* Menu button */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className={`${neonButtonBase} px-2 sm:px-2.5 py-1 sm:py-1.5`}
-                  style={neonButtonStyle}
-                  title="Menu"
-                >
-                  ⋮
-                </button>
-
-                {/* Dropdown menu */}
-                {showMenu && (
-                  <div 
-                    className="absolute right-0 mt-1 bg-black border-2 border-cyan-400 rounded shadow-lg z-50 min-w-max"
-                    style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }}
-                  >
-                    <button
-                      onClick={() => {
-                        handleQuitAndSave();
-                        setShowMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs sm:text-sm text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors whitespace-nowrap"
-                    >
-                      Quit & Save
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <GameplayHeader
+          gameName={currentGame.name}
+          score={currentGameScore.score}
+          currentRound={currentRound}
+          totalRounds={totalRounds}
+          onQuit={handleQuitAndSave}
+          soundEnabled={soundEnabled}
+          onSoundToggle={handleSoundToggle}
+        />
 
         {/* Game Content */}
         <div key={`game-content-${currentRound}`} className="flex-1 overflow-auto animate-game-enter">
