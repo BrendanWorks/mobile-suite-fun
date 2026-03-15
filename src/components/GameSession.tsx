@@ -378,6 +378,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
   }, [playlistId, loadPlaylist]);
 
+  // Watchdog: if playlistLoading is stuck for >8s, force it false so the game can proceed
+  useEffect(() => {
+    if (!playlistLoading) return;
+    const watchdog = setTimeout(() => {
+      setPlaylistLoading(false);
+    }, 8000);
+    return () => clearTimeout(watchdog);
+  }, [playlistLoading]);
+
   // Get current user on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -912,11 +921,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   // Select game when entering intro screen for any round
   // CRITICAL: Don't select game while playlist is loading to avoid race condition
+  // currentGameSlug must be in deps so the effect re-runs once loadRound populates it
   useEffect(() => {
     if (gameState === 'intro' && !currentGame && !playlistLoading) {
       selectRandomGame();
     }
-  }, [gameState, currentRound, currentGame, playlistLoading, selectRandomGame]);
+  }, [gameState, currentRound, currentGame, playlistLoading, currentGameSlug, selectRandomGame]);
 
   // Fallback: Select game when entering playing state without a game (shouldn't happen with playlist)
   useEffect(() => {
