@@ -120,6 +120,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_powerup_gold', '/sounds/snake/powerup_laser.mp3', 2);
       await audioManager.loadSound('snake_powerup_special', '/sounds/snake/powerup_loopy.mp3', 2);
       await audioManager.loadSound('snake_die', '/sounds/snake/crash.mp3', 2);
+      await audioManager.loadSound('snake_wall_crash', '/sounds/snake/BassDrumWrong.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/game_end.mp3', 1);
       await audioManager.loadSound('snake_bg_music', '/sounds/snake/Kingsnake_Soundtrack.mp3', 1);
       setAudioLoaded(true);
@@ -261,7 +262,11 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
           setTimeout(() => onComplete(scoreRef.current, 200, timeRemaining), 2000);
         }
       } else {
-        audioManager.play('snake_die', 0.7);
+        if (hitWall) {
+          audioManager.play('snake_wall_crash', 0.7);
+        } else {
+          audioManager.play('snake_die', 0.7);
+        }
         resetSnake();
       }
       return;
