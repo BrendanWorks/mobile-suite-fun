@@ -101,8 +101,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         } else {
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading puzzle IDs:', error);
+      } catch {
         setLoading(false);
       }
     };
@@ -141,21 +140,18 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         ...puzzleData,
         items: itemsData || []
       });
-      console.log('SplitDecision: Loaded puzzle with', itemsData?.length || 0, 'items');
       setCurrentItemIndex(0);
       setSelectedAnswer(null);
       setIsAnswered(false);
       setFeedback(null);
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching puzzle data:', error);
+    } catch {
       setLoading(false);
     }
   };
 
   // Handle answer selection
   const handleAnswer = (category: string) => {
-    console.log('SplitDecision: handleAnswer called, currentItemIndex:', currentItemIndex, 'category:', category);
     if (isAnswered || !puzzle || !puzzle.items[currentItemIndex]) return;
 
     const currentItem = puzzle.items[currentItemIndex];
@@ -182,7 +178,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       setScore(prev => {
         const newScore = prev + POINTS_PER_ITEM;
         scoreRef.current = newScore;
-        console.log('SplitDecision: CORRECT! newScore:', newScore, 'itemsAnswered:', currentItemIndex + 1);
         if (onScoreUpdate) {
           onScoreUpdate(newScore, MAX_SCORE);
         }
@@ -190,7 +185,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       });
     } else {
       playWrong(0.3);
-      console.log('SplitDecision: WRONG! currentScore:', score, 'itemsAnswered:', currentItemIndex + 1);
       if (onScoreUpdate) {
         onScoreUpdate(score, MAX_SCORE);
       }
@@ -198,7 +192,6 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
 
     // Check if this is the last item
     const isLastItem = currentItemIndex === puzzle.items.length - 1;
-    console.log('SplitDecision: Item', currentItemIndex + 1, 'of', puzzle.items.length, '- isLastItem:', isLastItem);
 
     if (isLastItem) {
       // Show feedback for 1.5 seconds then trigger completion
@@ -212,9 +205,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         }
       }, 1500);
     } else {
-      // More items - auto-advance after 1.5 seconds
       autoAdvanceTimer.current = setTimeout(() => {
-        console.log('SplitDecision: Advancing to next item');
         setCurrentItemIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setIsAnswered(false);
@@ -241,22 +232,16 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
       totalItems: puzzle?.items.length || 7
     } as any),
     onGameEnd: () => {
-      console.log('SplitDecision: onGameEnd called (time ran out), clearing timer');
       if (autoAdvanceTimer.current) {
         clearTimeout(autoAdvanceTimer.current);
-        console.log('SplitDecision: Timer cleared');
       }
-      // Time ran out - complete with current score (if not already completed)
       if (!gameCompletedRef.current) {
         gameCompletedRef.current = true;
         const callback = onCompleteRef.current;
         const finalScore = scoreRef.current;
-        console.log('SplitDecision: Time up! Calling onComplete with score:', finalScore, 'timeRemaining:', timeRemaining);
         if (callback) {
           callback(finalScore, MAX_SCORE, timeRemaining);
         }
-      } else {
-        console.log('SplitDecision: Game already completed, skipping onComplete call');
       }
     },
     get pauseTimer() { return isAnswered; },

@@ -174,8 +174,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     try {
       audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
       audioInitialized.current = true;
-    } catch (error) {
-      console.log('Audio system failed to initialize');
+    } catch {
     }
   }, []);
 

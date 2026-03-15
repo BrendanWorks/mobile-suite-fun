@@ -234,8 +234,7 @@ const UpYours = forwardRef<any, UpYoursProps>((props, ref) => {
           setPermissionError(true);
           return;
         }
-      } catch (error) {
-        console.error('Error requesting device orientation permission:', error);
+      } catch {
       }
     }
     resetBall(true);

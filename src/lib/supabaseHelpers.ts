@@ -16,7 +16,6 @@ const GAME_SLUG_TO_ID: Record<string, number> = {
 export function getGameId(slug: string): number {
   const gameId = GAME_SLUG_TO_ID[slug];
   if (!gameId) {
-    console.warn(`Unknown game slug: ${slug}, defaulting to ID 1`);
     return 1;
   }
   return gameId;
@@ -72,7 +71,6 @@ export async function createUserProfile(userId: string, email: string): Promise<
 
     return { success: true };
   } catch (error) {
-    console.error('Error creating user profile:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -101,7 +99,6 @@ export async function createGameSession(userId: string): Promise<CreateSessionRe
 
     return { success: true, data: { id: data.id } };
   } catch (error) {
-    console.error('Error creating game session:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -162,7 +159,6 @@ export async function completeGameSession(
 
     return { success: true };
   } catch (error) {
-    console.error('Error completing game session:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -248,9 +244,6 @@ export async function insertLeaderboardEntry(
     const message = error instanceof Error ? error.message : 'Unknown error';
     const isRateLimit = message.includes('rate_limit');
     const isValidation = message.includes('score_validation');
-    if (!isRateLimit && !isValidation) {
-      console.error('Error inserting leaderboard entry:', error);
-    }
     return {
       success: false,
       error: isRateLimit
@@ -309,7 +302,6 @@ export async function fetchTopAllTime(
 
     return { success: true, data: entries };
   } catch (error) {
-    console.error('Error fetching all-time leaderboard:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -389,7 +381,6 @@ export async function fetchTopThisWeek(
 
     return { success: true, data: entries };
   } catch (error) {
-    console.error('Error fetching weekly leaderboard:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -424,7 +415,6 @@ export async function saveAllRoundResults(
 
     return { success: true };
   } catch (error) {
-    console.error('Error saving round results:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

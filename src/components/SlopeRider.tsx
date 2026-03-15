@@ -39,18 +39,14 @@ export default function SlopeRider({ onComplete, onScoreUpdate, duration }: Slop
         if (permission === 'granted') {
           setMotionGranted(true);
           setPermissionStatus('granted');
-          console.log('Motion permission granted');
         } else {
           setPermissionStatus('denied');
-          console.log('Motion permission denied');
         }
       } else {
         setMotionGranted(true);
         setPermissionStatus('granted');
-        console.log('Motion auto-granted (non-iOS)');
       }
-    } catch (err) {
-      console.error('Permission error:', err);
+    } catch {
       setPermissionStatus('denied');
     }
   }, []);

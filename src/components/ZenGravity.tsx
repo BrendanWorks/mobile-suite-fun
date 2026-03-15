@@ -142,7 +142,7 @@ const ZenGravity = forwardRef<GameHandle, ZenGravityProps>(({ onComplete, durati
       try {
         const permission = await (DeviceOrientationEvent as any).requestPermission();
         if (permission !== 'granted') return;
-      } catch (e) { console.error(e); }
+      } catch { }
     }
     setIsStarted(true);
   };

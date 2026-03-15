@@ -10,9 +10,6 @@ export const initGA = () => {
         anonymizeIp: true,
       },
     });
-    console.log('GA4 initialized:', measurementId);
-  } else {
-    console.warn('GA4 Measurement ID not found in environment variables');
   }
 };
 

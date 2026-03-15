@@ -60,13 +60,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       maxScore: MAX_QUESTIONS * 250
     }),
     onGameEnd: () => {
-      console.log('OddManOut: onGameEnd called (time ran out)');
       if (autoAdvanceTimeoutRef.current) {
         clearTimeout(autoAdvanceTimeoutRef.current);
         autoAdvanceTimeoutRef.current = null;
       }
       const callback = onCompleteRef.current;
-      console.log('OddManOut: Time up! Calling onComplete with score:', score);
       if (callback) {
         callback(score, MAX_QUESTIONS * 250, props.timeRemaining);
       }
@@ -91,26 +89,16 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       
       // NEW: Multiple puzzle IDs mode (playlist with array)
       if (props.puzzleIds && Array.isArray(props.puzzleIds) && props.puzzleIds.length > 0) {
-        console.log('🎯 OddManOut: Loading specific puzzles from array:', props.puzzleIds);
-        
         const { data, error } = await supabase
           .from('puzzles')
           .select('*')
           .in('id', props.puzzleIds);
-        
-        if (error) {
-          console.error('Supabase error loading puzzles:', error);
+
+        if (error || !data || data.length === 0) {
           await loadRandomPuzzles();
           return;
         }
-        
-        if (!data || data.length === 0) {
-          console.error('No puzzles found with ids:', props.puzzleIds);
-          await loadRandomPuzzles();
-          return;
-        }
-        
-        console.log(`✅ OddManOut: Loaded ${data.length} playlist puzzles`);
+
         setQuestions(data);
         setGameState('playing');
         return;
@@ -118,27 +106,17 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       
       // SINGLE PUZZLE MODE (old behavior - repeats 3x)
       if (props.puzzleId) {
-        console.log('🎯 OddManOut: Loading single puzzle:', props.puzzleId);
-        
         const { data, error } = await supabase
           .from('puzzles')
           .select('*')
           .eq('id', props.puzzleId)
           .single();
-        
-        if (error) {
-          console.error('Supabase error loading puzzle:', error);
+
+        if (error || !data) {
           await loadRandomPuzzles();
           return;
         }
-        
-        if (!data) {
-          console.error('No puzzle found with id:', props.puzzleId);
-          await loadRandomPuzzles();
-          return;
-        }
-        
-        console.log('✅ OddManOut: Loaded single playlist puzzle (will repeat 3x):', data);
+
         setQuestions([data, data, data]);
         setGameState('playing');
         return;
@@ -147,8 +125,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       // RANDOM MODE (backwards compatibility)
       await loadRandomPuzzles();
       
-    } catch (error) {
-      console.error('Error fetching questions:', error);
+    } catch {
       setGameState('error');
     }
   };
@@ -159,19 +136,11 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       .select('*')
       .eq('game_id', 3);
     
-    if (error) {
-      console.error('Supabase error:', error);
+    if (error || !data || data.length === 0) {
       setGameState('error');
       return;
     }
-    
-    if (!data || data.length === 0) {
-      console.error('No questions found');
-      setGameState('error');
-      return;
-    }
-    
-    console.log(`✅ OddManOut: Loaded ${data.length} random questions from Supabase`);
+
     setQuestions(data);
     setGameState('playing');
   };
@@ -275,13 +244,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     const newTotalQuestions = totalQuestions + 1;
     setTotalQuestions(newTotalQuestions);
 
-    console.log('OddManOut: Question answered', {
-      questionNum: newTotalQuestions,
-      isCorrect: isAnswerCorrect,
-      isLastQuestion: newTotalQuestions >= MAX_QUESTIONS,
-      puzzleId: props.puzzleId || props.puzzleIds || 'random'
-    });
-
     if (props.onTimerPause) {
       props.onTimerPause(true);
     }
@@ -299,7 +261,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
       setGameState('result');
 
       if (newTotalQuestions >= MAX_QUESTIONS) {
-        console.log('OddManOut: ✅ LAST QUESTION (CORRECT) - Calling onComplete after delay');
         setIsGameComplete(true);
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           const callback = onCompleteRef.current;
@@ -308,7 +269,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
           }
         }, 6000);
       } else {
-        console.log('OddManOut: Correct answer, moving to question', newTotalQuestions + 1, 'after 6s');
         autoAdvanceTimeoutRef.current = window.setTimeout(() => {
           generateNewQuestion();
         }, 6000);
@@ -324,7 +284,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
         setGameState('result');
 
         if (newTotalQuestions >= MAX_QUESTIONS) {
-          console.log('OddManOut: ❌ LAST QUESTION (WRONG) - Calling onComplete after delay');
           setIsGameComplete(true);
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             const callback = onCompleteRef.current;
@@ -333,7 +292,6 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
             }
           }, 6000);
         } else {
-          console.log('OddManOut: Wrong answer, moving to question', newTotalQuestions + 1, 'after 6s');
           autoAdvanceTimeoutRef.current = window.setTimeout(() => {
             generateNewQuestion();
           }, 6000);

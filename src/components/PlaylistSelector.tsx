@@ -34,8 +34,7 @@ export default function PlaylistSelector({ onSelectPlaylist, onBack }: PlaylistS
 
         if (error) throw error;
         setPlaylists(data || []);
-      } catch (error) {
-        console.error('Error loading playlists:', error);
+      } catch {
       } finally {
         setLoading(false);
       }

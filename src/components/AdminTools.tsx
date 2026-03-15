@@ -22,7 +22,6 @@ export default function AdminTools() {
         setMessage('❌ Failed to fetch images - check console for details');
       }
     } catch (error) {
-      console.error('Error fetching images:', error);
       setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
@@ -35,10 +34,9 @@ export default function AdminTools() {
 
     try {
       await populateAllSnapShotImages();
-      setMessage('✅ Database populated successfully! Check the console for details.');
+      setMessage('✅ Database populated successfully!');
     } catch (error) {
-      console.error('Error:', error);
-      setMessage('❌ Error populating database. Check console.');
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     setLoading(false);

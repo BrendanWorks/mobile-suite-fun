@@ -23,10 +23,10 @@ function getClient(): SupabaseClient {
           try { return localStorage.getItem(k); } catch { return null; }
         },
         setItem: (k, v) => {
-          try { localStorage.setItem(k, v); } catch (e) { console.error('localStorage.setItem failed', e); }
+          try { localStorage.setItem(k, v); } catch { }
         },
         removeItem: (k) => {
-          try { localStorage.removeItem(k); } catch (e) { console.error('localStorage.removeItem failed', e); }
+          try { localStorage.removeItem(k); } catch { }
         },
       },
     },

@@ -51,21 +51,14 @@ const PhotoMystery = forwardRef((props, ref) => {
       maxScore: totalPhotos
     }),
     onGameEnd: () => {
-      console.log('Zooma: onGameEnd called (GameWrapper timer hit 0)');
-      if (hasCalledOnCompleteRef.current) {
-        console.log('Zooma: onComplete already called, skipping');
-        return;
-      }
+      if (hasCalledOnCompleteRef.current) return;
       clearInterval(timerRef.current);
       clearTimeout(resultTimerRef.current);
       const callback = onCompleteRef.current;
       const finalCorrect = correctCountRef.current;
-      console.log('Zooma: GameWrapper time up! Calling onComplete with correct:', finalCorrect, 'out of', totalPhotos);
       if (callback) {
         hasCalledOnCompleteRef.current = true;
         callback(finalCorrect, totalPhotos);
-      } else {
-        console.error('Zooma: onComplete callback is undefined in onGameEnd!');
       }
     },
     skipQuestion: () => {
@@ -93,47 +86,27 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       // NEW: Check for multiple puzzle IDs first (playlist mode with array)
       if (puzzleIds && Array.isArray(puzzleIds) && puzzleIds.length > 0) {
-        console.log('🎯 Zooma: Loading specific puzzles from array:', puzzleIds);
-        
         const { data, error } = await supabase
           .from('puzzles')
           .select('*')
           .in('id', puzzleIds)
           .in('game_type', ['multiple_choice', 'photo_mystery']);
 
-        if (error) {
-          console.error('Supabase error loading puzzles:', error);
+        if (error || !data || data.length === 0) {
           setGameState('error');
           return;
         }
 
-        if (!data || data.length === 0) {
-          console.error('No puzzles found with ids:', puzzleIds);
-          setGameState('error');
-          return;
-        }
-
-        console.log(`✅ Zooma: Loaded ${data.length} playlist puzzles`);
-        
         const validQuestions = data.filter(q => {
           const hasImageUrl = q.prompt && (q.prompt.startsWith('http://') || q.prompt.startsWith('https://'));
           const hasOptions = q.metadata && (
             (typeof q.metadata === 'object' && q.metadata.options && Array.isArray(q.metadata.options)) ||
             (typeof q.metadata === 'string' && q.metadata.includes('options'))
           );
-
-          if (!hasImageUrl) {
-            console.warn(`Puzzle ${q.id} skipped: prompt is not a valid image URL`);
-          }
-          if (!hasOptions) {
-            console.warn(`Puzzle ${q.id} skipped: missing metadata.options`);
-          }
-
           return hasImageUrl && hasOptions;
         });
 
         if (validQuestions.length === 0) {
-          console.error('No valid puzzles in provided puzzle_ids!');
           setGameState('error');
           return;
         }
@@ -159,27 +132,17 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       // SINGLE PUZZLE MODE (old behavior - repeats 3x)
       if (puzzleId) {
-        console.log('🎯 Zooma: Loading single puzzle:', puzzleId);
-        
         const { data, error } = await supabase
           .from('puzzles')
           .select('*')
           .eq('id', puzzleId)
           .single();
 
-        if (error) {
-          console.error('Supabase error loading puzzle:', error);
+        if (error || !data) {
           setGameState('error');
           return;
         }
 
-        if (!data) {
-          console.error('No puzzle found with id:', puzzleId);
-          setGameState('error');
-          return;
-        }
-
-        console.log('✅ Zooma: Loaded single playlist puzzle (will repeat 3x):', data);
         setQuestions([data, data, data]);
         
         const firstQuestion = data;
@@ -208,19 +171,10 @@ const PhotoMystery = forwardRef((props, ref) => {
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error('Supabase error:', error);
+      if (error || !data || data.length === 0) {
         setGameState('error');
         return;
       }
-
-      if (!data || data.length === 0) {
-        console.error('No questions found for game_id 4');
-        setGameState('error');
-        return;
-      }
-
-      console.log(`Found ${data.length} puzzles for Zooma`);
 
       const validQuestions = data.filter(q => {
         const hasImageUrl = q.prompt && (q.prompt.startsWith('http://') || q.prompt.startsWith('https://'));
@@ -228,28 +182,14 @@ const PhotoMystery = forwardRef((props, ref) => {
           (typeof q.metadata === 'object' && q.metadata.options && Array.isArray(q.metadata.options)) ||
           (typeof q.metadata === 'string' && q.metadata.includes('options'))
         );
-
-        if (!hasImageUrl) {
-          console.warn(`Puzzle ${q.id} skipped: prompt is not a valid image URL (got: "${q.prompt?.substring(0, 50)}...")`);
-        }
-        if (!hasOptions) {
-          console.warn(`Puzzle ${q.id} skipped: missing metadata.options (got: ${JSON.stringify(q.metadata)})`);
-        }
-
         return hasImageUrl && hasOptions;
       });
 
       if (validQuestions.length === 0) {
-        console.error('No valid photo mystery puzzles found!');
-        console.error('Puzzles must have:');
-        console.error('1. prompt: Image URL (e.g., "https://...")');
-        console.error('2. metadata.options: Array of answer choices (e.g., ["Cat", "Dog", "Rabbit"])');
-        console.error('3. correct_answer: One of the options');
         setGameState('error');
         return;
       }
 
-      console.log(`Loaded ${validQuestions.length} valid photo questions (${data.length - validQuestions.length} skipped)`);
       setQuestions(validQuestions);
 
       if (validQuestions.length > 0) {
@@ -269,8 +209,7 @@ const PhotoMystery = forwardRef((props, ref) => {
         setTimeout(() => startGame(), 100);
       }
 
-    } catch (error) {
-      console.error('Error fetching questions:', error);
+    } catch {
       setGameState('error');
     }
   };
@@ -320,22 +259,18 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const startGame = () => {
-    console.log('Zooma: startGame called for photo', currentPhotoNumber);
-    
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
     startTimeRef.current = Date.now();
-    console.log('Zooma: Timer started at', startTimeRef.current);
 
     timerRef.current = setInterval(() => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setElapsedTime(elapsed);
 
       if (elapsed >= photoDuration) {
-        console.log('Zooma: Photo timer expired, elapsed:', elapsed);
         clearInterval(timerRef.current);
         timerRef.current = null;
         setElapsedTime(photoDuration);
@@ -354,25 +289,20 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const handleTimeUp = () => {
-    console.log('Zooma: handleTimeUp called, gameState:', gameState, 'photo:', currentPhotoNumber);
     if (gameState !== 'playing') return;
 
     setIsCorrect(false);
     setSelectedAnswer(null);
     setGameState('result');
 
-    console.log('Zooma: Time up on photo', currentPhotoNumber, 'correct count:', correctCount);
-    
     if (onScoreUpdateRef.current) {
       onScoreUpdateRef.current(correctCount, totalPhotos);
     }
 
     if (currentPhotoNumber >= totalPhotos) {
-      console.log('Zooma: Last photo complete, calling completeGame immediately');
       completeGame();
     } else {
       resultTimerRef.current = setTimeout(() => {
-        console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
         setCurrentPhotoNumber(currentPhotoNumber + 1);
         generateNewQuestion();
       }, 2500);
@@ -380,7 +310,6 @@ const PhotoMystery = forwardRef((props, ref) => {
   };
 
   const handleAnswerSelect = (answer) => {
-    console.log('Zooma: Answer selected:', answer, 'correct:', currentQuestion.correct_answer, 'photo:', currentPhotoNumber);
     if (gameState !== 'playing') return;
 
     setSelectedAnswer(answer);
@@ -396,8 +325,7 @@ const PhotoMystery = forwardRef((props, ref) => {
     if (correct) {
       const newCorrectCount = correctCount + 1;
       setCorrectCount(newCorrectCount);
-      console.log('Zooma: Photo', currentPhotoNumber, 'CORRECT!', 'total correct:', newCorrectCount);
-      
+
       if (onScoreUpdateRef.current) {
         onScoreUpdateRef.current(newCorrectCount, totalPhotos);
       }
@@ -406,33 +334,27 @@ const PhotoMystery = forwardRef((props, ref) => {
       setGameState('result');
 
       if (currentPhotoNumber >= totalPhotos) {
-        console.log('Zooma: Last photo complete (correct), calling completeGame immediately');
         completeGame();
       } else {
         resultTimerRef.current = setTimeout(() => {
-          console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
           setCurrentPhotoNumber(currentPhotoNumber + 1);
           generateNewQuestion();
         }, 2500);
       }
     } else {
-      console.log('Zooma: Photo', currentPhotoNumber, 'WRONG', 'total correct:', correctCount);
-      
       if (onScoreUpdateRef.current) {
         onScoreUpdateRef.current(correctCount, totalPhotos);
       }
 
       playSound('incorrect');
-      
+
       setTimeout(() => {
         setGameState('result');
 
         if (currentPhotoNumber >= totalPhotos) {
-          console.log('Zooma: Last photo complete (incorrect), calling completeGame immediately');
           completeGame();
         } else {
           resultTimerRef.current = setTimeout(() => {
-            console.log('Zooma: Moving to photo', currentPhotoNumber + 1);
             setCurrentPhotoNumber(currentPhotoNumber + 1);
             generateNewQuestion();
           }, 2500);
@@ -450,19 +372,15 @@ const PhotoMystery = forwardRef((props, ref) => {
         audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICBhYWFhYWFhYWFhYWFhYWFhYSEhISEhISEhISEhISEhISEhIODg4ODg4ODg4ODg4ODg4ODgoODg4ODg4ODg4ODg4ODg4ODg4KCgoKCgoKCgoKCgoKCgoKCgoGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fX19fX19fX19fX19fX19fX18fHx8fHx8fHx8fHx8fHx8fHt7e3t7e3t7e3t7e3t7e3t7enp6enp6enp6enp6enp6enp5eXl5eXl5eXl5eXl5eXl5eXh4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dXV0dHR0dHR0dHR0dHR0dHR0dHNzc3Nzc3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycXFxcXFxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBvb29vb29vb29vb29vb29ubm5ubm5ubm5ubm5ubm5uBgUFBQUFBQUFBQUFBQUFBgYGBgYGBgYGBgYGBgYGBwcHBwcHBwcHBwcHBwcHCAgICAgICAgICAgICAgICAkJCQkJCQkJCQkJCQkJCQoKCgoKCgoKCgoKCgoKCgsLCwsLCwsLCwsLCwsLCwwMDAwMDAwMDAwMDAwMDA0NDQ0NDQ0NDQ0NDQ0NDQ4ODg4ODg4ODg4ODg4ODg8PDw8PDw8PDw8PDw8PDxAQEBAQEBAQEBAQEBAQEBEREREREREREREREREREREQEBAQEBAQEBAQEBAQEBAPDw8PDw8PDw8PDw8PDw8ODg4ODg4ODg4ODg4ODg4NDQ0NDQ0NDQ0NDQ0NDQ0MDAwMDAwMDAwMDAwMDAsLCwsLCwsLCwsLCwsLCwoKCgoKCgoKCgoKCgoKCQkJCQkJCQkJCQkJCQkJCAgICAgICAgICAgICAgIBwcHBwcHBwcHBwcHBwcHBgYGBgYGBgYGBgYGBgYGBQUFBQUFBQUFBQUFBQUF';
       }
       audio.volume = 0.3;
-      audio.play().catch(err => console.log('Audio play failed:', err));
-    } catch (err) {
-      console.log('Audio error:', err);
+      audio.play().catch(() => {});
+    } catch {
     }
   };
 
   const completeGame = () => {
     const finalCorrect = correctCountRef.current;
-    console.log('Zooma: completeGame called, final correct:', finalCorrect, 'out of', totalPhotos);
-    if (hasCalledOnCompleteRef.current) {
-      console.log('Zooma: onComplete already called, skipping');
-      return;
-    }
+    if (hasCalledOnCompleteRef.current) return;
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -473,12 +391,9 @@ const PhotoMystery = forwardRef((props, ref) => {
     }
 
     const callback = onCompleteRef.current;
-    console.log('Zooma: Calling onComplete with correct:', finalCorrect, 'max:', totalPhotos);
     if (callback) {
       hasCalledOnCompleteRef.current = true;
       callback(finalCorrect, totalPhotos);
-    } else {
-      console.error('Zooma: onComplete callback is undefined!');
     }
   };
 
@@ -551,8 +466,7 @@ const PhotoMystery = forwardRef((props, ref) => {
         try {
           const parsed = JSON.parse(currentQuestion.metadata);
           options = parsed.options || [];
-        } catch (e) {
-          console.error('Failed to parse metadata string:', e);
+        } catch {
         }
       }
       else if (typeof currentQuestion.metadata === 'object') {

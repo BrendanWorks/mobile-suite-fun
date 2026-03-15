@@ -150,8 +150,6 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
 
       if (data && !error && data.metadata?.questions) {
         setQuestions(data.metadata.questions);
-      } else if (error) {
-        console.error('Error loading Hive Mind puzzle:', error);
       }
       setLoading(false);
     };

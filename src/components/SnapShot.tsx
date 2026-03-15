@@ -113,8 +113,6 @@ const SnapShot = forwardRef((props: any, ref) => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Supabase error:', error);
-        // Fallback to default image if database fails
         setPuzzles([{
           id: 1,
           image_url: 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
@@ -126,8 +124,6 @@ const SnapShot = forwardRef((props: any, ref) => {
       }
 
       if (!data || data.length === 0) {
-        console.error('No puzzles found for SnapShot');
-        // Fallback to default image
         setPuzzles([{
           id: 1,
           image_url: 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
@@ -138,13 +134,10 @@ const SnapShot = forwardRef((props: any, ref) => {
         return;
       }
 
-      console.log(`Loaded ${data.length} SnapShot puzzles from Supabase`);
       setPuzzles(data);
       setLoading(false);
       
-    } catch (error) {
-      console.error('Error fetching puzzles:', error);
-      // Fallback to default image
+    } catch {
       setPuzzles([{
         id: 1,
         image_url: 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
@@ -212,7 +205,6 @@ const SnapShot = forwardRef((props: any, ref) => {
     draggablePieceSize = Math.max(60, draggablePieceSize);
 
     if (isNaN(draggablePieceSize) || draggablePieceSize <= 0) {
-      console.error('Invalid piece size:', draggablePieceSize);
       return;
     }
 
@@ -242,9 +234,7 @@ const SnapShot = forwardRef((props: any, ref) => {
             0, 0,
             draggablePieceSize, draggablePieceSize
           );
-        } catch (err) {
-          console.error('Error drawing piece:', err);
-        }
+        } catch { }
       }
 
       container.appendChild(pieceCanvas);
@@ -625,8 +615,6 @@ const SnapShot = forwardRef((props: any, ref) => {
     };
 
     img.onerror = (err) => {
-      console.error("Image load failed:", currentPuzzle.image_url, err);
-      // Try fallback image
       const fallbackUrl = 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
       if (img.src !== fallbackUrl) {
         img.crossOrigin = "anonymous";

@@ -49,7 +49,6 @@ export function useUserStats(userId: string | undefined): UserStats {
         if (cancelled) return;
 
         if (error) {
-          console.error('Error fetching user stats:', error);
           setStats({ ...DEFAULT_STATS });
           return;
         }
@@ -68,9 +67,8 @@ export function useUserStats(userId: string | undefined): UserStats {
           vibe: getVibe(bestScore),
           loading: false,
         });
-      } catch (error) {
+      } catch {
         if (!cancelled) {
-          console.error('Error calculating stats:', error);
           setStats({ ...DEFAULT_STATS });
         }
       }

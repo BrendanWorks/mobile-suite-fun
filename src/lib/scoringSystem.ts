@@ -423,16 +423,7 @@ export const applyPerfectScoreBonus = (
   const baseScore = gameScore.normalizedScore;
   const isPerfectScore = Math.abs(baseScore - 100) < 0.001;
 
-  console.log('[applyPerfectScoreBonus]', {
-    gameId: gameScore.gameId,
-    baseScore,
-    isContentPuzzle,
-    isPerfectScore,
-    totalWithBonus: gameScore.totalWithBonus,
-  });
-
   if (!isContentPuzzle || !isPerfectScore) {
-    console.log(`[applyPerfectScoreBonus] Skipping bonus for ${gameScore.gameId}: isContentPuzzle=${isContentPuzzle}, isPerfectScore=${isPerfectScore}`);
     return gameScore;
   }
 

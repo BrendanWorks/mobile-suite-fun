@@ -15,7 +15,6 @@ export function useAuth() {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('❌ Session error:', error.message);
           await supabase.auth.signOut();
           if (mounted) {
             setSession(null);
@@ -30,8 +29,7 @@ export function useAuth() {
           setUser(session?.user ?? null);
           setLoading(false);
         }
-      } catch (err) {
-        console.error('❌ Auth initialization error:', err);
+      } catch {
         if (mounted) {
           setSession(null);
           setUser(null);
@@ -45,14 +43,7 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth event:', event);
-
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('✅ Token refreshed successfully');
-      } else if (event === 'SIGNED_OUT') {
-        console.log('👋 User signed out');
-      } else if (event === 'USER_DELETED') {
-        console.log('🗑️ User deleted');
+      if (event === 'USER_DELETED') {
         await supabase.auth.signOut();
       }
 
@@ -110,13 +101,11 @@ export function useAuth() {
 
       return { error };
     } catch (error) {
-      console.error('Sign out error:', error);
       return { error };
     }
   };
 
   const clearSession = async () => {
-    console.log('🧹 Clearing stale session data');
     await supabase.auth.signOut();
 
     const keys = Object.keys(localStorage);

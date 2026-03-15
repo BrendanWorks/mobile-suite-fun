@@ -133,7 +133,6 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           .in('id', ids);
 
         if (error || !data || data.length === 0) {
-          console.error('FakeOut: Error fetching puzzles:', error, 'IDs:', ids);
           setStatus('finished');
           return;
         }
@@ -143,8 +142,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
         maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
         setImageLoaded(false);
         setStatus('playing');
-      } catch (err) {
-        console.error('FakeOut: Exception loading puzzles:', err);
+      } catch {
         setStatus('finished');
       }
     }

@@ -91,11 +91,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       maxScore: itemCountRef.current
     }),
     onGameEnd: () => {
-      console.log('RankAndRoll: onGameEnd called (time ran out)');
-      if (hasCompletedRef.current) {
-        console.log('RankAndRoll: Already completed, ignoring onGameEnd');
-        return;
-      }
+      if (hasCompletedRef.current) return;
       hasCompletedRef.current = true;
 
       if (feedbackTimeoutRef.current) {
@@ -105,16 +101,12 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
       const callback = onCompleteRef.current;
       const finalCorrect = correctCountRef.current;
       const totalItems = itemCountRef.current;
-      console.log('RankAndRoll: Time up! Calling onComplete with correct:', finalCorrect, 'out of', totalItems);
       if (callback) {
         callback(finalCorrect, totalItems, timeRemainingRef.current);
       }
     },
     skipQuestion: () => {
-      if (hasCompletedRef.current) {
-        console.log('RankAndRoll: Already completed, ignoring skipQuestion');
-        return;
-      }
+      if (hasCompletedRef.current) return;
       hasCompletedRef.current = true;
 
       if (feedbackTimeoutRef.current) {
@@ -124,7 +116,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
       const callback = onCompleteRef.current;
       if (callback) {
-        console.log('RankAndRoll: Skipping with current score:', correctCountRef.current, '/', itemCountRef.current);
         callback(correctCountRef.current, itemCountRef.current, timeRemainingRef.current);
       }
     },
@@ -141,8 +132,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
       // Check if rankingPuzzleId is provided (playlist mode)
       if (props.rankingPuzzleId) {
-        console.log('🎯 Ranky: Loading specific puzzle ID:', props.rankingPuzzleId);
-
         const { data: puzzleData, error: puzzleError } = await supabase
           .from('ranking_puzzles')
           .select('*')
@@ -150,7 +139,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           .single();
 
         if (puzzleError) {
-          console.error('Supabase error loading ranking puzzle:', puzzleError);
           setGameState('playing');
           return;
         }
@@ -162,7 +150,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           .order('item_order', { ascending: true });
 
         if (itemsError) {
-          console.error('Error fetching ranking items:', itemsError);
           setGameState('playing');
           return;
         }
@@ -177,7 +164,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
         }
 
         const loadedPuzzle = { ...puzzleData, items };
-        console.log('✅ Ranky: Loaded puzzle with', loadedPuzzle.items.length, 'items (max', MAX_ITEMS, ')');
 
         setPuzzle(loadedPuzzle);
         itemCountRef.current = loadedPuzzle.items.length;
@@ -189,9 +175,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
         setGameState('playing');
       } else {
-        // Fallback: random puzzle (backwards compatibility)
-        console.log('🎲 Ranky: No rankingPuzzleId provided, loading random puzzle');
-
         const { data, error } = await supabase
           .from('ranking_puzzles')
           .select('*')
@@ -199,7 +182,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           .limit(1);
 
         if (error || !data || data.length === 0) {
-          console.error('Supabase error:', error);
           setGameState('playing');
           return;
         }
@@ -211,7 +193,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
           .order('item_order', { ascending: true });
 
         if (itemsError) {
-          console.error('Error fetching items:', itemsError);
           setGameState('playing');
           return;
         }
@@ -236,8 +217,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
         setGameState('playing');
       }
-    } catch (error) {
-      console.error('Error fetching puzzle:', error);
+    } catch {
       setGameState('playing');
     }
   };
@@ -402,22 +382,10 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
 
     setGameState('feedback');
 
-    console.log('RankAndRoll: Puzzle completed', {
-      correct,
-      total: items.length,
-      timeRemaining: props.timeRemaining
-    });
-
-    // Show feedback for FEEDBACK_DISPLAY_TIME, then complete
-    console.log(`RankAndRoll: Showing feedback for ${FEEDBACK_DISPLAY_TIME}ms, then completing round`);
     feedbackTimeoutRef.current = window.setTimeout(() => {
-      if (hasCompletedRef.current) {
-        console.log('RankAndRoll: Already completed, ignoring feedback timeout');
-        return;
-      }
+      if (hasCompletedRef.current) return;
       hasCompletedRef.current = true;
 
-      console.log('RankAndRoll: ✅ Feedback complete - Calling onComplete');
       const callback = onCompleteRef.current;
       if (callback) {
         callback(correct, items.length, timeRemainingRef.current);

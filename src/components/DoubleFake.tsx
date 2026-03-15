@@ -69,7 +69,7 @@ const DoubleFake = forwardRef((props: DoubleFakeProps, ref) => {
       score: scoreRef.current,
       maxScore: maxScoreRef.current
     }),
-    onGameEnd: () => console.log('Session Ended'),
+    onGameEnd: () => {},
     get pauseTimer() { return status === 'feedback'; }
   }));
 

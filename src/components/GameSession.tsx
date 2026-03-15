@@ -165,8 +165,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [currentGameScore, setCurrentGameScore] = useState<{ score: number; maxScore: number }>({ score: 0, maxScore: 0 });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingSessionData, setPendingSessionData] = useState<any>(null);
-  const [sevenSecondsElapsed, setSevenSecondsElapsed] = useState(false);
-  const [playlistGames, setPlaylistGames] = useState<string[]>([]);
   // Start loading true if playlist is provided to prevent race condition
   const [playlistLoading, setPlaylistLoading] = useState(!!playlistId);
   const [playlistRounds, setPlaylistRounds] = useState<PlaylistRound[]>([]);
@@ -194,7 +192,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     try {
       const round = rounds.find(r => r.round_number === roundNumber);
       if (!round) {
-        console.error('❌ Round not found:', roundNumber, 'Available rounds:', rounds.map(r => r.round_number));
         return;
       }
 
@@ -202,20 +199,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       if (round.game_id) {
         gameSlug = GAME_ID_TO_SLUG[round.game_id];
-        if (!gameSlug) {
-          console.error('❌ No mapping found for game_id:', round.game_id, 'Available mappings:', Object.keys(GAME_ID_TO_SLUG));
-        }
       } else if ('game_slug' in round.metadata) {
         gameSlug = round.metadata.game_slug;
       }
 
       if (!gameSlug) {
-        console.error('❌ Could not determine game slug for round:', {
-          round_number: roundNumber,
-          game_id: round.game_id,
-          game_name: round.game_name,
-          metadata: round.metadata
-        });
         return;
       }
 
@@ -247,8 +235,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       setCurrentRankingPuzzleId(round.ranking_puzzle_id);
       setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
-    } catch (err) {
-      console.error('❌ loadRound threw unexpectedly:', err);
+    } catch {
     } finally {
       setPlaylistLoading(false);
     }
@@ -256,13 +243,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const loadPlaylist = useCallback(async () => {
     if (!playlistId) {
-      console.error('❌ No playlist ID provided');
       setPlaylistLoading(false);
       return;
     }
 
     setPlaylistLoading(true);
-    console.log('🎮 Loading playlist:', playlistId);
 
     try {
       const { data: playlist, error: playlistError } = await supabase
@@ -272,12 +257,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         .maybeSingle();
 
       if (playlistError) {
-        console.error('❌ Playlist query error:', playlistError);
         throw playlistError;
       }
 
       if (!playlist) {
-        console.error('❌ Playlist not found:', playlistId);
         setLoadError('Playlist not found. Returning to menu...');
         setPlaylistLoading(false);
         setTimeout(onExit, 2000);
@@ -286,7 +269,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       setPlaylistName(playlist.name);
       setLevelNumber(playlist.sequence_order);
-      console.log('✅ Playlist found:', playlist.name, '- Level', playlist.sequence_order);
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
@@ -295,19 +277,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         .order('round_number');
 
       if (roundsError) {
-        console.error('❌ Playlist rounds query error:', roundsError);
         throw roundsError;
       }
 
       if (!rounds || rounds.length === 0) {
-        console.error('❌ No rounds found for playlist:', playlistId);
         setLoadError('No rounds configured for this playlist. Returning to menu...');
         setPlaylistLoading(false);
         setTimeout(onExit, 2000);
         return;
       }
-
-      console.log('✅ Found', rounds.length, 'rounds');
 
       const gameIds = rounds
         .map(r => r.game_id)
@@ -317,8 +295,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         .from('games')
         .select('id, name')
         .in('id', gameIds);
-
-      console.log('✅ Loaded game names for', games?.length || 0, 'games');
 
       const transformedRounds: PlaylistRound[] = rounds.map(r => ({
         round_number: r.round_number,
@@ -331,13 +307,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       }));
 
       setPlaylistRounds(transformedRounds);
-      console.log('✅ Playlist loaded:', playlist.name, transformedRounds.length, 'rounds');
 
       loadRound(1, transformedRounds);
       setShowLevelIntro(true);
       setGameState('intro');
     } catch (error) {
-      console.error('❌ Error loading playlist:', error);
       logClientError(error, { source: 'loadPlaylist', playlist_id: playlistId });
       setLoadError('Could not load playlist. Returning to menu...');
       setPlaylistLoading(false);
@@ -352,8 +326,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     const unlock = async () => {
       if (!unlocked) {
         unlocked = true;
-        const success = await audioManager.unlockAudio();
-        console.log(`🔓 Audio unlock result: ${success ? 'success' : 'failed'}`);
+        await audioManager.unlockAudio();
       }
     };
 
@@ -405,7 +378,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           const { success, data } = await createGameSession(newUser.id);
           if (success && data) {
             const newSessionId = data.id;
-            console.log('✅ Game session created for new user:', newSessionId);
 
             const completeResult = await completeGameSession(
               newSessionId,
@@ -417,14 +389,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
               pendingSessionData.playtimeSeconds
             );
 
-            if (completeResult.success) {
-              console.log('✅ Session saved after login');
-            }
-
-            const resultsSuccess = await saveAllRoundResults(newSessionId, newUser.id, pendingSessionData.results);
-            if (resultsSuccess.success) {
-              console.log('✅ Round results saved after login');
-            }
+            await saveAllRoundResults(newSessionId, newUser.id, pendingSessionData.results);
 
             setSessionId(newSessionId);
             setSessionSaved(true);
@@ -432,7 +397,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
             setShowAuthModal(false);
           }
         } catch (error) {
-          console.error('Error saving pending session:', error);
           logClientError(error, { source: 'savePendingSession' });
         }
       }
@@ -450,10 +414,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           if (success && data) {
             setSessionId(data.id);
             sessionStartTimeRef.current = Date.now();
-            console.log('✅ Game session created:', data.id);
           }
-        } catch (error) {
-          console.error('Error creating game session:', error);
+        } catch {
         }
       };
 
@@ -464,9 +426,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Start 7-second timer when game completes
   useEffect(() => {
     if (gameState === 'complete') {
-      setSevenSecondsElapsed(false);
       const timer = setTimeout(() => {
-        setSevenSecondsElapsed(true);
         if (!user?.id && !sessionSaved && pendingSessionData) {
           setShowAuthModal(true);
         }
@@ -551,20 +511,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
               sessionData.playtimeSeconds
             );
 
-            if (completeResult.success && !cancelled) {
-              console.log('✅ Session completed:', {
-                sessionId,
-                totalScore: sessionData.session.totalScore,
-                percentage: sessionData.session.percentage,
-                grade: sessionData.grade,
-                playtimeSeconds: sessionData.playtimeSeconds
-              });
-            }
-
-            const resultsSuccess = await saveAllRoundResults(sessionId, user.id, sessionData.results);
-            if (resultsSuccess.success && !cancelled) {
-              console.log('✅ Round results saved:', sessionData.results.length, 'rounds');
-            }
+            await saveAllRoundResults(sessionId, user.id, sessionData.results);
 
             const { data: profile } = await supabase
               .from('user_profiles')
@@ -589,7 +536,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
             }
           } catch (error) {
             if (!cancelled) {
-              console.error('Error saving session:', error);
               logClientError(error, { source: 'saveSession', session_id: sessionId });
             }
           }
@@ -611,8 +557,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         setCurrentGame(nextGame);
         setPlayedGames(prev => [...prev, nextGame.id]);
         return;
-      } else {
-        console.error('❌ Game not found for slug:', currentGameSlug);
       }
     }
 
@@ -641,13 +585,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
     if (!currentGame) {
-      console.error('Invalid game completion: no currentGame, skipping to next round');
       handleNextRound();
       return;
     }
 
     if (maxScore === 0 || !isFinite(maxScore)) {
-      console.warn('Game completed with invalid maxScore, using default values', { maxScore, rawScore });
       maxScore = 100;
       rawScore = 0;
     }
@@ -826,13 +768,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setGameState('complete');
     } else {
       const nextRound = currentRound + 1;
-      console.log(`⏭️  Moving to round ${nextRound}`);
       setCurrentRound(nextRound);
       setCurrentGame(null);
       setCurrentGameScore({ score: 0, maxScore: 0 });
 
       if (playlistId && playlistRounds.length > 0) {
-        console.log(`📋 Loading playlist round ${nextRound}`);
         loadRound(nextRound, playlistRounds);
         setGameState('intro');
       } else {
@@ -843,9 +783,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const handleSkipGame = () => {
     if (currentGame) {
-      console.log(`Game skipped: ${currentGame.name}`);
-
-      // Track game skip
       ReactGA.event({
         category: 'Game',
         action: 'game_skipped',
@@ -913,9 +850,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         }));
 
         await saveAllRoundResults(sessionId, user.id, results);
-        console.log('✅ Progress saved on quit:', { completedRounds, score: currentSessionScore });
-      } catch (error) {
-        console.error('Error saving progress on quit:', error);
+      } catch {
       }
     }
 
@@ -941,7 +876,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Auto-advance from level intro after 4 seconds
   useEffect(() => {
     if (showLevelIntro && currentRound === 1 && gameState === 'intro') {
-      console.log(`⏱️ Level intro showing for ${playlistName}...`);
       const timer = setTimeout(() => {
         setShowLevelIntro(false);
       }, 4000);
@@ -952,7 +886,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Auto-advance from intro to playing after 4 seconds (works for all rounds in intro)
   useEffect(() => {
     if (gameState === 'intro' && currentGame && !showLevelIntro) {
-      console.log(`⏱️ Starting ${currentGame.name} in 4 seconds...`);
       const timer = setTimeout(() => startRound(), 4000);
       return () => clearTimeout(timer);
     }
@@ -1068,7 +1001,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Results screen
   if (gameState === 'results') {
     if (roundScores.length === 0) {
-      console.error('Results screen with no scores, advancing to next round');
       handleNextRound();
       return null;
     }
@@ -1108,15 +1040,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Complete screen
   if (gameState === 'complete') {
     if (roundScores.length === 0) {
-      console.error('Complete screen with no scores, returning to menu');
       onExit();
       return null;
     }
 
     const gameScores = roundScores.map(r => r.normalizedScore);
     const sessionTotal = calculateSessionScore(gameScores);
-    console.log('🎊 COMPLETE SCREEN - Game Scores:', gameScores);
-    console.log('🎊 Session Total:', sessionTotal);
 
     const celebrationTiles = roundScores.map((round) => ({
       gameId: round.gameId,

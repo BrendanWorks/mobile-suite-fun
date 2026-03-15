@@ -19,16 +19,13 @@ const STORAGE_KEY = 'rowdy_anonymous_session';
 // 5=Booze(45), 6=Sports(46), 7=Money(47), 8=Hipsters(48), 9=Health(49)
 const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49];
 
-console.log('📋 PLAYLIST_SEQUENCE initialized:', PLAYLIST_SEQUENCE);
-
 export const anonymousSessionManager = {
   get(): AnonymousSession | null {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) return null;
       return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading anonymous session:', error);
+    } catch {
       return null;
     }
   },
@@ -36,8 +33,7 @@ export const anonymousSessionManager = {
   save(session: AnonymousSession): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    } catch (error) {
-      console.error('Error saving anonymous session:', error);
+    } catch {
     }
   },
 
@@ -54,39 +50,32 @@ export const anonymousSessionManager = {
   clear(): void {
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.error('Error clearing anonymous session:', error);
+    } catch {
     }
   },
 
   getCurrentPlaylistId(): number {
     const session = this.get();
-    const playlistId = session?.currentPlaylistId || PLAYLIST_SEQUENCE[0];
-    console.log(`📍 getCurrentPlaylistId: ${playlistId}`, session);
-    return playlistId;
+    return session?.currentPlaylistId || PLAYLIST_SEQUENCE[0];
   },
 
   advanceToNextPlaylist(): number {
     const current = this.getCurrentPlaylistId();
     const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
 
-    // If current is not in sequence or is the last one, wrap to first
     const nextIndex = currentIndex === -1 || currentIndex >= PLAYLIST_SEQUENCE.length - 1
       ? 0
       : currentIndex + 1;
 
     const next = PLAYLIST_SEQUENCE[nextIndex];
     this.update({ currentPlaylistId: next, completedRounds: 0, roundScores: [] });
-    console.log(`📋 Advanced from playlist ${current} to ${next} (index ${currentIndex} → ${nextIndex})`);
     return next;
   },
 
   isLastPlaylist(): boolean {
     const current = this.getCurrentPlaylistId();
     const currentIndex = PLAYLIST_SEQUENCE.indexOf(current);
-    const isLast = currentIndex === PLAYLIST_SEQUENCE.length - 1;
-    console.log(`🔍 isLastPlaylist check: current=${current}, index=${currentIndex}, isLast=${isLast}`);
-    return isLast;
+    return currentIndex === PLAYLIST_SEQUENCE.length - 1;
   },
 
   reset(): void {
