@@ -289,12 +289,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       const gameIds = rounds
         .map(r => r.game_id)
-        .filter(id => id !== null);
+        .filter((id): id is number => id !== null);
 
-      const { data: games } = await supabase
-        .from('games')
-        .select('id, name')
-        .in('id', gameIds);
+      const games = gameIds.length > 0
+        ? (await supabase.from('games').select('id, name').in('id', gameIds)).data
+        : [];
 
       const transformedRounds: PlaylistRound[] = rounds.map(r => ({
         round_number: r.round_number,
@@ -770,6 +769,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       const nextRound = currentRound + 1;
       setCurrentRound(nextRound);
       setCurrentGame(null);
+      setCurrentGameSlug(null);
       setCurrentGameScore({ score: 0, maxScore: 0 });
 
       if (playlistId && playlistRounds.length > 0) {
