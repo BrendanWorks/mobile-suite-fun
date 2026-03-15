@@ -15,9 +15,17 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
-  logClientError(reason instanceof Error ? reason : new Error(String(reason)), {
-    source: 'unhandledrejection',
-  });
+  let err: Error;
+  if (reason instanceof Error) {
+    err = reason;
+  } else if (reason && typeof reason === 'object') {
+    const msg = (reason as any).message || (reason as any).error || JSON.stringify(reason);
+    err = new Error(msg);
+    err.stack = (reason as any).stack ?? undefined;
+  } else {
+    err = new Error(String(reason));
+  }
+  logClientError(err, { source: 'unhandledrejection' });
 });
 
 createRoot(document.getElementById('root')!).render(

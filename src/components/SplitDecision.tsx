@@ -93,7 +93,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
           .eq('sequence_round', 1)
           .order('id', { ascending: true });
 
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         const ids = (data || []).map(p => p.id);
         setPuzzleIds(ids);
         if (ids.length > 0) {
@@ -121,7 +121,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         .eq('id', puzzleId)
         .maybeSingle();
 
-      if (puzzleError) throw puzzleError;
+      if (puzzleError) throw new Error(puzzleError.message);
       if (!puzzleData) {
         setLoading(false);
         return;
@@ -134,7 +134,7 @@ const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roun
         .eq('puzzle_id', puzzleData.id)
         .order('item_order', { ascending: true });
 
-      if (itemsError) throw itemsError;
+      if (itemsError) throw new Error(itemsError.message);
 
       setPuzzle({
         ...puzzleData,
