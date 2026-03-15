@@ -1106,10 +1106,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }));
 
     const handleShowLeaderboard = () => {
-      if (!user && !sessionSaved) {
-        if (playlistId && !anonymousSessionManager.isLastPlaylist()) {
-          anonymousSessionManager.advanceToNextPlaylist();
-        }
+      if (playlistId && !anonymousSessionManager.isLastPlaylist()) {
+        anonymousSessionManager.advanceToNextPlaylist();
       }
       setShowLeaderboard(true);
     };
