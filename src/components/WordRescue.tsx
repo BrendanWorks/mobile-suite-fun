@@ -162,7 +162,7 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
       }
       setGameState('roundEnd');
     },
-    hideTimer: true,
+    muteTimerSounds: true,
     pauseTimer: gameState !== 'playing' || !timerStarted,
     canSkipQuestion: false
   }), [gameState, timerStarted]);

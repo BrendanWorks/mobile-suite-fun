@@ -23,6 +23,7 @@ export default function GameWrapper({
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
   const [hideTimerBar, setHideTimerBar] = useState(false);
+  const [muteTimerSounds, setMuteTimerSounds] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const lingerTimeoutRef = useRef<number | null>(null);
@@ -49,10 +50,15 @@ export default function GameWrapper({
     if (childrenRef.current?.hideTimer) {
       setHideTimerBar(true);
     }
+    if (childrenRef.current?.muteTimerSounds) {
+      setMuteTimerSounds(true);
+    }
   }, [children]);
 
+  const soundsMuted = hideTimerBar || muteTimerSounds;
+
   useEffect(() => {
-    if (hideTimerBar) return;
+    if (soundsMuted) return;
     playTimerCountdown();
     countdownIntervalRef.current = window.setInterval(() => {
       playTimerCountdown();
@@ -87,10 +93,10 @@ export default function GameWrapper({
         timerSoundPollRef.current = null;
       }
     };
-  }, [hideTimerBar]);
+  }, [soundsMuted]);
 
   useEffect(() => {
-    if (hideTimerBar) return;
+    if (soundsMuted) return;
     if (!isActive) {
       stopTimerCountdown();
       if (countdownIntervalRef.current) {
@@ -102,10 +108,10 @@ export default function GameWrapper({
         timerSoundPollRef.current = null;
       }
     }
-  }, [isActive, hideTimerBar]);
+  }, [isActive, soundsMuted]);
 
   useEffect(() => {
-    if (hideTimerBar) return;
+    if (soundsMuted) return;
     const isPaused = childrenRef.current?.pauseTimer === true;
     if (isPaused) return;
     if (timeRemaining <= 5 && timeRemaining > 0 && !hurryUpFiredRef.current) {
@@ -117,7 +123,7 @@ export default function GameWrapper({
       }
       playHurryUp();
     }
-  }, [timeRemaining, hideTimerBar]);
+  }, [timeRemaining, soundsMuted]);
 
   const handleEarlyCompletion = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
