@@ -219,8 +219,8 @@ function ReturningUserScreen({
                 </div>
                 <div className="w-px h-8" style={{ background: 'rgba(239,68,68,0.2)' }} />
                 <div className="text-center">
-                  <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(0,255,255,0.5)' }}>Grade</p>
-                  <p className="text-xl font-black" style={{ color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.6)' }}>{userStats.averageGrade}</p>
+                  <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(0,255,255,0.5)' }}>Vibe</p>
+                  <p className="text-xl font-black" style={{ color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.6)' }}>{userStats.vibe}</p>
                 </div>
               </div>
             )}

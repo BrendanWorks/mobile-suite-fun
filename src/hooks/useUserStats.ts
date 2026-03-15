@@ -4,14 +4,22 @@ import { supabase } from '../lib/supabase';
 interface UserStats {
   totalGamesPlayed: number;
   bestScore: number;
-  averageGrade: string;
+  vibe: string;
   loading: boolean;
+}
+
+function getVibe(bestScore: number): string {
+  if (bestScore >= 550) return '👑 Goat';
+  if (bestScore >= 400) return '💥 Legend';
+  if (bestScore >= 250) return '🔥 Clutch';
+  if (bestScore >= 100) return '😎 Solid';
+  return '🥶 Rusty';
 }
 
 const DEFAULT_STATS: UserStats = {
   totalGamesPlayed: 0,
   bestScore: 0,
-  averageGrade: '--',
+  vibe: '--',
   loading: false,
 };
 
@@ -54,23 +62,10 @@ export function useUserStats(userId: string | undefined): UserStats {
         const totalGames = sessions.length;
         const bestScore = Math.max(...sessions.map(s => s.total_score || 0));
 
-        const gradeOrder = ['D', 'C', 'B', 'A', 'S'];
-        const gradesWithValues = sessions
-          .filter(s => s.session_grade)
-          .map(s => gradeOrder.indexOf(s.session_grade || 'D'));
-
-        let averageGrade = '--';
-        if (gradesWithValues.length > 0) {
-          const avgGradeIndex = Math.round(
-            gradesWithValues.reduce((sum, val) => sum + val, 0) / gradesWithValues.length
-          );
-          averageGrade = gradeOrder[Math.max(0, Math.min(avgGradeIndex, gradeOrder.length - 1))];
-        }
-
         setStats({
           totalGamesPlayed: totalGames,
           bestScore,
-          averageGrade,
+          vibe: getVibe(bestScore),
           loading: false,
         });
       } catch (error) {
