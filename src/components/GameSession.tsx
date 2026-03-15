@@ -1214,7 +1214,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         />
 
         {/* Game Content */}
-        <div key={`game-content-${currentRound}`} className="flex-1 overflow-auto animate-game-enter">
+        <div key={`game-content-${currentRound}`} className="flex-1 overflow-hidden animate-game-enter" style={{ minHeight: 0 }}>
           <React.Suspense fallback={
             <div className="h-full w-full flex items-center justify-center bg-black">
               <div className="text-cyan-400 text-lg font-bold animate-pulse" style={{ textShadow: '0 0 10px #00ffff' }}>Loading...</div>
