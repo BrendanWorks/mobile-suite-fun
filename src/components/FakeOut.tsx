@@ -66,6 +66,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
   const [streak, setStreak] = useState(0);
   const [status, setStatus] = useState<'loading' | 'playing' | 'feedback' | 'finished'>('loading');
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; message: string } | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const scoreRef = useRef(0);
   const maxScoreRef = useRef(0);
   const hasEndedRef = useRef(false);
@@ -126,6 +127,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
 
         setPuzzles(shuffled);
         maxScoreRef.current = shuffled.length * (BASE_POINTS + STREAK_BONUS);
+        setImageLoaded(false);
         setStatus('playing');
         console.log(`FakeOut loaded ${shuffled.length} puzzles`);
       } catch (err) {
@@ -209,6 +211,7 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
           onCompleteRef.current(newScore, maxScoreRef.current);
         }
       } else {
+        setImageLoaded(false);
         setCurrentIndex(prev => prev + 1);
         setStatus('playing');
         setLastResult(null);
@@ -287,17 +290,25 @@ const FakeOut = forwardRef((props: FakeOutProps, ref) => {
                   : 'border-red-500'
                 : 'border-cyan-400'
             }`}
-            style={status === 'feedback' 
+            style={status === 'feedback'
               ? lastResult?.isCorrect
                 ? { boxShadow: '0 0 20px #22c55e' }
                 : { boxShadow: '0 0 20px #ef4444' }
               : { boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)' }
             }
           >
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-black flex items-center justify-center z-10">
+                <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             <img
+              key={currentPuzzle.id}
               src={currentPuzzle.image_url}
               alt="Mystery Content"
               className="w-full h-full object-cover"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageLoaded(true)}
             />
 
             {/* Feedback Overlay */}
