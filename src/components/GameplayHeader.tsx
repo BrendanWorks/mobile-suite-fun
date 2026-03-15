@@ -197,7 +197,7 @@ export default function GameplayHeader({
         {/* Left: Round info */}
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-cyan-500/70">
-            Round {currentRound}/{totalRounds}
+            Round {(['One','Two','Three','Four','Five'])[currentRound - 1] ?? currentRound}
           </span>
           <div className="flex items-center gap-1">
             {gameId && GAME_ICONS[gameId] && (
