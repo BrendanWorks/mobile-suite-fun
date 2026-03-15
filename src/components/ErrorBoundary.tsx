@@ -59,6 +59,13 @@ export default class ErrorBoundary extends Component<Props, State> {
       this.setState({ logged: true });
       logErrorBoundaryError(error, info.componentStack ?? null, this.props.context);
     }
+
+    if (this.props.onSkipRound) {
+      setTimeout(() => {
+        this.setState({ hasError: false, error: null, logged: false });
+        this.props.onSkipRound!();
+      }, 1500);
+    }
   }
 
   handleReset = () => {
@@ -74,8 +81,31 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.hasError) return this.props.children;
 
-    const msg = this.state.error?.message;
     const canSkip = !!this.props.onSkipRound;
+
+    if (canSkip) {
+      return (
+        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
+          <div className="max-w-md w-full text-center">
+            <p
+              className="text-5xl font-black text-red-500 mb-6"
+              style={{ textShadow: '0 0 30px #ef4444', letterSpacing: '0.1em' }}
+            >
+              ROWDY
+            </p>
+            <div
+              className="border-2 border-cyan-500/50 rounded-xl p-6"
+              style={{ boxShadow: '0 0 20px rgba(0,255,255,0.15)' }}
+            >
+              <p className="text-cyan-400 text-lg font-semibold mb-2">Round skipped</p>
+              <p className="text-cyan-300/60 text-sm">Moving to next round...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const msg = this.state.error?.message;
 
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
@@ -98,24 +128,13 @@ export default class ErrorBoundary extends Component<Props, State> {
               This error has been logged automatically.
             </p>
           </div>
-          <div className="flex flex-col gap-3">
-            {canSkip && (
-              <button
-                onClick={this.handleSkipRound}
-                className="px-8 py-3 bg-transparent border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
-                style={{ textShadow: '0 0 8px rgba(0,255,255,0.5)', boxShadow: '0 0 15px rgba(0,255,255,0.3)' }}
-              >
-                Skip Round &amp; Continue
-              </button>
-            )}
-            <button
-              onClick={this.handleReset}
-              className="px-8 py-3 bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
-              style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.3)' }}
-            >
-              Return to Menu
-            </button>
-          </div>
+          <button
+            onClick={this.handleReset}
+            className="px-8 py-3 bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-semibold rounded-lg transition-all active:scale-95"
+            style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.3)' }}
+          >
+            Return to Menu
+          </button>
         </div>
       </div>
     );
