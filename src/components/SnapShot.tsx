@@ -167,7 +167,7 @@ const SnapShot = forwardRef((props: any, ref) => {
     const container = canvas.parentElement;
     if (!container) return;
 
-    const size = Math.min(container.offsetWidth, container.offsetHeight);
+    const size = container.offsetWidth;
     canvas.width = size;
     canvas.height = size;
     gameStateRef.current.canvasWidth = canvas.width;
@@ -788,16 +788,14 @@ const SnapShot = forwardRef((props: any, ref) => {
         </div>
       </div>
 
-      {/* Puzzle Canvas — flex-1 so it takes remaining space but shrinks */}
-      <div className="flex-1 flex items-center justify-center min-h-0 mb-2">
+      {/* Puzzle Canvas — fixed square based on width only, never resizes with tray */}
+      <div className="flex-shrink-0 flex justify-center mb-2">
         <div
-          className="relative bg-black rounded-xl p-1.5 border-2 border-pink-400/40"
+          className="relative bg-black rounded-xl p-1.5 border-2 border-pink-400/40 w-full"
           style={{
             boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)',
             aspectRatio: '1 / 1',
-            maxHeight: '100%',
-            maxWidth: '100%',
-            width: 'min(100%, 60vh)',
+            maxWidth: '420px',
           }}
         >
           <canvas
