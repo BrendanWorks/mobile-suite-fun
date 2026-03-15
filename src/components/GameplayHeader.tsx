@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, MoveVertical as MoreVertical } from 'lucide-react';
+import { Volume2, VolumeX, MoveVertical as MoreVertical, SkipForward } from 'lucide-react';
 
 interface GameplayHeaderProps {
   gameName: string;
@@ -9,6 +9,8 @@ interface GameplayHeaderProps {
   onQuit: () => void;
   soundEnabled: boolean;
   onSoundToggle: (enabled: boolean) => void;
+  debugMode?: boolean;
+  onSkipRound?: () => void;
 }
 
 export default function GameplayHeader({
@@ -19,6 +21,8 @@ export default function GameplayHeader({
   onQuit,
   soundEnabled,
   onSoundToggle,
+  debugMode,
+  onSkipRound,
 }: GameplayHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -130,6 +134,19 @@ export default function GameplayHeader({
                   )}
                   Sound: {soundEnabled ? 'On' : 'Off'}
                 </button>
+
+                {debugMode && (
+                  <button
+                    onClick={() => {
+                      onSkipRound?.();
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-yellow-400 hover:bg-yellow-500/20 rounded flex items-center gap-2 transition-colors text-sm border-t border-yellow-500/30"
+                  >
+                    <SkipForward size={16} />
+                    <span>Skip Round</span>
+                  </button>
+                )}
 
                 <div className="border-t border-cyan-500/30" />
 
