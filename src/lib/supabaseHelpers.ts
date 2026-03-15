@@ -263,32 +263,39 @@ export async function insertLeaderboardEntry(
   }
 }
 
-export async function fetchTopLeaderboard(
-  limit = 10,
-  since?: Date
+async function fetchBadgeHelpers(): Promise<{ mostRoundsUserId: string | null; perfectScoreUserId: string | null; speedDemonUserId: string | null }> {
+  const [mostRoundsUserId, perfectScoreUserId, speedDemonUserId] = await Promise.all([
+    fetchMostRoundsUserId(),
+    fetchPerfectScoreUserId(),
+    fetchSpeedDemonUserId(),
+  ]);
+  return { mostRoundsUserId, perfectScoreUserId, speedDemonUserId };
+}
+
+export async function fetchTopAllTime(
+  limit = 25
 ): Promise<{ success: boolean; data?: LeaderboardEntry[]; error?: string }> {
   try {
-    let query = supabase
-      .from('leaderboard_entries')
-      .select('id, user_id, score, game_id, display_name, playlist_id, round_count, created_at, badge_eagle_eye, badge_trivia, badge_wordsmith, badge_zeitgeist, badge_arcade_king')
-      .order('score', { ascending: false })
-      .limit(limit);
-
-    if (since) {
-      query = query.gte('created_at', since.toISOString());
-    }
-
-    const [{ data, error }, mostRoundsUserId, perfectScoreUserId, speedDemonUserId] = await Promise.all([
-      query,
-      fetchMostRoundsUserId(),
-      fetchPerfectScoreUserId(),
-      fetchSpeedDemonUserId(),
+    const [{ data, error }, { mostRoundsUserId, perfectScoreUserId, speedDemonUserId }] = await Promise.all([
+      supabase
+        .from('leaderboard_lifetime')
+        .select('user_id, lifetime_score, display_name, badge_eagle_eye, badge_trivia, badge_wordsmith, badge_zeitgeist, badge_arcade_king, last_played_at')
+        .order('lifetime_score', { ascending: false })
+        .limit(limit),
+      fetchBadgeHelpers(),
     ]);
 
     if (error) throw error;
 
     const entries: LeaderboardEntry[] = (data ?? []).map((row, idx) => ({
-      ...row,
+      id: row.user_id,
+      user_id: row.user_id,
+      score: row.lifetime_score,
+      game_id: null,
+      display_name: row.display_name ?? 'Anonymous',
+      playlist_id: null,
+      round_count: 0,
+      created_at: row.last_played_at,
       rank: idx + 1,
       badge_most_rounds: mostRoundsUserId != null && row.user_id === mostRoundsUserId,
       badge_perfect_score: perfectScoreUserId != null && row.user_id === perfectScoreUserId,
@@ -302,7 +309,7 @@ export async function fetchTopLeaderboard(
 
     return { success: true, data: entries };
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
+    console.error('Error fetching all-time leaderboard:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -310,14 +317,84 @@ export async function fetchTopLeaderboard(
   }
 }
 
-export async function fetchTopAllTime(limit = 10) {
-  return fetchTopLeaderboard(limit);
-}
+export async function fetchTopThisWeek(
+  limit = 25
+): Promise<{ success: boolean; data?: LeaderboardEntry[]; error?: string }> {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
 
-export async function fetchTopThisWeek(limit = 10) {
-  const since = new Date();
-  since.setDate(since.getDate() - 7);
-  return fetchTopLeaderboard(limit, since);
+    const [{ data, error }, { mostRoundsUserId, perfectScoreUserId, speedDemonUserId }] = await Promise.all([
+      supabase
+        .from('leaderboard_entries')
+        .select('user_id, score, display_name, badge_eagle_eye, badge_trivia, badge_wordsmith, badge_zeitgeist, badge_arcade_king, created_at')
+        .gte('created_at', since.toISOString())
+        .order('score', { ascending: false }),
+      fetchBadgeHelpers(),
+    ]);
+
+    if (error) throw error;
+
+    const aggregated = new Map<string, { score: number; display_name: string; badge_eagle_eye: boolean; badge_trivia: boolean; badge_wordsmith: boolean; badge_zeitgeist: boolean; badge_arcade_king: boolean; last_played_at: string }>();
+    for (const row of data ?? []) {
+      const existing = aggregated.get(row.user_id);
+      if (existing) {
+        existing.score += row.score;
+        existing.badge_eagle_eye = existing.badge_eagle_eye || (row.badge_eagle_eye ?? false);
+        existing.badge_trivia = existing.badge_trivia || (row.badge_trivia ?? false);
+        existing.badge_wordsmith = existing.badge_wordsmith || (row.badge_wordsmith ?? false);
+        existing.badge_zeitgeist = existing.badge_zeitgeist || (row.badge_zeitgeist ?? false);
+        existing.badge_arcade_king = existing.badge_arcade_king || (row.badge_arcade_king ?? false);
+        if (row.created_at > existing.last_played_at) {
+          existing.display_name = row.display_name ?? existing.display_name;
+          existing.last_played_at = row.created_at;
+        }
+      } else {
+        aggregated.set(row.user_id, {
+          score: row.score,
+          display_name: row.display_name ?? 'Anonymous',
+          badge_eagle_eye: row.badge_eagle_eye ?? false,
+          badge_trivia: row.badge_trivia ?? false,
+          badge_wordsmith: row.badge_wordsmith ?? false,
+          badge_zeitgeist: row.badge_zeitgeist ?? false,
+          badge_arcade_king: row.badge_arcade_king ?? false,
+          last_played_at: row.created_at,
+        });
+      }
+    }
+
+    const sorted = Array.from(aggregated.entries())
+      .sort((a, b) => b[1].score - a[1].score)
+      .slice(0, limit);
+
+    const entries: LeaderboardEntry[] = sorted.map(([userId, agg], idx) => ({
+      id: userId,
+      user_id: userId,
+      score: agg.score,
+      game_id: null,
+      display_name: agg.display_name,
+      playlist_id: null,
+      round_count: 0,
+      created_at: agg.last_played_at,
+      rank: idx + 1,
+      badge_most_rounds: mostRoundsUserId != null && userId === mostRoundsUserId,
+      badge_perfect_score: perfectScoreUserId != null && userId === perfectScoreUserId,
+      badge_speed_demon: speedDemonUserId != null && userId === speedDemonUserId,
+      badge_eagle_eye: agg.badge_eagle_eye,
+      badge_trivia: agg.badge_trivia,
+      badge_wordsmith: agg.badge_wordsmith,
+      badge_zeitgeist: agg.badge_zeitgeist,
+      badge_arcade_king: agg.badge_arcade_king,
+    }));
+
+    return { success: true, data: entries };
+  } catch (error) {
+    console.error('Error fetching weekly leaderboard:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 export async function saveAllRoundResults(

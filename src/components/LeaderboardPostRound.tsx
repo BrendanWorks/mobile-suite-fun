@@ -185,35 +185,26 @@ export default function LeaderboardPostRound({
     const load = async () => {
       try {
         const fetchEntries = async (): Promise<LeaderboardEntry[]> => {
-          const runQuery = async (filterByPlaylist: boolean) => {
-            let q = supabase
-              .from('leaderboard_entries')
-              .select('*')
-              .order('score', { ascending: false })
-              .limit(20);
-            if (filterByPlaylist && playlistId != null) {
-              q = q.eq('playlist_id', playlistId);
-            }
-            const { data, error } = await q;
-            if (error) throw error;
-            return data ?? [];
-          };
+          const { data, error } = await supabase
+            .from('leaderboard_lifetime')
+            .select('user_id, lifetime_score, display_name, badge_eagle_eye, badge_trivia, badge_wordsmith, badge_zeitgeist, badge_arcade_king, last_played_at')
+            .order('lifetime_score', { ascending: false })
+            .limit(20);
+          if (error) throw error;
 
-          const rows = await runQuery(false);
-
-          return rows.map((row, idx) => ({
-            id: row.id,
+          return (data ?? []).map((row, idx) => ({
+            id: row.user_id,
             user_id: row.user_id,
-            score: row.score,
-            game_id: row.game_id,
+            score: row.lifetime_score,
+            game_id: null,
             display_name: row.display_name ?? 'Anonymous',
-            playlist_id: row.playlist_id,
-            round_count: row.round_count ?? 0,
-            created_at: row.created_at,
+            playlist_id: null,
+            round_count: 0,
+            created_at: row.last_played_at,
             rank: idx + 1,
-            badge_most_rounds: row.badge_most_rounds ?? false,
-            badge_perfect_score: row.badge_perfect_score ?? false,
-            badge_speed_demon: row.badge_speed_demon ?? false,
+            badge_most_rounds: false,
+            badge_perfect_score: false,
+            badge_speed_demon: false,
             badge_eagle_eye: row.badge_eagle_eye ?? false,
             badge_trivia: row.badge_trivia ?? false,
             badge_wordsmith: row.badge_wordsmith ?? false,
@@ -223,11 +214,17 @@ export default function LeaderboardPostRound({
         };
 
         const fetchRank = async (): Promise<number | null> => {
-          if (playerScore <= 0) return null;
+          if (!currentUserId) return null;
+          const { data } = await supabase
+            .from('leaderboard_lifetime')
+            .select('user_id, lifetime_score')
+            .eq('user_id', currentUserId)
+            .maybeSingle();
+          if (!data) return null;
           const { count } = await supabase
-            .from('leaderboard_entries')
-            .select('id', { count: 'exact', head: true })
-            .gt('score', playerScore);
+            .from('leaderboard_lifetime')
+            .select('user_id', { count: 'exact', head: true })
+            .gt('lifetime_score', data.lifetime_score);
           return (count ?? 0) + 1;
         };
 
@@ -264,11 +261,15 @@ export default function LeaderboardPostRound({
 
   const showStickyPlayer = !isLoading && playerScore > 0;
 
+  const playerLifetimeEntry = currentUserId
+    ? entries.find(e => e.user_id === currentUserId)
+    : null;
+
   const playerEntry = currentUserId
     ? {
         id: '__player__',
         user_id: currentUserId,
-        score: playerScore,
+        score: playerLifetimeEntry?.score ?? playerScore,
         game_id: null as string | null,
         display_name: playerName ?? 'You',
         playlist_id: playlistId,
