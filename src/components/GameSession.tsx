@@ -44,6 +44,7 @@ const Flashbang = React.lazy(() => import('./Flashbang'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
 import AuthModal from './AuthModal';
+import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
 import GameplayHeader from './GameplayHeader';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
@@ -1210,19 +1211,34 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
               <div className="text-cyan-400 text-lg font-bold animate-pulse" style={{ textShadow: '0 0 10px #00ffff' }}>Loading...</div>
             </div>
           }>
-            <GameWrapper
-              duration={currentGame.duration}
-              onComplete={handleGameComplete}
-              gameName={currentGame.name}
-              onScoreUpdate={handleScoreUpdate}
+            <ErrorBoundary
+              context={{
+                source: 'GameComponent',
+                game_id: currentGame.id,
+                game_name: currentGame.name,
+                round: currentRound,
+                playlist_id: playlistId ?? null,
+                puzzle_id: currentPuzzleId,
+                puzzle_ids: currentPuzzleIds,
+                ranking_puzzle_id: currentRankingPuzzleId,
+                superlative_puzzle_id: currentSuperlativePuzzleId,
+              }}
+              onReset={handleQuitAndSave}
             >
-              <GameComponent
-                puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
-                puzzleIds={currentPuzzleIds}
-                rankingPuzzleId={currentRankingPuzzleId}
-                prefetchedPuzzles={currentGame.id === 'fake-out' ? prefetchedPuzzles : undefined}
-              />
-            </GameWrapper>
+              <GameWrapper
+                duration={currentGame.duration}
+                onComplete={handleGameComplete}
+                gameName={currentGame.name}
+                onScoreUpdate={handleScoreUpdate}
+              >
+                <GameComponent
+                  puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
+                  puzzleIds={currentPuzzleIds}
+                  rankingPuzzleId={currentRankingPuzzleId}
+                  prefetchedPuzzles={currentGame.id === 'fake-out' ? prefetchedPuzzles : undefined}
+                />
+              </GameWrapper>
+            </ErrorBoundary>
           </React.Suspense>
         </div>
       </div>
