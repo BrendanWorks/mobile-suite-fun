@@ -287,6 +287,8 @@ export default function App() {
   const [autoStartAfterLogin, setAutoStartAfterLogin] = useState(false);
   const userStats = useUserStats(session?.user?.id);
   const audioReadyRef = useRef(false);
+  const selectedPlaylistIdRef = useRef<number | null>(null);
+  useEffect(() => { selectedPlaylistIdRef.current = selectedPlaylistId; }, [selectedPlaylistId]);
 
   // Initialize audio and analytics on mount
   useEffect(() => {
@@ -300,7 +302,9 @@ export default function App() {
       preloadTimerSounds();
       await audioManager.loadSound('reverb_glow', '/sounds/global/Reverb_Glow.mp3', 1);
       audioReadyRef.current = true;
-      audioManager.play('reverb_glow', 0.7);
+      if (!selectedPlaylistIdRef.current) {
+        audioManager.play('reverb_glow', 0.7);
+      }
       document.removeEventListener('click', initAudio);
       document.removeEventListener('touchstart', initAudio);
     };
