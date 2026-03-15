@@ -241,6 +241,7 @@ export default function GameWrapper({
     }
 
     if (effectiveRemaining > 1.5) {
+      hurryUpFiredRef.current = true;
       setIsFastCountdown(true);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
