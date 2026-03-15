@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { logClientError } from './lib/errorLogger';
+import { OfflineProvider } from './context/OfflineContext.tsx';
+import { OfflineIndicator } from './components/OfflineIndicator.tsx';
 
 window.addEventListener('error', (event) => {
   logClientError(event.error ?? new Error(event.message), {
@@ -30,6 +32,9 @@ window.addEventListener('unhandledrejection', (event) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <OfflineProvider>
+      <OfflineIndicator />
+      <App />
+    </OfflineProvider>
   </StrictMode>
 );

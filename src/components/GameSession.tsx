@@ -16,6 +16,7 @@ import {
   insertLeaderboardEntry,
   getGameId
 } from '../lib/supabaseHelpers';
+import { addToQueue } from '../utils/submissionQueue';
 import { anonymousSessionManager } from '../lib/anonymousSession';
 import GameWrapper from './GameWrapper';
 import RoundResults from './RoundResults';
@@ -499,8 +500,34 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         }
       } else if (sessionId) {
         const saveToSupabase = async () => {
+          const isOnline = navigator.onLine;
+
+          const queueFallback = async (displayName: string) => {
+            addToQueue({
+              sessionId,
+              userId: user.id,
+              playlistId: playlistId ?? null,
+              session: {
+                totalScore: sessionData.session.totalScore,
+                maxPossible: sessionData.session.maxPossible,
+                percentage: sessionData.session.percentage,
+                grade: sessionData.grade,
+                playtimeSeconds: sessionData.playtimeSeconds,
+              },
+              results: sessionData.results,
+              roundCount: roundScores.length,
+              displayName,
+            });
+          };
+
           try {
-            const completeResult = await completeGameSession(
+            if (!isOnline) {
+              await queueFallback(user.email?.split('@')[0] || 'Anonymous');
+              if (!cancelled) setSessionSaved(true);
+              return;
+            }
+
+            await completeGameSession(
               sessionId,
               sessionData.session.totalScore,
               sessionData.session.maxPossible,
@@ -536,6 +563,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           } catch (error) {
             if (!cancelled) {
               logClientError(error, { source: 'saveSession', session_id: sessionId });
+              try {
+                await queueFallback(user.email?.split('@')[0] || 'Anonymous');
+                setSessionSaved(true);
+              } catch {
+                // silent - best effort
+              }
             }
           }
         };
