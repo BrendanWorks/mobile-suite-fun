@@ -97,6 +97,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   const [activeEffects, setActiveEffects] = useState<{ slow: boolean; ghost: boolean }>({ slow: false, ghost: false });
   const activeEffectsRef = useRef({ slow: false, ghost: false });
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const audioLoadedRef = useRef(false);
 
   // Visual Effects
   const [screenShake, setScreenShake] = useState(0);
@@ -122,6 +123,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       await audioManager.loadSound('snake_wall_crash', '/sounds/snake/BassDrumWrong.mp3', 2);
       await audioManager.loadSound('snake_gameover', '/sounds/snake/game_end.mp3', 1);
       await audioManager.loadSound('snake_bg_music', '/sounds/snake/Kingsnake_Soundtrack.mp3', 1);
+      audioLoadedRef.current = true;
       setAudioLoaded(true);
     };
     loadAudio();
@@ -546,6 +548,12 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     return () => cancelAnimationFrame(animFrame);
   }, []);
 
+  useEffect(() => {
+    if (audioLoaded && gameStarted && !isGameOver) {
+      audioManager.playMusic('snake_bg_music');
+    }
+  }, [audioLoaded, gameStarted, isGameOver]);
+
   // Screen shake cleanup
   useEffect(() => {
     if (screenShake > 0) {
@@ -594,7 +602,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
                   audioManager.initialize();
                   gameStartedRef.current = true;
                   setGameStarted(true);
-                  if (audioLoaded) audioManager.playMusic('snake_bg_music');
+                  if (audioLoadedRef.current) audioManager.playMusic('snake_bg_music');
                 }}
               />
             </div>
