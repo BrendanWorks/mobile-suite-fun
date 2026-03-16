@@ -183,7 +183,16 @@ class AudioManager {
       }
       audio.currentTime = 0;
       audio.volume = this.clampVolume(volume ?? this.sfxVolume);
-      this.handlePlayPromise(audio.play());
+
+      if (this.audioContext?.state === 'suspended') {
+        this.audioContext.resume().then(() => {
+          this.handlePlayPromise(audio.play());
+        }).catch(() => {
+          this.handlePlayPromise(audio.play());
+        });
+      } else {
+        this.handlePlayPromise(audio.play());
+      }
     } catch {
     }
   }
@@ -200,7 +209,16 @@ class AudioManager {
       }
       music.loop = true;
       music.volume = this.clampVolume(this.musicVolume);
-      this.handlePlayPromise(music.play());
+
+      if (this.audioContext?.state === 'suspended') {
+        this.audioContext.resume().then(() => {
+          this.handlePlayPromise(music.play());
+        }).catch(() => {
+          this.handlePlayPromise(music.play());
+        });
+      } else {
+        this.handlePlayPromise(music.play());
+      }
     } catch {
     }
   }

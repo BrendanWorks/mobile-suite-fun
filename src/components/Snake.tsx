@@ -127,7 +127,15 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       setAudioLoaded(true);
     };
     loadAudio();
-    return () => audioManager.stopMusic('snake_bg_music');
+    return () => {
+      audioManager.stopMusic('snake_bg_music');
+      audioManager.stop('snake_eat');
+      audioManager.stop('snake_powerup_gold');
+      audioManager.stop('snake_powerup_special');
+      audioManager.stop('snake_die');
+      audioManager.stop('snake_wall_crash');
+      audioManager.stop('snake_gameover');
+    };
   }, []);
 
   const triggerHaptic = (ms = 50) => {
