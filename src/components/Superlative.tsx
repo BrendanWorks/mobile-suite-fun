@@ -1,26 +1,22 @@
-import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { GameHandle } from "../lib/gameTypes";
-import { useQuizRound } from "../lib/useQuizRound";
+import { audioManager } from "../lib/audioManager";
+
+const MAX_SCORE_PER_COMPARISON = 250;
+const ROUND_DURATION_S = 90;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface SuperlativeItem {
-  name: string;
-  tagline?: string;
-  explanation?: string;
-  value: number;
-  unit: string;
-  image_url: string;
-}
-
-interface SuperlativePuzzle {
-  id: number;
-  comparison_type: string;
-  anchor_item: SuperlativeItem;
-  challenger_item: SuperlativeItem;
+interface Comparison {
+  question: string;
+  option_a: string;
+  option_a_subtitle?: string;
+  option_a_tagline?: string;
+  option_b: string;
+  option_b_subtitle?: string;
   correct_answer: string;
-  reveal_note: string;
+  fact: string;
 }
 
 interface GameProps {
@@ -32,204 +28,100 @@ interface GameProps {
   duration?: number;
 }
 
-// ─── DB Loaders ───────────────────────────────────────────────────────────
+type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "complete";
 
-async function loadPuzzleFromDB(id: number): Promise<SuperlativePuzzle | null> {
+// ─── DB Loaders ───────────────────────────────────────────────────────────────
+
+async function loadComparisonsFromDB(id: number): Promise<Comparison[]> {
   const { data, error } = await supabase
-    .from("superlative_puzzles")
-    .select(`
-      id,
-      comparison_type,
-      correct_answer,
-      reveal_note,
-      superlative_items (
-        id, role, name, tagline, explanation, value, unit, image_url
-      )
-    `)
+    .from("puzzles")
+    .select("id, metadata")
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !data) return null;
-
-  const items = (data.superlative_items ?? []) as Array<{
-    id: number; role: string; name: string; tagline?: string; explanation?: string;
-    value: number; unit: string; image_url: string;
-  }>;
-
-  const anchor = items.find((i) => i.role === "anchor");
-  const challenger = items.find((i) => i.role === "challenger");
-  if (!anchor || !challenger) return null;
-
-  return {
-    id: data.id,
-    comparison_type: data.comparison_type as SuperlativePuzzle["comparison_type"],
-    correct_answer: data.correct_answer,
-    reveal_note: data.reveal_note ?? "",
-    anchor_item: {
-      name: anchor.name,
-      tagline: anchor.tagline,
-      explanation: anchor.explanation,
-      value: Number(anchor.value),
-      unit: anchor.unit,
-      image_url: anchor.image_url ?? "",
-    },
-    challenger_item: {
-      name: challenger.name,
-      tagline: challenger.tagline,
-      explanation: challenger.explanation,
-      value: Number(challenger.value),
-      unit: challenger.unit,
-      image_url: challenger.image_url ?? "",
-    },
-  };
+  if (error || !data) return [];
+  return (data.metadata?.comparisons ?? []) as Comparison[];
 }
 
-async function loadRandomPuzzles(count: number): Promise<SuperlativePuzzle[]> {
+async function loadRandomComparisons(count: number): Promise<Comparison[]> {
   const { data, error } = await supabase
-    .from("superlative_puzzles")
-    .select(`
-      id,
-      comparison_type,
-      correct_answer,
-      reveal_note,
-      superlative_items (
-        id, role, name, tagline, explanation, value, unit, image_url
-      )
-    `)
-    .eq("is_active", true);
+    .from("puzzles")
+    .select("id, metadata")
+    .eq("game_type", "superlative")
+    .limit(10);
 
-  if (error || !data || data.length === 0) return DEMO_PUZZLES;
+  if (error || !data || data.length === 0) return DEMO_COMPARISONS;
 
-  const shuffled = [...data].sort(() => Math.random() - 0.5).slice(0, count);
+  const all: Comparison[] = [];
+  for (const row of data) {
+    const comparisons: Comparison[] = row.metadata?.comparisons ?? [];
+    all.push(...comparisons);
+  }
 
-  return shuffled.map((d) => {
-    const items = (d.superlative_items ?? []) as Array<{
-      id: number; role: string; name: string; tagline?: string; explanation?: string;
-      value: number; unit: string; image_url: string;
-    }>;
-    const anchor = items.find((i) => i.role === "anchor");
-    const challenger = items.find((i) => i.role === "challenger");
-    if (!anchor || !challenger) return null;
-    return {
-      id: d.id,
-      comparison_type: d.comparison_type as SuperlativePuzzle["comparison_type"],
-      correct_answer: d.correct_answer,
-      reveal_note: d.reveal_note ?? "",
-      anchor_item: { name: anchor.name, tagline: anchor.tagline, explanation: anchor.explanation, value: Number(anchor.value), unit: anchor.unit, image_url: anchor.image_url ?? "" },
-      challenger_item: { name: challenger.name, tagline: challenger.tagline, explanation: challenger.explanation, value: Number(challenger.value), unit: challenger.unit, image_url: challenger.image_url ?? "" },
-    };
-  }).filter(Boolean) as SuperlativePuzzle[];
+  if (all.length === 0) return DEMO_COMPARISONS;
+  return [...all].sort(() => Math.random() - 0.5).slice(0, count);
 }
 
-// ─── Fallback demo puzzles ────────────────────────────────────────────────────
+// ─── Fallback demo comparisons ────────────────────────────────────────────────
 
-const DEMO_PUZZLES: SuperlativePuzzle[] = [
+const DEMO_COMPARISONS: Comparison[] = [
   {
-    id: -1,
-    comparison_type: "Heavier",
-    anchor_item: {
-      name: "Statue of Liberty",
-      tagline: "Gift from France, somehow",
-      explanation: "The copper statue alone weighs ~204 tonnes",
-      value: 204117,
-      unit: "kg",
-      image_url: "https://images.pexels.com/photos/290386/pexels-photo-290386.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
-    challenger_item: {
-      name: "Small Cumulus Cloud",
-      tagline: "Looks harmless enough",
-      explanation: "Cloud water droplets spread across huge volume",
-      value: 500000,
-      unit: "kg",
-      image_url: "https://images.pexels.com/photos/53594/blue-clouds-day-fluffy-53594.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
+    question: "Which is heavier?",
+    option_a: "Statue of Liberty",
+    option_a_subtitle: "Gift from France, somehow",
+    option_b: "Small Cumulus Cloud",
+    option_b_subtitle: "Looks harmless enough",
     correct_answer: "Small Cumulus Cloud",
-    reveal_note: "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume, but the mass adds up fast.",
+    fact: "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume.",
   },
   {
-    id: -2,
-    comparison_type: "Longer",
-    anchor_item: {
-      name: "Hollywood Walk of Fame",
-      tagline: "Noted tourist trap",
-      explanation: "The famous 2.4 km star-studded sidewalk",
-      value: 2400,
-      unit: "m",
-      image_url: "https://images.pexels.com/photos/1037987/pexels-photo-1037987.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
-    challenger_item: {
-      name: "Coney Island Boardwalk",
-      tagline: "Rides and hotdogs",
-      explanation: "A 4 km wooden boardwalk by the ocean",
-      value: 4000,
-      unit: "m",
-      image_url: "https://images.pexels.com/photos/1545590/pexels-photo-1545590.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
+    question: "Which is longer?",
+    option_a: "Hollywood Walk of Fame",
+    option_a_subtitle: "Noted tourist trap",
+    option_b: "Coney Island Boardwalk",
+    option_b_subtitle: "Rides and hotdogs",
     correct_answer: "Coney Island Boardwalk",
-    reveal_note: "Coney Island's boardwalk stretches 4 km — almost double the 2.4 km Hollywood star-studded sidewalk.",
+    fact: "Coney Island's boardwalk stretches 4 km — almost double the 2.4 km Hollywood Walk of Fame.",
   },
   {
-    id: -3,
-    comparison_type: "Heavier",
-    anchor_item: {
-      name: "Blue Whale",
-      tagline: "Biggest animal ever, allegedly",
-      explanation: "The largest animal to ever exist on Earth",
-      value: 150000,
-      unit: "kg",
-      image_url: "https://images.pexels.com/photos/2078240/pexels-photo-2078240.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
-    challenger_item: {
-      name: "Eiffel Tower",
-      tagline: "Paris's most famous eyesore",
-      explanation: "7,300 tonnes of wrought iron framework",
-      value: 7300000,
-      unit: "kg",
-      image_url: "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400",
-    },
+    question: "Which is heavier?",
+    option_a: "Blue Whale",
+    option_a_subtitle: "Biggest animal ever, allegedly",
+    option_b: "Eiffel Tower",
+    option_b_subtitle: "Paris's most famous eyesore",
     correct_answer: "Eiffel Tower",
-    reveal_note: "The Eiffel Tower is 7,300 tonnes of iron — about 48 blue whales. The heaviest animal alive isn't close.",
+    fact: "The Eiffel Tower is 7,300 tonnes of iron — about 48 blue whales.",
   },
 ];
 
-// ─── Item Card Component ──────────────────────────────────────────────────────
+// ─── Option Card Component ────────────────────────────────────────────────────
 
-interface ItemCardProps {
-  item: SuperlativeItem;
+interface OptionCardProps {
+  label: string;
+  subtitle?: string;
   state: "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout";
   onClick: () => void;
 }
 
-interface CardStyle {
-  className: string;
-  boxShadow: string;
-}
-
-const CARD_STYLES: Record<ItemCardProps["state"], CardStyle> = {
+const CARD_STYLES: Record<OptionCardProps["state"], { className: string; boxShadow: string }> = {
   idle:     { className: "border-cyan-400/30 bg-black/50 hover:border-cyan-400 hover:bg-cyan-500/10 active:scale-95", boxShadow: "0 0 10px rgba(0,255,255,0.15)" },
   selected: { className: "border-cyan-400 bg-cyan-500/20",                                                             boxShadow: "0 0 15px rgba(0,255,255,0.4)" },
-  correct:  { className: "border-green-500 bg-green-500/20 animate-pulse",                                             boxShadow: "0 0 25px rgba(34,197,94,0.6)" },
+  correct:  { className: "border-green-500 bg-green-500/20",                                                           boxShadow: "0 0 25px rgba(34,197,94,0.6)" },
   wrong:    { className: "border-red-500 bg-red-500/20",                                                               boxShadow: "0 0 20px rgba(239,68,68,0.5)" },
   dimmed:   { className: "border-cyan-400/10 bg-black/20 opacity-40",                                                  boxShadow: "none" },
   timeout:  { className: "border-red-500 bg-red-500/10 animate-pulse",                                                 boxShadow: "0 0 25px rgba(239,68,68,0.5)" },
 };
 
-function formatValue(value: number, unit: string): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M ${unit}`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k ${unit}`;
-  return `${value} ${unit}`;
-}
-
-function ItemCard({ item, state, onClick }: ItemCardProps) {
+function OptionCard({ label, subtitle, state, onClick }: OptionCardProps) {
   const { className, boxShadow } = CARD_STYLES[state];
-  const isDisabled = state === "correct" || state === "wrong" || state === "dimmed" || state === "timeout";
+  const isDisabled = state !== "idle" && state !== "selected";
 
   return (
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
       className={`
-        relative w-full rounded-xl border-2 p-4 text-left transition-all duration-200
+        relative w-full rounded-xl border-2 p-5 text-center transition-all duration-200
         ${className}
         ${isDisabled ? "cursor-default" : "cursor-pointer touch-manipulation"}
       `}
@@ -252,46 +144,17 @@ function ItemCard({ item, state, onClick }: ItemCardProps) {
         </div>
       )}
 
-      <div
-        className="w-full h-28 rounded-lg mb-3 flex items-center justify-center border border-cyan-400/20 overflow-hidden bg-black"
-        style={{ boxShadow: "inset 0 0 15px rgba(0,255,255,0.05)" }}
-      >
-        <img
-          src={item.image_url}
-          alt={item.name}
-          className="w-full h-full object-cover rounded-lg"
-          crossOrigin="anonymous"
-        />
-      </div>
-
       <p
-        className="text-white font-semibold text-sm sm:text-base mb-1 leading-snug line-clamp-2"
+        className="text-white font-bold text-base sm:text-lg leading-snug mb-1"
         style={{ textShadow: "0 0 8px rgba(255,255,255,0.3)" }}
       >
-        {item.name}
+        {label}
       </p>
 
-      <div className="min-h-10 line-clamp-2 mb-2">
-        {(state === "correct" || state === "wrong" || state === "dimmed") ? (
-          <p
-            className="text-yellow-400 font-bold text-xs"
-            style={{ textShadow: "0 0 8px #fbbf24" }}
-          >
-            {formatValue(item.value, item.unit)}
-          </p>
-        ) : (
-          <p className="text-cyan-400/50 text-xs italic leading-snug">
-            {item.tagline ?? ""}
-          </p>
-        )}
-      </div>
-
-      {item.explanation && (
-        <div className="min-h-8 line-clamp-2">
-          <p className="text-cyan-300/70 text-xs leading-snug">
-            {item.explanation}
-          </p>
-        </div>
+      {subtitle && (
+        <p className="text-cyan-400/60 text-xs italic leading-snug">
+          {subtitle}
+        </p>
       )}
     </button>
   );
@@ -306,34 +169,115 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   onComplete,
   timeRemaining,
 }, ref) {
-  const [selectedItem, setSelectedItem] = useState<"anchor" | "challenger" | null>(null);
+  const [comparisons, setComparisons] = useState<Comparison[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [roundState, setRoundState] = useState<RoundState>("loading");
+  const [selectedOption, setSelectedOption] = useState<"a" | "b" | null>(null);
+  const [totalScore, setTotalScore] = useState(0);
+  const [results, setResults] = useState<{ correct: boolean; score: number }[]>([]);
+  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
 
-  const {
-    puzzles,
-    currentPuzzle,
-    currentIndex,
-    roundState,
-    results,
-    totalScore,
-    isDanger,
-    timerProgress,
-    isLastPuzzle,
-    recordAnswer,
-    handleNext,
-    getGameScore,
-  } = useQuizRound<SuperlativePuzzle>({
-    puzzleIds,
-    puzzleId,
-    loadById: loadPuzzleFromDB,
-    loadRandom: loadRandomPuzzles,
-    demoPuzzles: DEMO_PUZZLES,
-    getPuzzleId: (p) => p.id,
-    audioWinKey: "superlative-win",
-    audioWrongKey: "superlative-wrong",
-    onScoreUpdate,
-    onComplete,
-    timeRemaining,
-  });
+  const totalScoreRef = useRef(0);
+  const completedRef = useRef(false);
+  const roundStateRef = useRef<RoundState>("loading");
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  const timeRemainingRef = useRef(timeRemaining);
+
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+  useEffect(() => { roundStateRef.current = roundState; }, [roundState]);
+
+  const maxScore = comparisons.length * MAX_SCORE_PER_COMPARISON;
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const finishRound = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    stopTimer();
+    setRoundState("complete");
+    onCompleteRef.current?.(totalScoreRef.current, maxScore, timeRemainingRef.current);
+  }, [stopTimer, maxScore]);
+
+  useEffect(() => {
+    audioManager.loadSound("superlative-win", "/sounds/global/SmallWin.mp3", 2);
+    audioManager.loadSound("superlative-wrong", "/sounds/global/wrong_optimized.mp3", 2);
+  }, []);
+
+  useEffect(() => {
+    completedRef.current = false;
+    setRoundState("loading");
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setTotalScore(0);
+    totalScoreRef.current = 0;
+    setResults([]);
+    setSecondsLeft(ROUND_DURATION_S);
+
+    const effectiveId = puzzleId ?? (puzzleIds && puzzleIds.length > 0 ? puzzleIds[0] : null);
+
+    const load = async () => {
+      let loaded: Comparison[] = [];
+
+      if (effectiveId !== null && effectiveId !== undefined) {
+        loaded = await loadComparisonsFromDB(effectiveId);
+      }
+
+      if (loaded.length === 0) {
+        loaded = await loadRandomComparisons(3);
+      }
+
+      setComparisons(loaded.length > 0 ? loaded : DEMO_COMPARISONS);
+      setRoundState("playing");
+    };
+
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleId, JSON.stringify(puzzleIds)]);
+
+  useEffect(() => {
+    if (roundState !== "playing" && roundState !== "revealing") {
+      stopTimer();
+      return;
+    }
+    if (timerRef.current) return;
+
+    timerRef.current = setInterval(() => {
+      if (roundStateRef.current !== "playing") return;
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          stopTimer();
+          setRoundState("timeout-pulsing");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return stopTimer;
+  }, [roundState, stopTimer]);
+
+  useEffect(() => {
+    if (roundState !== "timeout-pulsing") return;
+    const t = setTimeout(finishRound, 3000);
+    return () => clearTimeout(t);
+  }, [roundState, finishRound]);
+
+  const isDanger = secondsLeft <= 10 || roundState === "timeout-pulsing";
+  const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
+  const currentComparison = comparisons[currentIndex] ?? null;
+  const isLastComparison = currentIndex + 1 >= comparisons.length;
+
+  const getGameScore = useCallback(
+    () => ({ score: totalScoreRef.current, maxScore }),
+    [maxScore]
+  );
 
   useImperativeHandle(ref, () => ({
     getGameScore,
@@ -343,34 +287,52 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   }), [getGameScore, roundState]);
 
   const handleAnswer = useCallback(
-    (choice: "anchor" | "challenger") => {
-      if (!currentPuzzle || roundState !== "playing") return;
-      const chosenItem = choice === "anchor" ? currentPuzzle.anchor_item : currentPuzzle.challenger_item;
-      const isCorrect = chosenItem.name === currentPuzzle.correct_answer;
-      setSelectedItem(choice);
-      recordAnswer(isCorrect);
+    (choice: "a" | "b") => {
+      if (!currentComparison || roundState !== "playing") return;
+      const chosen = choice === "a" ? currentComparison.option_a : currentComparison.option_b;
+      const isCorrect = chosen === currentComparison.correct_answer;
+      const score = isCorrect ? MAX_SCORE_PER_COMPARISON : 0;
+
+      setSelectedOption(choice);
+      setRoundState("revealing");
+
+      const newTotal = totalScoreRef.current + score;
+      totalScoreRef.current = newTotal;
+      setTotalScore(newTotal);
+      setResults((prev) => [...prev, { correct: isCorrect, score }]);
+      onScoreUpdate?.(newTotal, maxScore);
+
+      if (isCorrect) audioManager.play("superlative-win");
+      else audioManager.play("superlative-wrong", 0.3);
     },
-    [currentPuzzle, roundState, recordAnswer]
+    [currentComparison, roundState, maxScore, onScoreUpdate]
   );
 
   const onNext = useCallback(() => {
-    handleNext(() => setSelectedItem(null));
-  }, [handleNext]);
+    if (roundState !== "revealing") return;
+    if (isLastComparison) {
+      finishRound();
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setSelectedOption(null);
+      setRoundState("playing");
+    }
+  }, [roundState, isLastComparison, finishRound]);
 
   const getCardState = (
-    which: "anchor" | "challenger"
+    which: "a" | "b"
   ): "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout" => {
     if (roundState === "timeout-pulsing") return "timeout";
     if (roundState === "playing") {
-      return selectedItem === which ? "selected" : "idle";
+      return selectedOption === which ? "selected" : "idle";
     }
     if (roundState === "revealing") {
-      const chosenItem = which === "anchor" ? currentPuzzle!.anchor_item : currentPuzzle!.challenger_item;
-      const isChosen = selectedItem === which;
-      const isCorrectItem = chosenItem.name === currentPuzzle?.correct_answer;
-      if (isChosen && isCorrectItem) return "correct";
-      if (isChosen && !isCorrectItem) return "wrong";
-      if (!isChosen && isCorrectItem) return "correct";
+      const chosen = which === "a" ? currentComparison!.option_a : currentComparison!.option_b;
+      const isChosen = selectedOption === which;
+      const isCorrectOption = chosen === currentComparison?.correct_answer;
+      if (isChosen && isCorrectOption) return "correct";
+      if (isChosen && !isCorrectOption) return "wrong";
+      if (!isChosen && isCorrectOption) return "correct";
       return "dimmed";
     }
     return "idle";
@@ -378,7 +340,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
-  if (roundState === "loading" || !currentPuzzle) {
+  if (roundState === "loading" || !currentComparison) {
     return (
       <div className="h-full bg-black flex items-center justify-center p-3">
         <div className="text-center text-cyan-400">
@@ -405,7 +367,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             Round Complete
           </h2>
           <p className="text-cyan-300 text-sm mb-6">
-            {correct}/{puzzles.length} correct
+            {correct}/{results.length} correct
           </p>
           <div
             className="bg-black border-2 border-cyan-400/50 rounded-xl p-4 mb-6"
@@ -426,7 +388,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
                 r.correct ? "text-green-400" : "text-red-400"
               }`}
             >
-              <span>{r.correct ? "✓" : "✗"} {puzzles[i]?.comparison_type}</span>
+              <span>{r.correct ? "✓" : "✗"} Round {i + 1}</span>
               <span className="font-bold">{r.score} pts</span>
             </div>
           ))}
@@ -462,39 +424,57 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           />
         </div>
 
+        {/* Progress dots */}
+        {comparisons.length > 1 && (
+          <div className="flex justify-center gap-2 mb-3">
+            {comparisons.map((_, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  background: i <= currentIndex ? "#22d3ee" : "rgba(0,255,255,0.15)",
+                  boxShadow: i <= currentIndex ? "0 0 6px #00ffff" : "none",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Question prompt */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-5">
           <p
-            className="text-cyan-300 text-lg sm:text-xl font-medium tracking-wide mb-1"
-            style={{ textShadow: '0 0 6px rgba(0,255,255,0.4)' }}
-          >
-            Which is
-          </p>
-          <p
-            className="text-yellow-400 font-black leading-tight break-words"
+            className="text-white font-black leading-tight"
             style={{
-              fontSize: "clamp(2rem, 12vw, 4.5rem)",
-              textShadow: "0 0 30px #fbbf24, 0 0 60px rgba(251,191,36,0.4)",
+              fontSize: "clamp(1.5rem, 8vw, 2.8rem)",
+              textShadow: "0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.2)",
               letterSpacing: "-0.02em",
-              wordWrap: "break-word",
-              overflowWrap: "break-word",
             }}
           >
-            {currentPuzzle.comparison_type.toUpperCase()}?
+            {currentComparison.question}
           </p>
         </div>
 
-        {/* Item cards */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <ItemCard
-            item={currentPuzzle.anchor_item}
-            state={getCardState("anchor")}
-            onClick={() => handleAnswer("anchor")}
+        {/* Option cards */}
+        <div className="flex flex-col gap-3 mb-4">
+          <OptionCard
+            label={currentComparison.option_a}
+            subtitle={currentComparison.option_a_subtitle ?? currentComparison.option_a_tagline}
+            state={getCardState("a")}
+            onClick={() => handleAnswer("a")}
           />
-          <ItemCard
-            item={currentPuzzle.challenger_item}
-            state={getCardState("challenger")}
-            onClick={() => handleAnswer("challenger")}
+
+          <div
+            className="text-center text-cyan-400/40 font-black text-sm"
+            style={{ letterSpacing: "0.3em" }}
+          >
+            OR
+          </div>
+
+          <OptionCard
+            label={currentComparison.option_b}
+            subtitle={currentComparison.option_b_subtitle}
+            state={getCardState("b")}
+            onClick={() => handleAnswer("b")}
           />
         </div>
 
@@ -513,23 +493,20 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
           {isTimedOut ? (
             <p
               className="text-red-400 font-black text-center animate-pulse"
-              style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171", letterSpacing: "-0.01em" }}
+              style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171" }}
             >
               Time's Up!
             </p>
           ) : !isRevealing ? (
             <p
               className="w-full text-cyan-400/30 font-black text-center leading-none"
-              style={{
-                fontSize: "clamp(1.8rem, 9vw, 2.6rem)",
-                letterSpacing: "-0.02em",
-              }}
+              style={{ fontSize: "clamp(1.8rem, 9vw, 2.6rem)", letterSpacing: "-0.02em" }}
             >
               Guess
             </p>
           ) : (
-            <p className="text-cyan-300 text-xs leading-relaxed">
-              {currentPuzzle.reveal_note}
+            <p className="text-cyan-300 text-xs leading-relaxed text-center">
+              {currentComparison.fact}
             </p>
           )}
         </div>
@@ -547,7 +524,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
             cursor: isRevealing ? "pointer" : "default",
           }}
         >
-          {isLastPuzzle ? "Finish Round" : "Next →"}
+          {isLastComparison ? "Finish Round" : "Next →"}
         </button>
       </div>
     </div>
