@@ -1,6 +1,4 @@
 import ReactGA from 'react-ga4';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const gaEvent = (params: Record<string, any>) => ReactGA.event(params as any);
 
 // Initialize GA4
 export const initGA = () => {
@@ -37,7 +35,7 @@ export const analytics = {
   // ============================================================================
   
   gameStarted: (gameName: string, gameId: number) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'game_started',
       label: gameName,
@@ -52,7 +50,7 @@ export const analytics = {
   // ============================================================================
   
   puzzleStarted: (gameName: string, roundNumber: number, puzzleNumber: number) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'puzzle_started',
       label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
@@ -71,7 +69,7 @@ export const analytics = {
     isPerfect: boolean
   ) => {
     // Main completion event
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'puzzle_completed',
       label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
@@ -86,7 +84,7 @@ export const analytics = {
 
     // Milestone events for funnel analysis
     if (puzzleNumber === 1) {
-      gaEvent({
+      ReactGA.event({
         category: 'Milestone',
         action: 'completed_puzzle_1',
         label: gameName,
@@ -94,7 +92,7 @@ export const analytics = {
         round_number: roundNumber,
       });
     } else if (puzzleNumber === 5) {
-      gaEvent({
+      ReactGA.event({
         category: 'Milestone',
         action: 'completed_puzzle_5',
         label: gameName,
@@ -105,7 +103,7 @@ export const analytics = {
 
     // Perfect puzzle tracking
     if (isPerfect) {
-      gaEvent({
+      ReactGA.event({
         category: 'Achievement',
         action: 'perfect_puzzle',
         label: gameName,
@@ -128,7 +126,7 @@ export const analytics = {
     averageTimePerPuzzle: number
   ) => {
     // Main round completion
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'round_completed',
       label: `${gameName} - Round ${roundNumber}`,
@@ -142,14 +140,14 @@ export const analytics = {
 
     // Milestone events for funnel analysis
     if (roundNumber === 1) {
-      gaEvent({
+      ReactGA.event({
         category: 'Milestone',
         action: 'completed_round_1',
         label: gameName,
         value: totalScore,
       });
     } else if (roundNumber === 5) {
-      gaEvent({
+      ReactGA.event({
         category: 'Milestone',
         action: 'completed_round_5',
         label: gameName,
@@ -159,7 +157,7 @@ export const analytics = {
 
     // Perfect round tracking
     if (perfectRound) {
-      gaEvent({
+      ReactGA.event({
         category: 'Achievement',
         action: 'perfect_round',
         label: gameName,
@@ -179,7 +177,7 @@ export const analytics = {
   ) => {
     const scorePercentage = Math.round((score / maxPossibleScore) * 100);
 
-    gaEvent({
+    ReactGA.event({
       category: 'Score',
       action: 'round_score',
       label: `${gameName} - Round ${roundNumber}`,
@@ -194,7 +192,7 @@ export const analytics = {
 
     // Track score tiers for analysis
     if (scorePercentage >= 90) {
-      gaEvent({
+      ReactGA.event({
         category: 'Score',
         action: 'high_round_score',
         label: gameName,
@@ -202,7 +200,7 @@ export const analytics = {
         round_number: roundNumber,
       });
     } else if (scorePercentage < 50) {
-      gaEvent({
+      ReactGA.event({
         category: 'Score',
         action: 'low_round_score',
         label: gameName,
@@ -219,7 +217,7 @@ export const analytics = {
     score: number,
     timeSpent: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: success ? 'round_success' : 'round_failure',
       label: `${gameName} - Round ${roundNumber}`,
@@ -242,7 +240,7 @@ export const analytics = {
     perfectGame: boolean,
     totalTimePlayed: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'game_completed',
       label: gameName,
@@ -254,7 +252,7 @@ export const analytics = {
     });
 
     // Track full game completion as milestone
-    gaEvent({
+    ReactGA.event({
       category: 'Milestone',
       action: 'completed_full_game',
       label: gameName,
@@ -262,7 +260,7 @@ export const analytics = {
     });
 
     if (perfectGame) {
-      gaEvent({
+      ReactGA.event({
         category: 'Achievement',
         action: 'perfect_game',
         label: gameName,
@@ -282,7 +280,7 @@ export const analytics = {
     currentScore: number,
     timePlayedSeconds: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'game_abandoned',
       label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
@@ -295,7 +293,7 @@ export const analytics = {
     });
 
     // Track specific drop-off points
-    gaEvent({
+    ReactGA.event({
       category: 'Dropoff',
       action: `quit_at_r${roundNumber}p${puzzleNumber}`,
       label: gameName,
@@ -310,7 +308,7 @@ export const analytics = {
   // ============================================================================
 
   scoreThreshold: (gameName: string, threshold: number, actualScore: number) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Score',
       action: `score_above_${threshold}`,
       label: gameName,
@@ -322,7 +320,7 @@ export const analytics = {
 
   lowScore: (gameName: string, roundNumber: number, puzzleNumber: number, score: number) => {
     if (score < 500) { // Less than 50% of max
-      gaEvent({
+      ReactGA.event({
         category: 'Score',
         action: 'low_score',
         label: gameName,
@@ -339,7 +337,7 @@ export const analytics = {
   // ============================================================================
 
   streakAchieved: (gameName: string, streakLength: number, streakType: 'puzzle' | 'round') => {
-    gaEvent({
+    ReactGA.event({
       category: 'Achievement',
       action: `${streakType}_streak_${streakLength}`,
       label: gameName,
@@ -355,7 +353,7 @@ export const analytics = {
   // ============================================================================
 
   gameSelected: (gameName: string, gameId: number) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Navigation',
       action: 'game_selected',
       label: gameName,
@@ -365,7 +363,7 @@ export const analytics = {
   },
 
   menuReturned: (fromGame?: string, completedGame?: boolean) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Navigation',
       action: 'menu_returned',
       label: fromGame || 'unknown',
@@ -379,7 +377,7 @@ export const analytics = {
   // ============================================================================
 
   accountCreated: (provider: string) => {
-    gaEvent({
+    ReactGA.event({
       category: 'User',
       action: 'account_created',
       label: provider,
@@ -387,7 +385,7 @@ export const analytics = {
   },
 
   signedIn: (provider: string) => {
-    gaEvent({
+    ReactGA.event({
       category: 'User',
       action: 'signed_in',
       label: provider,
@@ -395,7 +393,7 @@ export const analytics = {
   },
 
   signedOut: () => {
-    gaEvent({
+    ReactGA.event({
       category: 'User',
       action: 'signed_out',
     });
@@ -406,7 +404,7 @@ export const analytics = {
   // ============================================================================
 
   gameError: (gameName: string, errorMessage: string, context?: string) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Error',
       action: 'game_error',
       label: `${gameName}: ${errorMessage}`,
@@ -426,7 +424,7 @@ export const analytics = {
     puzzleNumber: number,
     timeSpentSeconds: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Engagement',
       action: 'puzzle_time_spent',
       label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
@@ -439,7 +437,7 @@ export const analytics = {
 
     // Track if puzzle took unusually long (potential confusion/difficulty)
     if (timeSpentSeconds > 60) {
-      gaEvent({
+      ReactGA.event({
         category: 'Engagement',
         action: 'puzzle_long_duration',
         label: gameName,
@@ -456,7 +454,7 @@ export const analytics = {
     puzzleNumber: number,
     attemptNumber: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Engagement',
       action: 'puzzle_retry',
       label: `${gameName} - R${roundNumber}P${puzzleNumber}`,
@@ -473,7 +471,7 @@ export const analytics = {
     interactionType: string,
     context?: string
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Interaction',
       action: interactionType,
       label: `${gameName}${context ? ` - ${context}` : ''}`,
@@ -488,7 +486,7 @@ export const analytics = {
     roundNumber: number,
     perceivedDifficulty: 'easy' | 'medium' | 'hard'
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Feedback',
       action: 'difficulty_perception',
       label: `${gameName} - ${perceivedDifficulty}`,
@@ -504,7 +502,7 @@ export const analytics = {
     roundsCompleted: number,
     puzzlesCompleted: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Engagement',
       action: 'session_duration',
       label: gameName,
@@ -517,7 +515,7 @@ export const analytics = {
 
     // Track engagement tiers
     if (durationSeconds > 300) { // 5+ minutes
-      gaEvent({
+      ReactGA.event({
         category: 'Engagement',
         action: 'high_engagement',
         label: gameName,
@@ -530,7 +528,7 @@ export const analytics = {
     milestone: string,
     value: number
   ) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Progress',
       action: 'milestone_reached',
       label: milestone,
@@ -544,7 +542,7 @@ export const analytics = {
   // ============================================================================
 
   performanceMetric: (metricName: string, value: number, context?: string) => {
-    gaEvent({
+    ReactGA.event({
       category: 'Performance',
       action: metricName,
       label: context || 'general',

@@ -23,16 +23,16 @@ interface OddManOutProps {
 const MAX_QUESTIONS = 4;
 
 const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
   const [gameState, setGameState] = useState('loading');
   const [isCorrect, setIsCorrect] = useState(false);
   const [message, setMessage] = useState('');
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
-  const [usedQuestions, setUsedQuestions] = useState<any[]>([]);
-  const [shuffledItems, setShuffledItems] = useState<any[]>([]);
+  const [usedQuestions, setUsedQuestions] = useState([]);
+  const [shuffledItems, setShuffledItems] = useState([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
@@ -161,7 +161,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
 
-    const items = question.prompt.split(';').map((item: string) => item.trim());
+    const items = question.prompt.split(';').map(item => item.trim());
     setShuffledItems(shuffleArray(items));
 
     setSelectedItems([]);
@@ -197,7 +197,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     setCurrentQuestion(question);
     setUsedQuestions(prev => [...prev, question.id]);
 
-    const items = question.prompt.split(';').map((item: string) => item.trim());
+    const items = question.prompt.split(';').map(item => item.trim());
     setShuffledItems(shuffleArray(items));
 
     setSelectedItems([]);
@@ -210,7 +210,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   };
 
-  const shuffleArray = (array: any[]) => {
+  const shuffleArray = (array) => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -219,7 +219,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     return shuffled;
   };
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item) => {
     if (gameState !== 'playing') return;
 
     audioManager.play('oddman-select');
@@ -236,7 +236,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
   const checkAnswer = () => {
     if (selectedItems.length !== 2 || !currentQuestion) return;
 
-    const correctAnswer = currentQuestion.correct_answer.split(';').map((item: string) => item.trim());
+    const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
     const isAnswerCorrect = selectedItems.length === correctAnswer.length &&
       selectedItems.every(item => correctAnswer.includes(item));
 
@@ -374,7 +374,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     );
   }
 
-  const correctAnswer = currentQuestion.correct_answer.split(';').map((item: string) => item.trim());
+  const correctAnswer = currentQuestion.correct_answer.split(';').map(item => item.trim());
 
   return (
     <div className="h-full bg-black flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto">

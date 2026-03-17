@@ -54,8 +54,6 @@ import { logClientError } from '../lib/errorLogger';
 import { audioManager } from '../lib/audioManager';
 import { getSavedSfxLevel, applySfxLevel } from './SfxVolumeControl';
 import ReactGA from 'react-ga4';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const gaEvent = (params: Record<string, any>) => ReactGA.event(params as any);
 
 const SPLIT_DECISION_POINTS_PER_ITEM = Math.round(1000 / 7);
 
@@ -95,7 +93,7 @@ const GAME_REGISTRY: GameConfig[] = [
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
 
-const GAME_ICONS: { [key: string]: React.ReactNode } = {
+const GAME_ICONS: { [key: string]: JSX.Element } = {
   'odd-man-out': <CircleX className="w-full h-full" />,
   'photo-mystery': <Search className="w-full h-full" />,
   'rank-and-roll': <ArrowUpDown className="w-full h-full" />,
@@ -788,7 +786,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // Track that user clicked continue on results screen
     const lastRoundScore = roundScores[roundScores.length - 1];
     if (lastRoundScore) {
-      gaEvent({
+      ReactGA.event({
         category: 'Game',
         action: 'results_continued',
         label: `${lastRoundScore.gameName} - Round ${currentRound}`,
@@ -818,7 +816,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const handleSkipGame = () => {
     if (currentGame) {
-      gaEvent({
+      ReactGA.event({
         category: 'Game',
         action: 'game_skipped',
         label: `${currentGame.name} - Round ${currentRound}`,
@@ -846,7 +844,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
 
     // Additional tracking for quit with user info
-    gaEvent({
+    ReactGA.event({
       category: 'Game',
       action: 'quit_and_save',
       label: `${currentGame?.name || 'Unknown'} - Round ${currentRound}`,
@@ -1086,12 +1084,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       gameId: round.gameId,
       gameName: round.gameName,
       score: {
-        gameId: round.gameId,
-        gameName: round.gameName,
-        rawScore: round.normalizedScore.normalizedScore || 0,
         normalizedScore: round.normalizedScore.normalizedScore || 0,
-        grade: '',
-        breakdown: '',
         timeBonus: round.normalizedScore.timeBonus || 0,
         perfectScoreBonus: round.normalizedScore.perfectScoreBonus || 0,
         totalWithBonus: round.normalizedScore.totalWithBonus || round.normalizedScore.normalizedScore || 0,
@@ -1131,7 +1124,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           onPlayAgain={handleShowLeaderboard}
           totalRounds={totalRounds}
           levelName={playlistName}
-          levelNumber={levelNumber ?? undefined}
+          levelNumber={levelNumber}
         />
         <AuthModal
           isOpen={showAuthModal}

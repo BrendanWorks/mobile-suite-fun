@@ -68,7 +68,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const [animatingShapeId, setAnimatingShapeId] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState<number>(GAME_CONFIG.MAX_LIVES);
+  const [lives, setLives] = useState(GAME_CONFIG.MAX_LIVES);
   const [highScore, setHighScore] = useState(() => {
     try {
       return parseInt(localStorage.getItem(GAME_CONFIG.STORAGE_KEY) || '0');

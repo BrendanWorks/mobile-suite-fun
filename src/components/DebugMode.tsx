@@ -118,11 +118,31 @@ export default function DebugMode({ onExit }: DebugModeProps) {
 
   if (view === 'celebration') {
     const mockRoundScores = [
-      { gameId: 'odd-man-out', gameName: 'Odd Man Out', score: { gameId: 'odd-man-out', gameName: 'Odd Man Out', rawScore: 400, normalizedScore: 400, grade: 'B', breakdown: '', timeBonus: 50, perfectScoreBonus: 0, totalWithBonus: 450 } },
-      { gameId: 'photo-mystery', gameName: 'Zooma', score: { gameId: 'photo-mystery', gameName: 'Zooma', rawScore: 350, normalizedScore: 350, grade: 'C', breakdown: '', timeBonus: 75, perfectScoreBonus: 0, totalWithBonus: 425 } },
-      { gameId: 'rank-and-roll', gameName: 'Ranky', score: { gameId: 'rank-and-roll', gameName: 'Ranky', rawScore: 500, normalizedScore: 500, grade: 'A', breakdown: '', timeBonus: 100, perfectScoreBonus: 100, totalWithBonus: 700 } },
-      { gameId: 'snapshot', gameName: 'Jigsaw', score: { gameId: 'snapshot', gameName: 'Jigsaw', rawScore: 280, normalizedScore: 280, grade: 'C', breakdown: '', timeBonus: 25, perfectScoreBonus: 0, totalWithBonus: 305 } },
-      { gameId: 'split-decision', gameName: 'Split Decision', score: { gameId: 'split-decision', gameName: 'Split Decision', rawScore: 390, normalizedScore: 390, grade: 'B', breakdown: '', timeBonus: 60, perfectScoreBonus: 0, totalWithBonus: 450 } },
+      {
+        gameId: 'odd-man-out',
+        gameName: 'Odd Man Out',
+        score: { correct: 8, incorrect: 2, timeBonus: 50, perfectScoreBonus: 0 }
+      },
+      {
+        gameId: 'photo-mystery',
+        gameName: 'Zooma',
+        score: { correct: 6, incorrect: 1, timeBonus: 75, perfectScoreBonus: 0 }
+      },
+      {
+        gameId: 'rank-and-roll',
+        gameName: 'Ranky',
+        score: { correct: 9, incorrect: 0, timeBonus: 100, perfectScoreBonus: 100 }
+      },
+      {
+        gameId: 'snapshot',
+        gameName: 'Jigsaw',
+        score: { correct: 5, incorrect: 3, timeBonus: 25, perfectScoreBonus: 0 }
+      },
+      {
+        gameId: 'split-decision',
+        gameName: 'Split Decision',
+        score: { correct: 7, incorrect: 2, timeBonus: 60, perfectScoreBonus: 0 }
+      },
     ];
 
     return (
@@ -172,8 +192,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
     const game = TEST_GAMES.find(g => g.id === selectedGameId);
     if (!game) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const GameComponent = game.component as any;
+    const GameComponent = game.component;
 
     return (
       <div className="h-screen w-screen bg-gray-900 flex flex-col">

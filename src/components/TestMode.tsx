@@ -47,8 +47,7 @@ export default function TestMode({ onExit, selectedGameId, onSelectGame }: TestM
     const game = TEST_GAMES.find(g => g.id === selectedGameId);
     if (!game) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const GameComponent = game.component as any;
+    const GameComponent = game.component;
 
     return (
       <div className="h-screen w-screen bg-gray-900 flex flex-col">
