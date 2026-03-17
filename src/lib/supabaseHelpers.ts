@@ -48,7 +48,7 @@ interface SaveRoundsResult {
 }
 
 interface RoundResult {
-  gameId: number;
+  gameId: number | string;
   puzzleId: number;
   roundNumber: number;
   rawScore: number;

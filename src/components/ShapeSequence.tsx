@@ -102,7 +102,7 @@ const SHAPE_PATHS: Record<string, (ctx: CanvasRenderingContext2D, x: number, y: 
 
 const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const sequenceTimeoutsRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const cleanedUpRef = useRef(false);
@@ -111,7 +111,7 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
   const [gameStatus, setGameStatus] = useState<'countdown' | 'idle' | 'showing' | 'playing' | 'gameover'>('countdown');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(GAME_CONFIG.MAX_LIVES);
+  const [lives, setLives] = useState<number>(GAME_CONFIG.MAX_LIVES);
   const [highScore, setHighScore] = useState(() => {
     try {
       return parseInt(localStorage.getItem(GAME_CONFIG.STORAGE_KEY) || '0');

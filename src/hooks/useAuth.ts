@@ -43,7 +43,7 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'USER_DELETED') {
+      if ((event as string) === 'USER_DELETED') {
         await supabase.auth.signOut();
       }
 

@@ -11,7 +11,7 @@ const SnapShot = forwardRef((props: any, ref) => {
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [puzzles, setPuzzles] = useState([]);
+  const [puzzles, setPuzzles] = useState<any[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -58,10 +58,10 @@ const SnapShot = forwardRef((props: any, ref) => {
     NUM_DRAGGABLE_PIECES: 4, // Only 4 pieces to place (5 pre-placed)
     IMAGE_URL: '',
     img: new Image(),
-    puzzlePieces: [],
-    draggablePieces: [],
-    emptySlots: [],
-    draggingPiece: null,
+    puzzlePieces: [] as any[],
+    draggablePieces: [] as any[],
+    emptySlots: [] as any[],
+    draggingPiece: null as any | null,
     dragOffsetX: 0,
     dragOffsetY: 0,
     isDragging: false,

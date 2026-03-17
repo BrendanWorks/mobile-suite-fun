@@ -301,7 +301,7 @@ export default function LeaderboardPostRound({
         id: '__player__',
         user_id: currentUserId,
         score: playerLifetimeEntry?.score ?? playerScore,
-        game_id: null as string | null,
+        game_id: null as number | null,
         display_name: playerName ?? 'You',
         playlist_id: playlistId,
         round_count: 0,

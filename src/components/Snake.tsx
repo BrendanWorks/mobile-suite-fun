@@ -145,7 +145,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   };
 
   const createFood = (): Position => {
-    let newFood;
+    let newFood: { x: number; y: number };
     while (true) {
       newFood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) };
       const onSnake = snakeRef.current.some(s => s.x === newFood.x && s.y === newFood.y);
@@ -520,8 +520,8 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
 
       // Snake
       snakeRef.current.forEach((seg, i) => {
-        let fillColor = i === 0 ? COLORS.cyan : COLORS.green;
-        let shadowColor = COLORS.cyan;
+        let fillColor: string = i === 0 ? COLORS.cyan : COLORS.green;
+        let shadowColor: string = COLORS.cyan;
 
         if (Date.now() < invincibleUntilRef.current) {
           fillColor = i === 0 ? '#d946ef' : '#c026d3';

@@ -5,7 +5,7 @@ export interface QueuedSubmission {
   id: string;
   sessionId: string;
   userId: string;
-  playlistId: string | null;
+  playlistId: number | null;
   session: {
     totalScore: number;
     maxPossible: number;
@@ -14,7 +14,7 @@ export interface QueuedSubmission {
     playtimeSeconds: number;
   };
   results: Array<{
-    gameId: string;
+    gameId: number | string;
     puzzleId: number;
     roundNumber: number;
     rawScore: number;

@@ -46,7 +46,7 @@ export default function NeuralPulse({ onComplete, onScoreUpdate, duration }: Neu
     setIsGenerating(true);
 
     // 1. Initial random noise (~45% walls)
-    let newMap = Array(GRID_SIZE)
+    let newMap: number[][] = Array(GRID_SIZE)
       .fill(null)
       .map(() =>
         Array(GRID_SIZE)

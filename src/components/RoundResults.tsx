@@ -3,6 +3,8 @@ import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDo
 import { GameScore, getScoreLabel } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
 import ReactGA from 'react-ga4';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const gaEvent = (params: Record<string, any>) => ReactGA.event(params as any);
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-6 h-6 sm:w-7 sm:h-7" />,
@@ -81,7 +83,7 @@ export default function RoundResults({
 
   useEffect(() => {
     const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
-    ReactGA.event({
+    gaEvent({
       category: 'Game',
       action: 'results_shown',
       label: `${gameName} - Round ${roundNumber}`,
