@@ -6,17 +6,22 @@ import { audioManager } from "../lib/audioManager";
 const MAX_SCORE_PER_COMPARISON = 250;
 const ROUND_DURATION_S = 90;
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ItemData {
+  name: string;
+  tagline: string;
+  value: string | null;
+  unit: string | null;
+  image_url: string | null;
+}
 
 interface Comparison {
-  question: string;
-  option_a: string;
-  option_a_subtitle?: string;
-  option_a_tagline?: string;
-  option_b: string;
-  option_b_subtitle?: string;
+  comparison_type: string;
   correct_answer: string;
-  fact: string;
+  reveal_note: string;
+  anchor: ItemData;
+  challenger: ItemData;
 }
 
 interface GameProps {
@@ -32,130 +37,185 @@ type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "com
 
 // ─── DB Loaders ───────────────────────────────────────────────────────────────
 
-async function loadComparisonsFromDB(id: number): Promise<Comparison[]> {
+async function loadFromSuperlativePuzzles(id: number): Promise<Comparison[]> {
+  const { data: puzzles, error } = await supabase
+    .from("superlative_puzzles")
+    .select("id, comparison_type, correct_answer, reveal_note, superlative_items(role, name, tagline, value, unit, image_url)")
+    .eq("id", id);
+
+  if (error || !puzzles || puzzles.length === 0) return [];
+
+  return puzzles.map((p: any) => {
+    const items: any[] = p.superlative_items ?? [];
+    const anchor = items.find((i: any) => i.role === "anchor");
+    const challenger = items.find((i: any) => i.role === "challenger");
+    if (!anchor || !challenger) return null;
+    return {
+      comparison_type: p.comparison_type,
+      correct_answer: p.correct_answer,
+      reveal_note: p.reveal_note,
+      anchor: { name: anchor.name, tagline: anchor.tagline, value: anchor.value, unit: anchor.unit, image_url: anchor.image_url },
+      challenger: { name: challenger.name, tagline: challenger.tagline, value: challenger.value, unit: challenger.unit, image_url: challenger.image_url },
+    };
+  }).filter(Boolean) as Comparison[];
+}
+
+async function loadFromPuzzleMetadata(id: number): Promise<Comparison[]> {
   const { data, error } = await supabase
     .from("puzzles")
-    .select("id, metadata")
+    .select("metadata")
     .eq("id", id)
     .maybeSingle();
 
   if (error || !data) return [];
-  return (data.metadata?.comparisons ?? []) as Comparison[];
+
+  const rawComparisons = data.metadata?.comparisons ?? [];
+  return rawComparisons.map((c: any) => ({
+    comparison_type: c.question?.replace(/^which (is|has more) /i, "").replace(/\?$/, "") ?? "Bigger",
+    correct_answer: c.correct_answer,
+    reveal_note: c.fact ?? "",
+    anchor: { name: c.option_a, tagline: c.option_a_subtitle ?? "", value: null, unit: null, image_url: null },
+    challenger: { name: c.option_b, tagline: c.option_b_subtitle ?? "", value: null, unit: null, image_url: null },
+  }));
 }
 
 async function loadRandomComparisons(count: number): Promise<Comparison[]> {
   const { data, error } = await supabase
-    .from("puzzles")
-    .select("id, metadata")
-    .eq("game_type", "superlative")
-    .limit(10);
+    .from("superlative_puzzles")
+    .select("id, comparison_type, correct_answer, reveal_note, superlative_items(role, name, tagline, value, unit, image_url)")
+    .eq("is_active", true)
+    .limit(20);
 
-  if (error || !data || data.length === 0) return DEMO_COMPARISONS;
+  if (error || !data) return DEMO_COMPARISONS;
 
   const all: Comparison[] = [];
-  for (const row of data) {
-    const comparisons: Comparison[] = row.metadata?.comparisons ?? [];
-    all.push(...comparisons);
+  for (const p of data) {
+    const items: any[] = (p as any).superlative_items ?? [];
+    const anchor = items.find((i: any) => i.role === "anchor");
+    const challenger = items.find((i: any) => i.role === "challenger");
+    if (!anchor || !challenger) continue;
+    all.push({
+      comparison_type: (p as any).comparison_type,
+      correct_answer: (p as any).correct_answer,
+      reveal_note: (p as any).reveal_note,
+      anchor: { name: anchor.name, tagline: anchor.tagline, value: anchor.value, unit: anchor.unit, image_url: anchor.image_url },
+      challenger: { name: challenger.name, tagline: challenger.tagline, value: challenger.value, unit: challenger.unit, image_url: challenger.image_url },
+    });
   }
 
   if (all.length === 0) return DEMO_COMPARISONS;
   return [...all].sort(() => Math.random() - 0.5).slice(0, count);
 }
 
-// ─── Fallback demo comparisons ────────────────────────────────────────────────
+// ─── Fallback ─────────────────────────────────────────────────────────────────
 
 const DEMO_COMPARISONS: Comparison[] = [
   {
-    question: "Which is heavier?",
-    option_a: "Statue of Liberty",
-    option_a_subtitle: "Gift from France, somehow",
-    option_b: "Small Cumulus Cloud",
-    option_b_subtitle: "Looks harmless enough",
+    comparison_type: "Heavier",
     correct_answer: "Small Cumulus Cloud",
-    fact: "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume.",
-  },
-  {
-    question: "Which is longer?",
-    option_a: "Hollywood Walk of Fame",
-    option_a_subtitle: "Noted tourist trap",
-    option_b: "Coney Island Boardwalk",
-    option_b_subtitle: "Rides and hotdogs",
-    correct_answer: "Coney Island Boardwalk",
-    fact: "Coney Island's boardwalk stretches 4 km — almost double the 2.4 km Hollywood Walk of Fame.",
-  },
-  {
-    question: "Which is heavier?",
-    option_a: "Blue Whale",
-    option_a_subtitle: "Biggest animal ever, allegedly",
-    option_b: "Eiffel Tower",
-    option_b_subtitle: "Paris's most famous eyesore",
-    correct_answer: "Eiffel Tower",
-    fact: "The Eiffel Tower is 7,300 tonnes of iron — about 48 blue whales.",
+    reveal_note: "A typical cumulus cloud weighs ~500,000 kg — the water droplets are spread across a huge volume.",
+    anchor: { name: "Statue of Liberty", tagline: "Gift from France, somehow", value: "204,000", unit: "kg", image_url: null },
+    challenger: { name: "Small Cumulus Cloud", tagline: "Looks harmless enough", value: "500,000", unit: "kg", image_url: null },
   },
 ];
 
-// ─── Option Card Component ────────────────────────────────────────────────────
+// ─── Option Card ──────────────────────────────────────────────────────────────
+
+type CardState = "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout";
 
 interface OptionCardProps {
-  label: string;
-  subtitle?: string;
-  state: "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout";
+  item: ItemData;
+  state: CardState;
   onClick: () => void;
+  isRevealing: boolean;
 }
 
-const CARD_STYLES: Record<OptionCardProps["state"], { className: string; boxShadow: string }> = {
-  idle:     { className: "border-cyan-400/30 bg-black/50 hover:border-cyan-400 hover:bg-cyan-500/10 active:scale-95", boxShadow: "0 0 10px rgba(0,255,255,0.15)" },
-  selected: { className: "border-cyan-400 bg-cyan-500/20",                                                             boxShadow: "0 0 15px rgba(0,255,255,0.4)" },
-  correct:  { className: "border-green-500 bg-green-500/20",                                                           boxShadow: "0 0 25px rgba(34,197,94,0.6)" },
-  wrong:    { className: "border-red-500 bg-red-500/20",                                                               boxShadow: "0 0 20px rgba(239,68,68,0.5)" },
-  dimmed:   { className: "border-cyan-400/10 bg-black/20 opacity-40",                                                  boxShadow: "none" },
-  timeout:  { className: "border-red-500 bg-red-500/10 animate-pulse",                                                 boxShadow: "0 0 25px rgba(239,68,68,0.5)" },
-};
-
-function OptionCard({ label, subtitle, state, onClick }: OptionCardProps) {
-  const { className, boxShadow } = CARD_STYLES[state];
+function OptionCard({ item, state, onClick, isRevealing }: OptionCardProps) {
   const isDisabled = state !== "idle" && state !== "selected";
+  const isCorrect = state === "correct";
+  const isWrong = state === "wrong";
+  const isTimeout = state === "timeout";
+
+  const borderColor = isCorrect
+    ? "rgba(34,197,94,1)"
+    : isWrong
+    ? "rgba(239,68,68,1)"
+    : isTimeout
+    ? "rgba(239,68,68,0.7)"
+    : state === "selected"
+    ? "rgba(0,255,255,0.8)"
+    : state === "dimmed"
+    ? "rgba(0,255,255,0.08)"
+    : "rgba(0,255,255,0.3)";
+
+  const boxShadow = isCorrect
+    ? "0 0 30px rgba(34,197,94,0.5), inset 0 0 20px rgba(34,197,94,0.1)"
+    : isWrong
+    ? "0 0 25px rgba(239,68,68,0.4), inset 0 0 15px rgba(239,68,68,0.08)"
+    : state === "selected"
+    ? "0 0 20px rgba(0,255,255,0.3)"
+    : "0 0 10px rgba(0,255,255,0.08)";
+
+  const bg = isCorrect
+    ? "rgba(34,197,94,0.08)"
+    : isWrong
+    ? "rgba(239,68,68,0.08)"
+    : state === "selected"
+    ? "rgba(0,255,255,0.06)"
+    : "rgba(0,0,0,0.5)";
 
   return (
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
-      className={`
-        relative w-full rounded-xl border-2 p-5 text-center transition-all duration-200
-        ${className}
-        ${isDisabled ? "cursor-default" : "cursor-pointer touch-manipulation"}
-      `}
-      style={{ boxShadow }}
+      className={`relative w-full rounded-2xl border-2 overflow-hidden transition-all duration-200 text-left ${
+        isDisabled ? "cursor-default" : "cursor-pointer active:scale-95"
+      } ${state === "dimmed" ? "opacity-50" : ""}`}
+      style={{ borderColor, boxShadow, background: bg }}
     >
-      {state === "correct" && (
+      {(isCorrect || isWrong) && (
         <div
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-black font-bold text-sm"
-          style={{ boxShadow: "0 0 12px rgba(34,197,94,0.8)" }}
+          className={`absolute top-2 right-2 z-10 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${
+            isCorrect ? "bg-green-500 text-black" : "bg-red-500 text-white"
+          }`}
+          style={{ boxShadow: isCorrect ? "0 0 12px rgba(34,197,94,0.9)" : "0 0 12px rgba(239,68,68,0.9)" }}
         >
-          ✓
-        </div>
-      )}
-      {state === "wrong" && (
-        <div
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-black font-bold text-sm"
-          style={{ boxShadow: "0 0 12px rgba(239,68,68,0.8)" }}
-        >
-          ✗
+          {isCorrect ? "✓" : "✗"}
         </div>
       )}
 
-      <p
-        className="text-white font-bold text-base sm:text-lg leading-snug mb-1"
-        style={{ textShadow: "0 0 8px rgba(255,255,255,0.3)" }}
-      >
-        {label}
-      </p>
+      {item.image_url && (
+        <div className="w-full aspect-[4/3] overflow-hidden">
+          <img
+            src={item.image_url}
+            alt={item.name}
+            className="w-full h-full object-cover"
+            style={{ opacity: state === "dimmed" ? 0.5 : 1 }}
+          />
+        </div>
+      )}
 
-      {subtitle && (
-        <p className="text-cyan-400/60 text-xs italic leading-snug">
-          {subtitle}
+      <div className="p-3">
+        <p
+          className="text-white font-bold text-base leading-snug"
+          style={{ textShadow: "0 0 8px rgba(255,255,255,0.2)" }}
+        >
+          {item.name}
         </p>
-      )}
+        {item.tagline && (
+          <p className="text-cyan-400/60 text-xs italic mt-0.5 leading-snug">
+            {item.tagline}
+          </p>
+        )}
+        {isRevealing && item.value && item.unit && (
+          <p
+            className="text-yellow-400 font-black text-sm mt-1"
+            style={{ textShadow: "0 0 10px rgba(251,191,36,0.7)" }}
+          >
+            {item.value} {item.unit}
+          </p>
+        )}
+      </div>
     </button>
   );
 }
@@ -172,7 +232,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const [comparisons, setComparisons] = useState<Comparison[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundState, setRoundState] = useState<RoundState>("loading");
-  const [selectedOption, setSelectedOption] = useState<"a" | "b" | null>(null);
+  const [selectedSide, setSelectedSide] = useState<"anchor" | "challenger" | null>(null);
   const [totalScore, setTotalScore] = useState(0);
   const [results, setResults] = useState<{ correct: boolean; score: number }[]>([]);
   const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION_S);
@@ -214,7 +274,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     completedRef.current = false;
     setRoundState("loading");
     setCurrentIndex(0);
-    setSelectedOption(null);
+    setSelectedSide(null);
     setTotalScore(0);
     totalScoreRef.current = 0;
     setResults([]);
@@ -226,7 +286,10 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       let loaded: Comparison[] = [];
 
       if (effectiveId !== null && effectiveId !== undefined) {
-        loaded = await loadComparisonsFromDB(effectiveId);
+        loaded = await loadFromSuperlativePuzzles(effectiveId);
+        if (loaded.length === 0) {
+          loaded = await loadFromPuzzleMetadata(effectiveId);
+        }
       }
 
       if (loaded.length === 0) {
@@ -273,6 +336,8 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const timerProgress = (secondsLeft / ROUND_DURATION_S) * 100;
   const currentComparison = comparisons[currentIndex] ?? null;
   const isLastComparison = currentIndex + 1 >= comparisons.length;
+  const isRevealing = roundState === "revealing";
+  const isTimedOut = roundState === "timeout-pulsing";
 
   const getGameScore = useCallback(
     () => ({ score: totalScoreRef.current, maxScore }),
@@ -282,18 +347,18 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   useImperativeHandle(ref, () => ({
     getGameScore,
     onGameEnd: () => {},
-    pauseTimer: roundState === "revealing",
+    pauseTimer: isRevealing,
     hideTimer: true,
-  }), [getGameScore, roundState]);
+  }), [getGameScore, isRevealing]);
 
   const handleAnswer = useCallback(
-    (choice: "a" | "b") => {
+    (side: "anchor" | "challenger") => {
       if (!currentComparison || roundState !== "playing") return;
-      const chosen = choice === "a" ? currentComparison.option_a : currentComparison.option_b;
+      const chosen = side === "anchor" ? currentComparison.anchor.name : currentComparison.challenger.name;
       const isCorrect = chosen === currentComparison.correct_answer;
       const score = isCorrect ? MAX_SCORE_PER_COMPARISON : 0;
 
-      setSelectedOption(choice);
+      setSelectedSide(side);
       setRoundState("revealing");
 
       const newTotal = totalScoreRef.current + score;
@@ -314,22 +379,20 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       finishRound();
     } else {
       setCurrentIndex((i) => i + 1);
-      setSelectedOption(null);
+      setSelectedSide(null);
       setRoundState("playing");
     }
   }, [roundState, isLastComparison, finishRound]);
 
-  const getCardState = (
-    which: "a" | "b"
-  ): "idle" | "selected" | "correct" | "wrong" | "dimmed" | "timeout" => {
-    if (roundState === "timeout-pulsing") return "timeout";
+  const getCardState = (side: "anchor" | "challenger"): CardState => {
+    if (isTimedOut) return "timeout";
     if (roundState === "playing") {
-      return selectedOption === which ? "selected" : "idle";
+      return selectedSide === side ? "selected" : "idle";
     }
-    if (roundState === "revealing") {
-      const chosen = which === "a" ? currentComparison!.option_a : currentComparison!.option_b;
-      const isChosen = selectedOption === which;
-      const isCorrectOption = chosen === currentComparison?.correct_answer;
+    if (isRevealing && currentComparison) {
+      const itemName = side === "anchor" ? currentComparison.anchor.name : currentComparison.challenger.name;
+      const isChosen = selectedSide === side;
+      const isCorrectOption = itemName === currentComparison.correct_answer;
       if (isChosen && isCorrectOption) return "correct";
       if (isChosen && !isCorrectOption) return "wrong";
       if (!isChosen && isCorrectOption) return "correct";
@@ -342,12 +405,10 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   if (roundState === "loading" || !currentComparison) {
     return (
-      <div className="h-full bg-black flex items-center justify-center p-3">
+      <div className="h-full bg-black flex items-center justify-center">
         <div className="text-center text-cyan-400">
-          <div className="text-lg" style={{ textShadow: "0 0 10px #00ffff" }}>
-            Loading...
-          </div>
-          <div className="text-sm text-cyan-300 mt-2">Preparing comparisons</div>
+          <div className="text-lg" style={{ textShadow: "0 0 10px #00ffff" }}>Loading...</div>
+          <div className="text-sm text-cyan-300/60 mt-2">Preparing comparisons</div>
         </div>
       </div>
     );
@@ -358,36 +419,20 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   if (roundState === "complete") {
     const correct = results.filter((r) => r.correct).length;
     return (
-      <div className="h-full bg-black flex items-start justify-center p-3 pt-6 overflow-y-auto">
+      <div className="h-full bg-black flex items-start justify-center p-4 pt-6 overflow-y-auto">
         <div className="text-center max-w-sm w-full text-white">
-          <h2
-            className="text-2xl font-bold text-cyan-400 mb-2"
-            style={{ textShadow: "0 0 10px #00ffff" }}
-          >
+          <h2 className="text-2xl font-bold text-cyan-400 mb-1" style={{ textShadow: "0 0 10px #00ffff" }}>
             Round Complete
           </h2>
-          <p className="text-cyan-300 text-sm mb-6">
-            {correct}/{results.length} correct
-          </p>
-          <div
-            className="bg-black border-2 border-cyan-400/50 rounded-xl p-4 mb-6"
-            style={{ boxShadow: "0 0 15px rgba(0,255,255,0.2)" }}
-          >
-            <p className="text-cyan-300 text-xs mb-1">Total Score</p>
-            <p
-              className="text-yellow-400 text-4xl font-bold"
-              style={{ textShadow: "0 0 15px #fbbf24" }}
-            >
+          <p className="text-cyan-300/60 text-sm mb-5">{correct}/{results.length} correct</p>
+          <div className="bg-black border-2 border-cyan-400/40 rounded-2xl p-4 mb-5" style={{ boxShadow: "0 0 20px rgba(0,255,255,0.15)" }}>
+            <p className="text-cyan-300/60 text-xs mb-1">Total Score</p>
+            <p className="text-yellow-400 text-5xl font-black" style={{ textShadow: "0 0 20px #fbbf24" }}>
               {totalScore}
             </p>
           </div>
           {results.map((r, i) => (
-            <div
-              key={i}
-              className={`flex justify-between items-center py-1.5 px-3 rounded mb-1 text-sm ${
-                r.correct ? "text-green-400" : "text-red-400"
-              }`}
-            >
+            <div key={i} className={`flex justify-between items-center py-1.5 px-3 rounded-lg mb-1 text-sm ${r.correct ? "text-green-400" : "text-red-400"}`}>
               <span>{r.correct ? "✓" : "✗"} Round {i + 1}</span>
               <span className="font-bold">{r.score} pts</span>
             </div>
@@ -399,133 +444,120 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   // ── Playing / Revealing ───────────────────────────────────────────────────
 
-  const isRevealing = roundState === "revealing";
-  const isTimedOut = roundState === "timeout-pulsing";
-
   return (
-    <div className="h-full bg-black flex items-start justify-center p-2 pt-0 overflow-y-auto">
-      <div className="max-w-sm w-full text-white">
+    <div className="h-full bg-black flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto px-3 pt-1 pb-2">
+        <div className="max-w-sm mx-auto w-full text-white">
 
-        {/* Timer bar */}
-        <div
-          className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
-          style={{
-            borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
-            boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
-          }}
-        >
+          {/* Timer bar */}
           <div
-            className="h-full transition-all duration-1000 ease-linear"
-            style={{
-              width: `${timerProgress}%`,
-              background: isDanger ? "#f87171" : "#22d3ee",
-              boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
-            }}
-          />
-        </div>
-
-        {/* Progress dots */}
-        {comparisons.length > 1 && (
-          <div className="flex justify-center gap-2 mb-3">
-            {comparisons.map((_, i) => (
-              <div
-                key={i}
-                className="w-2 h-2 rounded-full transition-all duration-300"
-                style={{
-                  background: i <= currentIndex ? "#22d3ee" : "rgba(0,255,255,0.15)",
-                  boxShadow: i <= currentIndex ? "0 0 6px #00ffff" : "none",
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Question prompt */}
-        <div className="text-center mb-5">
-          <p
-            className="text-white font-black leading-tight"
-            style={{
-              fontSize: "clamp(1.5rem, 8vw, 2.8rem)",
-              textShadow: "0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.2)",
-              letterSpacing: "-0.02em",
-            }}
+            className="w-full h-1.5 rounded-full overflow-hidden mb-3"
+            style={{ background: "rgba(0,255,255,0.1)", boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.1)" }}
           >
-            {currentComparison.question}
-          </p>
-        </div>
-
-        {/* Option cards */}
-        <div className="flex flex-col gap-3 mb-4">
-          <OptionCard
-            label={currentComparison.option_a}
-            subtitle={currentComparison.option_a_subtitle ?? currentComparison.option_a_tagline}
-            state={getCardState("a")}
-            onClick={() => handleAnswer("a")}
-          />
-
-          <div
-            className="text-center text-cyan-400/40 font-black text-sm"
-            style={{ letterSpacing: "0.3em" }}
-          >
-            OR
+            <div
+              className="h-full transition-all duration-1000 ease-linear rounded-full"
+              style={{
+                width: `${timerProgress}%`,
+                background: isDanger ? "#f87171" : "#22d3ee",
+                boxShadow: isDanger ? "0 0 8px #f87171" : "0 0 8px #00ffff",
+              }}
+            />
           </div>
 
-          <OptionCard
-            label={currentComparison.option_b}
-            subtitle={currentComparison.option_b_subtitle}
-            state={getCardState("b")}
-            onClick={() => handleAnswer("b")}
-          />
-        </div>
-
-        {/* Info / reveal box */}
-        <div
-          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300 overflow-hidden"
-          style={{
-            borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
-            boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
-            minHeight: "5rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {isTimedOut ? (
-            <p
-              className="text-red-400 font-black text-center animate-pulse"
-              style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171" }}
-            >
-              Time's Up!
-            </p>
-          ) : !isRevealing ? (
-            <p
-              className="w-full text-cyan-400/30 font-black text-center leading-none"
-              style={{ fontSize: "clamp(1.8rem, 9vw, 2.6rem)", letterSpacing: "-0.02em" }}
-            >
-              Guess
-            </p>
-          ) : (
-            <p className="text-cyan-300 text-xs leading-relaxed text-center">
-              {currentComparison.fact}
-            </p>
+          {/* Progress dots */}
+          {comparisons.length > 1 && (
+            <div className="flex justify-center gap-2 mb-3">
+              {comparisons.map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    background: i <= currentIndex ? "#22d3ee" : "rgba(0,255,255,0.15)",
+                    boxShadow: i <= currentIndex ? "0 0 6px #00ffff" : "none",
+                  }}
+                />
+              ))}
+            </div>
           )}
-        </div>
 
-        {/* Next button */}
-        <button
-          onClick={isRevealing ? onNext : undefined}
-          disabled={!isRevealing}
-          className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation"
-          style={{
-            borderColor: isRevealing ? "#ec4899" : "rgba(236,72,153,0.2)",
-            color: isRevealing ? "#f472b6" : "rgba(244,114,182,0.2)",
-            textShadow: isRevealing ? "0 0 8px #ec4899" : "none",
-            boxShadow: isRevealing ? "0 0 15px rgba(236,72,153,0.3)" : "none",
-            cursor: isRevealing ? "pointer" : "default",
-          }}
-        >
-          {isLastComparison ? "Finish Round" : "Next →"}
-        </button>
+          {/* Question header */}
+          <div className="text-center mb-4">
+            <p className="text-cyan-400 text-lg font-medium" style={{ textShadow: "0 0 10px rgba(0,255,255,0.6)" }}>
+              Which is
+            </p>
+            <p
+              className="font-black leading-none uppercase"
+              style={{
+                fontSize: "clamp(2.4rem, 13vw, 3.8rem)",
+                color: "#fbbf24",
+                textShadow: "0 0 30px rgba(251,191,36,0.8), 0 0 60px rgba(251,191,36,0.3)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {currentComparison.comparison_type}?
+            </p>
+          </div>
+
+          {/* Option cards side by side */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <OptionCard
+              item={currentComparison.anchor}
+              state={getCardState("anchor")}
+              onClick={() => handleAnswer("anchor")}
+              isRevealing={isRevealing}
+            />
+            <OptionCard
+              item={currentComparison.challenger}
+              state={getCardState("challenger")}
+              onClick={() => handleAnswer("challenger")}
+              isRevealing={isRevealing}
+            />
+          </div>
+
+          {/* Info / reveal box */}
+          <div
+            className="rounded-2xl border-2 px-4 py-3 mb-3 transition-all duration-300"
+            style={{
+              borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.1)",
+              boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.15)" : "none",
+              background: "rgba(0,0,0,0.6)",
+              minHeight: "4rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isTimedOut ? (
+              <p className="text-red-400 font-black text-center animate-pulse" style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171" }}>
+                Time's Up!
+              </p>
+            ) : !isRevealing ? (
+              <p className="text-cyan-400/20 font-black text-center" style={{ fontSize: "clamp(1.8rem, 9vw, 2.6rem)", letterSpacing: "-0.02em" }}>
+                Guess
+              </p>
+            ) : (
+              <p className="text-cyan-300 text-sm leading-relaxed text-center">
+                {currentComparison.reveal_note}
+              </p>
+            )}
+          </div>
+
+          {/* Next button */}
+          <button
+            onClick={isRevealing ? onNext : undefined}
+            disabled={!isRevealing}
+            className="w-full py-3 bg-transparent border-2 rounded-2xl text-sm font-bold transition-all"
+            style={{
+              borderColor: isRevealing ? "#ec4899" : "rgba(236,72,153,0.15)",
+              color: isRevealing ? "#f472b6" : "rgba(244,114,182,0.2)",
+              textShadow: isRevealing ? "0 0 8px #ec4899" : "none",
+              boxShadow: isRevealing ? "0 0 15px rgba(236,72,153,0.3)" : "none",
+              cursor: isRevealing ? "pointer" : "default",
+            }}
+          >
+            {isLastComparison ? "Finish Round" : "Next →"}
+          </button>
+        </div>
       </div>
     </div>
   );
