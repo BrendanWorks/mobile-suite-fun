@@ -157,9 +157,10 @@ interface GameSessionProps {
   totalRounds?: number;
   playlistId?: number;
   onRoundComplete?: () => void;
+  debugMode?: boolean;
 }
 
-export default function GameSession({ onExit, totalRounds = 5, playlistId, onRoundComplete }: GameSessionProps) {
+export default function GameSession({ onExit, totalRounds = 5, playlistId, onRoundComplete, debugMode = false }: GameSessionProps) {
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
@@ -188,6 +189,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [introExiting] = useState(false);
+
+  const tripleTapTimestampsRef = useRef<number[]>([]);
+  const debugSkipRef = useRef<{ gameState: string; skip: () => void } | null>(null);
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -793,6 +797,36 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     setGameState('results');
     onRoundComplete?.();
   };
+
+  debugSkipRef.current = debugMode ? { gameState, skip: () => handleGameComplete(0, 100) } : null;
+
+  useEffect(() => {
+    if (!debugMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && debugSkipRef.current?.gameState === 'playing') {
+        e.preventDefault();
+        debugSkipRef.current.skip();
+      }
+    };
+
+    const handleTap = () => {
+      if (debugSkipRef.current?.gameState !== 'playing') return;
+      const now = Date.now();
+      tripleTapTimestampsRef.current = [...tripleTapTimestampsRef.current, now].filter(t => now - t < 600);
+      if (tripleTapTimestampsRef.current.length >= 3) {
+        tripleTapTimestampsRef.current = [];
+        debugSkipRef.current?.skip();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('touchend', handleTap);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('touchend', handleTap);
+    };
+  }, [debugMode]);
 
   const handleNextRound = () => {
     // Track that user clicked continue on results screen

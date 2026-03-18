@@ -184,6 +184,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
           setSelectedPlaylistId(null);
         }}
         totalRounds={5}
+        debugMode
       />
     );
   }
