@@ -123,6 +123,10 @@ const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
   GAME_REGISTRY.filter(g => g.dbId !== undefined).map(g => [g.dbId!, g.id])
 );
 
+const SLUG_ALIASES: { [key: string]: string } = {
+  'balls': 'zen-gravity',
+};
+
 type PlaylistRoundMetadata =
   | { type: 'procedural'; game_slug: string }
   | { type: 'multi-puzzle'; puzzle_ids: number[] }
@@ -208,6 +212,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         return;
       }
 
+      gameSlug = SLUG_ALIASES[gameSlug] ?? gameSlug;
       setCurrentGameSlug(gameSlug);
 
       if ('puzzle_ids' in round.metadata) {
