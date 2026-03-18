@@ -1210,7 +1210,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
                 onScoreUpdate={handleScoreUpdate}
               >
                 <GameComponent
-                  puzzleId={currentGame.id === 'superlative' ? currentSuperlativePuzzleId : currentPuzzleId}
+                  puzzleId={currentGame.id === 'superlative' ? (currentSuperlativePuzzleId ?? currentPuzzleId) : currentPuzzleId}
                   puzzleIds={currentPuzzleIds}
                   rankingPuzzleId={currentRankingPuzzleId}
                   prefetchedPuzzles={currentGame.id === 'fake-out' ? prefetchedPuzzles : undefined}
