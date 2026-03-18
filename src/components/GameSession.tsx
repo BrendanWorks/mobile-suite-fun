@@ -125,6 +125,7 @@ const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
 
 const SLUG_ALIASES: { [key: string]: string } = {
   'balls': 'zen-gravity',
+  'bounce': 'up-yours',
 };
 
 type PlaylistRoundMetadata =
