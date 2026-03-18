@@ -11,6 +11,7 @@ interface TrueFalsePuzzle {
   statement: string;
   correct_answer: boolean;
   explanation: string;
+  image_url: string | null;
 }
 
 interface GameProps {
@@ -30,18 +31,21 @@ const DEMO_PUZZLES: TrueFalsePuzzle[] = [
     statement: "Honey never spoils. Edible honey has been found in Egyptian tombs over 3,000 years old.",
     correct_answer: true,
     explanation: "Honey's low moisture content and acidic pH make it inhospitable for bacteria. Archaeologists have indeed eaten 3,000-year-old honey from ancient Egyptian tombs.",
+    image_url: null,
   },
   {
     id: -2,
     statement: "The Great Wall of China is visible from space with the naked eye.",
     correct_answer: false,
     explanation: "One of history's most persistent myths. The wall is only 15–30 feet wide — far too narrow to see from orbit. Chinese astronaut Yang Liwei confirmed he could not see it.",
+    image_url: null,
   },
   {
     id: -3,
     statement: "A day on Venus is longer than a year on Venus.",
     correct_answer: true,
     explanation: "Venus rotates so slowly that one day (243 Earth days) is longer than its year — the time to orbit the Sun (225 Earth days).",
+    image_url: null,
   },
 ];
 
@@ -50,7 +54,7 @@ const DEMO_PUZZLES: TrueFalsePuzzle[] = [
 async function loadPuzzleFromDB(id: number): Promise<TrueFalsePuzzle | null> {
   const { data, error } = await supabase
     .from("true_false_puzzles")
-    .select("id, statement, correct_answer, explanation")
+    .select("id, statement, correct_answer, explanation, image_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -61,7 +65,7 @@ async function loadPuzzleFromDB(id: number): Promise<TrueFalsePuzzle | null> {
 async function loadRandomPuzzles(count: number): Promise<TrueFalsePuzzle[]> {
   const { data, error } = await supabase
     .from("true_false_puzzles")
-    .select("id, statement, correct_answer, explanation")
+    .select("id, statement, correct_answer, explanation, image_url")
     .eq("is_active", true);
 
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
@@ -352,6 +356,26 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
             {currentPuzzle.statement}
           </p>
         </div>
+
+        {/* Image (optional) */}
+        {currentPuzzle.image_url && (
+          <div
+            className="rounded-2xl border-2 overflow-hidden mb-4"
+            style={{
+              borderColor: "rgba(0,255,255,0.25)",
+              background: "rgba(0,0,0,0.5)",
+              boxShadow: "0 0 15px rgba(0,255,255,0.08)",
+            }}
+          >
+            <div className="w-full aspect-[4/3] overflow-hidden">
+              <img
+                src={currentPuzzle.image_url}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Answer buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4">
