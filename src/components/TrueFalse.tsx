@@ -367,7 +367,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
               boxShadow: "0 0 15px rgba(0,255,255,0.08)",
             }}
           >
-            <div className="w-full aspect-[4/3] overflow-hidden">
+            <div className="w-full aspect-[16/9] overflow-hidden">
               <img
                 src={currentPuzzle.image_url}
                 alt=""
