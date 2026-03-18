@@ -130,6 +130,7 @@ const SLUG_ALIASES: { [key: string]: string } = {
 type PlaylistRoundMetadata =
   | { type: 'procedural'; game_slug: string }
   | { type: 'multi-puzzle'; puzzle_ids: number[] }
+  | { superlative_puzzle_ids: number[] }
   | Record<string, never>;
 
 interface PlaylistRound {
@@ -215,7 +216,12 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       gameSlug = SLUG_ALIASES[gameSlug] ?? gameSlug;
       setCurrentGameSlug(gameSlug);
 
-      if ('puzzle_ids' in round.metadata) {
+      if ('superlative_puzzle_ids' in round.metadata) {
+        const ids = (round.metadata as { superlative_puzzle_ids: number[] }).superlative_puzzle_ids;
+        setCurrentPuzzleIds(ids);
+        setCurrentPuzzleId(null);
+        setPrefetchedPuzzles(null);
+      } else if ('puzzle_ids' in round.metadata) {
         const ids = (round.metadata as { puzzle_ids: number[] }).puzzle_ids;
         setCurrentPuzzleIds(ids);
         setCurrentPuzzleId(null);

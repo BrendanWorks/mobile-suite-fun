@@ -37,15 +37,19 @@ type RoundState = "loading" | "playing" | "revealing" | "timeout-pulsing" | "com
 
 // ─── DB Loaders ───────────────────────────────────────────────────────────────
 
-async function loadFromSuperlativePuzzles(id: number): Promise<Comparison[]> {
+async function loadFromSuperlativePuzzles(ids: number | number[]): Promise<Comparison[]> {
+  const idArray = Array.isArray(ids) ? ids : [ids];
   const { data: puzzles, error } = await supabase
     .from("superlative_puzzles")
     .select("id, comparison_type, correct_answer, reveal_note, superlative_items(role, name, tagline, value, unit, image_url)")
-    .eq("id", id);
+    .in("id", idArray);
 
   if (error || !puzzles || puzzles.length === 0) return [];
 
-  return puzzles.map((p: any) => {
+  const byId = new Map(puzzles.map((p: any) => [p.id, p]));
+  return idArray.map((id) => {
+    const p = byId.get(id);
+    if (!p) return null;
     const items: any[] = p.superlative_items ?? [];
     const anchor = items.find((i: any) => i.role === "anchor");
     const challenger = items.find((i: any) => i.role === "challenger");
@@ -280,15 +284,15 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
     setResults([]);
     setSecondsLeft(ROUND_DURATION_S);
 
-    const effectiveId = puzzleId ?? (puzzleIds && puzzleIds.length > 0 ? puzzleIds[0] : null);
-
     const load = async () => {
       let loaded: Comparison[] = [];
 
-      if (effectiveId !== null && effectiveId !== undefined) {
-        loaded = await loadFromSuperlativePuzzles(effectiveId);
+      if (puzzleIds && puzzleIds.length > 0) {
+        loaded = await loadFromSuperlativePuzzles(puzzleIds);
+      } else if (puzzleId !== null && puzzleId !== undefined) {
+        loaded = await loadFromSuperlativePuzzles(puzzleId);
         if (loaded.length === 0) {
-          loaded = await loadFromPuzzleMetadata(effectiveId);
+          loaded = await loadFromPuzzleMetadata(puzzleId);
         }
       }
 
