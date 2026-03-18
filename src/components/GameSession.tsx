@@ -75,7 +75,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'word-rescue',               name: 'Pop',              component: WordRescue,      duration: 60,  instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence',            name: 'Simple',           component: ShapeSequence,   duration: 60,  instructions: 'Watch and repeat the pattern' },
   { id: 'snake',           dbId: 12, name: 'Snake',            component: Snake,           duration: 75,  instructions: 'Eat food, avoid walls and yourself' },
-  { id: 'gravity-ball',              name: 'Bounce',           component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
+  { id: 'gravity-ball',  dbId: 25,  name: 'Bounce',           component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
   { id: 'fake-out',        dbId: 15, name: 'Fake Out',         component: FakeOut,         duration: 60,  instructions: 'Identify if the photo is real or AI-generated' },
   { id: 'hive-mind',       dbId: 13, name: 'Hive Mind',        component: HiveMind,        duration: 60,  instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider',               name: 'Slope Rider',      component: SlopeRider,      duration: 90,  instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
