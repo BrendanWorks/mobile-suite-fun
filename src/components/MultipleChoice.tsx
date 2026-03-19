@@ -423,11 +423,12 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
               boxShadow: "0 0 15px rgba(0,255,255,0.08)",
             }}
           >
-            <div className="w-full aspect-[16/9] overflow-hidden">
+            <div className="w-full overflow-hidden" style={{ maxHeight: "28vh" }}>
               <img
                 src={currentPuzzle.image_url}
                 alt=""
                 className="w-full h-full object-cover"
+                style={{ maxHeight: "28vh" }}
               />
             </div>
           </div>
