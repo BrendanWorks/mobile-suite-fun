@@ -364,12 +364,12 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
   ];
 
   return (
-    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0 pb-4">
-      <div className="max-w-sm w-full text-white pb-4">
+    <div className="h-full bg-black flex justify-center overflow-hidden">
+      <div className="max-w-sm w-full text-white flex flex-col h-full px-2 py-2">
 
         {/* Timer bar */}
         <div
-          className="w-full h-1.5 bg-black rounded-lg border overflow-hidden mb-3"
+          className="w-full h-1.5 bg-black rounded-lg border overflow-hidden flex-shrink-0 mb-2"
           style={{
             borderColor: isDanger ? "rgba(239,68,68,0.5)" : "rgba(0,255,255,0.5)",
             boxShadow: isDanger ? "0 0 6px rgba(239,68,68,0.2)" : "0 0 6px rgba(0,255,255,0.2)",
@@ -387,21 +387,21 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Question */}
         <div
-          className="rounded-xl border-2 px-4 py-3 mb-3"
+          className="rounded-xl border-2 px-4 py-2 mb-2 flex-shrink-0"
           style={{
             borderColor: "rgba(0,255,255,0.25)",
             background: "rgba(0,255,255,0.04)",
             boxShadow: "0 0 15px rgba(0,255,255,0.08)",
-            minHeight: "5.5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            minHeight: "3.5rem",
           }}
         >
           <p
             className="text-white font-medium text-center leading-snug"
             style={{
-              fontSize: "clamp(0.85rem, 3.5vw, 1.05rem)",
+              fontSize: "clamp(0.82rem, 3.4vw, 1rem)",
               textShadow: "0 0 6px rgba(255,255,255,0.15)",
               display: "-webkit-box",
               WebkitLineClamp: 4,
@@ -413,29 +413,26 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           </p>
         </div>
 
-        {/* Image (optional) */}
+        {/* Image (optional) — flex-grow to fill available space */}
         {currentPuzzle.image_url && (
           <div
-            className="rounded-2xl border-2 overflow-hidden mb-3"
+            className="rounded-2xl border-2 overflow-hidden mb-2 flex-1 min-h-0"
             style={{
               borderColor: "rgba(0,255,255,0.25)",
               background: "rgba(0,0,0,0.5)",
               boxShadow: "0 0 15px rgba(0,255,255,0.08)",
             }}
           >
-            <div className="w-full overflow-hidden" style={{ maxHeight: "28vh" }}>
-              <img
-                src={currentPuzzle.image_url}
-                alt=""
-                className="w-full h-full object-cover"
-                style={{ maxHeight: "28vh" }}
-              />
-            </div>
+            <img
+              src={currentPuzzle.image_url}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
 
         {/* Answer tiles */}
-        <div className="flex flex-col gap-2 mb-3">
+        <div className="flex flex-col gap-1.5 mb-2 flex-shrink-0">
           {options.map(({ key, label }) => (
             <AnswerButton
               key={key}
@@ -449,11 +446,11 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Explanation / reveal box */}
         <div
-          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-3 transition-colors duration-300"
+          className="rounded-xl border-2 bg-black/80 px-4 py-2 mb-2 flex-shrink-0 transition-colors duration-300"
           style={{
             borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
             boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
-            minHeight: "5rem",
+            minHeight: "3.5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -462,7 +459,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           {isTimedOut ? (
             <p
               className="text-red-400 font-black text-center animate-pulse"
-              style={{ fontSize: "clamp(1.4rem, 7vw, 2rem)", textShadow: "0 0 20px #f87171", letterSpacing: "-0.01em" }}
+              style={{ fontSize: "clamp(1.2rem, 6vw, 1.8rem)", textShadow: "0 0 20px #f87171", letterSpacing: "-0.01em" }}
             >
               Time's Up!
             </p>
@@ -470,7 +467,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
             <p
               className="w-full text-cyan-400/30 font-black text-center leading-none"
               style={{
-                fontSize: "clamp(1.4rem, 7vw, 2rem)",
+                fontSize: "clamp(1.2rem, 6vw, 1.8rem)",
                 letterSpacing: "-0.02em",
               }}
             >
@@ -487,7 +484,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
         <button
           onClick={isRevealing ? onNext : undefined}
           disabled={!isRevealing}
-          className="w-full py-3 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation active:scale-95"
+          className="w-full py-2.5 bg-transparent border-2 rounded-xl text-sm font-bold transition-all touch-manipulation active:scale-95 flex-shrink-0"
           style={{
             borderColor: isRevealing ? "#ec4899" : "rgba(236,72,153,0.2)",
             color: isRevealing ? "#f472b6" : "rgba(244,114,182,0.2)",
