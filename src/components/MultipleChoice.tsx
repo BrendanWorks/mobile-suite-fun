@@ -16,6 +16,7 @@ interface MCPuzzle {
   option_c: string;
   correct_option: OptionKey;
   explanation: string;
+  image_url?: string | null;
 }
 
 interface GameProps {
@@ -64,7 +65,7 @@ const DEMO_PUZZLES: MCPuzzle[] = [
 async function loadPuzzleFromDB(id: number): Promise<MCPuzzle | null> {
   const { data, error } = await supabase
     .from("multiple_choice_puzzles")
-    .select("id, question, option_a, option_b, option_c, correct_option, explanation")
+    .select("id, question, option_a, option_b, option_c, correct_option, explanation, image_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -75,7 +76,7 @@ async function loadPuzzleFromDB(id: number): Promise<MCPuzzle | null> {
 async function loadRandomPuzzles(count: number): Promise<MCPuzzle[]> {
   const { data, error } = await supabase
     .from("multiple_choice_puzzles")
-    .select("id, question, option_a, option_b, option_c, correct_option, explanation")
+    .select("id, question, option_a, option_b, option_c, correct_option, explanation, image_url")
     .eq("is_active", true);
 
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
@@ -164,10 +165,10 @@ function AnswerButton({ optionKey, label, state, onClick }: AnswerButtonProps) {
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
-      className={`relative w-full rounded-xl transition-all duration-300 flex items-center gap-3 px-4 touch-manipulation ${shakeClass}`}
+      className={`relative w-full rounded-xl transition-all duration-300 flex items-center gap-3 px-3 touch-manipulation ${shakeClass}`}
       style={{
         ...stateStyles[state],
-        height: "clamp(58px, 14vw, 76px)",
+        height: "clamp(44px, 11vw, 58px)",
         cursor: isDisabled ? "default" : "pointer",
       }}
     >
@@ -386,7 +387,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Question */}
         <div
-          className="rounded-xl border-2 px-4 py-4 mb-4"
+          className="rounded-xl border-2 px-4 py-3 mb-3"
           style={{
             borderColor: "rgba(0,255,255,0.25)",
             background: "rgba(0,255,255,0.04)",
@@ -412,8 +413,28 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
           </p>
         </div>
 
+        {/* Image (optional) */}
+        {currentPuzzle.image_url && (
+          <div
+            className="rounded-2xl border-2 overflow-hidden mb-3"
+            style={{
+              borderColor: "rgba(0,255,255,0.25)",
+              background: "rgba(0,0,0,0.5)",
+              boxShadow: "0 0 15px rgba(0,255,255,0.08)",
+            }}
+          >
+            <div className="w-full aspect-[16/9] overflow-hidden">
+              <img
+                src={currentPuzzle.image_url}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Answer tiles */}
-        <div className="flex flex-col gap-2.5 mb-4">
+        <div className="flex flex-col gap-2 mb-3">
           {options.map(({ key, label }) => (
             <AnswerButton
               key={key}
@@ -427,7 +448,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
 
         {/* Explanation / reveal box */}
         <div
-          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-4 transition-colors duration-300"
+          className="rounded-xl border-2 bg-black/80 px-4 py-3 mb-3 transition-colors duration-300"
           style={{
             borderColor: isTimedOut ? "rgba(239,68,68,0.5)" : isRevealing ? "rgba(0,255,255,0.4)" : "rgba(0,255,255,0.12)",
             boxShadow: isTimedOut ? "0 0 20px rgba(239,68,68,0.3)" : isRevealing ? "0 0 20px rgba(0,255,255,0.2)" : "none",
