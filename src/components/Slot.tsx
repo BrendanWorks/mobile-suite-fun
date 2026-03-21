@@ -178,7 +178,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     const correctLetter = currentPuzzle.correct_answer[blankPosition];
 
     if (tiles[index] === correctLetter) {
-      audioManager.playSound('ranky-select', 0.5);
+      audioManager.play('ranky-select');
       setFilledBlanks(prev => [...prev, tiles[index]]);
       setUsedTiles(prev => new Set([...prev, index]));
     } else {

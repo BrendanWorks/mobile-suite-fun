@@ -152,7 +152,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
   const handleOptionSelect = useCallback((option: string) => {
     if (gameState !== 'playing' || selectedOption) return;
 
-    audioManager.playSound('ranky-select', 0.5);
+    audioManager.play('ranky-select');
     setSelectedOption(option);
 
     const isCorrect = option === currentPuzzle?.correct_answer;
