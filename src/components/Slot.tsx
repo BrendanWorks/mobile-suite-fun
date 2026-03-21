@@ -219,17 +219,17 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
 
         {/* Hint box */}
         <div
-          className="rounded-xl border-2 px-4 py-3 mb-3 flex-shrink-0"
+          className="rounded-xl border-2 px-4 py-4 mb-3 flex-shrink-0 text-center"
           style={{
             borderColor: 'rgba(251,191,36,0.5)',
             background: 'rgba(251,191,36,0.04)',
             boxShadow: '0 0 15px rgba(251,191,36,0.15)',
           }}
         >
-          <div className="text-xs text-cyan-400/60 uppercase tracking-widest mb-1">Hint</div>
+          <div className="text-xs text-cyan-400/60 uppercase tracking-widest mb-2">Hint</div>
           <p
             className="text-yellow-300 font-bold leading-snug"
-            style={{ fontSize: 'clamp(0.9rem, 3.8vw, 1.1rem)', textShadow: '0 0 8px rgba(251,191,36,0.5)' }}
+            style={{ fontSize: 'clamp(1.1rem, 5vw, 1.4rem)', textShadow: '0 0 8px rgba(251,191,36,0.5)' }}
           >
             {currentPuzzle.prompt}
           </p>
@@ -244,9 +244,9 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                 key={idx}
                 className="flex items-center justify-center font-black rounded-lg transition-all duration-300"
                 style={{
-                  width: 'clamp(36px, 9vw, 50px)',
-                  height: 'clamp(42px, 11vw, 58px)',
-                  fontSize: 'clamp(1rem, 5vw, 1.4rem)',
+                  width: 'clamp(44px, 12vw, 62px)',
+                  height: 'clamp(52px, 14vw, 72px)',
+                  fontSize: 'clamp(1.25rem, 6.5vw, 1.75rem)',
                   border: isBlank
                     ? isFilled
                       ? isWrong
@@ -302,9 +302,9 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                   disabled={isUsed || gameState !== 'playing'}
                   className="flex items-center justify-center font-black rounded-lg transition-all duration-200 touch-manipulation"
                   style={{
-                    width: 'clamp(40px, 10vw, 52px)',
-                    height: 'clamp(40px, 10vw, 52px)',
-                    fontSize: 'clamp(1rem, 4.5vw, 1.25rem)',
+                    width: 'clamp(50px, 13vw, 64px)',
+                    height: 'clamp(50px, 13vw, 64px)',
+                    fontSize: 'clamp(1.25rem, 6vw, 1.5rem)',
                     border: isUsed ? '2px solid rgba(0,255,255,0.1)' : '2px solid rgba(0,255,255,0.35)',
                     background: isUsed ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.6)',
                     color: isUsed ? 'rgba(255,255,255,0.2)' : '#ffffff',
