@@ -45,6 +45,7 @@ const Flashbang = React.lazy(() => import('./Flashbang'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
 const Slot = React.lazy(() => import('./Slot'));
+const Pivot = React.lazy(() => import('./Pivot'));
 import AuthModal from './AuthModal';
 import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
@@ -91,6 +92,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'color-clash',     dbId: 17, name: 'ColorClash',       component: ColorClash,      duration: 30,  instructions: 'Tap the button matching the ink color, not the word!' },
   { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
   { id: 'slot',            dbId: 25, name: 'Slot',             component: Slot,            duration: 60,  instructions: 'Tap the correct letters to fill in the blanks!' },
+  { id: 'pivot',           dbId: 26, name: 'Pivot',            component: Pivot,           duration: 60,  instructions: 'Find the word that connects two phrases' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
@@ -120,6 +122,7 @@ const GAME_ICONS: { [key: string]: JSX.Element } = {
   'color-clash': <CircleX className="w-full h-full" />,
   'recall': <Search className="w-full h-full" />,
   'slot': <BookOpen className="w-full h-full" />,
+  'pivot': <BookOpen className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
@@ -716,6 +719,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         break;
 
       case 'slot':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
+        break;
+
+      case 'pivot':
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         break;
 
