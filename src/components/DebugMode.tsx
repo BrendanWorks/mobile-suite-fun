@@ -29,6 +29,7 @@ const Flashbang = React.lazy(() => import('./Flashbang'));
 const Recall = React.lazy(() => import('./Recall'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Slot = React.lazy(() => import('./Slot'));
+const Pivot = React.lazy(() => import('./Pivot'));
 import GameSession from './GameSession';
 import CelebrationScreen from './CelebrationScreen';
 
@@ -54,6 +55,7 @@ const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'recall': <Zap className="w-full h-full" />,
   'color-clash': <Circle className="w-full h-full" />,
   'slot': <Square className="w-full h-full" />,
+  'pivot': <BookOpen className="w-full h-full" />,
 };
 
 interface DebugModeProps {
@@ -82,6 +84,7 @@ const TEST_GAMES = [
   { id: 'recall', name: 'Recall', duration: 60, component: Recall },
   { id: 'color-clash', name: 'Color Clash', duration: 30, component: ColorClash },
   { id: 'slot', name: 'Slot', duration: 600, component: Slot },
+  { id: 'pivot', name: 'Pivot', duration: 60, component: Pivot },
 ];
 
 interface Playlist {
@@ -95,10 +98,11 @@ interface DebugGameViewProps {
   game: typeof TEST_GAMES[number];
   GameComponent: React.ComponentType<any>;
   slotPuzzleIds: number[] | null;
+  pivotPuzzleIds: number[] | null;
   onExit: () => void;
 }
 
-function DebugGameView({ game, GameComponent, slotPuzzleIds, onExit }: DebugGameViewProps) {
+function DebugGameView({ game, GameComponent, slotPuzzleIds, pivotPuzzleIds, onExit }: DebugGameViewProps) {
   const tripleTapTimestampsRef = React.useRef<number[]>([]);
 
   React.useEffect(() => {
@@ -146,6 +150,8 @@ function DebugGameView({ game, GameComponent, slotPuzzleIds, onExit }: DebugGame
               <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
             ) : game.id === 'slot' && slotPuzzleIds ? (
               <GameComponent puzzleIds={slotPuzzleIds} />
+            ) : game.id === 'pivot' && pivotPuzzleIds ? (
+              <GameComponent puzzleIds={pivotPuzzleIds} />
             ) : (
               <GameComponent />
             )}
@@ -163,6 +169,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
   const [slotPuzzleIds, setSlotPuzzleIds] = useState<number[] | null>(null);
+  const [pivotPuzzleIds, setPivotPuzzleIds] = useState<number[] | null>(null);
 
   useEffect(() => {
     const loadPlaylists = async () => {
@@ -193,8 +200,20 @@ export default function DebugMode({ onExit }: DebugModeProps) {
       }
     };
 
+    const loadPivotPuzzles = async () => {
+      const { data } = await supabase
+        .from('puzzles')
+        .select('id')
+        .eq('game_id', 26)
+        .order('id');
+      if (data && data.length > 0) {
+        setPivotPuzzleIds(data.map((p: { id: number }) => p.id));
+      }
+    };
+
     loadPlaylists();
     loadSlotPuzzles();
+    loadPivotPuzzles();
   }, []);
 
   if (view === 'celebration') {
@@ -282,6 +301,7 @@ export default function DebugMode({ onExit }: DebugModeProps) {
         game={game}
         GameComponent={GameComponent}
         slotPuzzleIds={slotPuzzleIds}
+        pivotPuzzleIds={pivotPuzzleIds}
         onExit={exitGame}
       />
     );
