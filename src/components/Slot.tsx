@@ -208,7 +208,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
 
   return (
     <div className="h-full bg-black flex justify-center overflow-hidden">
-      <div className="max-w-sm w-full text-white flex flex-col h-full px-3 py-3">
+      <div className="max-w-sm w-full text-white flex flex-col h-full px-3 py-3 justify-center">
 
         {/* Progress */}
         <div className="flex items-center justify-between mb-2 flex-shrink-0">
