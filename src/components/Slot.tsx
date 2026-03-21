@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
+import { audioManager } from '../lib/audioManager';
 
 interface SlotPuzzle {
   id: number;
@@ -73,6 +74,10 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const timeRemainingRef = useRef(timeRemaining);
   const completeCalledRef = useRef(false);
   const scoreRef = useRef(0);
+
+  useEffect(() => {
+    audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+  }, []);
 
   useEffect(() => {
     timeRemainingRef.current = timeRemaining;
@@ -173,6 +178,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     const correctLetter = currentPuzzle.correct_answer[blankPosition];
 
     if (tiles[index] === correctLetter) {
+      audioManager.playSound('ranky-select', 0.5);
       setFilledBlanks(prev => [...prev, tiles[index]]);
       setUsedTiles(prev => new Set([...prev, index]));
     } else {

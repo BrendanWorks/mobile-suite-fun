@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
+import { audioManager } from '../lib/audioManager';
 
 interface PivotPuzzle {
   id: number;
@@ -90,6 +91,10 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
   const scoreRef = useRef(0);
 
   useEffect(() => {
+    audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+  }, []);
+
+  useEffect(() => {
     timeRemainingRef.current = timeRemaining;
   }, [timeRemaining]);
 
@@ -147,6 +152,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
   const handleOptionSelect = useCallback((option: string) => {
     if (gameState !== 'playing' || selectedOption) return;
 
+    audioManager.playSound('ranky-select', 0.5);
     setSelectedOption(option);
 
     const isCorrect = option === currentPuzzle?.correct_answer;
