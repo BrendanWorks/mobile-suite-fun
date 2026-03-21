@@ -92,6 +92,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
 
   useEffect(() => {
     audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+    audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
   }, []);
 
   useEffect(() => {
@@ -168,6 +169,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
       setGameState('correct');
       advanceOrComplete(newTotal, puzzles.length);
     } else {
+      audioManager.play('global-wrong');
       setGameState('wrong');
       setTimeout(() => {
         setSelectedOption(null);

@@ -77,6 +77,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
 
   useEffect(() => {
     audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+    audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
   }, []);
 
   useEffect(() => {
@@ -182,6 +183,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
       setFilledBlanks(prev => [...prev, tiles[index]]);
       setUsedTiles(prev => new Set([...prev, index]));
     } else {
+      audioManager.play('global-wrong');
       setBounceIndex(index);
       setTimeout(() => setBounceIndex(null), 400);
     }
