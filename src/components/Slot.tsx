@@ -201,6 +201,11 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const isWrong = gameState === 'wrong';
   const isCorrectState = gameState === 'correct';
 
+  const wordLen = currentPuzzle.correct_answer.length;
+  const tileSize = wordLen <= 5 ? 62 : wordLen <= 7 ? 52 : wordLen <= 9 ? 42 : 36;
+  const tileFontSize = wordLen <= 5 ? '1.75rem' : wordLen <= 7 ? '1.5rem' : wordLen <= 9 ? '1.25rem' : '1rem';
+  const tileHeight = Math.round(tileSize * 1.15);
+
   return (
     <div className="h-full bg-black flex justify-center overflow-hidden">
       <div className="max-w-sm w-full text-white flex flex-col h-full px-3 py-3">
@@ -236,15 +241,15 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
         {/* Word display */}
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 mb-3">
           <div className="text-xs text-cyan-400/50 mb-3">Complete the word</div>
-          <div className="flex justify-center gap-2 flex-wrap">
+          <div className="flex justify-center gap-1.5 flex-wrap">
             {wordDisplay.map(({ letter, isBlank, isFilled }, idx) => (
               <div
                 key={idx}
                 className="flex items-center justify-center font-black rounded-lg transition-all duration-300"
                 style={{
-                  width: 'clamp(44px, 12vw, 62px)',
-                  height: 'clamp(52px, 14vw, 72px)',
-                  fontSize: 'clamp(1.25rem, 6.5vw, 1.75rem)',
+                  width: `${tileSize}px`,
+                  height: `${tileHeight}px`,
+                  fontSize: tileFontSize,
                   border: isBlank
                     ? isFilled
                       ? isWrong
@@ -300,9 +305,9 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                   disabled={isUsed || gameState !== 'playing'}
                   className="flex items-center justify-center font-black rounded-lg transition-all duration-200 touch-manipulation"
                   style={{
-                    width: 'clamp(50px, 13vw, 64px)',
-                    height: 'clamp(50px, 13vw, 64px)',
-                    fontSize: 'clamp(1.25rem, 6vw, 1.5rem)',
+                    width: `${tileSize + 4}px`,
+                    height: `${tileSize + 4}px`,
+                    fontSize: tileFontSize,
                     border: isUsed ? '2px solid rgba(0,255,255,0.1)' : '2px solid rgba(0,255,255,0.35)',
                     background: isUsed ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.6)',
                     color: isUsed ? 'rgba(255,255,255,0.2)' : '#ffffff',
