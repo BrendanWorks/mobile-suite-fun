@@ -6,7 +6,7 @@
  * - Auto-advances after Round Complete screen
  */
 
-import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { RoundCountdown } from './RoundCountdown';
 import { audioManager } from '../lib/audioManager';
 
@@ -122,7 +122,18 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
     return fallbackWords.has(cleanWord);
   };
 
-  const [gameState, setGameState] = useState('countdown');
+  const [gameState, setGameState] = useState('splash');
+
+  const splashDecorations = useMemo(() => {
+    const labels = ['F*CK', 'SH*T', 'A**', 'D*MN', 'B*TCH', '!@#$'];
+    return Array.from({ length: 18 }, (_, i) => ({
+      label: labels[i % 6],
+      left: Math.random() * 90 + 5,
+      top: Math.random() * 90 + 5,
+      rotate: Math.random() * 60 - 30,
+      fontSize: Math.random() * 20 + 14
+    }));
+  }, []);
   const [letters, setLetters] = useState<any[]>([]);
   const [poppingLetters, setPoppingLetters] = useState<any[]>([]);
   const [selectedLetters, setSelectedLetters] = useState<any[]>([]);
@@ -590,6 +601,62 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
       return false;
     }
   };
+
+  if (gameState === 'splash') {
+    return (
+      <div
+        className="relative flex flex-col items-center justify-center h-full bg-black text-white overflow-hidden cursor-pointer select-none"
+        onClick={() => setGameState('countdown')}
+        onTouchEnd={(e) => { e.preventDefault(); setGameState('countdown'); }}
+      >
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {splashDecorations.map((d, i) => (
+            <div
+              key={i}
+              className="absolute font-black opacity-10 text-blue-400"
+              style={{
+                left: `${d.left}%`,
+                top: `${d.top}%`,
+                transform: `rotate(${d.rotate}deg)`,
+                fontSize: `${d.fontSize}px`,
+                filter: 'blur(1px)'
+              }}
+            >
+              {d.label}
+            </div>
+          ))}
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
+          <div
+            className="text-5xl sm:text-6xl font-black uppercase tracking-tight leading-none"
+            style={{
+              color: '#facc15',
+              textShadow: '0 0 30px rgba(250, 204, 21, 0.8), 0 0 60px rgba(250, 204, 21, 0.4)',
+              WebkitTextStroke: '1px rgba(250, 204, 21, 0.5)'
+            }}
+          >
+            Rowdy Loves<br />Profanity!
+          </div>
+          <div
+            className="text-xl sm:text-2xl font-bold uppercase tracking-wide"
+            style={{
+              color: '#f97316',
+              textShadow: '0 0 15px rgba(249, 115, 22, 0.7)'
+            }}
+          >
+            Big Bonus for Potty Mouths
+          </div>
+          <div
+            className="mt-6 text-sm text-blue-400 animate-pulse"
+            style={{ textShadow: '0 0 8px rgba(96, 165, 250, 0.6)' }}
+          >
+            Tap to continue
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (gameState === 'countdown') {
     return (
