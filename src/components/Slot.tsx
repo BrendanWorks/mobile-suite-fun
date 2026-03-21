@@ -239,7 +239,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
         </div>
 
         {/* Word display */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 mb-3">
+        <div className="flex flex-col items-center mb-4 mt-4">
           <div className="text-xs text-cyan-400/50 mb-3">Complete the word</div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', maxWidth: '100%', overflow: 'hidden' }}>
             {wordDisplay.map(({ letter, isBlank, isFilled }, idx) => (
