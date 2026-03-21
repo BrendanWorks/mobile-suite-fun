@@ -81,7 +81,7 @@ const TEST_GAMES = [
   { id: 'flashbang', name: 'Flashbang', duration: 45, component: Flashbang },
   { id: 'recall', name: 'Recall', duration: 60, component: Recall },
   { id: 'color-clash', name: 'Color Clash', duration: 30, component: ColorClash },
-  { id: 'slot', name: 'Slot', duration: 60, component: Slot },
+  { id: 'slot', name: 'Slot', duration: 600, component: Slot },
 ];
 
 interface Playlist {
@@ -91,12 +91,78 @@ interface Playlist {
   difficulty: string;
 }
 
+interface DebugGameViewProps {
+  game: typeof TEST_GAMES[number];
+  GameComponent: React.ComponentType<any>;
+  slotPuzzleIds: number[] | null;
+  onExit: () => void;
+}
+
+function DebugGameView({ game, GameComponent, slotPuzzleIds, onExit }: DebugGameViewProps) {
+  const tripleTapTimestampsRef = React.useRef<number[]>([]);
+
+  React.useEffect(() => {
+    const handleTap = () => {
+      const now = Date.now();
+      tripleTapTimestampsRef.current = [...tripleTapTimestampsRef.current, now].filter(t => now - t < 600);
+      if (tripleTapTimestampsRef.current.length >= 3) {
+        tripleTapTimestampsRef.current = [];
+        onExit();
+      }
+    };
+    window.addEventListener('touchend', handleTap);
+    return () => window.removeEventListener('touchend', handleTap);
+  }, [onExit]);
+
+  return (
+    <div className="h-screen w-screen bg-gray-900 flex flex-col">
+      <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
+        <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
+          <div className="text-white min-w-0 flex-1">
+            <p className="text-xs sm:text-sm text-gray-400">Debug Mode</p>
+            <p className="text-base sm:text-lg font-bold truncate">Testing {game.name}</p>
+          </div>
+          <button
+            onClick={onExit}
+            className="flex-shrink-0 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <React.Suspense fallback={
+          <div className="h-full w-full flex items-center justify-center bg-gray-900">
+            <div className="text-gray-400 text-lg animate-pulse">Loading...</div>
+          </div>
+        }>
+          <GameWrapper
+            duration={game.duration}
+            onComplete={onExit}
+            gameName={game.name}
+            onScoreUpdate={() => {}}
+          >
+            {game.id === 'fake-out' ? (
+              <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
+            ) : game.id === 'slot' && slotPuzzleIds ? (
+              <GameComponent puzzleIds={slotPuzzleIds} />
+            ) : (
+              <GameComponent />
+            )}
+          </GameWrapper>
+        </React.Suspense>
+      </div>
+    </div>
+  );
+}
+
 export default function DebugMode({ onExit }: DebugModeProps) {
   const [view, setView] = useState<'menu' | 'game' | 'playlist' | 'celebration'>('menu');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
+  const [slotPuzzleIds, setSlotPuzzleIds] = useState<number[] | null>(null);
 
   useEffect(() => {
     const loadPlaylists = async () => {
@@ -116,7 +182,19 @@ export default function DebugMode({ onExit }: DebugModeProps) {
       }
     };
 
+    const loadSlotPuzzles = async () => {
+      const { data } = await supabase
+        .from('puzzles')
+        .select('id')
+        .eq('game_id', 25)
+        .order('id');
+      if (data && data.length > 0) {
+        setSlotPuzzleIds(data.map((p: { id: number }) => p.id));
+      }
+    };
+
     loadPlaylists();
+    loadSlotPuzzles();
   }, []);
 
   if (view === 'celebration') {
@@ -197,47 +275,15 @@ export default function DebugMode({ onExit }: DebugModeProps) {
     if (!game) return null;
 
     const GameComponent = game.component;
+    const exitGame = () => { setView('menu'); setSelectedGameId(null); };
 
     return (
-      <div className="h-screen w-screen bg-gray-900 flex flex-col">
-        <div className="flex-shrink-0 bg-gray-800 px-3 sm:px-6 py-2.5 sm:py-4 border-b border-gray-700">
-          <div className="flex justify-between items-center max-w-6xl mx-auto gap-3">
-            <div className="text-white min-w-0 flex-1">
-              <p className="text-xs sm:text-sm text-gray-400">Debug Mode</p>
-              <p className="text-base sm:text-lg font-bold truncate">Testing {game.name}</p>
-            </div>
-            <button
-              onClick={() => {
-                setView('menu');
-                setSelectedGameId(null);
-              }}
-              className="flex-shrink-0 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
-            >
-              Back
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <React.Suspense fallback={
-            <div className="h-full w-full flex items-center justify-center bg-gray-900">
-              <div className="text-gray-400 text-lg animate-pulse">Loading...</div>
-            </div>
-          }>
-            <GameWrapper
-              duration={game.duration}
-              onComplete={() => {}}
-              gameName={game.name}
-              onScoreUpdate={() => {}}
-            >
-              {game.id === 'fake-out' ? (
-                <GameComponent puzzleIds={[777, 778, 779, 780, 781]} />
-              ) : (
-                <GameComponent />
-              )}
-            </GameWrapper>
-          </React.Suspense>
-        </div>
-      </div>
+      <DebugGameView
+        game={game}
+        GameComponent={GameComponent}
+        slotPuzzleIds={slotPuzzleIds}
+        onExit={exitGame}
+      />
     );
   }
 
