@@ -1,4 +1,3 @@
-```javascript
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
