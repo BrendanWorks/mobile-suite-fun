@@ -44,6 +44,7 @@ const Clutch = React.lazy(() => import('./Clutch'));
 const Flashbang = React.lazy(() => import('./Flashbang'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
+const Slot = React.lazy(() => import('./Slot'));
 import AuthModal from './AuthModal';
 import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
@@ -75,7 +76,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'word-rescue',               name: 'Pop',              component: WordRescue,      duration: 60,  instructions: 'Click falling letters to make words' },
   { id: 'shape-sequence',            name: 'Simple',           component: ShapeSequence,   duration: 60,  instructions: 'Watch and repeat the pattern' },
   { id: 'snake',           dbId: 12, name: 'Snake',            component: Snake,           duration: 75,  instructions: 'Eat food, avoid walls and yourself' },
-  { id: 'gravity-ball',  dbId: 25,  name: 'Bounce',           component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
+  { id: 'gravity-ball',             name: 'Bounce',           component: UpYours,         duration: 90,  instructions: 'Tilt to steer, bounce higher on gold springs' },
   { id: 'fake-out',        dbId: 15, name: 'Fake Out',         component: FakeOut,         duration: 60,  instructions: 'Identify if the photo is real or AI-generated' },
   { id: 'hive-mind',       dbId: 13, name: 'Hive Mind',        component: HiveMind,        duration: 60,  instructions: 'Guess what most people chose in each survey' },
   { id: 'slope-rider',               name: 'Slope Rider',      component: SlopeRider,      duration: 90,  instructions: 'Tilt to carve down the slope, dodge obstacles, collect coins' },
@@ -89,6 +90,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'flashbang',       dbId: 24, name: 'Flashbang',        component: Flashbang,       duration: 45,  instructions: 'Memorize the lit tiles, then tap them from memory!' },
   { id: 'color-clash',     dbId: 17, name: 'ColorClash',       component: ColorClash,      duration: 30,  instructions: 'Tap the button matching the ink color, not the word!' },
   { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
+  { id: 'slot',            dbId: 25, name: 'Slot',             component: Slot,            duration: 60,  instructions: 'Tap the correct letters to fill in the blanks!' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
@@ -117,6 +119,7 @@ const GAME_ICONS: { [key: string]: JSX.Element } = {
   'double-fake': <Shuffle className="w-full h-full" />,
   'color-clash': <CircleX className="w-full h-full" />,
   'recall': <Search className="w-full h-full" />,
+  'slot': <BookOpen className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
@@ -710,6 +713,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       case 'recall':
         normalizedScore = scoringSystem.recall(rawScore, maxScore);
+        break;
+
+      case 'slot':
+        normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         break;
 
       case 'fake-out':
