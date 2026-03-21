@@ -334,40 +334,17 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
           </div>
         </div>
 
-        {/* Feedback bar */}
-        <div
-          className="rounded-lg border-2 py-2 flex-shrink-0 flex items-center justify-center transition-all duration-300"
-          style={{
-            borderColor: isCorrectState
-              ? 'rgba(34,197,94,0.5)'
-              : isWrong
-              ? 'rgba(239,68,68,0.5)'
-              : 'rgba(0,255,255,0.1)',
-            background: isCorrectState
-              ? 'rgba(34,197,94,0.1)'
-              : isWrong
-              ? 'rgba(239,68,68,0.1)'
-              : 'rgba(0,0,0,0.3)',
-            boxShadow: isCorrectState
-              ? '0 0 15px rgba(34,197,94,0.2)'
-              : isWrong
-              ? '0 0 15px rgba(239,68,68,0.2)'
-              : 'none',
-            minHeight: '2.25rem',
-          }}
-        >
-          {isCorrectState ? (
-            <span className="text-green-400 font-bold text-sm" style={{ textShadow: '0 0 8px #4ade80' }}>
-              {currentPuzzle.correct_answer}
-            </span>
-          ) : isWrong ? (
-            <span className="text-red-400 font-bold text-sm animate-pulse">Try again</span>
-          ) : (
-            <span className="text-cyan-400/30 font-bold text-sm">
-              {filledBlanks.length} / {currentPuzzle.metadata.blanks.length} filled
-            </span>
-          )}
-        </div>
+        {/* Feedback - text only, no panel */}
+        {isCorrectState && (
+          <div className="text-center text-green-400 font-bold text-sm flex-shrink-0" style={{ textShadow: '0 0 8px #4ade80' }}>
+            {currentPuzzle.correct_answer}
+          </div>
+        )}
+        {isWrong && (
+          <div className="text-center text-red-400 font-bold text-sm animate-pulse flex-shrink-0">
+            Try again
+          </div>
+        )}
 
         <style>{`
           @keyframes slot-bounce {
