@@ -78,6 +78,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     timeRemainingRef.current = timeRemaining;
   }, [timeRemaining]);
 
+  // Load puzzles when puzzleIds or puzzleId changes
   useEffect(() => {
     const load = async () => {
       let loaded: SlotPuzzle[];
@@ -92,7 +93,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
       setGameState('playing');
     };
     load();
-  }, []);
+  }, [puzzleIds, puzzleId]);
 
   const currentPuzzle = puzzles[currentIndex] ?? null;
 
