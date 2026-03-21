@@ -202,16 +202,16 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const isCorrectState = gameState === 'correct';
 
   const wordLen = currentPuzzle.correct_answer.length;
-  const tileSize = wordLen <= 5 ? 62 : wordLen <= 7 ? 52 : wordLen <= 9 ? 42 : 36;
-  const tileFontSize = wordLen <= 5 ? '1.75rem' : wordLen <= 7 ? '1.5rem' : wordLen <= 9 ? '1.25rem' : '1rem';
+  const tileSize = wordLen <= 5 ? 52 : wordLen <= 7 ? 44 : wordLen <= 9 ? 38 : 32;
+  const tileFontSize = wordLen <= 5 ? '1.5rem' : wordLen <= 7 ? '1.25rem' : wordLen <= 9 ? '1rem' : '0.875rem';
   const tileHeight = Math.round(tileSize * 1.15);
 
   return (
     <div className="h-full bg-black flex justify-center overflow-y-auto">
-      <div className="max-w-sm w-full text-white flex flex-col px-3 py-3">
+      <div className="max-w-sm w-full text-white flex flex-col px-2 py-2 gap-2">
 
         {/* Progress */}
-        <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <div className="flex items-center justify-between flex-shrink-0">
           <span className="text-xs text-cyan-400/60">
             {currentIndex + 1} / {puzzles.length}
           </span>
@@ -222,30 +222,39 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
 
         {/* Hint box */}
         <div
-          className="rounded-xl border-2 px-4 py-4 mb-3 flex-shrink-0 text-center"
+          className="rounded-lg border-2 px-3 py-2.5 flex-shrink-0 text-center"
           style={{
             borderColor: 'rgba(251,191,36,0.5)',
             background: 'rgba(251,191,36,0.04)',
             boxShadow: '0 0 15px rgba(251,191,36,0.15)',
           }}
         >
-          <div className="text-xs text-cyan-400/60 uppercase tracking-widest mb-2">Hint</div>
+          <div className="text-xs text-cyan-400/60 uppercase tracking-widest mb-1">Hint</div>
           <p
-            className="text-yellow-300 font-bold leading-snug"
-            style={{ fontSize: 'clamp(1.1rem, 5vw, 1.4rem)', textShadow: '0 0 8px rgba(251,191,36,0.5)' }}
+            className="text-yellow-300 font-bold leading-tight"
+            style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', textShadow: '0 0 8px rgba(251,191,36,0.5)' }}
           >
             {currentPuzzle.prompt}
           </p>
         </div>
 
-        {/* Word display */}
-        <div className="flex flex-col items-center mb-4 mt-4 flex-shrink-0">
-          <div className="text-xs text-cyan-400/50 mb-3">Complete the word</div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '100%' }}>
+        {/* Word display - stays on one line */}
+        <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+          <div className="text-xs text-cyan-400/50 mb-2">Complete the word</div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '4px', 
+            flexWrap: 'nowrap', 
+            justifyContent: 'center', 
+            width: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            paddingBottom: '2px'
+          }}>
             {wordDisplay.map(({ letter, isBlank, isFilled }, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-center font-black rounded-lg transition-all duration-300"
+                className="flex items-center justify-center font-black rounded-md transition-all duration-300 flex-shrink-0"
                 style={{
                   width: `${tileSize}px`,
                   height: `${tileHeight}px`,
@@ -291,10 +300,10 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
           </div>
         </div>
 
-        {/* Tile pool - NOW VISIBLE */}
-        <div className="flex-shrink-0 mb-3">
+        {/* Tile pool */}
+        <div className="flex-shrink-0">
           <div className="text-xs text-cyan-400/50 text-center mb-2">Tap letters to fill blanks</div>
-          <div className="flex justify-center gap-2 flex-wrap">
+          <div className="flex justify-center gap-1.5 flex-wrap px-1">
             {tiles.map((letter, idx) => {
               const isUsed = usedTiles.has(idx);
               const isBouncing = bounceIndex === idx;
@@ -303,10 +312,10 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                   key={idx}
                   onClick={() => handleTileTap(idx)}
                   disabled={isUsed || gameState !== 'playing'}
-                  className="flex items-center justify-center font-black rounded-lg transition-all duration-200 touch-manipulation"
+                  className="flex items-center justify-center font-black rounded-md transition-all duration-200 touch-manipulation flex-shrink-0"
                   style={{
-                    width: `${tileSize + 4}px`,
-                    height: `${tileSize + 4}px`,
+                    width: `${tileSize}px`,
+                    height: `${tileSize}px`,
                     fontSize: tileFontSize,
                     border: isUsed ? '2px solid rgba(0,255,255,0.1)' : '2px solid rgba(0,255,255,0.35)',
                     background: isUsed ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.6)',
@@ -327,7 +336,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
 
         {/* Feedback bar */}
         <div
-          className="rounded-xl border-2 py-2.5 flex-shrink-0 flex items-center justify-center transition-all duration-300"
+          className="rounded-lg border-2 py-2 flex-shrink-0 flex items-center justify-center transition-all duration-300"
           style={{
             borderColor: isCorrectState
               ? 'rgba(34,197,94,0.5)'
@@ -344,7 +353,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
               : isWrong
               ? '0 0 15px rgba(239,68,68,0.2)'
               : 'none',
-            minHeight: '2.5rem',
+            minHeight: '2.25rem',
           }}
         >
           {isCorrectState ? (
