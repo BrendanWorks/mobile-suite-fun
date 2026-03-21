@@ -1,3 +1,4 @@
+```javascript
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameHandle } from '../lib/gameTypes';
@@ -28,7 +29,7 @@ const DEMO_PUZZLES: PivotPuzzle[] = [
     metadata: {
       word1: 'Couch',
       word2: 'Chip',
-      options: ['FRENCH', 'POTATO', 'TOMATO', 'CARROT'],
+      options: ['FRENCH', 'POTATO', 'TOMATO', 'CARROT'].sort(() => Math.random() - 0.5),
     },
   },
   {
@@ -37,7 +38,7 @@ const DEMO_PUZZLES: PivotPuzzle[] = [
     metadata: {
       word1: 'Big',
       word2: 'Pie',
-      options: ['ORANGE', 'APPLE', 'CHERRY', 'GRAPE'],
+      options: ['ORANGE', 'APPLE', 'CHERRY', 'GRAPE'].sort(() => Math.random() - 0.5),
     },
   },
 ];
@@ -48,7 +49,13 @@ async function loadPuzzlesFromDB(ids: number[]): Promise<PivotPuzzle[]> {
     .select('id, correct_answer, metadata')
     .in('id', ids);
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
-  return data as PivotPuzzle[];
+  return data.map(puzzle => ({
+    ...puzzle,
+    metadata: {
+      ...puzzle.metadata,
+      options: [...puzzle.metadata.options].sort(() => Math.random() - 0.5)
+    }
+  })) as PivotPuzzle[];
 }
 
 async function loadRandomPuzzles(count: number): Promise<PivotPuzzle[]> {
@@ -58,7 +65,13 @@ async function loadRandomPuzzles(count: number): Promise<PivotPuzzle[]> {
     .eq('game_id', 26);
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
   const shuffled = [...data].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count) as PivotPuzzle[];
+  return shuffled.slice(0, count).map(puzzle => ({
+    ...puzzle,
+    metadata: {
+      ...puzzle.metadata,
+      options: [...puzzle.metadata.options].sort(() => Math.random() - 0.5)
+    }
+  })) as PivotPuzzle[];
 }
 
 const MAX_SCORE_PER_PUZZLE = 1000;
