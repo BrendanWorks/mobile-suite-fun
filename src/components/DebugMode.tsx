@@ -28,6 +28,7 @@ const Clutch = React.lazy(() => import('./Clutch'));
 const Flashbang = React.lazy(() => import('./Flashbang'));
 const Recall = React.lazy(() => import('./Recall'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
+const Slot = React.lazy(() => import('./Slot'));
 import GameSession from './GameSession';
 import CelebrationScreen from './CelebrationScreen';
 
@@ -52,6 +53,7 @@ const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'flashbang': <Zap className="w-full h-full" />,
   'recall': <Zap className="w-full h-full" />,
   'color-clash': <Circle className="w-full h-full" />,
+  'slot': <Square className="w-full h-full" />,
 };
 
 interface DebugModeProps {
@@ -79,6 +81,7 @@ const TEST_GAMES = [
   { id: 'flashbang', name: 'Flashbang', duration: 45, component: Flashbang },
   { id: 'recall', name: 'Recall', duration: 60, component: Recall },
   { id: 'color-clash', name: 'Color Clash', duration: 30, component: ColorClash },
+  { id: 'slot', name: 'Slot', duration: 60, component: Slot },
 ];
 
 interface Playlist {
