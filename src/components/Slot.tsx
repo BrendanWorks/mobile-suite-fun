@@ -40,8 +40,7 @@ async function loadPuzzlesFromDB(ids: number[]): Promise<SlotPuzzle[]> {
   const { data, error } = await supabase
     .from('puzzles')
     .select('id, prompt, correct_answer, metadata')
-    .in('id', ids)
-    .eq('is_active', true);
+    .in('id', ids);
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
   return data as SlotPuzzle[];
 }
@@ -50,8 +49,7 @@ async function loadRandomPuzzles(count: number): Promise<SlotPuzzle[]> {
   const { data, error } = await supabase
     .from('puzzles')
     .select('id, prompt, correct_answer, metadata')
-    .eq('game_id', 25)
-    .eq('is_active', true);
+    .eq('game_id', 25);
   if (error || !data || data.length === 0) return DEMO_PUZZLES;
   const shuffled = [...data].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count) as SlotPuzzle[];
