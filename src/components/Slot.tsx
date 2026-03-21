@@ -207,8 +207,8 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const tileHeight = Math.round(tileSize * 1.15);
 
   return (
-    <div className="h-full bg-black flex justify-center overflow-hidden">
-      <div className="max-w-sm w-full text-white flex flex-col h-full px-3 py-3 justify-center">
+    <div className="h-full bg-black flex justify-center overflow-y-auto">
+      <div className="max-w-sm w-full text-white flex flex-col px-3 py-3">
 
         {/* Progress */}
         <div className="flex items-center justify-between mb-2 flex-shrink-0">
@@ -239,16 +239,15 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
         </div>
 
         {/* Word display */}
-        <div className="flex flex-col items-center mb-4 mt-4">
+        <div className="flex flex-col items-center mb-4 mt-4 flex-shrink-0">
           <div className="text-xs text-cyan-400/50 mb-3">Complete the word</div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', maxWidth: '100%', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '100%' }}>
             {wordDisplay.map(({ letter, isBlank, isFilled }, idx) => (
               <div
                 key={idx}
                 className="flex items-center justify-center font-black rounded-lg transition-all duration-300"
                 style={{
                   width: `${tileSize}px`,
-                  flexShrink: 1,
                   height: `${tileHeight}px`,
                   fontSize: tileFontSize,
                   border: isBlank
@@ -292,7 +291,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
           </div>
         </div>
 
-        {/* Tile pool */}
+        {/* Tile pool - NOW VISIBLE */}
         <div className="flex-shrink-0 mb-3">
           <div className="text-xs text-cyan-400/50 text-center mb-2">Tap letters to fill blanks</div>
           <div className="flex justify-center gap-2 flex-wrap">
