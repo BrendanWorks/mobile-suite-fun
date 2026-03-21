@@ -153,12 +153,12 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
   const handleOptionSelect = useCallback((option: string) => {
     if (gameState !== 'playing' || selectedOption) return;
 
-    audioManager.play('ranky-select');
     setSelectedOption(option);
 
     const isCorrect = option === currentPuzzle?.correct_answer;
 
     if (isCorrect) {
+      audioManager.play('ranky-select');
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const timeBonus = Math.max(0, timeRemainingRef.current - Math.ceil(elapsed));
       const roundScore = Math.round(MAX_SCORE_PER_PUZZLE + timeBonus * 50);
@@ -268,7 +268,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
                   key={idx}
                   onClick={() => handleOptionSelect(option)}
                   disabled={gameState !== 'playing' || !!selectedOption}
-                  className="py-3 px-4 rounded-lg border-2 font-semibold text-sm transition-all duration-200"
+                  className={`py-3 px-4 rounded-lg border-2 font-semibold text-sm transition-all duration-200${buttonState === 'wrong' ? ' animate-shake' : ''}`}
                   style={{
                     borderColor:
                       buttonState === 'correct'

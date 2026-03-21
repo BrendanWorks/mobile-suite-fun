@@ -162,6 +162,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
       setGameState('correct');
       advanceOrComplete(newTotal, puzzles.length);
     } else {
+      audioManager.play('global-wrong');
       setGameState('wrong');
       setTimeout(() => {
         setFilledBlanks([]);
@@ -185,7 +186,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     } else {
       audioManager.play('global-wrong');
       setBounceIndex(index);
-      setTimeout(() => setBounceIndex(null), 400);
+      setTimeout(() => setBounceIndex(null), 500);
     }
   }, [currentPuzzle, filledBlanks, usedTiles, tiles, gameState]);
 
@@ -250,7 +251,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
         {/* Word display - stays on one line */}
         <div className="flex flex-col items-center flex-shrink-0 min-w-0">
           <div className="text-xs text-cyan-400/50 mb-2">Complete the word</div>
-          <div style={{ 
+          <div className={isWrong ? 'animate-shake' : ''} style={{
             display: 'flex', 
             gap: '4px', 
             flexWrap: 'nowrap', 
@@ -321,7 +322,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                   key={idx}
                   onClick={() => handleTileTap(idx)}
                   disabled={isUsed || gameState !== 'playing'}
-                  className="flex items-center justify-center font-black rounded-md transition-all duration-200 touch-manipulation flex-shrink-0"
+                  className={`flex items-center justify-center font-black rounded-md transition-all duration-200 touch-manipulation flex-shrink-0${isBouncing ? ' animate-shake' : ''}`}
                   style={{
                     width: `${tileSize}px`,
                     height: `${tileSize}px`,
@@ -332,8 +333,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
                     boxShadow: isUsed ? 'none' : '0 0 10px rgba(0,255,255,0.15)',
                     opacity: isUsed ? 0.4 : 1,
                     cursor: isUsed ? 'default' : 'pointer',
-                    transform: isBouncing ? 'translateY(-6px) scale(1.1)' : 'none',
-                    animation: isBouncing ? 'slot-bounce 0.4s ease-in-out' : 'none',
+                    transform: 'none',
                   }}
                 >
                   {letter}
@@ -355,13 +355,6 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
           </div>
         )}
 
-        <style>{`
-          @keyframes slot-bounce {
-            0%, 100% { transform: translateY(0) scale(1); }
-            40% { transform: translateY(-8px) scale(1.12); }
-            70% { transform: translateY(2px) scale(0.95); }
-          }
-        `}</style>
       </div>
     </div>
   );
