@@ -352,6 +352,29 @@ export default function DebugMode({ onExit }: DebugModeProps) {
             <h2 className="text-2xl font-bold text-cyan-400 mb-4" style={{ textShadow: '0 0 15px rgba(0, 255, 255, 0.4)' }}>
               Test Playlists
             </h2>
+            <div className="mb-4">
+              <p className="text-cyan-300 text-xs uppercase font-semibold tracking-widest mb-2">Pinned</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <button
+                  onClick={() => {
+                    setSelectedPlaylistId(54);
+                    setView('playlist');
+                  }}
+                  className="bg-black border-2 border-yellow-400/70 hover:border-yellow-400 rounded-lg p-4 text-left transition-all active:scale-95 touch-manipulation"
+                  style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.3)' }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-bold text-yellow-400 flex-1" style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.5)' }}>
+                      Silver Screen
+                    </h3>
+                    <span className="text-xs px-2 py-1 border border-yellow-400 text-yellow-400 rounded uppercase font-semibold">
+                      ID 54
+                    </span>
+                  </div>
+                  <p className="text-yellow-300/70 text-sm">Pinned for testing</p>
+                </button>
+              </div>
+            </div>
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mx-auto"></div>
