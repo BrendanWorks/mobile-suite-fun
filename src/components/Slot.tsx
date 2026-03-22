@@ -76,8 +76,9 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const scoreRef = useRef(0);
 
   useEffect(() => {
-    audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+    audioManager.loadSound('global-win', '/sounds/global/SmallWin.mp3', 2);
     audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
+    audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
   }, []);
 
   useEffect(() => {
@@ -152,6 +153,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     }
 
     if (isCorrect) {
+      audioManager.play('global-win');
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const timeBonus = Math.max(0, timeRemainingRef.current - Math.ceil(elapsed));
       const roundScore = Math.round(MAX_SCORE_PER_PUZZLE + timeBonus * 50);

@@ -91,7 +91,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
   const scoreRef = useRef(0);
 
   useEffect(() => {
-    audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
+    audioManager.loadSound('global-win', '/sounds/global/SmallWin.mp3', 2);
     audioManager.loadSound('global-wrong', '/sounds/global/wrong_optimized.mp3', 2);
   }, []);
 
@@ -158,7 +158,7 @@ const Pivot = forwardRef<GameHandle, GameProps>(function Pivot(
     const isCorrect = option === currentPuzzle?.correct_answer;
 
     if (isCorrect) {
-      audioManager.play('ranky-select');
+      audioManager.play('global-win');
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const timeBonus = Math.max(0, timeRemainingRef.current - Math.ceil(elapsed));
       const roundScore = Math.round(MAX_SCORE_PER_PUZZLE + timeBonus * 50);
