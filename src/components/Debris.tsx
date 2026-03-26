@@ -71,7 +71,7 @@ const H = 600;
 const MAX_SCORE = 2000;
 const BULLET_SPEED = 480;
 const BULLET_LIFE = 3000;
-const FIRE_COOLDOWN = 300;
+const FIRE_COOLDOWN = 80;
 const PLAYER_MAX_SPEED = 200;
 const THRUST_ACCEL = 250;
 const FRICTION = 0.994;
@@ -214,6 +214,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const lastUfoFireRef = useRef(0);
 
   const keysRef = useRef<Set<string>>(new Set());
+  const fireQueueRef = useRef(0);
   const lastFireRef = useRef(0);
   const lastFrameRef = useRef(0);
   const rafRef = useRef(0);
@@ -229,6 +230,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
   const rocksTotalDestroyedRef = useRef(0);
   const phaseRef = useRef<'normal' | 'ufo'>('normal');
+  const sectorClearedRef = useRef(0);
 
   const scaleRef = useRef(1);
 
@@ -664,6 +666,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             const t = i / b.history.length;
             const prev = b.history[i - 1];
             const curr = b.history[i];
+            const segDx = curr.x - prev.x;
+            const segDy = curr.y - prev.y;
+            if (segDx * segDx + segDy * segDy > 120 * 120) continue;
             const alpha = t * 0.85;
             const lineWidth = 2 + t * 4;
             ctx.beginPath();
@@ -691,6 +696,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             const t = i / b.history.length;
             const prev = b.history[i - 1];
             const curr = b.history[i];
+            const segDx = curr.x - prev.x;
+            const segDy = curr.y - prev.y;
+            if (segDx * segDx + segDy * segDy > 120 * 120) continue;
             ctx.beginPath();
             ctx.moveTo(prev.x, prev.y);
             ctx.lineTo(curr.x, curr.y);
@@ -944,11 +952,35 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.textAlign = 'center';
         ctx.shadowColor = COLORS.yellow;
         ctx.shadowBlur = 30;
-        ctx.fillText('CLEARED!', W / 2, H / 2 - 20);
+        ctx.fillText('SECTOR CLEARED', W / 2, H / 2 - 20);
         ctx.shadowBlur = 0;
         ctx.font = '20px monospace';
         ctx.fillStyle = COLORS.white;
         ctx.fillText(`SCORE: ${score}`, W / 2, H / 2 + 24);
+      }
+
+      if (sectorClearedRef.current > 0) {
+        const age = now - sectorClearedRef.current;
+        const dur = 2000;
+        if (age < dur) {
+          const t = age / dur;
+          const alpha = t < 0.15 ? t / 0.15 : t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
+          const scale = t < 0.15 ? 0.7 + 0.3 * (t / 0.15) : 1;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(scale, scale);
+          ctx.font = 'bold 44px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = COLORS.yellow;
+          ctx.shadowColor = COLORS.yellow;
+          ctx.shadowBlur = 28;
+          ctx.fillText('SECTOR CLEARED', 0, 0);
+          ctx.shadowBlur = 0;
+          ctx.restore();
+        } else {
+          sectorClearedRef.current = 0;
+        }
       }
     }
 
@@ -992,7 +1024,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       playerPosRef.current.y += playerVelRef.current.y * dt;
       playerPosRef.current = wrapPos(playerPosRef.current);
 
-      if (keys.has(' ') || keys.has('Space')) fire();
+      while (fireQueueRef.current > 0) {
+        fireQueueRef.current--;
+        fire();
+      }
 
       const now = Date.now();
       const elapsed = (now - waveStartRef.current) / 1000;
@@ -1057,6 +1092,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
               stopUfoSound();
+              sectorClearedRef.current = Date.now();
               wonRef.current = true;
               doneRef.current = true;
               cancelAnimationFrame(rafRef.current);
@@ -1097,6 +1133,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           stopUfoSound();
 
           if (ufoPassesCompletedRef.current >= UFO_PASSES) {
+            sectorClearedRef.current = Date.now();
             wonRef.current = true;
             doneRef.current = true;
             cancelAnimationFrame(rafRef.current);
@@ -1182,15 +1219,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     const handleKey = (e: KeyboardEvent) => {
-      const k = e.key === ' ' ? 'Space' : e.key;
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's', ' ', 'Space'].includes(e.key) || k === 'Space') {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's', ' '].includes(e.key)) {
         e.preventDefault();
-        keysRef.current.add(k === 'Space' ? ' ' : e.key);
+      }
+      if ((e.key === ' ') && !e.repeat) {
+        fireQueueRef.current++;
+        return;
+      }
+      const k = e.key;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's'].includes(k)) {
+        keysRef.current.add(k);
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysRef.current.delete(e.key);
-      keysRef.current.delete(' ');
     };
 
     window.addEventListener('keydown', handleKey);
