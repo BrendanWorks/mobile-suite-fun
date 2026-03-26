@@ -106,20 +106,6 @@ interface DebugGameViewProps {
 }
 
 function DebugGameView({ game, GameComponent, slotPuzzleIds, pivotPuzzleIds, onExit }: DebugGameViewProps) {
-  const tripleTapTimestampsRef = React.useRef<number[]>([]);
-
-  React.useEffect(() => {
-    const handleTap = () => {
-      const now = Date.now();
-      tripleTapTimestampsRef.current = [...tripleTapTimestampsRef.current, now].filter(t => now - t < 600);
-      if (tripleTapTimestampsRef.current.length >= 3) {
-        tripleTapTimestampsRef.current = [];
-        onExit();
-      }
-    };
-    window.addEventListener('touchend', handleTap);
-    return () => window.removeEventListener('touchend', handleTap);
-  }, [onExit]);
 
   return (
     <div className="h-screen w-screen bg-gray-900 flex flex-col">

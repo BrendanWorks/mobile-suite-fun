@@ -8,6 +8,7 @@ interface GameWrapperProps {
   gameName: string;
   onScoreUpdate: (score: number, maxScore: number) => void;
   children: ReactNode;
+  debugMode?: boolean;
 }
 
 export default function GameWrapper({
@@ -15,7 +16,8 @@ export default function GameWrapper({
   onComplete,
   gameName,
   onScoreUpdate,
-  children
+  children,
+  debugMode = false,
 }: GameWrapperProps) {
   const POST_ZERO_LINGER_MS = 700;
 
@@ -55,7 +57,7 @@ export default function GameWrapper({
     }
   }, [children]);
 
-  const soundsMuted = hideTimerBar || muteTimerSounds;
+  const soundsMuted = hideTimerBar || muteTimerSounds || debugMode;
 
   useEffect(() => {
     if (soundsMuted) return;
@@ -202,6 +204,7 @@ export default function GameWrapper({
 
   useEffect(() => {
     if (!isActive) return;
+    if (debugMode) return;
 
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
@@ -297,7 +300,7 @@ export default function GameWrapper({
 
   return (
     <div className="h-full w-full flex flex-col bg-black" style={{ position: 'relative' }}>
-      {!hideTimerBar && <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />}
+      {!hideTimerBar && !debugMode && <VisualTimerBar totalTime={duration} timeRemaining={timeRemaining} />}
       <div className="flex-1 overflow-hidden" style={{ position: 'relative' }}>
         {clonedChildren}
       </div>

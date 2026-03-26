@@ -201,10 +201,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [introExiting] = useState(false);
 
-  const tripleTapTimestampsRef = useRef<number[]>([]);
   const debugSkipRef = useRef<{ gameState: string; skip: () => void } | null>(null);
-  const currentGameIdRef = useRef<string | null>(null);
-  currentGameIdRef.current = currentGame?.id ?? null;
 
   const currentSessionScore = useMemo(
     () => roundScores.reduce((sum, r) => sum + (r.normalizedScore.totalWithBonus || r.normalizedScore.normalizedScore), 0),
@@ -835,22 +832,9 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       }
     };
 
-    const handleTap = () => {
-      if (debugSkipRef.current?.gameState !== 'playing') return;
-      if (currentGameIdRef.current === 'debris') return;
-      const now = Date.now();
-      tripleTapTimestampsRef.current = [...tripleTapTimestampsRef.current, now].filter(t => now - t < 600);
-      if (tripleTapTimestampsRef.current.length >= 3) {
-        tripleTapTimestampsRef.current = [];
-        debugSkipRef.current?.skip();
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('touchend', handleTap);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('touchend', handleTap);
     };
   }, [debugMode]);
 
@@ -1275,6 +1259,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
                 onComplete={handleGameComplete}
                 gameName={currentGame.name}
                 onScoreUpdate={handleScoreUpdate}
+                debugMode={debugMode}
               >
                 <GameComponent
                   puzzleId={currentGame.id === 'superlative' ? (currentSuperlativePuzzleId ?? currentPuzzleId) : currentPuzzleId}
