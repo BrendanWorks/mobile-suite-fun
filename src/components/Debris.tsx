@@ -389,10 +389,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       spawnExplosionParticles(rock.pos, rock.size);
       spawnScoreFloater(rock.pos, pts, multiplierRef.current);
 
-      const shakeDisp = rock.size === 'large' ? 20 : rock.size === 'medium' ? 15 : 10;
-      const shakeDur = rock.size === 'large' ? 100 : rock.size === 'medium' ? 75 : 50;
-      triggerShake(shakeDisp, shakeDur);
-
       if (rock.size === 'large') {
         const r1 = spawnRock('medium', { ...rock.pos });
         const r2 = spawnRock('medium', { ...rock.pos });
@@ -1090,7 +1086,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           spawnParticles(ufo.pos, 30, COLORS.ufoRed, 200);
           spawnParticles(ufo.pos, 12, COLORS.yellow, 120);
           coreFlashesRef.current.push({ pos: { ...ufo.pos }, born: now, duration: 120 });
-          triggerShake(20, 100);
           addScore(UFO_SCORE);
           ufo.alive = false;
           ufoRef.current = null;
