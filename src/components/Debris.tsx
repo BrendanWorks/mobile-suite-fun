@@ -63,8 +63,10 @@ const INVINCIBLE_MS = 1500;
 const TOTAL_LIVES = 3;
 const WRAP_MARGIN = 80;
 const UFO_SCORE = 400;
-const UFO_SPEED = 320;
+const UFO_SPEED = 160;
 const UFO_PASSES = 3;
+const UFO_FIRE_INTERVAL = 2200;
+const UFO_BULLET_SPEED = 220;
 
 const ROCK_RADII = { large: 46, medium: 28, small: 14 };
 const ROCK_POINTS = { large: 50, medium: 100, small: 200 };
@@ -184,6 +186,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const ufoPassesCompletedRef = useRef(0);
   const ufoPhaseTriggedRef = useRef(false);
   const ufoSoundPlayingRef = useRef(false);
+
+  const ufoBulletsRef = useRef<Bullet[]>([]);
+  const lastUfoFireRef = useRef(0);
 
   const keysRef = useRef<Set<string>>(new Set());
   const lastFireRef = useRef(0);
@@ -331,6 +336,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ufoPhaseTriggedRef.current = true;
       phaseRef.current = 'ufo';
       rocksRef.current = [];
+      ufoBulletsRef.current = [];
+      lastUfoFireRef.current = Date.now() + 1000;
       ufoPassesCompletedRef.current = 0;
       spawnUfo(0);
     }
@@ -512,6 +519,31 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           const grad = ctx.createLinearGradient(b.pos.x, b.pos.y, b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
           grad.addColorStop(0, 'rgba(255,110,199,0.9)');
           grad.addColorStop(1, 'rgba(255,110,199,0)');
+          ctx.beginPath();
+          ctx.moveTo(b.pos.x, b.pos.y);
+          ctx.lineTo(b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+      }
+
+      for (const b of ufoBulletsRef.current) {
+        ctx.beginPath();
+        ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = COLORS.ufoRed;
+        ctx.shadowColor = COLORS.ufoRed;
+        ctx.shadowBlur = 14;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        const tailLen = 12;
+        const bspeed = Math.sqrt(b.vel.x ** 2 + b.vel.y ** 2);
+        if (bspeed > 0) {
+          const nx = b.vel.x / bspeed, ny = b.vel.y / bspeed;
+          const grad = ctx.createLinearGradient(b.pos.x, b.pos.y, b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
+          grad.addColorStop(0, 'rgba(255,32,32,0.9)');
+          grad.addColorStop(1, 'rgba(255,32,32,0)');
           ctx.beginPath();
           ctx.moveTo(b.pos.x, b.pos.y);
           ctx.lineTo(b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
@@ -758,6 +790,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           ufo.pos.x += ufo.vel.x * dt;
           ufo.pos.y = ufo.baseY + Math.sin(travelFrac * Math.PI * 3 + ufo.phaseOffset) * ufo.amplitude;
 
+          if (now - lastUfoFireRef.current > UFO_FIRE_INTERVAL) {
+            lastUfoFireRef.current = now;
+            const dx = playerPosRef.current.x - ufo.pos.x;
+            const dy = playerPosRef.current.y - ufo.pos.y;
+            const scatter = (Math.random() - 0.5) * 0.6;
+            const angle = Math.atan2(dy, dx) + scatter;
+            ufoBulletsRef.current.push({
+              id: nextId++,
+              pos: { x: ufo.pos.x, y: ufo.pos.y },
+              vel: { x: Math.cos(angle) * UFO_BULLET_SPEED, y: Math.sin(angle) * UFO_BULLET_SPEED },
+              born: now,
+            });
+          }
+
           const offScreen = (ufo.vel.x > 0 && ufo.pos.x > W + 70) || (ufo.vel.x < 0 && ufo.pos.x < -70);
           if (offScreen) {
             ufoPassesCompletedRef.current++;
@@ -833,6 +879,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         if (!hit) aliveBullets.push(b);
       }
       bulletsRef.current = aliveBullets;
+
+      const aliveUfoBullets: Bullet[] = [];
+      for (const b of ufoBulletsRef.current) {
+        if (now - b.born > BULLET_LIFE) continue;
+        b.pos.x += b.vel.x * dt;
+        b.pos.y += b.vel.y * dt;
+        b.pos = wrapPos(b.pos);
+        if (now >= invincibleUntilRef.current && dist(b.pos, playerPosRef.current) < 14) {
+          handlePlayerHit();
+        } else {
+          aliveUfoBullets.push(b);
+        }
+      }
+      ufoBulletsRef.current = aliveUfoBullets;
 
       if (now >= invincibleUntilRef.current) {
         for (const rock of rocksRef.current) {
