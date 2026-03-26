@@ -97,7 +97,14 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
   const baseMin = size === 'large' ? 40 : size === 'medium' ? 60 : 100;
   const baseMax = size === 'large' ? 80 : size === 'medium' ? 120 : 150;
   const speed = (baseMin + Math.random() * (baseMax - baseMin)) * velocityBoost;
-  const angle = Math.random() * Math.PI * 2;
+
+  const targetX = W * 0.25 + Math.random() * W * 0.5;
+  const targetY = H * 0.25 + Math.random() * H * 0.5;
+  const dx = targetX - spawnPos.x;
+  const dy = targetY - spawnPos.y;
+  const baseAngle = Math.atan2(dy, dx);
+  const spread = Math.PI * 0.3;
+  const angle = pos ? (Math.random() * Math.PI * 2) : (baseAngle + (Math.random() - 0.5) * spread);
 
   return {
     id: nextId++,
@@ -293,7 +300,15 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     playerVelRef.current.y *= FRICTION;
     playerPosRef.current.x += playerVelRef.current.x * dt;
     playerPosRef.current.y += playerVelRef.current.y * dt;
-    playerPosRef.current = wrapPos(playerPosRef.current);
+
+    const KILL_MARGIN = 80;
+    const px = playerPosRef.current.x;
+    const py = playerPosRef.current.y;
+    if (px < -KILL_MARGIN || px > W + KILL_MARGIN || py < -KILL_MARGIN || py > H + KILL_MARGIN) {
+      handlePlayerHit();
+      playerPosRef.current = { x: W / 2, y: H / 2 };
+      playerVelRef.current = { x: 0, y: 0 };
+    }
 
     if (keys.has(' ') || keys.has('Space')) fire();
 
