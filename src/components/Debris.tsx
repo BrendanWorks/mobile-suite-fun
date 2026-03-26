@@ -228,6 +228,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       stopUfoSound();
       if (boostSoundRef.current) { boostSoundRef.current.pause(); boostSoundRef.current.currentTime = 0; }
     },
+    hideTimer: true,
+    canSkipQuestion: false,
   }));
 
   function stopUfoSound() {
@@ -1074,7 +1076,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-black flex flex-col items-center justify-center select-none overflow-hidden">
+    <div ref={containerRef} className="w-full h-full bg-black flex flex-col items-center justify-center select-none overflow-hidden" style={{ touchAction: 'none' }}>
       <canvas
         ref={canvasRef}
         className="touch-none"
