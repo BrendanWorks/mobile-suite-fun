@@ -12,6 +12,7 @@ interface Rock {
   size: 'large' | 'medium' | 'small';
   vertices: Vec2[];
   radius: number;
+  spawnTime: number;
 }
 
 interface Bullet {
@@ -19,6 +20,7 @@ interface Bullet {
   pos: Vec2;
   vel: Vec2;
   born: number;
+  history: Vec2[];
 }
 
 interface Particle {
@@ -28,6 +30,21 @@ interface Particle {
   maxLife: number;
   color: string;
   size: number;
+}
+
+interface ScoreFloater {
+  id: number;
+  pos: Vec2;
+  text: string;
+  multText: string;
+  born: number;
+  duration: number;
+}
+
+interface CoreFlash {
+  pos: Vec2;
+  born: number;
+  duration: number;
 }
 
 interface Ufo {
@@ -67,6 +84,8 @@ const UFO_SPEED = 160;
 const UFO_PASSES = 3;
 const UFO_FIRE_INTERVAL = 2200;
 const UFO_BULLET_SPEED = 220;
+const BULLET_HISTORY_LEN = 6;
+const ROCK_SPAWN_FADE_MS = 200;
 
 const ROCK_RADII = { large: 46, medium: 28, small: 14 };
 const ROCK_POINTS = { large: 50, medium: 100, small: 200 };
@@ -139,6 +158,7 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
     size,
     vertices: buildRockVertices(radius, vertCount),
     radius,
+    spawnTime: Date.now(),
   };
 }
 
@@ -182,6 +202,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const rocksRef = useRef<Rock[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const scoreFloatersRef = useRef<ScoreFloater[]>([]);
+  const coreFlashesRef = useRef<CoreFlash[]>([]);
   const ufoRef = useRef<Ufo | null>(null);
   const ufoPassesCompletedRef = useRef(0);
   const ufoPhaseTriggedRef = useRef(false);
@@ -201,11 +223,16 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const lastShotHitRef = useRef(true);
   const multiplierRef = useRef(1.0);
   const missTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevMultiplierRef = useRef(1.0);
+  const multPulseRef = useRef(0);
 
   const rocksTotalDestroyedRef = useRef(0);
   const phaseRef = useRef<'normal' | 'ufo'>('normal');
 
   const scaleRef = useRef(1);
+
+  const shakeRef = useRef({ offsetX: 0, offsetY: 0, endTime: 0, maxDisp: 0, duration: 0 });
+  const hitFlashRef = useRef({ opacity: 0, endTime: 0 });
 
   const shootSoundRef = useRef<HTMLAudioElement | null>(null);
   const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -275,6 +302,54 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       onScoreUpdateRef.current?.(Math.round(scoreRef.current), MAX_SCORE);
     }
 
+    function triggerShake(maxDisp: number, duration: number) {
+      const now = Date.now();
+      shakeRef.current = { offsetX: 0, offsetY: 0, endTime: now + duration, maxDisp, duration };
+    }
+
+    function triggerHitFlash() {
+      hitFlashRef.current = { opacity: 0.4, endTime: Date.now() + 200 };
+    }
+
+    function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
+      const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
+      const count = Math.round((40 + Math.random() * 20) * sizeScale);
+      const maxRadius = (300 + Math.random() * 100) * sizeScale;
+      const minSpeed = 200 * sizeScale;
+      const maxSpeed = 400 * sizeScale;
+
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = minSpeed + Math.random() * (maxSpeed - minSpeed);
+        const sz = 2 + Math.random() * 4;
+        const life = 0.15 + Math.random() * 0.25;
+        particlesRef.current.push({
+          pos: { ...pos },
+          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
+          life: 1,
+          maxLife: life,
+          color: '#00ffff',
+          size: sz,
+        });
+      }
+
+      const sparkCount = Math.round(12 * sizeScale);
+      for (let i = 0; i < sparkCount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 150 + Math.random() * 200;
+        particlesRef.current.push({
+          pos: { ...pos },
+          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
+          life: 1,
+          maxLife: 0.4 + Math.random() * 0.3,
+          color: '#ffffff',
+          size: 1.5 + Math.random() * 2.5,
+        });
+      }
+
+      coreFlashesRef.current.push({ pos: { ...pos }, born: Date.now(), duration: 100 });
+    }
+
     function spawnParticles(pos: Vec2, count: number, color: string, speed = 120) {
       for (let i = 0; i < count; i++) {
         const a = Math.random() * Math.PI * 2;
@@ -290,26 +365,55 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
     }
 
+    function spawnScoreFloater(pos: Vec2, pts: number, mult: number) {
+      const now = Date.now();
+      const text = `+${pts * Math.round(mult)}`;
+      const multText = mult > 1.05 ? `x${mult.toFixed(1)}` : '';
+      if (scoreFloatersRef.current.length >= 10) scoreFloatersRef.current.shift();
+      scoreFloatersRef.current.push({
+        id: nextId++,
+        pos: { x: pos.x + (Math.random() - 0.5) * 20, y: pos.y },
+        text,
+        multText,
+        born: now,
+        duration: 800,
+      });
+    }
+
     function destroyRock(rock: Rock, rocks: Rock[]) {
       const idx = rocks.findIndex(r => r.id === rock.id);
       if (idx !== -1) rocks.splice(idx, 1);
 
-      addScore(ROCK_POINTS[rock.size]);
-      spawnParticles(rock.pos, rock.size === 'large' ? 18 : rock.size === 'medium' ? 12 : 7, COLORS.cyan, 160);
+      const pts = ROCK_POINTS[rock.size];
+      addScore(pts);
+      spawnExplosionParticles(rock.pos, rock.size);
+      spawnScoreFloater(rock.pos, pts, multiplierRef.current);
+
+      const shakeDisp = rock.size === 'large' ? 20 : rock.size === 'medium' ? 15 : 10;
+      const shakeDur = rock.size === 'large' ? 100 : rock.size === 'medium' ? 75 : 50;
+      triggerShake(shakeDisp, shakeDur);
 
       if (rock.size === 'large') {
-        rocks.push(spawnRock('medium', { ...rock.pos }));
-        rocks.push(spawnRock('medium', { ...rock.pos }));
+        const r1 = spawnRock('medium', { ...rock.pos });
+        const r2 = spawnRock('medium', { ...rock.pos });
+        rocks.push(r1);
+        rocks.push(r2);
         rocksTotalDestroyedRef.current++;
       } else if (rock.size === 'medium') {
-        rocks.push(spawnRock('small', { ...rock.pos }));
-        rocks.push(spawnRock('small', { ...rock.pos }));
+        const r1 = spawnRock('small', { ...rock.pos });
+        const r2 = spawnRock('small', { ...rock.pos });
+        rocks.push(r1);
+        rocks.push(r2);
       } else {
         rocksTotalDestroyedRef.current++;
       }
 
       comboRef.current++;
-      multiplierRef.current = 1.0 + Math.floor(comboRef.current / 10) * 0.1;
+      const newMult = 1.0 + Math.floor(comboRef.current / 10) * 0.1;
+      if (newMult > multiplierRef.current) {
+        multPulseRef.current = Date.now();
+      }
+      multiplierRef.current = newMult;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       lastShotHitRef.current = true;
     }
@@ -374,6 +478,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
       comboRef.current = 0;
       multiplierRef.current = 1.0;
+      triggerShake(30, 150);
+      triggerHitFlash();
 
       playerPosRef.current = { x: W / 2, y: H / 2 };
       playerVelRef.current = { x: 0, y: 0 };
@@ -394,17 +500,19 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       lastFireRef.current = now;
 
       const angle = playerAngleRef.current;
+      const startPos = {
+        x: playerPosRef.current.x + Math.cos(angle) * 16,
+        y: playerPosRef.current.y + Math.sin(angle) * 16,
+      };
       bulletsRef.current.push({
         id: nextId++,
-        pos: {
-          x: playerPosRef.current.x + Math.cos(angle) * 16,
-          y: playerPosRef.current.y + Math.sin(angle) * 16,
-        },
+        pos: startPos,
         vel: {
           x: Math.cos(angle) * BULLET_SPEED + playerVelRef.current.x,
           y: Math.sin(angle) * BULLET_SPEED + playerVelRef.current.y,
         },
         born: now,
+        history: [{ ...startPos }],
       });
 
       playSound(shootSoundRef.current);
@@ -468,7 +576,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (!ctx) return;
 
       const s = scaleRef.current;
-      ctx.setTransform(s, 0, 0, s, 0, 0);
+      const now = Date.now();
+
+      const shake = shakeRef.current;
+      let shakeX = 0;
+      let shakeY = 0;
+      if (now < shake.endTime) {
+        const elapsed = shake.duration - (shake.endTime - now);
+        const t = elapsed / shake.duration;
+        const displacement = Math.sin(t * Math.PI) * shake.maxDisp;
+        shakeX = displacement;
+        shakeY = displacement * 0.7;
+      }
+
+      ctx.setTransform(s, 0, 0, s, shakeX * s, shakeY * s);
 
       ctx.fillStyle = COLORS.bg;
       ctx.fillRect(0, 0, W, H);
@@ -483,17 +604,29 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
 
       for (const rock of rocksRef.current) {
+        const age = now - rock.spawnTime;
+        const fadeAlpha = Math.min(1.0, age / ROCK_SPAWN_FADE_MS);
+        const glowAlpha = age < 100 ? (1 - age / 100) : 0;
+
         ctx.save();
+        ctx.globalAlpha = fadeAlpha;
         ctx.translate(rock.pos.x, rock.pos.y);
         ctx.rotate(rock.angle);
         ctx.beginPath();
         ctx.moveTo(rock.vertices[0].x, rock.vertices[0].y);
         for (let i = 1; i < rock.vertices.length; i++) ctx.lineTo(rock.vertices[i].x, rock.vertices[i].y);
         ctx.closePath();
+
+        if (glowAlpha > 0) {
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 16 * glowAlpha;
+        } else {
+          ctx.shadowColor = COLORS.cyan;
+          ctx.shadowBlur = 8;
+        }
+
         ctx.strokeStyle = COLORS.cyan;
         ctx.lineWidth = 1.5;
-        ctx.shadowColor = COLORS.cyan;
-        ctx.shadowBlur = 8;
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.fillStyle = COLORS.cyanDim;
@@ -501,11 +634,48 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.restore();
       }
 
+      for (const flash of coreFlashesRef.current) {
+        const age = now - flash.born;
+        const t = age / flash.duration;
+        if (t >= 1) continue;
+        const alpha = 1 - t;
+        const radius = 30 + t * 20;
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.9;
+        const grad = ctx.createRadialGradient(flash.pos.x, flash.pos.y, 0, flash.pos.x, flash.pos.y, radius);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, 'rgba(0,255,255,0.8)');
+        grad.addColorStop(1, 'rgba(0,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(flash.pos.x, flash.pos.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      coreFlashesRef.current = coreFlashesRef.current.filter(f => now - f.born < f.duration);
+
       if (ufoRef.current?.alive) {
         drawUfo(ctx, ufoRef.current);
       }
 
       for (const b of bulletsRef.current) {
+        if (b.history.length >= 2) {
+          for (let i = 1; i < b.history.length; i++) {
+            const t = i / b.history.length;
+            const prev = b.history[i - 1];
+            const curr = b.history[i];
+            const alpha = t * 0.85;
+            const lineWidth = 2 + t * 4;
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(curr.x, curr.y);
+            ctx.strokeStyle = `rgba(255,0,255,${alpha})`;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+          }
+        }
+
         ctx.beginPath();
         ctx.arc(b.pos.x, b.pos.y, 3, 0, Math.PI * 2);
         ctx.fillStyle = COLORS.pinkBright;
@@ -513,24 +683,24 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.shadowBlur = 12;
         ctx.fill();
         ctx.shadowBlur = 0;
-
-        const tailLen = 14;
-        const bspeed = Math.sqrt(b.vel.x ** 2 + b.vel.y ** 2);
-        if (bspeed > 0) {
-          const nx = b.vel.x / bspeed, ny = b.vel.y / bspeed;
-          const grad = ctx.createLinearGradient(b.pos.x, b.pos.y, b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
-          grad.addColorStop(0, 'rgba(255,110,199,0.9)');
-          grad.addColorStop(1, 'rgba(255,110,199,0)');
-          ctx.beginPath();
-          ctx.moveTo(b.pos.x, b.pos.y);
-          ctx.lineTo(b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-        }
       }
 
       for (const b of ufoBulletsRef.current) {
+        if (b.history && b.history.length >= 2) {
+          for (let i = 1; i < b.history.length; i++) {
+            const t = i / b.history.length;
+            const prev = b.history[i - 1];
+            const curr = b.history[i];
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(curr.x, curr.y);
+            ctx.strokeStyle = `rgba(255,32,32,${t * 0.7})`;
+            ctx.lineWidth = 1.5 + t * 3;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+          }
+        }
+
         ctx.beginPath();
         ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = COLORS.ufoRed;
@@ -538,45 +708,50 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.shadowBlur = 14;
         ctx.fill();
         ctx.shadowBlur = 0;
-
-        const tailLen = 12;
-        const bspeed = Math.sqrt(b.vel.x ** 2 + b.vel.y ** 2);
-        if (bspeed > 0) {
-          const nx = b.vel.x / bspeed, ny = b.vel.y / bspeed;
-          const grad = ctx.createLinearGradient(b.pos.x, b.pos.y, b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
-          grad.addColorStop(0, 'rgba(255,32,32,0.9)');
-          grad.addColorStop(1, 'rgba(255,32,32,0)');
-          ctx.beginPath();
-          ctx.moveTo(b.pos.x, b.pos.y);
-          ctx.lineTo(b.pos.x - nx * tailLen, b.pos.y - ny * tailLen);
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-        }
       }
 
       for (const p of particlesRef.current) {
-        ctx.globalAlpha = Math.max(0, p.life);
+        const lifeT = Math.max(0, p.life);
+        ctx.globalAlpha = lifeT;
+        const easedSize = p.size * (0.5 + 0.5 * lifeT);
         ctx.beginPath();
-        ctx.arc(p.pos.x, p.pos.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.arc(p.pos.x, p.pos.y, easedSize, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 4;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
 
-      const invincible = Date.now() < invincibleUntilRef.current;
+      const invincible = now < invincibleUntilRef.current;
       if (!gameOverRef.current) {
         const px = playerPosRef.current.x;
         const py = playerPosRef.current.y;
         const pa = playerAngleRef.current;
 
-        if (!invincible || Math.floor(Date.now() / 120) % 2 === 0) {
+        const thrusting = keysRef.current.has('ArrowUp') || keysRef.current.has('w');
+        const speed = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
+        const velocityRatio = Math.min(speed / PLAYER_MAX_SPEED, 1);
+
+        if (!invincible || Math.floor(now / 120) % 2 === 0) {
           ctx.save();
           ctx.translate(px, py);
           ctx.rotate(pa);
+
+          if (thrusting && velocityRatio > 0) {
+            const thrustAlpha = 0.4 + velocityRatio * 0.6;
+            const thrustRadius = 18 + velocityRatio * 14;
+            const r = Math.round(0 + velocityRatio * 255);
+            const g = Math.round(255 - velocityRatio * 100);
+            const glowGrad = ctx.createRadialGradient(-8, 0, 0, -8, 0, thrustRadius);
+            glowGrad.addColorStop(0, `rgba(${r},${g},255,${thrustAlpha})`);
+            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.beginPath();
+            ctx.arc(-8, 0, thrustRadius, 0, Math.PI * 2);
+            ctx.fillStyle = glowGrad;
+            ctx.fill();
+          }
 
           const shipColor = invincible ? COLORS.yellow : COLORS.magenta;
           ctx.shadowColor = shipColor;
@@ -591,14 +766,16 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           ctx.closePath();
           ctx.stroke();
 
-          const thrusting = keysRef.current.has('ArrowUp') || keysRef.current.has('w');
           if (thrusting) {
-            ctx.strokeStyle = COLORS.yellow;
+            const r2 = Math.round(velocityRatio * 255);
+            const g2 = Math.round(255 - velocityRatio * 100);
+            const thrustColor = `rgb(${r2},${g2},255)`;
+            ctx.strokeStyle = thrustColor;
             ctx.lineWidth = 2;
-            ctx.shadowColor = COLORS.yellow;
-            ctx.shadowBlur = 16;
+            ctx.shadowColor = thrustColor;
+            ctx.shadowBlur = 16 + velocityRatio * 12;
             ctx.beginPath();
-            const fl = 8 + Math.random() * 12;
+            const fl = 8 + Math.random() * 12 + velocityRatio * 8;
             ctx.moveTo(-6, -4);
             ctx.lineTo(-6 - fl, 0);
             ctx.lineTo(-6, 4);
@@ -608,6 +785,35 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           ctx.restore();
         }
       }
+
+      for (const floater of scoreFloatersRef.current) {
+        const age = now - floater.born;
+        const t = age / floater.duration;
+        if (t >= 1) continue;
+        const alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+        const rise = t * 70;
+        const multActive = multiplierRef.current > 1.05;
+        const fontSize = multActive ? 24 : 21;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = `bold ${fontSize}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 5;
+        ctx.fillText(floater.text, floater.pos.x, floater.pos.y - rise);
+
+        if (floater.multText) {
+          ctx.font = '14px monospace';
+          ctx.fillStyle = '#ffdd00';
+          ctx.shadowBlur = 3;
+          ctx.fillText(floater.multText, floater.pos.x + 30, floater.pos.y - rise - 12);
+        }
+
+        ctx.restore();
+      }
+      scoreFloatersRef.current = scoreFloatersRef.current.filter(f => now - f.born < f.duration);
 
       const score = Math.round(scoreRef.current);
       const lives = livesRef.current;
@@ -626,12 +832,25 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ctx.fillText('SCORE', W / 2, 50);
 
       if (mult > 1.05) {
-        ctx.font = 'bold 13px monospace';
-        ctx.fillStyle = COLORS.yellow;
+        const pulseAge = now - multPulseRef.current;
+        const pulseDur = 300;
+        const pulseScale = pulseAge < pulseDur
+          ? 1 + 0.3 * Math.sin((pulseAge / pulseDur) * Math.PI)
+          : 1;
+
+        ctx.save();
+        ctx.translate(W / 2, 65);
+        ctx.scale(pulseScale, pulseScale);
+        ctx.font = `bold ${Math.round(14 / pulseScale)}px monospace`;
+        const multAlpha = mult >= 1.3 ? 1 : 0.7 + (mult - 1.05) / 0.25 * 0.3;
+        const r3 = 255;
+        const g3 = Math.round(255 - (mult - 1.0) / 0.5 * 55);
+        ctx.fillStyle = `rgba(${r3},${g3},0,${multAlpha})`;
         ctx.textAlign = 'center';
         ctx.shadowColor = COLORS.yellow;
-        ctx.shadowBlur = 8;
-        ctx.fillText(`${mult.toFixed(1)}x`, W / 2, 68);
+        ctx.shadowBlur = 8 + (mult - 1.0) * 20;
+        ctx.fillText(`${mult.toFixed(1)}x`, 0, 0);
+        ctx.restore();
         ctx.shadowBlur = 0;
       }
 
@@ -677,6 +896,29 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.shadowBlur = 8;
         ctx.fillText(`UFO  ${passesLeft > 0 ? passesLeft + ' PASS' + (passesLeft !== 1 ? 'ES' : '') : ''}`, W - 16, 62);
         ctx.shadowBlur = 0;
+      }
+
+      const hitFlash = hitFlashRef.current;
+      if (hitFlash.opacity > 0) {
+        const flashAge = hitFlash.endTime - now;
+        if (flashAge > 0) {
+          const flashT = flashAge / 200;
+          const alpha = hitFlash.opacity * flashT;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, W, H);
+          ctx.globalAlpha = alpha * 0.6;
+          const borderW = 20;
+          ctx.strokeStyle = '#ff0000';
+          ctx.lineWidth = borderW * 2;
+          ctx.shadowColor = '#ff0000';
+          ctx.shadowBlur = 30;
+          ctx.strokeRect(0, 0, W, H);
+          ctx.restore();
+        } else {
+          hitFlashRef.current.opacity = 0;
+        }
       }
 
       if (gameOverRef.current) {
@@ -798,11 +1040,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             const dy = playerPosRef.current.y - ufo.pos.y;
             const scatter = (Math.random() - 0.5) * 0.6;
             const angle = Math.atan2(dy, dx) + scatter;
+            const startPos2 = { x: ufo.pos.x, y: ufo.pos.y };
             ufoBulletsRef.current.push({
               id: nextId++,
-              pos: { x: ufo.pos.x, y: ufo.pos.y },
+              pos: startPos2,
               vel: { x: Math.cos(angle) * UFO_BULLET_SPEED, y: Math.sin(angle) * UFO_BULLET_SPEED },
               born: now,
+              history: [{ ...startPos2 }],
             });
           }
 
@@ -836,12 +1080,17 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         b.pos.y += b.vel.y * dt;
         b.pos = wrapPos(b.pos);
 
+        b.history.push({ ...b.pos });
+        if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+
         let hit = false;
 
         const ufo = ufoRef.current;
         if (ufo && ufo.alive && dist(b.pos, ufo.pos) < 32) {
           spawnParticles(ufo.pos, 30, COLORS.ufoRed, 200);
           spawnParticles(ufo.pos, 12, COLORS.yellow, 120);
+          coreFlashesRef.current.push({ pos: { ...ufo.pos }, born: now, duration: 120 });
+          triggerShake(20, 100);
           addScore(UFO_SCORE);
           ufo.alive = false;
           ufoRef.current = null;
@@ -888,6 +1137,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         b.pos.x += b.vel.x * dt;
         b.pos.y += b.vel.y * dt;
         b.pos = wrapPos(b.pos);
+
+        if (!b.history) b.history = [];
+        b.history.push({ ...b.pos });
+        if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+
         if (now >= invincibleUntilRef.current && dist(b.pos, playerPosRef.current) < 14) {
           handlePlayerHit();
         } else {
@@ -918,8 +1172,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       for (const p of particlesRef.current) {
         p.pos.x += p.vel.x * dt;
         p.pos.y += p.vel.y * dt;
-        p.vel.x *= 0.96;
-        p.vel.y *= 0.96;
+        p.vel.x *= 0.93;
+        p.vel.y *= 0.93;
         p.life -= dt / p.maxLife;
       }
       particlesRef.current = particlesRef.current.filter(p => p.life > 0);
@@ -981,17 +1235,19 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     if (now - lastFireRef.current < FIRE_COOLDOWN) return;
     lastFireRef.current = now;
     const angle = playerAngleRef.current;
+    const startPos = {
+      x: playerPosRef.current.x + Math.cos(angle) * 16,
+      y: playerPosRef.current.y + Math.sin(angle) * 16,
+    };
     bulletsRef.current.push({
       id: nextId++,
-      pos: {
-        x: playerPosRef.current.x + Math.cos(angle) * 16,
-        y: playerPosRef.current.y + Math.sin(angle) * 16,
-      },
+      pos: startPos,
       vel: {
         x: Math.cos(angle) * BULLET_SPEED + playerVelRef.current.x,
         y: Math.sin(angle) * BULLET_SPEED + playerVelRef.current.y,
       },
       born: now,
+      history: [{ ...startPos }],
     });
     if (shootSoundRef.current) {
       shootSoundRef.current.currentTime = 0;
