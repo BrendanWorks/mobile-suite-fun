@@ -46,6 +46,7 @@ const ColorClash = React.lazy(() => import('./ColorClash'));
 const Recall = React.lazy(() => import('./Recall'));
 const Slot = React.lazy(() => import('./Slot'));
 const Pivot = React.lazy(() => import('./Pivot'));
+const Debris = React.lazy(() => import('./Debris'));
 import AuthModal from './AuthModal';
 import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
@@ -93,6 +94,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
   { id: 'slot',            dbId: 25, name: 'Slot',             component: Slot,            duration: 60,  instructions: 'Tap the correct letters to fill in the blanks!' },
   { id: 'pivot',           dbId: 26, name: 'Pivot',            component: Pivot,           duration: 60,  instructions: 'Find the word that connects two phrases' },
+  { id: 'debris',          dbId: 27, name: 'Debris',           component: Debris,          duration: 75,  instructions: 'Rotate, thrust, and shoot to destroy the rocks!' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
@@ -123,6 +125,7 @@ const GAME_ICONS: { [key: string]: JSX.Element } = {
   'recall': <Search className="w-full h-full" />,
   'slot': <BookOpen className="w-full h-full" />,
   'pivot': <BookOpen className="w-full h-full" />,
+  'debris': <Zap className="w-full h-full" />,
 };
 
 const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
@@ -728,6 +731,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         break;
 
+      case 'debris':
+        normalizedScore = scoringSystem.debris(rawScore);
+        break;
+
       case 'fake-out':
         normalizedScore = scoringSystem.superlative(rawScore, maxScore);
         break;
@@ -759,7 +766,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     normalizedScore = applyPerfectScoreBonus(normalizedScore);
 
     // Apply time bonus if there's time remaining (but NOT for Snake, Gravity Ball, or Word Surge)
-    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball' && currentGame.id !== 'word-rescue') {
+    if (timeRemaining > 0 && currentGame.duration > 0 && currentGame.id !== 'snake' && currentGame.id !== 'gravity-ball' && currentGame.id !== 'word-rescue' && currentGame.id !== 'debris') {
       normalizedScore = applyTimeBonus(normalizedScore, timeRemaining, currentGame.duration);
     }
 

@@ -270,6 +270,19 @@ export const scoringSystem = {
     };
   },
 
+  // Debris: 1000 points = 100 - NO TIME BONUS
+  debris: (score: number): GameScore => {
+    const normalized = Math.min(100, (score / 1000) * 100);
+    return {
+      gameId: 'debris',
+      gameName: 'Debris',
+      rawScore: score,
+      normalizedScore: normalized,
+      grade: getGrade(normalized),
+      breakdown: `${score} points`
+    };
+  },
+
   // Gravity Ball: 1000 altitude = 100 (rewards survival with 3 lives) - NO TIME BONUS
   gravityBall: (altitude: number): GameScore => {
     const normalized = Math.min(100, (altitude / 1000) * 100);
