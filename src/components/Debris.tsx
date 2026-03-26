@@ -78,6 +78,7 @@ const FRICTION = 0.994;
 const ROTATE_SPEED = 3.5;
 const INVINCIBLE_MS = 1500;
 const TOTAL_LIVES = 3;
+const MAX_LIVES = 10;
 const WRAP_MARGIN = 80;
 const UFO_SCORE = 400;
 const UFO_SPEED = 160;
@@ -238,6 +239,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
   const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundRef = useRef<HTMLAudioElement | null>(null);
+  const coinSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundPlayingRef = useRef(false);
   const touchHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartTimeRef = useRef(0);
@@ -280,6 +282,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       boostSoundRef.current.loop = true;
       boostSoundRef.current.volume = 0.35;
     }
+    coinSoundRef.current = new Audio('/sounds/global/SoundCoin.mp3');
+    if (coinSoundRef.current) coinSoundRef.current.volume = 0.7;
     if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
     if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
     return () => { stopUfoSound(); };
@@ -854,7 +858,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.cyanMid;
       ctx.fillText('LIVES', 16, 22);
-      for (let i = 0; i < TOTAL_LIVES; i++) {
+      for (let i = 0; i < Math.max(lives, TOTAL_LIVES); i++) {
         const alive = i < lives;
         ctx.save();
         ctx.translate(20 + i * 28, 38);
@@ -1326,16 +1330,42 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
   };
 
+  function handleAddLife() {
+    if (gameOverRef.current || doneRef.current) return;
+    if (livesRef.current >= MAX_LIVES) return;
+    livesRef.current++;
+    if (coinSoundRef.current) {
+      coinSoundRef.current.currentTime = 0;
+      coinSoundRef.current.play().catch(() => {});
+    }
+  }
+
   return (
     <div ref={containerRef} className="w-full h-full bg-black flex flex-col items-center justify-center select-none overflow-hidden" style={{ touchAction: 'none' }}>
-      <canvas
-        ref={canvasRef}
-        className="touch-none"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchMove}
-        style={{ display: 'block', imageRendering: 'pixelated', touchAction: 'none' }}
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          className="touch-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+          style={{ display: 'block', imageRendering: 'pixelated', touchAction: 'none' }}
+        />
+        <div
+          onClick={handleAddLife}
+          onTouchEnd={(e) => { e.stopPropagation(); handleAddLife(); }}
+          title="Click to add a life (max 10)"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '36%',
+            height: '10%',
+            cursor: 'pointer',
+            zIndex: 10,
+          }}
+        />
+      </div>
       <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-6 pointer-events-none md:hidden opacity-50">
         <span className="text-cyan-400 text-xs font-mono">HOLD = thrust · TAP = fire · 2 fingers = fire</span>
       </div>
