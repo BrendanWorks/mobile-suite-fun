@@ -30,6 +30,7 @@ const Recall = React.lazy(() => import('./Recall'));
 const ColorClash = React.lazy(() => import('./ColorClash'));
 const Slot = React.lazy(() => import('./Slot'));
 const Pivot = React.lazy(() => import('./Pivot'));
+const Debris = React.lazy(() => import('./Debris'));
 import GameSession from './GameSession';
 import CelebrationScreen from './CelebrationScreen';
 
@@ -56,6 +57,7 @@ const GAME_ICONS_LOOKUP: Record<string, React.ReactNode> = {
   'color-clash': <Circle className="w-full h-full" />,
   'slot': <Square className="w-full h-full" />,
   'pivot': <BookOpen className="w-full h-full" />,
+  'debris': <Zap className="w-full h-full" />,
 };
 
 interface DebugModeProps {
@@ -85,6 +87,7 @@ const TEST_GAMES = [
   { id: 'color-clash', name: 'Color Clash', duration: 30, component: ColorClash },
   { id: 'slot', name: 'Slot', duration: 600, component: Slot },
   { id: 'pivot', name: 'Pivot', duration: 60, component: Pivot },
+  { id: 'debris', name: 'Debris', duration: 75, component: Debris },
 ];
 
 interface Playlist {
