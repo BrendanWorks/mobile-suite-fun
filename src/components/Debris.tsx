@@ -57,7 +57,7 @@ const BULLET_LIFE = 3000;
 const FIRE_COOLDOWN = 300;
 const PLAYER_MAX_SPEED = 200;
 const THRUST_ACCEL = 250;
-const FRICTION = 0.985;
+const FRICTION = 0.994;
 const ROTATE_SPEED = 3.5;
 const INVINCIBLE_MS = 1500;
 const TOTAL_LIVES = 3;
@@ -737,7 +737,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
         }
 
-        if (elapsed >= 90 && !ufoPhaseTriggedRef.current) {
+        const ufoTriggerTime = debugMode ? 8 : 60;
+        if (elapsed >= ufoTriggerTime && !ufoPhaseTriggedRef.current) {
           triggerUfoPhase();
         }
 
