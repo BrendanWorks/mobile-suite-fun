@@ -30,6 +30,17 @@ interface Particle {
   size: number;
 }
 
+interface Ufo {
+  pos: Vec2;
+  vel: Vec2;
+  passIndex: number;
+  amplitude: number;
+  baseY: number;
+  phaseOffset: number;
+  startX: number;
+  alive: boolean;
+}
+
 interface DebrisProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
@@ -38,7 +49,7 @@ interface DebrisProps {
 
 const W = 800;
 const H = 600;
-const MAX_SCORE = 1000;
+const MAX_SCORE = 2000;
 const BULLET_SPEED = 480;
 const BULLET_LIFE = 3000;
 const FIRE_COOLDOWN = 300;
@@ -49,6 +60,9 @@ const ROTATE_SPEED = 3.5;
 const INVINCIBLE_MS = 1500;
 const TOTAL_LIVES = 3;
 const WRAP_MARGIN = 80;
+const UFO_SCORE = 400;
+const UFO_SPEED = 320;
+const UFO_PASSES = 3;
 
 const ROCK_RADII = { large: 46, medium: 28, small: 14 };
 const ROCK_POINTS = { large: 50, medium: 100, small: 200 };
@@ -62,8 +76,10 @@ const COLORS = {
   magentaDim: 'rgba(255,0,255,0.18)',
   pink: '#f472b6',
   pinkBright: '#ff6ec7',
-  white: '#e0f7ff',
   red: '#ef4444',
+  ufoRed: '#ff2020',
+  ufoRedDim: 'rgba(255,32,32,0.2)',
+  white: '#e0f7ff',
   yellow: '#fbbf24',
   gray: '#334155',
 };
@@ -144,7 +160,7 @@ function spawnWaveRocks(wave: number, boostFactor: number): Rock[] {
   return rocks;
 }
 
-const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete, timeRemaining }, ref) => {
+const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -162,6 +178,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const rocksRef = useRef<Rock[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const ufoRef = useRef<Ufo | null>(null);
+  const ufoPassesCompletedRef = useRef(0);
+  const ufoPhaseTriggedRef = useRef(false);
+  const ufoSoundPlayingRef = useRef(false);
 
   const keysRef = useRef<Set<string>>(new Set());
   const lastFireRef = useRef(0);
@@ -175,44 +195,61 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const multiplierRef = useRef(1.0);
   const missTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const rocksTotalDestroyedRef = useRef(0);
+  const phaseRef = useRef<'normal' | 'ufo'>('normal');
+
   const scaleRef = useRef(1);
+
+  const shootSoundRef = useRef<HTMLAudioElement | null>(null);
+  const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
+  const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
 
   const onScoreUpdateRef = useRef(onScoreUpdate);
   const onCompleteRef = useRef(onComplete);
-  const timeRemainingRef = useRef(timeRemaining);
   useEffect(() => { onScoreUpdateRef.current = onScoreUpdate; }, [onScoreUpdate]);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
-  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: Math.round(scoreRef.current), maxScore: MAX_SCORE }),
-    onGameEnd: () => { cancelAnimationFrame(rafRef.current); },
+    onGameEnd: () => { cancelAnimationFrame(rafRef.current); stopUfoSound(); },
   }));
 
-  useEffect(() => {
-    if (timeRemaining !== undefined && timeRemaining <= 0 && !doneRef.current) {
-      doneRef.current = true;
-      cancelAnimationFrame(rafRef.current);
-      setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 200);
+  function stopUfoSound() {
+    if (ufoSoundRef.current) {
+      ufoSoundRef.current.pause();
+      ufoSoundRef.current.currentTime = 0;
+      ufoSoundPlayingRef.current = false;
     }
-  }, [timeRemaining]);
+  }
+
+  useEffect(() => {
+    shootSoundRef.current = new Audio('/sounds/global/SoundShootRegularOptimized.mp3');
+    disappearSoundRef.current = new Audio('/sounds/global/disappear_Normalized.mp3');
+    ufoSoundRef.current = new Audio('/sounds/global/ufo_normalized.mp3');
+    if (ufoSoundRef.current) {
+      ufoSoundRef.current.loop = true;
+      ufoSoundRef.current.volume = 0.6;
+    }
+    if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
+    if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
+    return () => { stopUfoSound(); };
+  }, []);
 
   useEffect(() => {
     rocksRef.current = spawnWaveRocks(1, 1);
     waveStartRef.current = Date.now();
     invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
 
+    function playSound(audio: HTMLAudioElement | null) {
+      if (!audio) return;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
     function addScore(pts: number) {
       const earned = Math.round(pts * multiplierRef.current);
-      scoreRef.current = Math.min(scoreRef.current + earned, MAX_SCORE * 2);
+      scoreRef.current = Math.min(scoreRef.current + earned, MAX_SCORE * 3);
       onScoreUpdateRef.current?.(Math.round(scoreRef.current), MAX_SCORE);
-
-      if (scoreRef.current >= MAX_SCORE && !wonRef.current && !doneRef.current) {
-        wonRef.current = true;
-        doneRef.current = true;
-        cancelAnimationFrame(rafRef.current);
-        setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, timeRemainingRef.current), 400);
-      }
     }
 
     function spawnParticles(pos: Vec2, count: number, color: string, speed = 120) {
@@ -240,15 +277,46 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (rock.size === 'large') {
         rocks.push(spawnRock('medium', { ...rock.pos }));
         rocks.push(spawnRock('medium', { ...rock.pos }));
+        rocksTotalDestroyedRef.current++;
       } else if (rock.size === 'medium') {
         rocks.push(spawnRock('small', { ...rock.pos }));
         rocks.push(spawnRock('small', { ...rock.pos }));
+      } else {
+        rocksTotalDestroyedRef.current++;
       }
 
       comboRef.current++;
       multiplierRef.current = 1.0 + Math.floor(comboRef.current / 10) * 0.1;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       lastShotHitRef.current = true;
+    }
+
+    function spawnUfo(passIndex: number) {
+      const fromLeft = passIndex % 2 === 0;
+      const baseY = H * 0.2 + Math.random() * H * 0.6;
+      ufoRef.current = {
+        pos: { x: fromLeft ? -60 : W + 60, y: baseY },
+        vel: { x: fromLeft ? UFO_SPEED : -UFO_SPEED, y: 0 },
+        passIndex,
+        amplitude: 80 + Math.random() * 60,
+        baseY,
+        phaseOffset: Math.random() * Math.PI * 2,
+        startX: fromLeft ? -60 : W + 60,
+        alive: true,
+      };
+      if (!ufoSoundPlayingRef.current && ufoSoundRef.current) {
+        ufoSoundRef.current.play().catch(() => {});
+        ufoSoundPlayingRef.current = true;
+      }
+    }
+
+    function triggerUfoPhase() {
+      if (ufoPhaseTriggedRef.current) return;
+      ufoPhaseTriggedRef.current = true;
+      phaseRef.current = 'ufo';
+      rocksRef.current = [];
+      ufoPassesCompletedRef.current = 0;
+      spawnUfo(0);
     }
 
     function clearSafeZone() {
@@ -277,6 +345,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (Date.now() < invincibleUntilRef.current) return;
       livesRef.current--;
       spawnParticles(playerPosRef.current, 24, COLORS.red, 200);
+      playSound(disappearSoundRef.current);
       invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
       comboRef.current = 0;
       multiplierRef.current = 1.0;
@@ -288,6 +357,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (livesRef.current <= 0 && !doneRef.current) {
         gameOverRef.current = true;
         doneRef.current = true;
+        stopUfoSound();
         cancelAnimationFrame(rafRef.current);
         setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 500);
       }
@@ -312,6 +382,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         born: now,
       });
 
+      playSound(shootSoundRef.current);
+
       lastShotHitRef.current = false;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       missTimerRef.current = setTimeout(() => {
@@ -320,6 +392,48 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           multiplierRef.current = 1.0;
         }
       }, 2200);
+    }
+
+    function drawUfo(ctx: CanvasRenderingContext2D, ufo: Ufo) {
+      const { pos } = ufo;
+      const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 80);
+
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 28, 10, 0, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.ufoRedDim;
+      ctx.shadowColor = COLORS.ufoRed;
+      ctx.shadowBlur = 18 * pulse;
+      ctx.fill();
+      ctx.strokeStyle = COLORS.ufoRed;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(0, -2, 16, 10, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,60,60,0.25)';
+      ctx.strokeStyle = COLORS.ufoRed;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(0, -2, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,180,180,${0.4 * pulse})`;
+      ctx.fill();
+
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.arc(i * 8, 8, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,80,80,${0.6 * pulse})`;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+      }
+
+      ctx.shadowBlur = 0;
+      ctx.restore();
     }
 
     function draw() {
@@ -360,6 +474,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.fillStyle = COLORS.cyanDim;
         ctx.fill();
         ctx.restore();
+      }
+
+      if (ufoRef.current?.alive) {
+        drawUfo(ctx, ufoRef.current);
       }
 
       for (const b of bulletsRef.current) {
@@ -476,9 +594,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.save();
         ctx.translate(20 + i * 28, 38);
         ctx.rotate(-Math.PI / 2);
-        ctx.strokeStyle = alive ? COLORS.cyan : COLORS.gray;
+        ctx.strokeStyle = alive ? COLORS.magenta : COLORS.gray;
         ctx.lineWidth = 1.5;
-        if (alive) { ctx.shadowColor = COLORS.cyan; ctx.shadowBlur = 8; }
+        if (alive) { ctx.shadowColor = COLORS.magenta; ctx.shadowBlur = 8; }
         ctx.beginPath();
         ctx.moveTo(10, 0);
         ctx.lineTo(-6, -6);
@@ -489,18 +607,27 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.restore();
       }
 
-      const elapsed2 = Math.round((Date.now() - waveStartRef.current) / 1000);
-      const timeLeft = Math.max(0, 60 - elapsed2);
       ctx.textAlign = 'right';
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.cyanMid;
       ctx.fillText('WAVE', W - 16, 22);
       ctx.font = 'bold 18px monospace';
-      ctx.fillStyle = timeLeft <= 10 ? COLORS.red : COLORS.cyan;
-      ctx.shadowColor = ctx.fillStyle;
+      ctx.fillStyle = COLORS.cyan;
+      ctx.shadowColor = COLORS.cyan;
       ctx.shadowBlur = 6;
       ctx.fillText(`${waveRef.current}`, W - 16, 42);
       ctx.shadowBlur = 0;
+
+      if (phaseRef.current === 'ufo') {
+        const passesLeft = UFO_PASSES - ufoPassesCompletedRef.current;
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillStyle = COLORS.ufoRed;
+        ctx.shadowColor = COLORS.ufoRed;
+        ctx.shadowBlur = 8;
+        ctx.fillText(`UFO  ${passesLeft > 0 ? passesLeft + ' PASS' + (passesLeft !== 1 ? 'ES' : '') : ''}`, W - 16, 62);
+        ctx.shadowBlur = 0;
+      }
 
       if (gameOverRef.current) {
         ctx.fillStyle = 'rgba(0,0,0,0.65)';
@@ -566,26 +693,63 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       const now = Date.now();
       const elapsed = (now - waveStartRef.current) / 1000;
 
-      let velocityBoost = 1;
-      if (elapsed >= 45) velocityBoost = 1.4;
-      else if (elapsed >= 30) velocityBoost = 1.25;
-      else if (elapsed >= 15) velocityBoost = 1.1;
+      if (phaseRef.current === 'normal') {
+        let velocityBoost = 1;
+        if (elapsed >= 60) velocityBoost = 1.4;
+        else if (elapsed >= 40) velocityBoost = 1.25;
+        else if (elapsed >= 20) velocityBoost = 1.1;
 
-      const targetWave = elapsed >= 45 ? 4 : elapsed >= 30 ? 3 : elapsed >= 15 ? 2 : 1;
-      if (targetWave > waveRef.current) {
-        waveRef.current = targetWave;
-        rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
+        const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
+        if (targetWave > waveRef.current) {
+          waveRef.current = targetWave;
+          rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
+        }
+
+        if (rocksRef.current.length === 0 && !ufoPhaseTriggedRef.current) {
+          rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
+        }
+
+        if (elapsed >= 90 && !ufoPhaseTriggedRef.current) {
+          triggerUfoPhase();
+        }
+
+        for (const rock of rocksRef.current) {
+          rock.pos.x += rock.vel.x * dt;
+          rock.pos.y += rock.vel.y * dt;
+          rock.pos = wrapPos(rock.pos);
+          rock.angle += rock.angularVel * dt;
+        }
       }
 
-      if (rocksRef.current.length === 0) {
-        rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
-      }
+      if (phaseRef.current === 'ufo') {
+        const ufo = ufoRef.current;
+        if (ufo && ufo.alive) {
+          const totalDist = Math.abs(W + 120);
+          const travelFrac = Math.abs(ufo.pos.x - ufo.startX) / totalDist;
+          ufo.pos.x += ufo.vel.x * dt;
+          ufo.pos.y = ufo.baseY + Math.sin(travelFrac * Math.PI * 3 + ufo.phaseOffset) * ufo.amplitude;
 
-      for (const rock of rocksRef.current) {
-        rock.pos.x += rock.vel.x * dt;
-        rock.pos.y += rock.vel.y * dt;
-        rock.pos = wrapPos(rock.pos);
-        rock.angle += rock.angularVel * dt;
+          const offScreen = (ufo.vel.x > 0 && ufo.pos.x > W + 70) || (ufo.vel.x < 0 && ufo.pos.x < -70);
+          if (offScreen) {
+            ufoPassesCompletedRef.current++;
+            ufoRef.current = null;
+
+            if (ufoPassesCompletedRef.current >= UFO_PASSES) {
+              stopUfoSound();
+              wonRef.current = true;
+              doneRef.current = true;
+              cancelAnimationFrame(rafRef.current);
+              setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 400);
+              return;
+            } else {
+              setTimeout(() => {
+                if (!doneRef.current) {
+                  spawnUfo(ufoPassesCompletedRef.current);
+                }
+              }, 1800);
+            }
+          }
+        }
       }
 
       const aliveBullets: Bullet[] = [];
@@ -596,15 +760,47 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         b.pos = wrapPos(b.pos);
 
         let hit = false;
-        for (let i = rocksRef.current.length - 1; i >= 0; i--) {
-          const rock = rocksRef.current[i];
-          if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
-            destroyRock(rock, rocksRef.current);
-            spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
+
+        const ufo = ufoRef.current;
+        if (ufo && ufo.alive && dist(b.pos, ufo.pos) < 32) {
+          spawnParticles(ufo.pos, 30, COLORS.ufoRed, 200);
+          spawnParticles(ufo.pos, 12, COLORS.yellow, 120);
+          addScore(UFO_SCORE);
+          ufo.alive = false;
+          ufoRef.current = null;
+          ufoPassesCompletedRef.current++;
+          stopUfoSound();
+
+          if (ufoPassesCompletedRef.current >= UFO_PASSES) {
+            wonRef.current = true;
+            doneRef.current = true;
+            cancelAnimationFrame(rafRef.current);
+            setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 400);
             hit = true;
+            if (!hit) aliveBullets.push(b);
             break;
+          } else {
+            setTimeout(() => {
+              if (!doneRef.current) {
+                spawnUfo(ufoPassesCompletedRef.current);
+              }
+            }, 1800);
+          }
+          hit = true;
+        }
+
+        if (!hit) {
+          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+            const rock = rocksRef.current[i];
+            if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
+              destroyRock(rock, rocksRef.current);
+              spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
+              hit = true;
+              break;
+            }
           }
         }
+
         if (!hit) aliveBullets.push(b);
       }
       bulletsRef.current = aliveBullets;
@@ -620,6 +816,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             handlePlayerHit();
             break;
           }
+        }
+
+        const ufo = ufoRef.current;
+        if (ufo && ufo.alive && dist(playerPosRef.current, ufo.pos) < 36) {
+          handlePlayerHit();
         }
       }
 
@@ -657,6 +858,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKeyUp);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
+      stopUfoSound();
     };
   }, []);
 
