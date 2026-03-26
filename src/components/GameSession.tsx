@@ -338,7 +338,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setShowLevelIntro(true);
       setGameState('intro');
     } catch (error) {
-      logClientError(error, { source: 'loadPlaylist', playlist_id: playlistId });
+      const err = error instanceof Error ? error : new Error(String((error as any)?.message ?? error));
+      logClientError(err, { source: 'loadPlaylist', playlist_id: playlistId });
       setLoadError('Could not load playlist. Returning to menu...');
       setPlaylistLoading(false);
       setTimeout(onExit, 2000);
