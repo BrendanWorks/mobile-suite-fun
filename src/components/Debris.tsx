@@ -1114,6 +1114,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               wonRef.current = true;
               doneRef.current = true;
               cancelAnimationFrame(rafRef.current);
+              draw();
               setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 400);
               return;
             } else {
