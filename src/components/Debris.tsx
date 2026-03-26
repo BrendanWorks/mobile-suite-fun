@@ -203,6 +203,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
   const shootSoundRef = useRef<HTMLAudioElement | null>(null);
   const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
   const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
+  const boostSoundRef = useRef<HTMLAudioElement | null>(null);
+  const boostSoundPlayingRef = useRef(false);
+  const touchHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartTimeRef = useRef(0);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const onScoreUpdateRef = useRef(onScoreUpdate);
   const onCompleteRef = useRef(onComplete);
@@ -211,7 +216,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: Math.round(scoreRef.current), maxScore: MAX_SCORE }),
-    onGameEnd: () => { cancelAnimationFrame(rafRef.current); stopUfoSound(); },
+    onGameEnd: () => {
+      cancelAnimationFrame(rafRef.current);
+      stopUfoSound();
+      if (boostSoundRef.current) { boostSoundRef.current.pause(); boostSoundRef.current.currentTime = 0; }
+    },
   }));
 
   function stopUfoSound() {
@@ -226,9 +235,14 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
     shootSoundRef.current = new Audio('/sounds/global/SoundShootRegularOptimized.mp3');
     disappearSoundRef.current = new Audio('/sounds/global/disappear_Normalized.mp3');
     ufoSoundRef.current = new Audio('/sounds/global/ufo_normalized.mp3');
+    boostSoundRef.current = new Audio('/sounds/global/BoostNormalized.mp3');
     if (ufoSoundRef.current) {
       ufoSoundRef.current.loop = true;
       ufoSoundRef.current.volume = 0.6;
+    }
+    if (boostSoundRef.current) {
+      boostSoundRef.current.loop = true;
+      boostSoundRef.current.volume = 0.35;
     }
     if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
     if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
@@ -670,9 +684,21 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
       if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * dt;
       if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * dt;
 
-      if (keys.has('ArrowUp') || keys.has('w')) {
+      const thrusting = keys.has('ArrowUp') || keys.has('w');
+      if (thrusting) {
         playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * dt;
         playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * dt;
+        if (!boostSoundPlayingRef.current && boostSoundRef.current) {
+          boostSoundRef.current.currentTime = 0;
+          boostSoundRef.current.play().catch(() => {});
+          boostSoundPlayingRef.current = true;
+        }
+      } else {
+        if (boostSoundPlayingRef.current && boostSoundRef.current) {
+          boostSoundRef.current.pause();
+          boostSoundRef.current.currentTime = 0;
+          boostSoundPlayingRef.current = false;
+        }
       }
 
       const spd = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
@@ -858,7 +884,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKeyUp);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
+      if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
       stopUfoSound();
+      if (boostSoundRef.current) { boostSoundRef.current.pause(); boostSoundRef.current.currentTime = 0; }
     };
   }, []);
 
@@ -883,43 +911,103 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
     return () => ro.disconnect();
   }, []);
 
+  function fireBullet() {
+    const now = Date.now();
+    if (now - lastFireRef.current < FIRE_COOLDOWN) return;
+    lastFireRef.current = now;
+    const angle = playerAngleRef.current;
+    bulletsRef.current.push({
+      id: nextId++,
+      pos: {
+        x: playerPosRef.current.x + Math.cos(angle) * 16,
+        y: playerPosRef.current.y + Math.sin(angle) * 16,
+      },
+      vel: {
+        x: Math.cos(angle) * BULLET_SPEED + playerVelRef.current.x,
+        y: Math.sin(angle) * BULLET_SPEED + playerVelRef.current.y,
+      },
+      born: now,
+    });
+    if (shootSoundRef.current) {
+      shootSoundRef.current.currentTime = 0;
+      shootSoundRef.current.play().catch(() => {});
+    }
+  }
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      const t = e.touches[0];
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+
+    if (e.touches.length >= 2) {
+      if (touchHoldTimerRef.current) {
+        clearTimeout(touchHoldTimerRef.current);
+        touchHoldTimerRef.current = null;
+      }
+      fireBullet();
+      return;
+    }
+
+    const t = e.touches[0];
+    touchStartTimeRef.current = Date.now();
+    touchStartPosRef.current = { x: t.clientX, y: t.clientY };
+
+    const tx = t.clientX;
+    if (tx < cx - 40) {
+      keysRef.current.add('ArrowLeft');
+    } else if (tx > cx + 40) {
+      keysRef.current.add('ArrowRight');
+    }
+
+    touchHoldTimerRef.current = setTimeout(() => {
+      keysRef.current.add('ArrowUp');
+      touchHoldTimerRef.current = null;
+    }, 120);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      const holdDuration = Date.now() - touchStartTimeRef.current;
+      if (touchHoldTimerRef.current) {
+        clearTimeout(touchHoldTimerRef.current);
+        touchHoldTimerRef.current = null;
+        if (holdDuration < 200) {
+          fireBullet();
+        }
+      }
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      keysRef.current.delete('ArrowUp');
+      touchStartPosRef.current = null;
+    } else if (e.touches.length === 1) {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
-      const tx = t.clientX;
-      if (tx < cx - 30) keysRef.current.add('ArrowLeft');
-      else if (tx > cx + 30) keysRef.current.add('ArrowRight');
-      keysRef.current.add('ArrowUp');
-    }
-    if (e.touches.length === 2) {
-      const now = Date.now();
-      if (now - lastFireRef.current >= FIRE_COOLDOWN) {
-        lastFireRef.current = now;
-        const angle = playerAngleRef.current;
-        bulletsRef.current.push({
-          id: nextId++,
-          pos: {
-            x: playerPosRef.current.x + Math.cos(angle) * 16,
-            y: playerPosRef.current.y + Math.sin(angle) * 16,
-          },
-          vel: {
-            x: Math.cos(angle) * BULLET_SPEED + playerVelRef.current.x,
-            y: Math.sin(angle) * BULLET_SPEED + playerVelRef.current.y,
-          },
-          born: now,
-        });
-      }
+      const tx = e.touches[0].clientX;
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      if (tx < cx - 40) keysRef.current.add('ArrowLeft');
+      else if (tx > cx + 40) keysRef.current.add('ArrowRight');
     }
   };
 
-  const handleTouchEnd = () => {
-    keysRef.current.delete('ArrowLeft');
-    keysRef.current.delete('ArrowRight');
-    keysRef.current.delete('ArrowUp');
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const tx = e.touches[0].clientX;
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      if (tx < cx - 40) keysRef.current.add('ArrowLeft');
+      else if (tx > cx + 40) keysRef.current.add('ArrowRight');
+    }
   };
 
   return (
@@ -929,10 +1017,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
         className="touch-none"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        style={{ display: 'block', imageRendering: 'pixelated' }}
+        onTouchMove={handleTouchMove}
+        style={{ display: 'block', imageRendering: 'pixelated', touchAction: 'none' }}
       />
       <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-6 pointer-events-none md:hidden opacity-50">
-        <span className="text-cyan-400 text-xs font-mono">← → rotate · ↑ thrust · SPACE fire</span>
+        <span className="text-cyan-400 text-xs font-mono">HOLD = thrust · TAP = fire · 2 fingers = fire</span>
       </div>
     </div>
   );
