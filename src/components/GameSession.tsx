@@ -835,6 +835,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     const handleTap = () => {
       if (debugSkipRef.current?.gameState !== 'playing') return;
+      if (currentGame?.id === 'debris') return;
       const now = Date.now();
       tripleTapTimestampsRef.current = [...tripleTapTimestampsRef.current, now].filter(t => now - t < 600);
       if (tripleTapTimestampsRef.current.length >= 3) {
@@ -1278,6 +1279,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
                   puzzleIds={currentPuzzleIds}
                   rankingPuzzleId={currentRankingPuzzleId}
                   prefetchedPuzzles={currentGame.id === 'fake-out' ? prefetchedPuzzles : undefined}
+                  debugMode={debugMode}
+                  onQuit={currentGame.id === 'debris' && debugMode ? handleQuitAndSave : undefined}
                 />
               </GameWrapper>
             </ErrorBoundary>

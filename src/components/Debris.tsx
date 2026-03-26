@@ -45,6 +45,8 @@ interface DebrisProps {
   onScoreUpdate?: (score: number, maxScore: number) => void;
   onComplete?: (score: number, maxScore: number, timeRemaining?: number) => void;
   timeRemaining?: number;
+  debugMode?: boolean;
+  onQuit?: () => void;
 }
 
 const W = 800;
@@ -160,7 +162,7 @@ function spawnWaveRocks(wave: number, boostFactor: number): Rock[] {
   return rocks;
 }
 
-const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete }, ref) => {
+const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete, debugMode, onQuit }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -1023,6 +1025,15 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete 
       <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-6 pointer-events-none md:hidden opacity-50">
         <span className="text-cyan-400 text-xs font-mono">HOLD = thrust · TAP = fire · 2 fingers = fire</span>
       </div>
+      {debugMode && onQuit && (
+        <button
+          onClick={onQuit}
+          className="absolute bottom-4 right-4 px-3 py-1.5 text-xs font-mono font-bold text-red-400 border border-red-500/50 rounded bg-black/70 hover:bg-red-900/40 hover:text-red-300 hover:border-red-400 transition-colors"
+          style={{ zIndex: 50 }}
+        >
+          QUIT
+        </button>
+      )}
     </div>
   );
 });
