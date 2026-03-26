@@ -256,8 +256,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     getGameScore: () => ({ score: Math.round(scoreRef.current), maxScore: MAX_SCORE }),
     onGameEnd: () => {
       cancelAnimationFrame(rafRef.current);
-      stopUfoSound();
-      if (boostSoundRef.current) { boostSoundRef.current.pause(); boostSoundRef.current.currentTime = 0; }
+      doneRef.current = true;
+      stopAllSounds();
     },
     hideTimer: true,
     canSkipQuestion: false,
@@ -268,6 +268,23 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ufoSoundRef.current.pause();
       ufoSoundRef.current.currentTime = 0;
       ufoSoundPlayingRef.current = false;
+    }
+  }
+
+  function stopAllSounds() {
+    stopUfoSound();
+    if (boostSoundRef.current) {
+      boostSoundRef.current.pause();
+      boostSoundRef.current.currentTime = 0;
+      boostSoundPlayingRef.current = false;
+    }
+    if (shootSoundRef.current) {
+      shootSoundRef.current.pause();
+      shootSoundRef.current.currentTime = 0;
+    }
+    if (disappearSoundRef.current) {
+      disappearSoundRef.current.pause();
+      disappearSoundRef.current.currentTime = 0;
     }
   }
 
@@ -490,7 +507,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (livesRef.current <= 0 && !doneRef.current) {
         gameOverRef.current = true;
         doneRef.current = true;
-        stopUfoSound();
+        stopAllSounds();
         cancelAnimationFrame(rafRef.current);
         setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 500);
       }
@@ -986,6 +1003,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     function gameLoop(ts: number) {
       if (doneRef.current) return;
+      try {
       const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
       lastFrameRef.current = ts;
 
@@ -1091,7 +1109,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ufoRef.current = null;
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              stopUfoSound();
+              stopAllSounds();
               sectorClearedRef.current = Date.now();
               wonRef.current = true;
               doneRef.current = true;
@@ -1130,7 +1148,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           ufo.alive = false;
           ufoRef.current = null;
           ufoPassesCompletedRef.current++;
-          stopUfoSound();
+          stopAllSounds();
 
           if (ufoPassesCompletedRef.current >= UFO_PASSES) {
             sectorClearedRef.current = Date.now();
@@ -1216,6 +1234,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
       draw();
       rafRef.current = requestAnimationFrame(gameLoop);
+      } catch (err) {
+        doneRef.current = true;
+        cancelAnimationFrame(rafRef.current);
+        stopAllSounds();
+        throw err;
+      }
     }
 
     const handleKey = (e: KeyboardEvent) => {
@@ -1240,13 +1264,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     rafRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
+      doneRef.current = true;
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKeyUp);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
-      stopUfoSound();
-      if (boostSoundRef.current) { boostSoundRef.current.pause(); boostSoundRef.current.currentTime = 0; }
+      stopAllSounds();
     };
   }, []);
 
