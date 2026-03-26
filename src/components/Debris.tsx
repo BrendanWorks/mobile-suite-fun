@@ -88,10 +88,11 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
     spawnPos = { ...pos };
   } else {
     const edge = Math.floor(Math.random() * 4);
-    if (edge === 0) spawnPos = { x: Math.random() * W, y: -radius };
-    else if (edge === 1) spawnPos = { x: W + radius, y: Math.random() * H };
-    else if (edge === 2) spawnPos = { x: Math.random() * W, y: H + radius };
-    else spawnPos = { x: -radius, y: Math.random() * H };
+    const spawnInset = 10;
+    if (edge === 0) spawnPos = { x: Math.random() * W, y: -(radius + spawnInset) };
+    else if (edge === 1) spawnPos = { x: W + radius + spawnInset, y: Math.random() * H };
+    else if (edge === 2) spawnPos = { x: Math.random() * W, y: H + radius + spawnInset };
+    else spawnPos = { x: -(radius + spawnInset), y: Math.random() * H };
   }
 
   const baseMin = size === 'large' ? 40 : size === 'medium' ? 60 : 100;
@@ -120,10 +121,11 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
 
 function wrapPos(pos: Vec2): Vec2 {
   let { x, y } = pos;
-  if (x < -60) x += W + 120;
-  else if (x > W + 60) x -= W + 120;
-  if (y < -60) y += H + 120;
-  else if (y > H + 60) y -= H + 120;
+  const M = 60;
+  if (x < -M) x += W + M * 2;
+  else if (x > W + M) x -= W + M * 2;
+  if (y < -M) y += H + M * 2;
+  else if (y > H + M) y -= H + M * 2;
   return { x, y };
 }
 
@@ -300,15 +302,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     playerVelRef.current.y *= FRICTION;
     playerPosRef.current.x += playerVelRef.current.x * dt;
     playerPosRef.current.y += playerVelRef.current.y * dt;
-
-    const KILL_MARGIN = 80;
-    const px = playerPosRef.current.x;
-    const py = playerPosRef.current.y;
-    if (px < -KILL_MARGIN || px > W + KILL_MARGIN || py < -KILL_MARGIN || py > H + KILL_MARGIN) {
-      handlePlayerHit();
-      playerPosRef.current = { x: W / 2, y: H / 2 };
-      playerVelRef.current = { x: 0, y: 0 };
-    }
+    playerPosRef.current = wrapPos(playerPosRef.current);
 
     if (keys.has(' ') || keys.has('Space')) fire();
 
@@ -361,7 +355,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     if (Date.now() >= invincibleUntilRef.current) {
       for (const rock of rocksRef.current) {
-        if (dist(playerPosRef.current, rock.pos) < rock.radius * 0.65 + 10) {
+        if (dist(playerPosRef.current, rock.pos) < rock.radius * 0.75 + 8) {
+          const dx2 = playerPosRef.current.x - rock.pos.x;
+          const dy2 = playerPosRef.current.y - rock.pos.y;
+          const d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+          playerVelRef.current.x += (dx2 / d2) * 180;
+          playerVelRef.current.y += (dy2 / d2) * 180;
           handlePlayerHit();
           break;
         }
