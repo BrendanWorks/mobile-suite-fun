@@ -58,6 +58,8 @@ const COLORS = {
   cyan: '#22d3ee',
   cyanDim: 'rgba(34,211,238,0.15)',
   cyanMid: 'rgba(34,211,238,0.5)',
+  magenta: '#f0f',
+  magentaDim: 'rgba(255,0,255,0.18)',
   pink: '#f472b6',
   pinkBright: '#ff6ec7',
   white: '#e0f7ff',
@@ -249,6 +251,28 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       lastShotHitRef.current = true;
     }
 
+    function clearSafeZone() {
+      const safeRadius = 140;
+      const cx = W / 2, cy = H / 2;
+      for (const rock of rocksRef.current) {
+        if (dist(rock.pos, { x: cx, y: cy }) < safeRadius) {
+          const edge = Math.floor(Math.random() * 4);
+          const off = rock.radius + WRAP_MARGIN + 5;
+          if (edge === 0) { rock.pos.x = Math.random() * W; rock.pos.y = -off; }
+          else if (edge === 1) { rock.pos.x = W + off; rock.pos.y = Math.random() * H; }
+          else if (edge === 2) { rock.pos.x = Math.random() * W; rock.pos.y = H + off; }
+          else { rock.pos.x = -off; rock.pos.y = Math.random() * H; }
+          const targetX = W * 0.25 + Math.random() * W * 0.5;
+          const targetY = H * 0.25 + Math.random() * H * 0.5;
+          const ddx = targetX - rock.pos.x, ddy = targetY - rock.pos.y;
+          const a = Math.atan2(ddy, ddx);
+          const spd2 = Math.sqrt(rock.vel.x ** 2 + rock.vel.y ** 2) || 60;
+          rock.vel.x = Math.cos(a) * spd2;
+          rock.vel.y = Math.sin(a) * spd2;
+        }
+      }
+    }
+
     function handlePlayerHit() {
       if (Date.now() < invincibleUntilRef.current) return;
       livesRef.current--;
@@ -256,6 +280,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
       comboRef.current = 0;
       multiplierRef.current = 1.0;
+
+      playerPosRef.current = { x: W / 2, y: H / 2 };
+      playerVelRef.current = { x: 0, y: 0 };
+      clearSafeZone();
 
       if (livesRef.current <= 0 && !doneRef.current) {
         gameOverRef.current = true;
@@ -382,9 +410,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           ctx.translate(px, py);
           ctx.rotate(pa);
 
-          ctx.shadowColor = invincible ? COLORS.yellow : COLORS.cyan;
-          ctx.shadowBlur = invincible ? 20 : 14;
-          ctx.strokeStyle = invincible ? COLORS.yellow : COLORS.cyan;
+          const shipColor = invincible ? COLORS.yellow : COLORS.magenta;
+          ctx.shadowColor = shipColor;
+          ctx.shadowBlur = invincible ? 20 : 16;
+          ctx.strokeStyle = shipColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(18, 0);
@@ -582,7 +611,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
       if (now >= invincibleUntilRef.current) {
         for (const rock of rocksRef.current) {
-          if (dist(playerPosRef.current, rock.pos) < rock.radius * 0.75 + 8) {
+          if (dist(playerPosRef.current, rock.pos) < rock.radius + 10) {
             const ddx = playerPosRef.current.x - rock.pos.x;
             const ddy = playerPosRef.current.y - rock.pos.y;
             const dd = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
