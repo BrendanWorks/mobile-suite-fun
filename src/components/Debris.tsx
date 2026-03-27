@@ -992,6 +992,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
     }
 
+    function startNextWave() {
+      if (doneRef.current || transitioningRef.current) return;
+      stopAllSounds();
+      transitioningRef.current = true;
+    }
+
     function gameLoop(ts: number) {
       if (doneRef.current) return;
       try {
@@ -1085,7 +1091,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             triggerUfoPhase();
           }
 
-          for (const rock of rocksRef.current) {
+          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+            const rock = rocksRef.current[i];
+            if (!rock || !rock.pos || !rock.vel) continue;
             rock.pos.x += rock.vel.x * dt;
             rock.pos.y += rock.vel.y * dt;
             rock.pos = wrapPos(rock.pos);
@@ -1123,10 +1131,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               ufoRef.current = null;
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-                stopAllSounds();
-                setTimeout(() => {
-                  if (!doneRef.current) transitioningRef.current = true;
-                }, 0);
+                startNextWave();
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1159,12 +1164,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ufo.alive = false;
             ufoRef.current = null;
             ufoPassesCompletedRef.current++;
-            stopAllSounds();
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              setTimeout(() => {
-                if (!doneRef.current) transitioningRef.current = true;
-              }, 0);
+              startNextWave();
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
@@ -1211,7 +1213,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ufoBulletsRef.current = aliveUfoBullets;
 
         if (now >= invincibleUntilRef.current) {
-          for (const rock of rocksRef.current) {
+          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+            const rock = rocksRef.current[i];
+            if (!rock || !rock.pos) continue;
             if (dist(playerPosRef.current, rock.pos) < rock.radius + 10) {
               const ddx = playerPosRef.current.x - rock.pos.x;
               const ddy = playerPosRef.current.y - rock.pos.y;
