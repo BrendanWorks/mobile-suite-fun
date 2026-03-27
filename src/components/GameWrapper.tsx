@@ -21,6 +21,8 @@ export default function GameWrapper({
 }: GameWrapperProps) {
   const POST_ZERO_LINGER_MS = 700;
 
+  const skipTimer = gameName === 'Debris';
+
   const childHideTimer = React.isValidElement(children)
     ? (children as React.ReactElement<any>).props.hideTimer === true
     : false;
@@ -31,7 +33,7 @@ export default function GameWrapper({
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
-  const [hideTimerBar, setHideTimerBar] = useState(childHideTimer);
+  const [hideTimerBar, setHideTimerBar] = useState(skipTimer || childHideTimer);
   const [muteTimerSounds, setMuteTimerSounds] = useState(childMuteTimerSounds);
 
   const timerRef = useRef<number | null>(null);
@@ -213,11 +215,12 @@ export default function GameWrapper({
     }
   }, [onComplete]);
 
-  // TIMER EFFECT - skipped entirely for games that declare hideTimer (e.g. Debris).
+  // TIMER EFFECT - skipped entirely for games that manage their own lifecycle (e.g. Debris).
   // Those games call onComplete() themselves; we must not tick them to zero.
   useEffect(() => {
     if (!isActive) return;
     if (debugMode) return;
+    if (skipTimer) return;
     if (hideTimerBar) return;
 
     const intervalTime = isFastCountdown ? 25 : 1000;
