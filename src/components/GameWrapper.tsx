@@ -221,7 +221,6 @@ export default function GameWrapper({
     if (!isActive) return;
     if (debugMode) return;
     if (skipTimer) return;
-    if (hideTimerBar) return;
 
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
