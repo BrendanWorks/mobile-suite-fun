@@ -1172,10 +1172,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       try {
         const state = gameStateRef.current;
 
-        if (state.type !== 'playing' && state.type !== 'transition') {
-          console.log('UNKNOWN STATE:', state.type);
-        }
-
         if (state.type === 'transition') {
           if (!transitionTimerRef.current) {
             transitionTimerRef.current = Date.now();
@@ -1192,8 +1188,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           return;
         }
 
-        if (state.type !== 'playing') {
-          console.log('SKIPPING LOOP: state is', state.type);
+        if (state.type !== 'playing' && state.type !== 'ufo') {
+          console.error('UNKNOWN STATE:', state.type);
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
         }
