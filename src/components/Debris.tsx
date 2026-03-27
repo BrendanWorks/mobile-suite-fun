@@ -270,6 +270,25 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     canSkipQuestion: false,
   }));
 
+  function spawnUfo(passIndex: number) {
+    const fromLeft = passIndex % 2 === 0;
+    const baseY = H * 0.2 + Math.random() * H * 0.6;
+    ufoRef.current = {
+      pos: { x: fromLeft ? -60 : W + 60, y: baseY },
+      vel: { x: fromLeft ? UFO_SPEED : -UFO_SPEED, y: 0 },
+      passIndex,
+      amplitude: 80 + Math.random() * 60,
+      baseY,
+      phaseOffset: Math.random() * Math.PI * 2,
+      startX: fromLeft ? -60 : W + 60,
+      alive: true,
+    };
+    if (!ufoSoundPlayingRef.current && ufoSoundRef.current) {
+      ufoSoundRef.current.play().catch(() => {});
+      ufoSoundPlayingRef.current = true;
+    }
+  }
+
   function setGameState(next: GameState) {
     const prev = gameStateRef.current;
     gameStateRef.current = next;
@@ -487,25 +506,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       multiplierRef.current = newMult;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       lastShotHitRef.current = true;
-    }
-
-    function spawnUfo(passIndex: number) {
-      const fromLeft = passIndex % 2 === 0;
-      const baseY = H * 0.2 + Math.random() * H * 0.6;
-      ufoRef.current = {
-        pos: { x: fromLeft ? -60 : W + 60, y: baseY },
-        vel: { x: fromLeft ? UFO_SPEED : -UFO_SPEED, y: 0 },
-        passIndex,
-        amplitude: 80 + Math.random() * 60,
-        baseY,
-        phaseOffset: Math.random() * Math.PI * 2,
-        startX: fromLeft ? -60 : W + 60,
-        alive: true,
-      };
-      if (!ufoSoundPlayingRef.current && ufoSoundRef.current) {
-        ufoSoundRef.current.play().catch(() => {});
-        ufoSoundPlayingRef.current = true;
-      }
     }
 
     function triggerUfoPhase() {
