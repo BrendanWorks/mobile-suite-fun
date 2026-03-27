@@ -255,7 +255,7 @@ export default function GameWrapper({
       if (timerRef.current) clearInterval(timerRef.current);
       if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
     };
-  }, [isActive, isFastCountdown, handleTimeUp, handleEarlyCompletion]);
+  }, [isActive, isFastCountdown]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleGameComplete = useCallback((score: number, maxScore: number, remaining?: number) => {
     if (gameCompletedRef.current) return;
