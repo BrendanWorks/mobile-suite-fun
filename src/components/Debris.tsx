@@ -498,6 +498,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     function triggerUfoPhase() {
+      if (gameStateRef.current.type !== 'playing') return;
       setGameState({ type: 'ufo', passesDone: 0 });
     }
 
