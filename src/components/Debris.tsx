@@ -276,7 +276,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       doneRef.current = true;
       stopAllSounds();
     },
-    hideTimer: true,
+    hideTimer: false,
     canSkipQuestion: false,
   }));
 

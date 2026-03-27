@@ -94,7 +94,7 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'recall',          dbId: 18, name: 'Recall',           component: Recall,          duration: 90,  instructions: 'Remember items and answer questions about what you saw' },
   { id: 'slot',            dbId: 25, name: 'Slot',             component: Slot,            duration: 60,  instructions: 'Tap the correct letters to fill in the blanks!' },
   { id: 'pivot',           dbId: 26, name: 'Pivot',            component: Pivot,           duration: 60,  instructions: 'Find the word that connects two phrases' },
-  { id: 'debris',          dbId: 27, name: 'Debris',           component: Debris,          duration: 999999,  instructions: 'Rotate, thrust, and shoot to destroy the rocks!' },
+  { id: 'debris',          dbId: 27, name: 'Debris',           component: Debris,          duration: 600000, instructions: 'Rotate, thrust, and shoot to destroy the rocks!' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
