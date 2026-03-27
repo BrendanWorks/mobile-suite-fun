@@ -289,30 +289,21 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
   }
 
-  function setGameState(next: GameState) {
+  function setGameState(next: GameState): boolean {
     const prev = gameStateRef.current;
     gameStateRef.current = next;
-    console.log('setGameState:', prev.type, '->', next.type);
 
     if (prev.type === 'ufo') {
-      console.log('Stopping UFO sound');
       stopUfoSound();
       ufoRef.current = null;
       ufoBulletsRef.current = [];
     }
 
     if (next.type === 'ufo') {
-      console.log('Entering UFO state, spawning UFO');
       rocksRef.current = [];
       ufoPassesCompletedRef.current = 0;
-      try {
-        spawnUfo(0);
-        console.log('UFO spawned successfully');
-      } catch (e) {
-        console.error('UFO spawn failed:', e);
-      }
+      spawnUfo(0);
       lastUfoFireRef.current = Date.now() + 1000;
-      console.log('UFO state setup complete');
     }
 
     if (next.type === 'transition') {
@@ -332,6 +323,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       cancelAnimationFrame(rafRef.current);
       doneRef.current = true;
     }
+
+    return true;
   }
 
   function stopUfoSound() {
@@ -508,11 +501,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       lastShotHitRef.current = true;
     }
 
-    function triggerUfoPhase() {
-      if (gameStateRef.current.type !== 'playing') return;
-      console.log('Transitioning to UFO phase');
-      setGameState({ type: 'ufo', passesDone: 0 });
-      console.log('UFO phase transition complete');
+    function triggerUfoPhase(): boolean {
+      if (gameStateRef.current.type !== 'playing') return false;
+      return setGameState({ type: 'ufo', passesDone: 0 });
     }
 
     function clearSafeZone() {
@@ -1056,17 +1047,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
         if (state.type === 'transition') {
           if (!transitionTimerRef.current) {
-            console.log('TRANSITION: Starting timer');
             transitionTimerRef.current = Date.now();
           }
 
           const elapsedMs = Date.now() - transitionTimerRef.current;
           if (elapsedMs > 1200) {
-            console.log('TRANSITION: Timer expired, resetting');
             transitionTimerRef.current = null;
             resetAfterUfoPhase();
-          } else {
-            console.log('TRANSITION TIMER:', elapsedMs, 'ms');
           }
 
           draw();
@@ -1076,8 +1063,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
         const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
         lastFrameRef.current = ts;
-
         const keys = keysRef.current;
+        const now = Date.now();
 
         if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * dt;
         if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * dt;
@@ -1117,10 +1104,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           fire();
         }
 
-        const now = Date.now();
-        const elapsed = (now - waveStartRef.current) / 1000;
-
         if (state.type === 'playing') {
+          const elapsed = (now - waveStartRef.current) / 1000;
           let velocityBoost = 1;
           if (elapsed >= 60) velocityBoost = 1.4;
           else if (elapsed >= 40) velocityBoost = 1.25;
@@ -1139,8 +1124,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           const ufoTriggerTime = debugMode ? 8 : 60;
           if (elapsed >= ufoTriggerTime && !ufoTriggeredRef.current) {
             ufoTriggeredRef.current = true;
-            console.log('UFO trigger guard: calling triggerUfoPhase');
-            triggerUfoPhase();
+            if (triggerUfoPhase()) {
+              rafRef.current = requestAnimationFrame(gameLoop);
+              return;
+            }
           }
 
           for (let i = rocksRef.current.length - 1; i >= 0; i--) {
@@ -1151,9 +1138,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             rock.pos = wrapPos(rock.pos);
             rock.angle += rock.angularVel * dt;
           }
-        }
-
-        if (gameStateRef.current.type === 'ufo') {
+        } else if (state.type === 'ufo') {
           const ufo = ufoRef.current;
           if (ufo && ufo.alive) {
             const totalDist = Math.abs(W + 120);
@@ -1183,7 +1168,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               ufoRef.current = null;
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-                setGameState({ type: 'transition', nextWave: waveRef.current + 1 });
+                if (setGameState({ type: 'transition', nextWave: waveRef.current + 1 })) {
+                  rafRef.current = requestAnimationFrame(gameLoop);
+                  return;
+                }
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1218,7 +1206,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ufoPassesCompletedRef.current++;
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              setGameState({ type: 'transition', nextWave: waveRef.current + 1 });
+              if (setGameState({ type: 'transition', nextWave: waveRef.current + 1 })) {
+                rafRef.current = requestAnimationFrame(gameLoop);
+                return;
+              }
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
