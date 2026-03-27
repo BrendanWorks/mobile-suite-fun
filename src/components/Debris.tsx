@@ -231,7 +231,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const rocksTotalDestroyedRef = useRef(0);
   const phaseRef = useRef<'normal' | 'ufo'>('normal');
   const sectorClearedRef = useRef(0);
-  const transitioningRef = useRef(false);
 
   const scaleRef = useRef(1);
 
@@ -992,38 +991,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
     }
 
-    function startNextWave() {
-      if (doneRef.current || transitioningRef.current) return;
-      stopAllSounds();
-      transitioningRef.current = true;
-    }
-
     function gameLoop(ts: number) {
       if (doneRef.current) return;
       try {
-        if (transitioningRef.current) {
-          phaseRef.current = 'normal';
-          waveRef.current += 1;
-          waveStartRef.current = Date.now();
-
-          rocksRef.current.length = 0;
-          bulletsRef.current.length = 0;
-          ufoBulletsRef.current.length = 0;
-          particlesRef.current.length = 0;
-          scoreFloatersRef.current.length = 0;
-          coreFlashesRef.current.length = 0;
-          ufoRef.current = null;
-
-          rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
-          ufoPhaseTriggedRef.current = false;
-          sectorClearedRef.current = Date.now();
-          lastUfoFireRef.current = 0;
-          transitioningRef.current = false;
-          draw();
-          rafRef.current = requestAnimationFrame(gameLoop);
-          return;
-        }
-
         const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
         lastFrameRef.current = ts;
 
@@ -1131,7 +1101,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               ufoRef.current = null;
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-                startNextWave();
+                stopAllSounds();
+                phaseRef.current = 'normal';
+                waveRef.current += 1;
+                waveStartRef.current = Date.now();
+                rocksRef.current.length = 0;
+                bulletsRef.current.length = 0;
+                ufoBulletsRef.current.length = 0;
+                particlesRef.current.length = 0;
+                scoreFloatersRef.current.length = 0;
+                coreFlashesRef.current.length = 0;
+                rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
+                ufoPhaseTriggedRef.current = false;
+                sectorClearedRef.current = Date.now();
+                lastUfoFireRef.current = 0;
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1166,7 +1149,20 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ufoPassesCompletedRef.current++;
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              startNextWave();
+              stopAllSounds();
+              phaseRef.current = 'normal';
+              waveRef.current += 1;
+              waveStartRef.current = Date.now();
+              rocksRef.current.length = 0;
+              bulletsRef.current.length = 0;
+              ufoBulletsRef.current.length = 0;
+              particlesRef.current.length = 0;
+              scoreFloatersRef.current.length = 0;
+              coreFlashesRef.current.length = 0;
+              rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
+              ufoPhaseTriggedRef.current = false;
+              sectorClearedRef.current = Date.now();
+              lastUfoFireRef.current = 0;
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
@@ -1180,6 +1176,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           if (!hit) {
             for (let i = rocksRef.current.length - 1; i >= 0; i--) {
               const rock = rocksRef.current[i];
+              if (!rock || !rock.pos) continue;
               if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
                 destroyRock(rock, rocksRef.current);
                 spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
