@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { GameHandle } from '../lib/gameTypes';
 
+if (typeof window !== 'undefined') {
+  window.onerror = (msg, src, line, col, err) => {
+    console.error('GLOBAL ERROR:', msg, 'at', line + ':' + col, err);
+  };
+
+  window.onunhandledrejection = (e) => {
+    console.error('PROMISE ERROR:', e.reason);
+  };
+}
+
 interface Vec2 { x: number; y: number; }
 
 interface Rock {
@@ -1150,38 +1160,61 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         }
 
         if (state.type === 'playing') {
-          const elapsed = (now - waveStartRef.current) / 1000;
-          let velocityBoost = 1;
-          if (elapsed >= 60) velocityBoost = 1.4;
-          else if (elapsed >= 40) velocityBoost = 1.25;
-          else if (elapsed >= 20) velocityBoost = 1.1;
-
-          const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
-          if (targetWave > waveRef.current) {
-            waveRef.current = targetWave;
-            rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
-          }
-
-          if (rocksRef.current.length === 0) {
-            rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
-          }
-
-          const ufoTriggerTime = debugMode ? 8 : 60;
-          if (elapsed >= ufoTriggerTime && !ufoTriggeredRef.current) {
-            ufoTriggeredRef.current = true;
-            if (triggerUfoPhase()) {
+          try {
+            if (!rocksRef.current) rocksRef.current = [];
+            if (!playerPosRef.current) {
+              console.warn('Player missing, skipping playing tick');
               rafRef.current = requestAnimationFrame(gameLoop);
               return;
             }
-          }
 
-          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
-            const rock = rocksRef.current[i];
-            if (!rock || !rock.pos || !rock.vel) continue;
-            rock.pos.x += rock.vel.x * dt;
-            rock.pos.y += rock.vel.y * dt;
-            rock.pos = wrapPos(rock.pos);
-            rock.angle += rock.angularVel * dt;
+            const elapsed = (now - waveStartRef.current) / 1000;
+            let velocityBoost = 1;
+            if (elapsed >= 60) velocityBoost = 1.4;
+            else if (elapsed >= 40) velocityBoost = 1.25;
+            else if (elapsed >= 20) velocityBoost = 1.1;
+
+            const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
+            if (targetWave > waveRef.current) {
+              waveRef.current = targetWave;
+              rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
+            }
+
+            if (rocksRef.current.length === 0) {
+              rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
+            }
+
+            const ufoTriggerTime = debugMode ? 8 : 60;
+            if (elapsed >= ufoTriggerTime && !ufoTriggeredRef.current) {
+              ufoTriggeredRef.current = true;
+              if (triggerUfoPhase()) {
+                rafRef.current = requestAnimationFrame(gameLoop);
+                return;
+              }
+            }
+
+            for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+              const rock = rocksRef.current[i];
+              if (!rock) continue;
+              if (!rock.pos || !rock.vel) {
+                console.warn('Bad rock object:', rock);
+                continue;
+              }
+              rock.pos.x += rock.vel.x * dt;
+              rock.pos.y += rock.vel.y * dt;
+              rock.pos = wrapPos(rock.pos);
+              rock.angle += rock.angularVel * dt;
+            }
+          } catch (e) {
+            console.error('CRASH IN PLAYING STATE:', e);
+            console.log('STATE SNAPSHOT:', {
+              rocks: rocksRef.current?.length,
+              bullets: bulletsRef.current?.length,
+              player: playerPosRef.current,
+              ufo: ufoRef.current,
+              wave: waveRef.current
+            });
+            setGameState({ type: 'playing', wave: waveRef.current });
           }
         } else if (state.type === 'ufo') {
           const ufo = ufoRef.current;
@@ -1229,12 +1262,18 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         }
 
         const aliveBullets: Bullet[] = [];
-        for (const b of bulletsRef.current) {
+        for (const b of bulletsRef.current || []) {
+          if (!b) continue;
           if (now - b.born > BULLET_LIFE) continue;
+          if (!b.pos || !b.vel) {
+            console.warn('Bad bullet:', b);
+            continue;
+          }
           b.pos.x += b.vel.x * dt;
           b.pos.y += b.vel.y * dt;
           b.pos = wrapPos(b.pos);
 
+          if (!b.history) b.history = [];
           b.history.push({ ...b.pos });
           if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
 
@@ -1283,8 +1322,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         bulletsRef.current = aliveBullets;
 
         const aliveUfoBullets: Bullet[] = [];
-        for (const b of ufoBulletsRef.current) {
+        for (const b of ufoBulletsRef.current || []) {
+          if (!b) continue;
           if (now - b.born > BULLET_LIFE) continue;
+          if (!b.pos || !b.vel) {
+            console.warn('Bad UFO bullet:', b);
+            continue;
+          }
           b.pos.x += b.vel.x * dt;
           b.pos.y += b.vel.y * dt;
           b.pos = wrapPos(b.pos);
@@ -1302,9 +1346,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ufoBulletsRef.current = aliveUfoBullets;
 
         if (now >= invincibleUntilRef.current) {
-          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
-            const rock = rocksRef.current[i];
+          for (let i = (rocksRef.current?.length || 0) - 1; i >= 0; i--) {
+            const rock = rocksRef.current?.[i];
             if (!rock || !rock.pos) continue;
+            if (!rock.radius) {
+              console.warn('Rock missing radius:', rock);
+              continue;
+            }
             if (dist(playerPosRef.current, rock.pos) < rock.radius + 10) {
               const ddx = playerPosRef.current.x - rock.pos.x;
               const ddy = playerPosRef.current.y - rock.pos.y;
@@ -1317,7 +1365,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
 
           const ufo = ufoRef.current;
-          if (ufo && ufo.alive && dist(playerPosRef.current, ufo.pos) < 36) {
+          if (ufo && ufo.alive && ufo.pos && dist(playerPosRef.current, ufo.pos) < 36) {
             handlePlayerHit();
           }
         }
