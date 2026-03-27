@@ -692,155 +692,210 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
 
-      for (const rock of rocksRef.current) {
-        if (!rock || !rock.pos || !rock.vertices || rock.vertices.length === 0) {
-          if (rock) console.warn('BAD ROCK', rock);
-          continue;
+      for (const rock of rocksRef.current || []) {
+        try {
+          if (!rock || !rock.pos || !rock.vertices || rock.vertices.length === 0) {
+            if (rock) console.warn('BAD ROCK', rock);
+            continue;
+          }
+          const age = now - rock.spawnTime;
+          if (typeof age !== 'number' || !isFinite(age)) {
+            console.warn('Bad rock age:', age, rock);
+            continue;
+          }
+          const fadeAlpha = Math.min(1.0, age / ROCK_SPAWN_FADE_MS);
+          const glowAlpha = age < 100 ? (1 - age / 100) : 0;
+
+          ctx.save();
+          ctx.globalAlpha = fadeAlpha;
+          if (typeof rock.pos.x === 'number' && typeof rock.pos.y === 'number' && isFinite(rock.pos.x) && isFinite(rock.pos.y)) {
+            ctx.translate(rock.pos.x, rock.pos.y);
+          } else {
+            ctx.restore();
+            console.warn('Bad rock position:', rock.pos);
+            continue;
+          }
+          ctx.rotate(rock.angle);
+          ctx.beginPath();
+          if (rock.vertices[0] && typeof rock.vertices[0].x === 'number' && typeof rock.vertices[0].y === 'number') {
+            ctx.moveTo(rock.vertices[0].x, rock.vertices[0].y);
+            for (let i = 1; i < rock.vertices.length; i++) {
+              if (rock.vertices[i] && typeof rock.vertices[i].x === 'number' && typeof rock.vertices[i].y === 'number') {
+                ctx.lineTo(rock.vertices[i].x, rock.vertices[i].y);
+              }
+            }
+            ctx.closePath();
+
+            if (glowAlpha > 0) {
+              ctx.shadowColor = '#00ffff';
+              ctx.shadowBlur = 16 * glowAlpha;
+            } else {
+              ctx.shadowColor = COLORS.cyan;
+              ctx.shadowBlur = 8;
+            }
+
+            ctx.strokeStyle = COLORS.cyan;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = COLORS.cyanDim;
+            ctx.fill();
+          }
+          ctx.restore();
+        } catch (e) {
+          console.warn('Error drawing rock:', e, rock);
+          ctx.restore();
         }
-        const age = now - rock.spawnTime;
-        const fadeAlpha = Math.min(1.0, age / ROCK_SPAWN_FADE_MS);
-        const glowAlpha = age < 100 ? (1 - age / 100) : 0;
-
-        ctx.save();
-        ctx.globalAlpha = fadeAlpha;
-        ctx.translate(rock.pos.x, rock.pos.y);
-        ctx.rotate(rock.angle);
-        ctx.beginPath();
-        ctx.moveTo(rock.vertices[0].x, rock.vertices[0].y);
-        for (let i = 1; i < rock.vertices.length; i++) ctx.lineTo(rock.vertices[i].x, rock.vertices[i].y);
-        ctx.closePath();
-
-        if (glowAlpha > 0) {
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 16 * glowAlpha;
-        } else {
-          ctx.shadowColor = COLORS.cyan;
-          ctx.shadowBlur = 8;
-        }
-
-        ctx.strokeStyle = COLORS.cyan;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = COLORS.cyanDim;
-        ctx.fill();
-        ctx.restore();
       }
 
-      for (const flash of coreFlashesRef.current) {
-        const age = now - flash.born;
-        const t = age / flash.duration;
-        if (t >= 1) continue;
-        const alpha = 1 - t;
-        const radius = 30 + t * 20;
-        ctx.save();
-        ctx.globalAlpha = alpha * 0.9;
-        const grad = ctx.createRadialGradient(flash.pos.x, flash.pos.y, 0, flash.pos.x, flash.pos.y, radius);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.3, 'rgba(0,255,255,0.8)');
-        grad.addColorStop(1, 'rgba(0,255,255,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(flash.pos.x, flash.pos.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+      for (const flash of coreFlashesRef.current || []) {
+        try {
+          if (!flash || !flash.pos || !flash.duration || flash.duration <= 0) continue;
+          const age = now - flash.born;
+          if (typeof age !== 'number' || !isFinite(age)) continue;
+          const t = age / flash.duration;
+          if (t >= 1) continue;
+          const alpha = 1 - t;
+          const radius = 30 + t * 20;
+          ctx.save();
+          ctx.globalAlpha = alpha * 0.9;
+          if (typeof flash.pos.x === 'number' && typeof flash.pos.y === 'number' && isFinite(flash.pos.x) && isFinite(flash.pos.y)) {
+            const grad = ctx.createRadialGradient(flash.pos.x, flash.pos.y, 0, flash.pos.x, flash.pos.y, radius);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.3, 'rgba(0,255,255,0.8)');
+            grad.addColorStop(1, 'rgba(0,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(flash.pos.x, flash.pos.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        } catch (e) {
+          console.warn('Error drawing flash:', e, flash);
+          ctx.restore();
+        }
       }
-      coreFlashesRef.current = coreFlashesRef.current.filter(f => now - f.born < f.duration);
+      coreFlashesRef.current = (coreFlashesRef.current || []).filter(f => f && now - f.born < f.duration);
 
       if (ufoRef.current?.alive) {
         drawUfo(ctx, ufoRef.current);
       }
 
-      for (const b of bulletsRef.current) {
-        if (!b || !b.history) continue;
-        if (b.history.length >= 2) {
-          for (let i = 1; i < b.history.length; i++) {
-            const t = i / b.history.length;
-            const prev = b.history[i - 1];
-            const curr = b.history[i];
-            if (!prev || !curr) continue;
-            const segDx = curr.x - prev.x;
-            const segDy = curr.y - prev.y;
-            if (segDx * segDx + segDy * segDy > 120 * 120) continue;
-            const alpha = t * 0.85;
-            const lineWidth = 2 + t * 4;
-            ctx.beginPath();
-            ctx.moveTo(prev.x, prev.y);
-            ctx.lineTo(curr.x, curr.y);
-            ctx.strokeStyle = `rgba(255,0,255,${alpha})`;
-            ctx.lineWidth = lineWidth;
-            ctx.lineCap = 'round';
-            ctx.stroke();
+      for (const b of bulletsRef.current || []) {
+        try {
+          if (!b || !b.pos) continue;
+          if (!b.history) b.history = [];
+          if (b.history.length >= 2) {
+            for (let i = 1; i < b.history.length; i++) {
+              const t = i / b.history.length;
+              const prev = b.history[i - 1];
+              const curr = b.history[i];
+              if (!prev || !curr || typeof prev.x !== 'number' || typeof curr.x !== 'number') continue;
+              const segDx = curr.x - prev.x;
+              const segDy = curr.y - prev.y;
+              if (segDx * segDx + segDy * segDy > 120 * 120) continue;
+              const alpha = t * 0.85;
+              const lineWidth = 2 + t * 4;
+              ctx.beginPath();
+              ctx.moveTo(prev.x, prev.y);
+              ctx.lineTo(curr.x, curr.y);
+              ctx.strokeStyle = `rgba(255,0,255,${alpha})`;
+              ctx.lineWidth = lineWidth;
+              ctx.lineCap = 'round';
+              ctx.stroke();
+            }
           }
-        }
 
-        ctx.beginPath();
-        ctx.arc(b.pos.x, b.pos.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.pinkBright;
-        ctx.shadowColor = COLORS.pinkBright;
-        ctx.shadowBlur = 12;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+          if (typeof b.pos.x === 'number' && typeof b.pos.y === 'number' && isFinite(b.pos.x) && isFinite(b.pos.y)) {
+            ctx.beginPath();
+            ctx.arc(b.pos.x, b.pos.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.pinkBright;
+            ctx.shadowColor = COLORS.pinkBright;
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        } catch (e) {
+          console.warn('Error drawing bullet:', e, b);
+        }
       }
 
-      for (const b of ufoBulletsRef.current) {
-        if (!b || !b.pos) continue;
-        if (b.history && b.history.length >= 2) {
-          for (let i = 1; i < b.history.length; i++) {
-            const t = i / b.history.length;
-            const prev = b.history[i - 1];
-            const curr = b.history[i];
-            if (!prev || !curr) continue;
-            const segDx = curr.x - prev.x;
-            const segDy = curr.y - prev.y;
-            if (segDx * segDx + segDy * segDy > 120 * 120) continue;
-            ctx.beginPath();
-            ctx.moveTo(prev.x, prev.y);
-            ctx.lineTo(curr.x, curr.y);
-            ctx.strokeStyle = `rgba(255,32,32,${t * 0.7})`;
-            ctx.lineWidth = 1.5 + t * 3;
-            ctx.lineCap = 'round';
-            ctx.stroke();
+      for (const b of ufoBulletsRef.current || []) {
+        try {
+          if (!b || !b.pos) continue;
+          if (!b.history) b.history = [];
+          if (b.history.length >= 2) {
+            for (let i = 1; i < b.history.length; i++) {
+              const t = i / b.history.length;
+              const prev = b.history[i - 1];
+              const curr = b.history[i];
+              if (!prev || !curr || typeof prev.x !== 'number' || typeof curr.x !== 'number') continue;
+              const segDx = curr.x - prev.x;
+              const segDy = curr.y - prev.y;
+              if (segDx * segDx + segDy * segDy > 120 * 120) continue;
+              ctx.beginPath();
+              ctx.moveTo(prev.x, prev.y);
+              ctx.lineTo(curr.x, curr.y);
+              ctx.strokeStyle = `rgba(255,32,32,${t * 0.7})`;
+              ctx.lineWidth = 1.5 + t * 3;
+              ctx.lineCap = 'round';
+              ctx.stroke();
+            }
           }
-        }
 
-        ctx.beginPath();
-        ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.ufoRed;
-        ctx.shadowColor = COLORS.ufoRed;
-        ctx.shadowBlur = 14;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+          if (typeof b.pos.x === 'number' && typeof b.pos.y === 'number' && isFinite(b.pos.x) && isFinite(b.pos.y)) {
+            ctx.beginPath();
+            ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.ufoRed;
+            ctx.shadowColor = COLORS.ufoRed;
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        } catch (e) {
+          console.warn('Error drawing UFO bullet:', e, b);
+        }
       }
 
-      for (const p of particlesRef.current) {
-        const lifeT = Math.max(0, p.life);
-        ctx.globalAlpha = lifeT;
-        const easedSize = p.size * (0.5 + 0.5 * lifeT);
-        ctx.beginPath();
-        ctx.arc(p.pos.x, p.pos.y, easedSize, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 4;
-        ctx.fill();
+      for (const p of particlesRef.current || []) {
+        try {
+          if (!p || !p.pos || typeof p.life !== 'number' || !p.color || typeof p.size !== 'number') continue;
+          const lifeT = Math.max(0, p.life);
+          ctx.globalAlpha = lifeT;
+          const easedSize = p.size * (0.5 + 0.5 * lifeT);
+          if (typeof p.pos.x === 'number' && typeof p.pos.y === 'number' && isFinite(p.pos.x) && isFinite(p.pos.y)) {
+            ctx.beginPath();
+            ctx.arc(p.pos.x, p.pos.y, easedSize, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 4;
+            ctx.fill();
+          }
+        } catch (e) {
+          console.warn('Error drawing particle:', e, p);
+        }
         ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
 
       const invincible = now < invincibleUntilRef.current;
-      if (!gameOverRef.current) {
-        const px = playerPosRef.current.x;
-        const py = playerPosRef.current.y;
-        const pa = playerAngleRef.current;
+      if (!gameOverRef.current && playerPosRef.current) {
+        try {
+          const px = playerPosRef.current.x;
+          const py = playerPosRef.current.y;
+          const pa = playerAngleRef.current;
 
-        const thrusting = keysRef.current.has('ArrowUp') || keysRef.current.has('w');
-        const speed = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
-        const velocityRatio = Math.min(speed / PLAYER_MAX_SPEED, 1);
+          if (typeof px !== 'number' || typeof py !== 'number' || !isFinite(px) || !isFinite(py)) {
+            console.warn('Bad player position:', px, py);
+          } else {
+            const thrusting = keysRef.current.has('ArrowUp') || keysRef.current.has('w');
+            const speed = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
+            const velocityRatio = Math.min(speed / PLAYER_MAX_SPEED, 1);
 
-        if (!invincible || Math.floor(now / 120) % 2 === 0) {
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.rotate(pa);
+            if (!invincible || Math.floor(now / 120) % 2 === 0) {
+              ctx.save();
+              ctx.translate(px, py);
+              ctx.rotate(pa);
 
           if (thrusting && velocityRatio > 0) {
             const thrustAlpha = 0.4 + velocityRatio * 0.6;
@@ -885,38 +940,51 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ctx.stroke();
           }
 
+            ctx.restore();
+            }
+          }
+        } catch (e) {
+          console.warn('Error drawing player:', e);
+        }
+      }
+
+      for (const floater of scoreFloatersRef.current || []) {
+        try {
+          if (!floater || !floater.pos) continue;
+          const age = now - floater.born;
+          if (typeof age !== 'number' || !isFinite(age)) continue;
+          const t = age / floater.duration;
+          if (t >= 1) continue;
+          const alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+          const rise = t * 70;
+          const multActive = multiplierRef.current > 1.05;
+          const fontSize = multActive ? 24 : 21;
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.font = `bold ${fontSize}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#ffff00';
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 5;
+          if (typeof floater.pos.x === 'number' && typeof floater.pos.y === 'number' && isFinite(floater.pos.x) && isFinite(floater.pos.y)) {
+            ctx.fillText(floater.text, floater.pos.x, floater.pos.y - rise);
+
+            if (floater.multText) {
+              ctx.font = '14px monospace';
+              ctx.fillStyle = '#ffdd00';
+              ctx.shadowBlur = 3;
+              ctx.fillText(floater.multText, floater.pos.x + 30, floater.pos.y - rise - 12);
+            }
+          }
+
+          ctx.restore();
+        } catch (e) {
+          console.warn('Error drawing floater:', e, floater);
           ctx.restore();
         }
       }
-
-      for (const floater of scoreFloatersRef.current) {
-        const age = now - floater.born;
-        const t = age / floater.duration;
-        if (t >= 1) continue;
-        const alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
-        const rise = t * 70;
-        const multActive = multiplierRef.current > 1.05;
-        const fontSize = multActive ? 24 : 21;
-
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.font = `bold ${fontSize}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffff00';
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 5;
-        ctx.fillText(floater.text, floater.pos.x, floater.pos.y - rise);
-
-        if (floater.multText) {
-          ctx.font = '14px monospace';
-          ctx.fillStyle = '#ffdd00';
-          ctx.shadowBlur = 3;
-          ctx.fillText(floater.multText, floater.pos.x + 30, floater.pos.y - rise - 12);
-        }
-
-        ctx.restore();
-      }
-      scoreFloatersRef.current = scoreFloatersRef.current.filter(f => now - f.born < f.duration);
+      scoreFloatersRef.current = (scoreFloatersRef.current || []).filter(f => f && now - f.born < f.duration);
 
       const score = Math.round(scoreRef.current);
       const lives = livesRef.current;
@@ -1370,14 +1438,19 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
         }
 
-        for (const p of particlesRef.current) {
+        for (const p of particlesRef.current || []) {
+          if (!p || !p.pos || !p.vel) continue;
+          if (!p.maxLife || p.maxLife <= 0) {
+            console.warn('Bad particle:', p);
+            continue;
+          }
           p.pos.x += p.vel.x * dt;
           p.pos.y += p.vel.y * dt;
           p.vel.x *= 0.93;
           p.vel.y *= 0.93;
           p.life -= dt / p.maxLife;
         }
-        particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+        particlesRef.current = (particlesRef.current || []).filter(p => p && p.life > 0);
 
         safe('draw', draw);
         rafRef.current = requestAnimationFrame(gameLoop);
