@@ -312,8 +312,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     if (next.type === 'playing') {
+      console.log('setGameState playing, spawning rocks for wave:', next.wave);
       ufoTriggeredRef.current = false;
       rocksRef.current = spawnWaveRocks(next.wave, 1.3);
+      console.log('Rocks spawned, count:', rocksRef.current.length);
       waveRef.current = next.wave;
       waveStartRef.current = Date.now();
     }
@@ -1030,6 +1032,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     function resetAfterUfoPhase() {
       const nextWave = waveRef.current + 1;
+      console.log('resetAfterUfoPhase called, nextWave:', nextWave);
       bulletsRef.current.length = 0;
       particlesRef.current.length = 0;
       scoreFloatersRef.current.length = 0;
