@@ -995,6 +995,29 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     function gameLoop(ts: number) {
       if (doneRef.current) return;
       try {
+        if (transitioningRef.current) {
+          phaseRef.current = 'normal';
+          waveRef.current += 1;
+          waveStartRef.current = Date.now();
+
+          rocksRef.current.length = 0;
+          bulletsRef.current.length = 0;
+          ufoBulletsRef.current.length = 0;
+          particlesRef.current.length = 0;
+          scoreFloatersRef.current.length = 0;
+          coreFlashesRef.current.length = 0;
+          ufoRef.current = null;
+
+          rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
+          ufoPhaseTriggedRef.current = false;
+          sectorClearedRef.current = Date.now();
+          lastUfoFireRef.current = 0;
+          transitioningRef.current = false;
+          draw();
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
+        }
+
         const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
         lastFrameRef.current = ts;
 
@@ -1214,29 +1237,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           p.life -= dt / p.maxLife;
         }
         particlesRef.current = particlesRef.current.filter(p => p.life > 0);
-
-        if (transitioningRef.current) {
-          phaseRef.current = 'normal';
-          waveRef.current += 1;
-          waveStartRef.current = Date.now();
-
-          rocksRef.current.length = 0;
-          bulletsRef.current.length = 0;
-          ufoBulletsRef.current.length = 0;
-          particlesRef.current.length = 0;
-          scoreFloatersRef.current.length = 0;
-          coreFlashesRef.current.length = 0;
-          ufoRef.current = null;
-
-          rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
-          ufoPhaseTriggedRef.current = false;
-          sectorClearedRef.current = Date.now();
-          lastUfoFireRef.current = 0;
-          transitioningRef.current = false;
-          draw();
-          rafRef.current = requestAnimationFrame(gameLoop);
-          return;
-        }
 
         draw();
         rafRef.current = requestAnimationFrame(gameLoop);
