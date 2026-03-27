@@ -1515,7 +1515,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
       stopAllSounds();
     };
-  }, [debugMode]);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
