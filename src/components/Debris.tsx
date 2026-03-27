@@ -321,6 +321,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     if (next.type === 'gameover') {
+      console.trace('setGameState gameover');
       stopAllSounds();
       cancelAnimationFrame(rafRef.current);
       doneRef.current = true;
@@ -547,6 +548,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
       if (livesRef.current <= 0 && !doneRef.current) {
         gameOverRef.current = true;
+        console.trace('GAME OVER CALLED FROM handlePlayerHit');
         setGameState({ type: 'gameover' });
         setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 500);
       }
