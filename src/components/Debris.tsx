@@ -293,6 +293,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     const prev = gameStateRef.current;
     gameStateRef.current = next;
 
+    console.log('STATE CHANGE:', prev.type, '→', next.type);
+
     if (prev.type === 'ufo') {
       stopUfoSound();
       ufoRef.current = null;
@@ -1030,6 +1032,14 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           sectorClearedRef.current = 0;
         }
       }
+
+      if (debugMode) {
+        ctx.font = '12px monospace';
+        ctx.fillStyle = COLORS.cyan;
+        ctx.textAlign = 'left';
+        ctx.fillText(`STATE: ${gameStateRef.current.type}`, 16, 80);
+        ctx.fillText(`RAF: ${rafRef.current ? 'ACTIVE' : 'DEAD'}`, 16, 95);
+      }
     }
 
     function resetAfterUfoPhase() {
@@ -1047,6 +1057,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     function gameLoop(ts: number) {
       if (doneRef.current) return;
+
+      if (!canvasRef.current) {
+        rafRef.current = requestAnimationFrame(gameLoop);
+        return;
+      }
+
       try {
         const state = gameStateRef.current;
 
@@ -1294,10 +1310,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         draw();
         rafRef.current = requestAnimationFrame(gameLoop);
       } catch (err) {
+        console.error('GAME LOOP ERROR:', err);
         doneRef.current = true;
         cancelAnimationFrame(rafRef.current);
         stopAllSounds();
-        throw err;
       }
     }
 
@@ -1320,18 +1336,21 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     window.addEventListener('keydown', handleKey);
     window.addEventListener('keyup', handleKeyUp);
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
       doneRef.current = true;
       cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKeyUp);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
       stopAllSounds();
     };
-  }, []);
+  }, [debugMode]);
 
   useEffect(() => {
     const container = containerRef.current;
