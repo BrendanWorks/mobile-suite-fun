@@ -1022,17 +1022,15 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       if (doneRef.current) return;
       try {
         if (phaseRef.current === 'transitioning') {
-          draw();
-
           if (pendingTransitionRef.current) {
             pendingTransitionRef.current = false;
-            requestAnimationFrame(() => {
-              if (!doneRef.current) {
-                resetAfterUfoPhase();
-              }
-            });
+            resetAfterUfoPhase();
+
+            rafRef.current = requestAnimationFrame(gameLoop);
+            return;
           }
 
+          draw();
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
         }
