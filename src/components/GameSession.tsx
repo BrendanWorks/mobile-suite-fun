@@ -838,7 +838,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     if (!debugMode) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && debugSkipRef.current?.gameState === 'playing') {
+      if (e.code === 'Escape' && debugSkipRef.current?.gameState === 'playing') {
         e.preventDefault();
         debugSkipRef.current.skip();
       }
