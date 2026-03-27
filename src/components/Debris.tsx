@@ -231,6 +231,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const rocksTotalDestroyedRef = useRef(0);
   const phaseRef = useRef<'normal' | 'ufo'>('normal');
   const sectorClearedRef = useRef(0);
+  const transitioningRef = useRef(false);
 
   const scaleRef = useRef(1);
 
@@ -1095,22 +1096,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
                 stopAllSounds();
-                phaseRef.current = 'normal';
-                waveRef.current += 1;
-                waveStartRef.current = Date.now();
-
-                rocksRef.current = [];
-                bulletsRef.current = [];
-                ufoBulletsRef.current = [];
-                particlesRef.current = [];
-                scoreFloatersRef.current = [];
-                coreFlashesRef.current = [];
-                ufoRef.current = null;
-
-                rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
-                ufoPhaseTriggedRef.current = false;
-                sectorClearedRef.current = Date.now();
-                lastUfoFireRef.current = 0;
+                transitioningRef.current = true;
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1146,22 +1132,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             stopAllSounds();
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              phaseRef.current = 'normal';
-              waveRef.current += 1;
-              waveStartRef.current = Date.now();
-
-              rocksRef.current = [];
-              bulletsRef.current = [];
-              ufoBulletsRef.current = [];
-              particlesRef.current = [];
-              scoreFloatersRef.current = [];
-              coreFlashesRef.current = [];
-              ufoRef.current = null;
-
-              rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
-              ufoPhaseTriggedRef.current = false;
-              sectorClearedRef.current = Date.now();
-              lastUfoFireRef.current = 0;
+              transitioningRef.current = true;
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
@@ -1234,6 +1205,26 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           p.life -= dt / p.maxLife;
         }
         particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+
+        if (transitioningRef.current) {
+          phaseRef.current = 'normal';
+          waveRef.current += 1;
+          waveStartRef.current = Date.now();
+
+          rocksRef.current = [];
+          bulletsRef.current = [];
+          ufoBulletsRef.current = [];
+          particlesRef.current = [];
+          scoreFloatersRef.current = [];
+          coreFlashesRef.current = [];
+          ufoRef.current = null;
+
+          rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
+          ufoPhaseTriggedRef.current = false;
+          sectorClearedRef.current = Date.now();
+          lastUfoFireRef.current = 0;
+          transitioningRef.current = false;
+        }
 
         draw();
         rafRef.current = requestAnimationFrame(gameLoop);
