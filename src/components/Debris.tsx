@@ -1014,6 +1014,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       phaseRef.current = 'normal';
 
       transitioningRef.current = false;
+
+      lastFrameRef.current = performance.now();
     }
 
     function gameLoop(ts: number) {
