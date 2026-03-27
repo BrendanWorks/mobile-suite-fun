@@ -1098,6 +1098,15 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
                 phaseRef.current = 'normal';
                 waveRef.current += 1;
                 waveStartRef.current = Date.now();
+
+                rocksRef.current = [];
+                bulletsRef.current = [];
+                ufoBulletsRef.current = [];
+                particlesRef.current = [];
+                scoreFloatersRef.current = [];
+                coreFlashesRef.current = [];
+                ufoRef.current = null;
+
                 rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
                 ufoPhaseTriggedRef.current = false;
                 sectorClearedRef.current = Date.now();
@@ -1140,6 +1149,15 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               phaseRef.current = 'normal';
               waveRef.current += 1;
               waveStartRef.current = Date.now();
+
+              rocksRef.current = [];
+              bulletsRef.current = [];
+              ufoBulletsRef.current = [];
+              particlesRef.current = [];
+              scoreFloatersRef.current = [];
+              coreFlashesRef.current = [];
+              ufoRef.current = null;
+
               rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
               ufoPhaseTriggedRef.current = false;
               sectorClearedRef.current = Date.now();
