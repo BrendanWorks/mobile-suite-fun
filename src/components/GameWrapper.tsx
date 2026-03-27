@@ -147,6 +147,8 @@ export default function GameWrapper({
   }, [timeRemaining, soundsMuted]);
 
   const handleEarlyCompletion = useCallback(() => {
+    console.error('🔴 EARLY COMPLETION FIRED');
+    console.trace();
     if (timerRef.current) clearInterval(timerRef.current);
     if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     gameCompletedRef.current = true;
@@ -164,6 +166,8 @@ export default function GameWrapper({
   }, [onComplete]);
 
   const handleTimeUp = useCallback(() => {
+    console.error('🔴 TIME UP FIRED - this should not happen for Debris (999999ms duration)');
+    console.trace();
     if (timerRef.current) clearInterval(timerRef.current);
     if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
     setIsActive(false);
@@ -210,6 +214,7 @@ export default function GameWrapper({
     const decrement = isFastCountdown ? 3 : 1;
 
     timerRef.current = window.setInterval(() => {
+      console.log('⏱️ TIMER TICK', { timeRemaining: timeRemainingRef.current, isActive, isFastCountdown });
       setTimeRemaining((prev) => {
         let newTime = prev;
 
