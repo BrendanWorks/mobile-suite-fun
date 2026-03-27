@@ -643,6 +643,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, []);
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
+    console.log('🔥 onComplete fired:', { rawScore, maxScore, timeRemaining, gameId: currentGame?.id });
     try {
     if (!currentGame) {
       handleNextRound();

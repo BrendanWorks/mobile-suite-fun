@@ -388,6 +388,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   }, []);
 
   useEffect(() => {
+    console.log('🎮 DEBRIS MOUNTED');
+    return () => {
+      console.warn('🚨 DEBRIS UNMOUNTED - doneRef:', doneRef.current, 'rafRef:', rafRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     rocksRef.current = spawnWaveRocks(1, 1);
     waveStartRef.current = Date.now();
     invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
@@ -579,7 +586,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         gameOverRef.current = true;
         console.trace('GAME OVER CALLED FROM handlePlayerHit');
         setGameState({ type: 'gameover' });
-        setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 500);
+        setTimeout(() => {
+          console.log('🔥 onComplete fired from handlePlayerHit:', scoreRef.current, MAX_SCORE, 0);
+          onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0);
+        }, 500);
       }
     }
 
