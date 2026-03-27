@@ -568,6 +568,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     function handlePlayerHit() {
+      console.warn('🎯 PLAYER HIT DETECTED', {
+        lives: livesRef.current,
+        invincibleUntil: invincibleUntilRef.current,
+        now: Date.now(),
+        gameState: gameStateRef.current.type
+      });
       if (Date.now() < invincibleUntilRef.current) return;
       livesRef.current--;
       spawnParticles(playerPosRef.current, 24, COLORS.red, 200);
@@ -1503,6 +1509,14 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     window.addEventListener('keyup', handleKeyUp);
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    console.log('🔄 RAF QUEUED', {
+      done: doneRef.current,
+      gameOver: gameOverRef.current,
+      state: gameStateRef.current.type,
+      rocks: rocksRef.current?.length,
+      bullets: bulletsRef.current?.length,
+      ufoBullets: ufoBulletsRef.current?.length,
+    });
     rafRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
