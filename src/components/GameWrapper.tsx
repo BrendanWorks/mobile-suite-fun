@@ -21,11 +21,18 @@ export default function GameWrapper({
 }: GameWrapperProps) {
   const POST_ZERO_LINGER_MS = 700;
 
+  const childHideTimer = React.isValidElement(children)
+    ? (children as React.ReactElement<any>).props.hideTimer === true
+    : false;
+  const childMuteTimerSounds = React.isValidElement(children)
+    ? (children as React.ReactElement<any>).props.muteTimerSounds === true
+    : false;
+
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(true);
   const [isFastCountdown, setIsFastCountdown] = useState(false);
-  const [hideTimerBar, setHideTimerBar] = useState(false);
-  const [muteTimerSounds, setMuteTimerSounds] = useState(false);
+  const [hideTimerBar, setHideTimerBar] = useState(childHideTimer);
+  const [muteTimerSounds, setMuteTimerSounds] = useState(childMuteTimerSounds);
 
   const timerRef = useRef<number | null>(null);
   const lingerTimeoutRef = useRef<number | null>(null);
@@ -206,10 +213,12 @@ export default function GameWrapper({
     }
   }, [onComplete]);
 
+  // TIMER EFFECT - skipped entirely for games that declare hideTimer (e.g. Debris).
+  // Those games call onComplete() themselves; we must not tick them to zero.
   useEffect(() => {
     if (!isActive) return;
     if (debugMode) return;
-    if (childrenRef.current?.hideTimer) return;
+    if (hideTimerBar) return;
 
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
@@ -256,7 +265,7 @@ export default function GameWrapper({
       if (timerRef.current) clearInterval(timerRef.current);
       if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
     };
-  }, [isActive, isFastCountdown, children]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, isFastCountdown, hideTimerBar]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleGameComplete = useCallback((score: number, maxScore: number, remaining?: number) => {
     if (gameCompletedRef.current) return;
