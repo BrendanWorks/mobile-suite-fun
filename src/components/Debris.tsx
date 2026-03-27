@@ -212,6 +212,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const ufoRef = useRef<Ufo | null>(null);
   const ufoPassesCompletedRef = useRef(0);
   const ufoSoundPlayingRef = useRef(false);
+  const ufoTriggeredRef = useRef(false);
 
   const ufoBulletsRef = useRef<Bullet[]>([]);
   const lastUfoFireRef = useRef(0);
@@ -285,8 +286,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       console.log('Entering UFO state, spawning UFO');
       rocksRef.current = [];
       ufoPassesCompletedRef.current = 0;
-      spawnUfo(0);
-      console.log('UFO spawned');
+      try {
+        spawnUfo(0);
+        console.log('UFO spawned successfully');
+      } catch (e) {
+        console.error('UFO spawn failed:', e);
+      }
       lastUfoFireRef.current = Date.now() + 1000;
       console.log('UFO state setup complete');
     }
@@ -297,6 +302,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     if (next.type === 'playing') {
+      ufoTriggeredRef.current = false;
       rocksRef.current = spawnWaveRocks(next.wave, 1.3);
       waveRef.current = next.wave;
       waveStartRef.current = Date.now();
@@ -1050,12 +1056,17 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
         if (state.type === 'transition') {
           if (!transitionTimerRef.current) {
+            console.log('TRANSITION: Starting timer');
             transitionTimerRef.current = Date.now();
           }
 
-          if (Date.now() - transitionTimerRef.current > 1200) {
+          const elapsedMs = Date.now() - transitionTimerRef.current;
+          if (elapsedMs > 1200) {
+            console.log('TRANSITION: Timer expired, resetting');
             transitionTimerRef.current = null;
             resetAfterUfoPhase();
+          } else {
+            console.log('TRANSITION TIMER:', elapsedMs, 'ms');
           }
 
           draw();
@@ -1126,7 +1137,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
 
           const ufoTriggerTime = debugMode ? 8 : 60;
-          if (elapsed >= ufoTriggerTime) {
+          if (elapsed >= ufoTriggerTime && !ufoTriggeredRef.current) {
+            ufoTriggeredRef.current = true;
+            console.log('UFO trigger guard: calling triggerUfoPhase');
             triggerUfoPhase();
           }
 
@@ -1140,7 +1153,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
         }
 
-        if (state.type === 'ufo') {
+        if (gameStateRef.current.type === 'ufo') {
           const ufo = ufoRef.current;
           if (ufo && ufo.alive) {
             const totalDist = Math.abs(W + 120);
