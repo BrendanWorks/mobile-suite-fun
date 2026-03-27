@@ -293,7 +293,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     const prev = gameStateRef.current;
     gameStateRef.current = next;
 
-    console.log('STATE CHANGE:', prev.type, '→', next.type);
+    console.log('STATE CHANGE:', prev.type, '→', next.type, next);
 
     if (prev.type === 'ufo') {
       stopUfoSound();
@@ -382,10 +382,27 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     waveStartRef.current = Date.now();
     invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
 
+    window.addEventListener('error', (e) => {
+      console.error('GLOBAL ERROR:', e.error);
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('PROMISE ERROR:', e.reason);
+    });
+
     function playSound(audio: HTMLAudioElement | null) {
       if (!audio) return;
       audio.currentTime = 0;
       audio.play().catch(() => {});
+    }
+
+    function safe(label: string, fn: () => void) {
+      try {
+        return fn();
+      } catch (err) {
+        console.error('CRASH in ' + label, err);
+        return undefined;
+      }
     }
 
     function addScore(pts: number) {
@@ -666,7 +683,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
 
       for (const rock of rocksRef.current) {
-        if (!rock || !rock.pos || !rock.vertices) continue;
+        if (!rock || !rock.pos || !rock.vertices || rock.vertices.length === 0) {
+          if (rock) console.warn('BAD ROCK', rock);
+          continue;
+        }
         const age = now - rock.spawnTime;
         const fadeAlpha = Math.min(1.0, age / ROCK_SPAWN_FADE_MS);
         const glowAlpha = age < 100 ? (1 - age / 100) : 0;
@@ -1063,6 +1083,10 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         return;
       }
 
+      if (Math.random() < 0.02) {
+        console.log('tick', gameStateRef.current.type);
+      }
+
       try {
         const state = gameStateRef.current;
 
@@ -1077,7 +1101,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             resetAfterUfoPhase();
           }
 
-          draw();
+          safe('draw-transition', draw);
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
         }
@@ -1307,13 +1331,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         }
         particlesRef.current = particlesRef.current.filter(p => p.life > 0);
 
-        draw();
+        safe('draw', draw);
         rafRef.current = requestAnimationFrame(gameLoop);
       } catch (err) {
         console.error('GAME LOOP ERROR:', err);
-        doneRef.current = true;
-        cancelAnimationFrame(rafRef.current);
-        stopAllSounds();
+        rafRef.current = requestAnimationFrame(gameLoop);
       }
     }
 
