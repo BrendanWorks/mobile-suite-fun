@@ -272,18 +272,23 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   function setGameState(next: GameState) {
     const prev = gameStateRef.current;
     gameStateRef.current = next;
+    console.log('setGameState:', prev.type, '->', next.type);
 
     if (prev.type === 'ufo') {
+      console.log('Stopping UFO sound');
       stopUfoSound();
       ufoRef.current = null;
       ufoBulletsRef.current = [];
     }
 
     if (next.type === 'ufo') {
+      console.log('Entering UFO state, spawning UFO');
       rocksRef.current = [];
       ufoPassesCompletedRef.current = 0;
       spawnUfo(0);
+      console.log('UFO spawned');
       lastUfoFireRef.current = Date.now() + 1000;
+      console.log('UFO state setup complete');
     }
 
     if (next.type === 'transition') {
@@ -499,7 +504,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
     function triggerUfoPhase() {
       if (gameStateRef.current.type !== 'playing') return;
+      console.log('Transitioning to UFO phase');
       setGameState({ type: 'ufo', passesDone: 0 });
+      console.log('UFO phase transition complete');
     }
 
     function clearSafeZone() {
