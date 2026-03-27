@@ -643,6 +643,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, []);
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
+    try {
     if (!currentGame) {
       handleNextRound();
       return;
@@ -652,7 +653,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       maxScore = 100;
       rawScore = 0;
     }
-
 
     let normalizedScore: GameScore;
     const percentage = (rawScore / maxScore) * 100;
@@ -819,6 +819,16 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     setGameState('results');
     onRoundComplete?.();
+    } catch (err) {
+      logClientError(err, {
+        source: 'handleGameComplete',
+        game_id: currentGame?.id,
+        rawScore,
+        maxScore,
+        timeRemaining,
+      });
+      setGameState('results');
+    }
   };
 
   debugSkipRef.current = debugMode ? { gameState, skip: () => handleGameComplete(0, 100) } : null;
