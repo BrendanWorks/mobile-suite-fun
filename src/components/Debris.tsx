@@ -624,6 +624,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
 
       for (const rock of rocksRef.current) {
+        if (!rock || !rock.pos || !rock.vertices) continue;
         const age = now - rock.spawnTime;
         const fadeAlpha = Math.min(1.0, age / ROCK_SPAWN_FADE_MS);
         const glowAlpha = age < 100 ? (1 - age / 100) : 0;
@@ -679,11 +680,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
 
       for (const b of bulletsRef.current) {
+        if (!b || !b.history) continue;
         if (b.history.length >= 2) {
           for (let i = 1; i < b.history.length; i++) {
             const t = i / b.history.length;
             const prev = b.history[i - 1];
             const curr = b.history[i];
+            if (!prev || !curr) continue;
             const segDx = curr.x - prev.x;
             const segDy = curr.y - prev.y;
             if (segDx * segDx + segDy * segDy > 120 * 120) continue;
@@ -709,11 +712,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
 
       for (const b of ufoBulletsRef.current) {
+        if (!b || !b.pos) continue;
         if (b.history && b.history.length >= 2) {
           for (let i = 1; i < b.history.length; i++) {
             const t = i / b.history.length;
             const prev = b.history[i - 1];
             const curr = b.history[i];
+            if (!prev || !curr) continue;
             const segDx = curr.x - prev.x;
             const segDy = curr.y - prev.y;
             if (segDx * segDx + segDy * segDy > 120 * 120) continue;
@@ -1096,7 +1101,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
                 stopAllSounds();
-                transitioningRef.current = true;
+                setTimeout(() => {
+                  if (!doneRef.current) transitioningRef.current = true;
+                }, 0);
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1132,7 +1139,9 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             stopAllSounds();
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              transitioningRef.current = true;
+              setTimeout(() => {
+                if (!doneRef.current) transitioningRef.current = true;
+              }, 0);
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
@@ -1211,19 +1220,22 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           waveRef.current += 1;
           waveStartRef.current = Date.now();
 
-          rocksRef.current = [];
-          bulletsRef.current = [];
-          ufoBulletsRef.current = [];
-          particlesRef.current = [];
-          scoreFloatersRef.current = [];
-          coreFlashesRef.current = [];
+          rocksRef.current.length = 0;
+          bulletsRef.current.length = 0;
+          ufoBulletsRef.current.length = 0;
+          particlesRef.current.length = 0;
+          scoreFloatersRef.current.length = 0;
+          coreFlashesRef.current.length = 0;
           ufoRef.current = null;
 
-          rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
+          rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
           ufoPhaseTriggedRef.current = false;
           sectorClearedRef.current = Date.now();
           lastUfoFireRef.current = 0;
           transitioningRef.current = false;
+          draw();
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
         }
 
         draw();
