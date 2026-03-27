@@ -961,21 +961,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.fillText(`SCORE: ${score}`, W / 2, H / 2 + 24);
       }
 
-      if (wonRef.current) {
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(0, 0, W, H);
-        ctx.font = 'bold 52px monospace';
-        ctx.fillStyle = COLORS.yellow;
-        ctx.textAlign = 'center';
-        ctx.shadowColor = COLORS.yellow;
-        ctx.shadowBlur = 30;
-        ctx.fillText('SECTOR CLEARED', W / 2, H / 2 - 20);
-        ctx.shadowBlur = 0;
-        ctx.font = '20px monospace';
-        ctx.fillStyle = COLORS.white;
-        ctx.fillText(`SCORE: ${score}`, W / 2, H / 2 + 24);
-      }
-
       if (sectorClearedRef.current > 0) {
         const age = now - sectorClearedRef.current;
         const dur = 2000;
@@ -1004,119 +989,161 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     function gameLoop(ts: number) {
       if (doneRef.current) return;
       try {
-      const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
-      lastFrameRef.current = ts;
+        const dt = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
+        lastFrameRef.current = ts;
 
-      const keys = keysRef.current;
+        const keys = keysRef.current;
 
-      if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * dt;
-      if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * dt;
+        if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * dt;
+        if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * dt;
 
-      const thrusting = keys.has('ArrowUp') || keys.has('w');
-      if (thrusting) {
-        playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * dt;
-        playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * dt;
-        if (!boostSoundPlayingRef.current && boostSoundRef.current) {
-          boostSoundRef.current.currentTime = 0;
-          boostSoundRef.current.play().catch(() => {});
-          boostSoundPlayingRef.current = true;
-        }
-      } else {
-        if (boostSoundPlayingRef.current && boostSoundRef.current) {
-          boostSoundRef.current.pause();
-          boostSoundRef.current.currentTime = 0;
-          boostSoundPlayingRef.current = false;
-        }
-      }
-
-      const spd = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
-      if (spd > PLAYER_MAX_SPEED) {
-        const scale = PLAYER_MAX_SPEED / spd;
-        playerVelRef.current.x *= scale;
-        playerVelRef.current.y *= scale;
-      }
-
-      playerVelRef.current.x *= FRICTION;
-      playerVelRef.current.y *= FRICTION;
-      playerPosRef.current.x += playerVelRef.current.x * dt;
-      playerPosRef.current.y += playerVelRef.current.y * dt;
-      playerPosRef.current = wrapPos(playerPosRef.current);
-
-      while (fireQueueRef.current > 0) {
-        fireQueueRef.current--;
-        fire();
-      }
-
-      const now = Date.now();
-      const elapsed = (now - waveStartRef.current) / 1000;
-
-      if (phaseRef.current === 'normal') {
-        let velocityBoost = 1;
-        if (elapsed >= 60) velocityBoost = 1.4;
-        else if (elapsed >= 40) velocityBoost = 1.25;
-        else if (elapsed >= 20) velocityBoost = 1.1;
-
-        const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
-        if (targetWave > waveRef.current) {
-          waveRef.current = targetWave;
-          rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
+        const thrusting = keys.has('ArrowUp') || keys.has('w');
+        if (thrusting) {
+          playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * dt;
+          playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * dt;
+          if (!boostSoundPlayingRef.current && boostSoundRef.current) {
+            boostSoundRef.current.currentTime = 0;
+            boostSoundRef.current.play().catch(() => {});
+            boostSoundPlayingRef.current = true;
+          }
+        } else {
+          if (boostSoundPlayingRef.current && boostSoundRef.current) {
+            boostSoundRef.current.pause();
+            boostSoundRef.current.currentTime = 0;
+            boostSoundPlayingRef.current = false;
+          }
         }
 
-        if (rocksRef.current.length === 0 && !ufoPhaseTriggedRef.current) {
-          rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
+        const spd = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
+        if (spd > PLAYER_MAX_SPEED) {
+          const scale = PLAYER_MAX_SPEED / spd;
+          playerVelRef.current.x *= scale;
+          playerVelRef.current.y *= scale;
         }
 
-        const ufoTriggerTime = debugMode ? 8 : 60;
-        if (elapsed >= ufoTriggerTime && !ufoPhaseTriggedRef.current) {
-          triggerUfoPhase();
+        playerVelRef.current.x *= FRICTION;
+        playerVelRef.current.y *= FRICTION;
+        playerPosRef.current.x += playerVelRef.current.x * dt;
+        playerPosRef.current.y += playerVelRef.current.y * dt;
+        playerPosRef.current = wrapPos(playerPosRef.current);
+
+        while (fireQueueRef.current > 0) {
+          fireQueueRef.current--;
+          fire();
         }
 
-        for (const rock of rocksRef.current) {
-          rock.pos.x += rock.vel.x * dt;
-          rock.pos.y += rock.vel.y * dt;
-          rock.pos = wrapPos(rock.pos);
-          rock.angle += rock.angularVel * dt;
-        }
-      }
+        const now = Date.now();
+        const elapsed = (now - waveStartRef.current) / 1000;
 
-      if (phaseRef.current === 'ufo') {
-        const ufo = ufoRef.current;
-        if (ufo && ufo.alive) {
-          const totalDist = Math.abs(W + 120);
-          const travelFrac = Math.abs(ufo.pos.x - ufo.startX) / totalDist;
-          ufo.pos.x += ufo.vel.x * dt;
-          ufo.pos.y = ufo.baseY + Math.sin(travelFrac * Math.PI * 3 + ufo.phaseOffset) * ufo.amplitude;
+        if (phaseRef.current === 'normal') {
+          let velocityBoost = 1;
+          if (elapsed >= 60) velocityBoost = 1.4;
+          else if (elapsed >= 40) velocityBoost = 1.25;
+          else if (elapsed >= 20) velocityBoost = 1.1;
 
-          if (now - lastUfoFireRef.current > UFO_FIRE_INTERVAL) {
-            lastUfoFireRef.current = now;
-            const dx = playerPosRef.current.x - ufo.pos.x;
-            const dy = playerPosRef.current.y - ufo.pos.y;
-            const scatter = (Math.random() - 0.5) * 0.6;
-            const angle = Math.atan2(dy, dx) + scatter;
-            const startPos2 = { x: ufo.pos.x, y: ufo.pos.y };
-            ufoBulletsRef.current.push({
-              id: nextId++,
-              pos: startPos2,
-              vel: { x: Math.cos(angle) * UFO_BULLET_SPEED, y: Math.sin(angle) * UFO_BULLET_SPEED },
-              born: now,
-              history: [{ ...startPos2 }],
-            });
+          const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
+          if (targetWave > waveRef.current) {
+            waveRef.current = targetWave;
+            rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
           }
 
-          const offScreen = (ufo.vel.x > 0 && ufo.pos.x > W + 70) || (ufo.vel.x < 0 && ufo.pos.x < -70);
-          if (offScreen) {
-            ufoPassesCompletedRef.current++;
+          if (rocksRef.current.length === 0 && !ufoPhaseTriggedRef.current) {
+            rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
+          }
+
+          const ufoTriggerTime = debugMode ? 8 : 60;
+          if (elapsed >= ufoTriggerTime && !ufoPhaseTriggedRef.current) {
+            triggerUfoPhase();
+          }
+
+          for (const rock of rocksRef.current) {
+            rock.pos.x += rock.vel.x * dt;
+            rock.pos.y += rock.vel.y * dt;
+            rock.pos = wrapPos(rock.pos);
+            rock.angle += rock.angularVel * dt;
+          }
+        }
+
+        if (phaseRef.current === 'ufo') {
+          const ufo = ufoRef.current;
+          if (ufo && ufo.alive) {
+            const totalDist = Math.abs(W + 120);
+            const travelFrac = Math.abs(ufo.pos.x - ufo.startX) / totalDist;
+            ufo.pos.x += ufo.vel.x * dt;
+            ufo.pos.y = ufo.baseY + Math.sin(travelFrac * Math.PI * 3 + ufo.phaseOffset) * ufo.amplitude;
+
+            if (now - lastUfoFireRef.current > UFO_FIRE_INTERVAL) {
+              lastUfoFireRef.current = now;
+              const dx = playerPosRef.current.x - ufo.pos.x;
+              const dy = playerPosRef.current.y - ufo.pos.y;
+              const scatter = (Math.random() - 0.5) * 0.6;
+              const angle = Math.atan2(dy, dx) + scatter;
+              const startPos2 = { x: ufo.pos.x, y: ufo.pos.y };
+              ufoBulletsRef.current.push({
+                id: nextId++,
+                pos: startPos2,
+                vel: { x: Math.cos(angle) * UFO_BULLET_SPEED, y: Math.sin(angle) * UFO_BULLET_SPEED },
+                born: now,
+                history: [{ ...startPos2 }],
+              });
+            }
+
+            const offScreen = (ufo.vel.x > 0 && ufo.pos.x > W + 70) || (ufo.vel.x < 0 && ufo.pos.x < -70);
+            if (offScreen) {
+              ufoPassesCompletedRef.current++;
+              ufoRef.current = null;
+
+              if (ufoPassesCompletedRef.current >= UFO_PASSES) {
+                stopAllSounds();
+                phaseRef.current = 'normal';
+                waveRef.current += 1;
+                waveStartRef.current = Date.now();
+                rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
+                ufoPhaseTriggedRef.current = false;
+                sectorClearedRef.current = Date.now();
+                lastUfoFireRef.current = 0;
+              } else {
+                setTimeout(() => {
+                  if (!doneRef.current) {
+                    spawnUfo(ufoPassesCompletedRef.current);
+                  }
+                }, 1800);
+              }
+            }
+          }
+        }
+
+        const aliveBullets: Bullet[] = [];
+        for (const b of bulletsRef.current) {
+          if (now - b.born > BULLET_LIFE) continue;
+          b.pos.x += b.vel.x * dt;
+          b.pos.y += b.vel.y * dt;
+          b.pos = wrapPos(b.pos);
+
+          b.history.push({ ...b.pos });
+          if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+
+          let hit = false;
+
+          const ufo = ufoRef.current;
+          if (ufo && ufo.alive && dist(b.pos, ufo.pos) < 32) {
+            spawnParticles(ufo.pos, 30, COLORS.ufoRed, 200);
+            spawnParticles(ufo.pos, 12, COLORS.yellow, 120);
+            coreFlashesRef.current.push({ pos: { ...ufo.pos }, born: now, duration: 120 });
+            addScore(UFO_SCORE);
+            ufo.alive = false;
             ufoRef.current = null;
+            ufoPassesCompletedRef.current++;
+            stopAllSounds();
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              stopAllSounds();
+              phaseRef.current = 'normal';
+              waveRef.current += 1;
+              waveStartRef.current = Date.now();
+              rocksRef.current = spawnWaveRocks(waveRef.current, 1.3);
+              ufoPhaseTriggedRef.current = false;
               sectorClearedRef.current = Date.now();
-              wonRef.current = true;
-              doneRef.current = true;
-              cancelAnimationFrame(rafRef.current);
-              draw();
-              setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 400);
-              return;
+              lastUfoFireRef.current = 0;
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
@@ -1124,116 +1151,74 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
                 }
               }, 1800);
             }
+            hit = true;
           }
-        }
-      }
 
-      const aliveBullets: Bullet[] = [];
-      for (const b of bulletsRef.current) {
-        if (now - b.born > BULLET_LIFE) continue;
-        b.pos.x += b.vel.x * dt;
-        b.pos.y += b.vel.y * dt;
-        b.pos = wrapPos(b.pos);
-
-        b.history.push({ ...b.pos });
-        if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
-
-        let hit = false;
-
-        const ufo = ufoRef.current;
-        if (ufo && ufo.alive && dist(b.pos, ufo.pos) < 32) {
-          spawnParticles(ufo.pos, 30, COLORS.ufoRed, 200);
-          spawnParticles(ufo.pos, 12, COLORS.yellow, 120);
-          coreFlashesRef.current.push({ pos: { ...ufo.pos }, born: now, duration: 120 });
-          addScore(UFO_SCORE);
-          ufo.alive = false;
-          ufoRef.current = null;
-          ufoPassesCompletedRef.current++;
-          stopAllSounds();
-
-          if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-            sectorClearedRef.current = Date.now();
-            wonRef.current = true;
-            doneRef.current = true;
-            cancelAnimationFrame(rafRef.current);
-            draw();
-            setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 400);
-            return;
-          } else {
-            setTimeout(() => {
-              if (!doneRef.current) {
-                spawnUfo(ufoPassesCompletedRef.current);
+          if (!hit) {
+            for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+              const rock = rocksRef.current[i];
+              if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
+                destroyRock(rock, rocksRef.current);
+                spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
+                hit = true;
+                break;
               }
-            }, 1800);
+            }
           }
-          hit = true;
-        }
 
-        if (!hit) {
-          for (let i = rocksRef.current.length - 1; i >= 0; i--) {
-            const rock = rocksRef.current[i];
-            if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
-              destroyRock(rock, rocksRef.current);
-              spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
-              hit = true;
+          if (!hit) aliveBullets.push(b);
+        }
+        bulletsRef.current = aliveBullets;
+
+        const aliveUfoBullets: Bullet[] = [];
+        for (const b of ufoBulletsRef.current) {
+          if (now - b.born > BULLET_LIFE) continue;
+          b.pos.x += b.vel.x * dt;
+          b.pos.y += b.vel.y * dt;
+          b.pos = wrapPos(b.pos);
+
+          if (!b.history) b.history = [];
+          b.history.push({ ...b.pos });
+          if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+
+          if (now >= invincibleUntilRef.current && dist(b.pos, playerPosRef.current) < 14) {
+            handlePlayerHit();
+          } else {
+            aliveUfoBullets.push(b);
+          }
+        }
+        ufoBulletsRef.current = aliveUfoBullets;
+
+        if (now >= invincibleUntilRef.current) {
+          for (const rock of rocksRef.current) {
+            if (dist(playerPosRef.current, rock.pos) < rock.radius + 10) {
+              const ddx = playerPosRef.current.x - rock.pos.x;
+              const ddy = playerPosRef.current.y - rock.pos.y;
+              const dd = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+              playerVelRef.current.x += (ddx / dd) * 200;
+              playerVelRef.current.y += (ddy / dd) * 200;
+              handlePlayerHit();
               break;
             }
           }
-        }
 
-        if (!hit) aliveBullets.push(b);
-      }
-      bulletsRef.current = aliveBullets;
-
-      const aliveUfoBullets: Bullet[] = [];
-      for (const b of ufoBulletsRef.current) {
-        if (now - b.born > BULLET_LIFE) continue;
-        b.pos.x += b.vel.x * dt;
-        b.pos.y += b.vel.y * dt;
-        b.pos = wrapPos(b.pos);
-
-        if (!b.history) b.history = [];
-        b.history.push({ ...b.pos });
-        if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
-
-        if (now >= invincibleUntilRef.current && dist(b.pos, playerPosRef.current) < 14) {
-          handlePlayerHit();
-        } else {
-          aliveUfoBullets.push(b);
-        }
-      }
-      ufoBulletsRef.current = aliveUfoBullets;
-
-      if (now >= invincibleUntilRef.current) {
-        for (const rock of rocksRef.current) {
-          if (dist(playerPosRef.current, rock.pos) < rock.radius + 10) {
-            const ddx = playerPosRef.current.x - rock.pos.x;
-            const ddy = playerPosRef.current.y - rock.pos.y;
-            const dd = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
-            playerVelRef.current.x += (ddx / dd) * 200;
-            playerVelRef.current.y += (ddy / dd) * 200;
+          const ufo = ufoRef.current;
+          if (ufo && ufo.alive && dist(playerPosRef.current, ufo.pos) < 36) {
             handlePlayerHit();
-            break;
           }
         }
 
-        const ufo = ufoRef.current;
-        if (ufo && ufo.alive && dist(playerPosRef.current, ufo.pos) < 36) {
-          handlePlayerHit();
+        for (const p of particlesRef.current) {
+          p.pos.x += p.vel.x * dt;
+          p.pos.y += p.vel.y * dt;
+          p.vel.x *= 0.93;
+          p.vel.y *= 0.93;
+          p.life -= dt / p.maxLife;
         }
-      }
+        particlesRef.current = particlesRef.current.filter(p => p.life > 0);
 
-      for (const p of particlesRef.current) {
-        p.pos.x += p.vel.x * dt;
-        p.pos.y += p.vel.y * dt;
-        p.vel.x *= 0.93;
-        p.vel.y *= 0.93;
-        p.life -= dt / p.maxLife;
-      }
-      particlesRef.current = particlesRef.current.filter(p => p.life > 0);
-
-      draw();
-      rafRef.current = requestAnimationFrame(gameLoop);
+        draw();
+        rafRef.current = requestAnimationFrame(gameLoop);
       } catch (err) {
         doneRef.current = true;
         cancelAnimationFrame(rafRef.current);
