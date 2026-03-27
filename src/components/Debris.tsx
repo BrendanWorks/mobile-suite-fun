@@ -1154,19 +1154,27 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     function gameLoop(ts: number) {
-      if (doneRef.current) return;
+      if (doneRef.current) {
+        console.log('EXITING: doneRef is true');
+        return;
+      }
 
       if (!canvasRef.current) {
+        console.log('No canvas, requeuing RAF');
         rafRef.current = requestAnimationFrame(gameLoop);
         return;
       }
 
       if (Math.random() < 0.02) {
-        console.log('tick', gameStateRef.current.type);
+        console.log('tick', gameStateRef.current.type, 'done=', doneRef.current);
       }
 
       try {
         const state = gameStateRef.current;
+
+        if (state.type !== 'playing' && state.type !== 'transition') {
+          console.log('UNKNOWN STATE:', state.type);
+        }
 
         if (state.type === 'transition') {
           if (!transitionTimerRef.current) {
@@ -1180,6 +1188,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
 
           safe('draw-transition', draw);
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        if (state.type !== 'playing') {
+          console.log('SKIPPING LOOP: state is', state.type);
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
         }
@@ -1453,9 +1467,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         particlesRef.current = (particlesRef.current || []).filter(p => p && p.life > 0);
 
         safe('draw', draw);
+        console.log('About to RAF, done=', doneRef.current, 'state=', gameStateRef.current.type);
         rafRef.current = requestAnimationFrame(gameLoop);
       } catch (err) {
         console.error('GAME LOOP ERROR:', err);
+        doneRef.current = false;
         rafRef.current = requestAnimationFrame(gameLoop);
       }
     }
