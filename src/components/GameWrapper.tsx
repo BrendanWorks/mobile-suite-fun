@@ -209,6 +209,7 @@ export default function GameWrapper({
   useEffect(() => {
     if (!isActive) return;
     if (debugMode) return;
+    if (childrenRef.current?.hideTimer) return;
 
     const intervalTime = isFastCountdown ? 25 : 1000;
     const decrement = isFastCountdown ? 3 : 1;
@@ -255,7 +256,7 @@ export default function GameWrapper({
       if (timerRef.current) clearInterval(timerRef.current);
       if (lingerTimeoutRef.current) clearTimeout(lingerTimeoutRef.current);
     };
-  }, [isActive, isFastCountdown]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, isFastCountdown, children]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleGameComplete = useCallback((score: number, maxScore: number, remaining?: number) => {
     if (gameCompletedRef.current) return;
