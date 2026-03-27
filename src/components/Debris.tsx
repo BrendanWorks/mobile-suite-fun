@@ -191,9 +191,13 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
   const scoreRef = useRef(0);
   const livesRef = useRef(TOTAL_LIVES);
-  const gameOverRef = useRef(false);
-  const wonRef = useRef(false);
-  const doneRef = useRef(false);
+  type GameState =
+    | { type: 'playing'; wave: number }
+    | { type: 'ufo'; passesDone: number }
+    | { type: 'transition'; nextWave: number }
+    | { type: 'gameover' };
+
+  const gameStateRef = useRef<GameState>({ type: 'playing', wave: 1 });
 
   const playerPosRef = useRef<Vec2>({ x: W / 2, y: H / 2 });
   const playerVelRef = useRef<Vec2>({ x: 0, y: 0 });
@@ -207,7 +211,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const coreFlashesRef = useRef<CoreFlash[]>([]);
   const ufoRef = useRef<Ufo | null>(null);
   const ufoPassesCompletedRef = useRef(0);
-  const ufoPhaseTriggedRef = useRef(false);
   const ufoSoundPlayingRef = useRef(false);
 
   const ufoBulletsRef = useRef<Bullet[]>([]);
@@ -229,16 +232,16 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const multPulseRef = useRef(0);
 
   const rocksTotalDestroyedRef = useRef(0);
-  const phaseRef = useRef<'normal' | 'ufo'>('normal');
   const sectorClearedRef = useRef(0);
+  const transitionTimerRef = useRef<number | null>(null);
 
   const scaleRef = useRef(1);
 
   const shakeRef = useRef({ offsetX: 0, offsetY: 0, endTime: 0, maxDisp: 0, duration: 0 });
   const hitFlashRef = useRef({ opacity: 0, endTime: 0 });
 
-  const pendingTransitionRef = useRef(false);
-  const transitioningRef = useRef(false);
+  const doneRef = useRef(false);
+  const gameOverRef = useRef(false);
 
   const shootSoundRef = useRef<HTMLAudioElement | null>(null);
   const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -265,6 +268,41 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     hideTimer: true,
     canSkipQuestion: false,
   }));
+
+  function setGameState(next: GameState) {
+    const prev = gameStateRef.current;
+    gameStateRef.current = next;
+
+    if (prev.type === 'ufo') {
+      stopUfoSound();
+      ufoRef.current = null;
+      ufoBulletsRef.current = [];
+    }
+
+    if (next.type === 'ufo') {
+      rocksRef.current = [];
+      ufoPassesCompletedRef.current = 0;
+      spawnUfo(0);
+      lastUfoFireRef.current = Date.now() + 1000;
+    }
+
+    if (next.type === 'transition') {
+      stopAllSounds();
+      sectorClearedRef.current = Date.now();
+    }
+
+    if (next.type === 'playing') {
+      rocksRef.current = spawnWaveRocks(next.wave, 1.3);
+      waveRef.current = next.wave;
+      waveStartRef.current = Date.now();
+    }
+
+    if (next.type === 'gameover') {
+      stopAllSounds();
+      cancelAnimationFrame(rafRef.current);
+      doneRef.current = true;
+    }
+  }
 
   function stopUfoSound() {
     if (ufoSoundRef.current) {
@@ -460,14 +498,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     function triggerUfoPhase() {
-      if (ufoPhaseTriggedRef.current) return;
-      ufoPhaseTriggedRef.current = true;
-      phaseRef.current = 'ufo';
-      rocksRef.current = [];
-      ufoBulletsRef.current = [];
-      lastUfoFireRef.current = Date.now() + 1000;
-      ufoPassesCompletedRef.current = 0;
-      spawnUfo(0);
+      setGameState({ type: 'ufo', passesDone: 0 });
     }
 
     function clearSafeZone() {
@@ -509,9 +540,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
 
       if (livesRef.current <= 0 && !doneRef.current) {
         gameOverRef.current = true;
-        doneRef.current = true;
-        stopAllSounds();
-        cancelAnimationFrame(rafRef.current);
+        setGameState({ type: 'gameover' });
         setTimeout(() => onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0), 500);
       }
     }
@@ -920,7 +949,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ctx.fillText(`${waveRef.current}`, W - 16, 42);
       ctx.shadowBlur = 0;
 
-      if (phaseRef.current === 'ufo') {
+      if (gameStateRef.current.type === 'ufo') {
         const passesLeft = UFO_PASSES - ufoPassesCompletedRef.current;
         ctx.textAlign = 'right';
         ctx.font = 'bold 12px monospace';
@@ -995,39 +1024,30 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
 
     function resetAfterUfoPhase() {
-      stopAllSounds();
-
-      waveRef.current += 1;
-      waveStartRef.current = Date.now();
-
-      rocksRef.current.length = 0;
+      const nextWave = waveRef.current + 1;
       bulletsRef.current.length = 0;
-      ufoBulletsRef.current.length = 0;
       particlesRef.current.length = 0;
       scoreFloatersRef.current.length = 0;
       coreFlashesRef.current.length = 0;
-
-      rocksRef.current.push(...spawnWaveRocks(waveRef.current, 1.3));
-      ufoPhaseTriggedRef.current = false;
-      sectorClearedRef.current = Date.now();
       lastUfoFireRef.current = 0;
-      phaseRef.current = 'normal';
-
-      transitioningRef.current = false;
-
+      transitionTimerRef.current = null;
       lastFrameRef.current = performance.now();
+      setGameState({ type: 'playing', wave: nextWave });
     }
 
     function gameLoop(ts: number) {
       if (doneRef.current) return;
       try {
-        if (phaseRef.current === 'transitioning') {
-          if (pendingTransitionRef.current) {
-            pendingTransitionRef.current = false;
-            resetAfterUfoPhase();
+        const state = gameStateRef.current;
 
-            rafRef.current = requestAnimationFrame(gameLoop);
-            return;
+        if (state.type === 'transition') {
+          if (!transitionTimerRef.current) {
+            transitionTimerRef.current = Date.now();
+          }
+
+          if (Date.now() - transitionTimerRef.current > 1200) {
+            transitionTimerRef.current = null;
+            resetAfterUfoPhase();
           }
 
           draw();
@@ -1081,7 +1101,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         const now = Date.now();
         const elapsed = (now - waveStartRef.current) / 1000;
 
-        if (phaseRef.current === 'normal') {
+        if (state.type === 'playing') {
           let velocityBoost = 1;
           if (elapsed >= 60) velocityBoost = 1.4;
           else if (elapsed >= 40) velocityBoost = 1.25;
@@ -1093,12 +1113,12 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
           }
 
-          if (rocksRef.current.length === 0 && !ufoPhaseTriggedRef.current) {
+          if (rocksRef.current.length === 0) {
             rocksRef.current = spawnWaveRocks(waveRef.current, velocityBoost);
           }
 
           const ufoTriggerTime = debugMode ? 8 : 60;
-          if (elapsed >= ufoTriggerTime && !ufoPhaseTriggedRef.current) {
+          if (elapsed >= ufoTriggerTime) {
             triggerUfoPhase();
           }
 
@@ -1112,7 +1132,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           }
         }
 
-        if (phaseRef.current === 'ufo') {
+        if (state.type === 'ufo') {
           const ufo = ufoRef.current;
           if (ufo && ufo.alive) {
             const totalDist = Math.abs(W + 120);
@@ -1142,11 +1162,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
               ufoRef.current = null;
 
               if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-                if (!transitioningRef.current) {
-                  transitioningRef.current = true;
-                  pendingTransitionRef.current = true;
-                  phaseRef.current = 'transitioning';
-                }
+                setGameState({ type: 'transition', nextWave: waveRef.current + 1 });
               } else {
                 setTimeout(() => {
                   if (!doneRef.current) {
@@ -1181,11 +1197,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
             ufoPassesCompletedRef.current++;
 
             if (ufoPassesCompletedRef.current >= UFO_PASSES) {
-              if (!transitioningRef.current) {
-                transitioningRef.current = true;
-                pendingTransitionRef.current = true;
-                phaseRef.current = 'transitioning';
-              }
+              setGameState({ type: 'transition', nextWave: waveRef.current + 1 });
             } else {
               setTimeout(() => {
                 if (!doneRef.current) {
