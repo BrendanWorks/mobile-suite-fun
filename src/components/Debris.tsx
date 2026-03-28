@@ -269,7 +269,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundRef = useRef<HTMLAudioElement | null>(null);
   const coinSoundRef = useRef<HTMLAudioElement | null>(null);
-  const explosionSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundPlayingRef = useRef(false);
   const touchHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartTimeRef = useRef(0);
@@ -393,8 +392,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
     coinSoundRef.current = new Audio('/sounds/global/SoundCoin.mp3');
     if (coinSoundRef.current) coinSoundRef.current.volume = 0.7;
-    explosionSoundRef.current = new Audio('/sounds/debris/Explosion_Normalized.mp3');
-    if (explosionSoundRef.current) explosionSoundRef.current.volume = 0.6;
     if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
     if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
     return () => { stopUfoSound(); };
@@ -541,7 +538,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       addScore(pts);
       spawnExplosionParticles(rock.pos, rock.size);
       spawnScoreFloater(rock.pos, pts);
-      playSound(explosionSoundRef.current);
 
       if (rock.size === 'large') {
         const r1 = spawnRock('medium', { ...rock.pos });
@@ -628,7 +624,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         setTimeout(() => {
           console.log('🔥 onComplete fired from handlePlayerHit:', scoreRef.current, MAX_SCORE, 0);
           onCompleteRef.current?.(scoreRef.current, MAX_SCORE, 0);
-        }, 500);
+        }, 2500);
       }
     }
 
@@ -1179,11 +1175,11 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
         ctx.fillStyle = 'rgba(0,0,0,0.65)';
         ctx.fillRect(0, 0, W, H);
         ctx.font = 'bold 52px monospace';
-        ctx.fillStyle = COLORS.red;
+        ctx.fillStyle = COLORS.yellow;
         ctx.textAlign = 'center';
-        ctx.shadowColor = COLORS.red;
+        ctx.shadowColor = COLORS.yellow;
         ctx.shadowBlur = 30;
-        ctx.fillText('DESTROYED', W / 2, H / 2 - 20);
+        ctx.fillText('SECTOR CLEARED', W / 2, H / 2 - 20);
         ctx.shadowBlur = 0;
         ctx.font = '20px monospace';
         ctx.fillStyle = COLORS.white;
