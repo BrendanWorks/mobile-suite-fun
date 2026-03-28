@@ -46,7 +46,6 @@ interface ScoreFloater {
   id: number;
   pos: Vec2;
   text: string;
-  multText: string;
   born: number;
   duration: number;
 }
@@ -55,6 +54,15 @@ interface CoreFlash {
   pos: Vec2;
   born: number;
   duration: number;
+}
+
+interface ShipChunk {
+  pos: Vec2;
+  vel: Vec2;
+  angle: number;
+  angularVel: number;
+  life: number;
+  maxLife: number;
 }
 
 interface Ufo {
@@ -213,12 +221,14 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const playerVelRef = useRef<Vec2>({ x: 0, y: 0 });
   const playerAngleRef = useRef(0);
   const invincibleUntilRef = useRef(Date.now() + INVINCIBLE_MS);
+  const playerVisibleRef = useRef(true);
 
   const rocksRef = useRef<Rock[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
   const particlesRef = useRef<Particle[]>([]);
   const scoreFloatersRef = useRef<ScoreFloater[]>([]);
   const coreFlashesRef = useRef<CoreFlash[]>([]);
+  const shipChunksRef = useRef<ShipChunk[]>([]);
   const ufoRef = useRef<Ufo | null>(null);
   const ufoPassesCompletedRef = useRef(0);
   const ufoSoundPlayingRef = useRef(false);
@@ -491,19 +501,33 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
     }
 
-    function spawnScoreFloater(pos: Vec2, pts: number, mult: number) {
+    function spawnScoreFloater(pos: Vec2, pts: number) {
       const now = Date.now();
-      const text = `+${pts * Math.round(mult)}`;
-      const multText = mult > 1.05 ? `x${mult.toFixed(1)}` : '';
+      const text = `+${pts}`;
       if (scoreFloatersRef.current.length >= 10) scoreFloatersRef.current.shift();
       scoreFloatersRef.current.push({
         id: nextId++,
         pos: { x: pos.x + (Math.random() - 0.5) * 20, y: pos.y },
         text,
-        multText,
         born: now,
-        duration: 800,
+        duration: 1200,
       });
+    }
+
+    function spawnShipChunks(pos: Vec2) {
+      const chunkCount = 6;
+      for (let i = 0; i < chunkCount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 150 + Math.random() * 250;
+        shipChunksRef.current.push({
+          pos: { ...pos },
+          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
+          angle: Math.random() * Math.PI * 2,
+          angularVel: (3 + Math.random() * 4) * randomSign(),
+          life: 1,
+          maxLife: 0.8 + Math.random() * 0.4,
+        });
+      }
     }
 
     function destroyRock(rock: Rock, rocks: Rock[]) {
@@ -513,7 +537,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       const pts = ROCK_POINTS[rock.size];
       addScore(pts);
       spawnExplosionParticles(rock.pos, rock.size);
-      spawnScoreFloater(rock.pos, pts, multiplierRef.current);
+      spawnScoreFloater(rock.pos, pts);
 
       if (rock.size === 'large') {
         const r1 = spawnRock('medium', { ...rock.pos });
@@ -576,13 +600,18 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       });
       if (Date.now() < invincibleUntilRef.current) return;
       livesRef.current--;
-      spawnParticles(playerPosRef.current, 24, COLORS.red, 200);
+      playerVisibleRef.current = false;
+      spawnShipChunks(playerPosRef.current);
       playSound(disappearSoundRef.current);
       invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
       comboRef.current = 0;
       multiplierRef.current = 1.0;
       triggerShake(30, 150);
       triggerHitFlash();
+
+      setTimeout(() => {
+        playerVisibleRef.current = true;
+      }, 800);
 
       playerPosRef.current = { x: W / 2, y: H / 2 };
       playerVelRef.current = { x: 0, y: 0 };
@@ -793,6 +822,32 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       }
       coreFlashesRef.current = (coreFlashesRef.current || []).filter(f => f && now - f.born < f.duration);
 
+      for (const chunk of shipChunksRef.current || []) {
+        try {
+          if (!chunk || !chunk.pos) continue;
+          const lifeT = Math.max(0, chunk.life);
+          ctx.save();
+          ctx.globalAlpha = lifeT;
+          ctx.translate(chunk.pos.x, chunk.pos.y);
+          ctx.rotate(chunk.angle);
+          ctx.strokeStyle = COLORS.magenta;
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = COLORS.magenta;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(6, 0);
+          ctx.lineTo(-4, -3);
+          ctx.lineTo(-2, 0);
+          ctx.lineTo(-4, 3);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        } catch (e) {
+          console.warn('Error drawing ship chunk:', e, chunk);
+          ctx.restore();
+        }
+      }
+
       if (ufoRef.current?.alive) {
         drawUfo(ctx, ufoRef.current);
       }
@@ -895,7 +950,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       ctx.globalAlpha = 1;
 
       const invincible = now < invincibleUntilRef.current;
-      if (!gameOverRef.current && playerPosRef.current) {
+      if (!gameOverRef.current && playerVisibleRef.current && playerPosRef.current) {
         try {
           const px = playerPosRef.current.x;
           const py = playerPosRef.current.y;
@@ -971,29 +1026,37 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           if (typeof age !== 'number' || !isFinite(age)) continue;
           const t = age / floater.duration;
           if (t >= 1) continue;
-          const alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
-          const rise = t * 70;
-          const multActive = multiplierRef.current > 1.05;
-          const fontSize = multActive ? 24 : 21;
+          
+          // Scale phase: grows from small to normal, then fades
+          let scale = 1;
+          let alpha = 1;
+          
+          if (t < 0.3) {
+            // First 30%: grow from 0.6x to 1x and brighten
+            scale = 0.6 + (t / 0.3) * 0.4;
+            alpha = (t / 0.3) * 0.8;
+          } else if (t < 0.8) {
+            // Middle 50%: stay at 1x, full brightness
+            scale = 1;
+            alpha = 0.8;
+          } else {
+            // Last 20%: fade out
+            alpha = 0.8 * (1 - (t - 0.8) / 0.2);
+          }
+
+          const rise = t * 50;
 
           ctx.save();
           ctx.globalAlpha = alpha;
-          ctx.font = `bold ${fontSize}px monospace`;
+          ctx.translate(floater.pos.x, floater.pos.y - rise);
+          ctx.scale(scale, scale);
+          ctx.font = `bold 21px monospace`;
           ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
           ctx.fillStyle = '#ffff00';
           ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 5;
-          if (typeof floater.pos.x === 'number' && typeof floater.pos.y === 'number' && isFinite(floater.pos.x) && isFinite(floater.pos.y)) {
-            ctx.fillText(floater.text, floater.pos.x, floater.pos.y - rise);
-
-            if (floater.multText) {
-              ctx.font = '14px monospace';
-              ctx.fillStyle = '#ffdd00';
-              ctx.shadowBlur = 3;
-              ctx.fillText(floater.multText, floater.pos.x + 30, floater.pos.y - rise - 12);
-            }
-          }
-
+          ctx.fillText(floater.text, 0, 0);
           ctx.restore();
         } catch (e) {
           console.warn('Error drawing floater:', e, floater);
@@ -1477,6 +1540,18 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
           p.life -= dt / p.maxLife;
         }
         particlesRef.current = (particlesRef.current || []).filter(p => p && p.life > 0);
+
+        for (const chunk of shipChunksRef.current || []) {
+          if (!chunk || !chunk.pos || !chunk.vel) continue;
+          if (!chunk.maxLife || chunk.maxLife <= 0) continue;
+          chunk.pos.x += chunk.vel.x * dt;
+          chunk.pos.y += chunk.vel.y * dt;
+          chunk.vel.x *= 0.88;
+          chunk.vel.y *= 0.88;
+          chunk.angle += chunk.angularVel * dt;
+          chunk.life -= dt / chunk.maxLife;
+        }
+        shipChunksRef.current = (shipChunksRef.current || []).filter(c => c && c.life > 0);
 
         safe('draw', draw);
         console.log('About to RAF, done=', doneRef.current, 'state=', gameStateRef.current.type);
