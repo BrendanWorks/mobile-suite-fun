@@ -269,6 +269,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundRef = useRef<HTMLAudioElement | null>(null);
   const coinSoundRef = useRef<HTMLAudioElement | null>(null);
+  const explosionSoundRef = useRef<HTMLAudioElement | null>(null);
   const boostSoundPlayingRef = useRef(false);
   const touchHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartTimeRef = useRef(0);
@@ -392,6 +393,8 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
     }
     coinSoundRef.current = new Audio('/sounds/global/SoundCoin.mp3');
     if (coinSoundRef.current) coinSoundRef.current.volume = 0.7;
+    explosionSoundRef.current = new Audio('/sounds/debris/Explosion_Normalized.mp3');
+    if (explosionSoundRef.current) explosionSoundRef.current.volume = 0.6;
     if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
     if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
     return () => { stopUfoSound(); };
@@ -538,6 +541,7 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       addScore(pts);
       spawnExplosionParticles(rock.pos, rock.size);
       spawnScoreFloater(rock.pos, pts);
+      playSound(explosionSoundRef.current);
 
       if (rock.size === 'large') {
         const r1 = spawnRock('medium', { ...rock.pos });
