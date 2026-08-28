@@ -443,14 +443,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       musicPlayingRef.current = true;
     }
 
-    window.addEventListener('error', (e) => {
-      console.error('GLOBAL ERROR:', e.error);
-    });
-
-    window.addEventListener('unhandledrejection', (e) => {
-      console.error('PROMISE ERROR:', e.reason);
-    });
-
     function playSound(audio: HTMLAudioElement | null) {
       if (!audio) return;
       audio.currentTime = 0;

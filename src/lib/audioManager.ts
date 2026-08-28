@@ -80,6 +80,9 @@ class AudioManager {
   async loadSound(key: string, url: string, poolSize: number = 3): Promise<void> {
     if (!url) return;
 
+    // Already loaded — don't re-download and rebuild the pool on every game mount
+    if (this.pools.has(key)) return;
+
     const adjustedPoolSize = this.isMobile ? Math.max(1, poolSize) : poolSize;
 
     try {
