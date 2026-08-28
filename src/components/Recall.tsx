@@ -6,7 +6,7 @@ import React, {
   useImperativeHandle,
   useCallback,
 } from 'react';
-import { Zap, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { RoundCountdown } from './RoundCountdown';
 import { ParticleEffect } from './ParticleEffect';
 
@@ -37,12 +37,6 @@ const GAME_CONFIG = {
   STORAGE_KEY: 'recallHighScore',
   SHAKE_DURATION: 300,
   SHAKE_INTENSITY: 8,
-} as const;
-
-const THEME = {
-  color: '#00ffff',
-  glow: 'rgba(0, 255, 255, 0.6)',
-  textShadow: '0 0 10px #00ffff',
 } as const;
 
 const SHAPES: GameShape[] = [
@@ -215,7 +209,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     }
 
     const currentId = sequence[showIndex];
-    const shape = SHAPES.find((s) => s.id === currentId) || null;
 
     if (!showLit) {
       setAnimatingShapeId(currentId);
@@ -396,11 +389,6 @@ const Recall = forwardRef<any, RecallProps>((props, ref) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, handleShapeClick]);
-
-  const getRemainingSequence = () => {
-    if (sequence.length === 0) return [];
-    return sequence.slice(playerIndex);
-  };
 
   const nextExpectedId =
     phase === 'input' && playerIndex < sequence.length

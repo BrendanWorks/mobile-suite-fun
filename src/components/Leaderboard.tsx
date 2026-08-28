@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, Clock, Infinity, Zap, Star, Flame } from 'lucide-react';
 import { fetchTopAllTime, fetchTopThisWeek, LeaderboardEntry } from '../lib/supabaseHelpers';
 import { EagleEyeBadgeIcon } from './EagleEyeBadge';

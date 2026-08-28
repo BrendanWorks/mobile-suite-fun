@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Trophy, Star, Search, Camera, Triangle, Users, Check,
+  Star, Search, Camera, Users, Check,
   ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
   Gamepad2, Zap, ThumbsUp
 } from 'lucide-react';
@@ -387,7 +387,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           if (success && data) {
             const newSessionId = data.id;
 
-            const completeResult = await completeGameSession(
+            await completeGameSession(
               newSessionId,
               pendingSessionData.session.totalScore,
               pendingSessionData.session.maxPossible,
@@ -636,7 +636,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
 
     let normalizedScore: GameScore;
-    const percentage = (rawScore / maxScore) * 100;
 
     switch (currentGame.id) {
       case 'odd-man-out':
@@ -874,21 +873,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
   };
 
-  const handleSkipGame = () => {
-    if (currentGame) {
-      ReactGA.event({
-        category: 'Game',
-        action: 'game_skipped',
-        label: `${currentGame.name} - Round ${currentRound}`,
-        game_name: currentGame.name,
-        round_number: currentRound,
-        user_id: user?.id,
-      });
-
-      handleGameComplete(0, 100);
-    }
-  };
-
   const handleQuitAndSave = async () => {
     const completedRounds = roundScores.length;
     const playtimeSeconds = sessionStartTimeRef.current
@@ -1114,21 +1098,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       />
     );
   }
-
-  const getGradeLabel = (score: number): string => {
-    if (score >= 100) return "Maxed Out!";
-    if (score >= 90) return "Amazeballs!";
-    if (score >= 80) return "Exceptional";
-    if (score >= 70) return "Very Good";
-    if (score >= 60) return "Well Done";
-    if (score >= 50) return "Above Average";
-    if (score >= 40) return "Pretty Good";
-    if (score >= 30) return "Needs Improvement";
-    if (score >= 20) return "Keep Trying";
-    if (score >= 10) return "Ouch!";
-    if (score > 0) return "Poor";
-    return "Didn't Even Try!";
-  };
 
   // Complete screen
   if (gameState === 'complete') {

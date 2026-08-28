@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { initGA, trackPageView, analytics } from './lib/analytics';
@@ -16,28 +16,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useUserStats } from './hooks/useUserStats';
 
 export type { GameId } from './lib/gameTypes';
-
-const GLOW_STYLES = {
-  cyan: {
-    textShadow: '0 0 10px #00ffff',
-    boxShadow: '0 0 15px rgba(0, 255, 255, 0.4)',
-  },
-  yellow: {
-    textShadow: '0 0 10px #fbbf24',
-    boxShadow: '0 0 15px rgba(251, 191, 36, 0.4)',
-  },
-  red: {
-    textShadow: '0 0 8px #ff0066',
-    boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)',
-  },
-  purple: {
-    textShadow: '0 0 8px #c084fc',
-    boxShadow: '0 0 15px rgba(192, 132, 252, 0.4)',
-  },
-  green: {
-    textShadow: '0 0 8px #22c55e',
-  },
-};
 
 const PARTICLE_COUNT = 18;
 

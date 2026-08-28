@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { GameHandle } from '../lib/gameTypes';
 import { audioManager } from '../lib/audioManager';
 import { RoundCountdown } from './RoundCountdown';
@@ -86,7 +86,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   const touchStartRef = useRef<Position | null>(null);
 
   // UI State
-  const [displayScore, setDisplayScore] = useState(0);
+  const [, setDisplayScore] = useState(0);
   const [displayLives, setDisplayLives] = useState(3);
   const [displayCombo, setDisplayCombo] = useState(0);
   const [rewindUses, setRewindUses] = useState(0);
@@ -145,7 +145,7 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
   };
 
   const createFood = (): Position => {
-    let newFood;
+    let newFood: Position;
     while (true) {
       newFood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) };
       const onSnake = snakeRef.current.some(s => s.x === newFood.x && s.y === newFood.y);
@@ -282,7 +282,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     }
 
     let newSnake = [head, ...snakeRef.current];
-    let grew = false;
 
     if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
       audioManager.play('snake_eat', 0.5);
@@ -298,7 +297,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
       foodRef.current = createFood();
       createParticleBurst(head.x, head.y, COLORS.red);
       shimmerRef.current = 1;
-      grew = true;
 
       if (scoreRef.current % 50 === 0) {
         obstaclesRef.current.push(createFood());
@@ -313,7 +311,6 @@ const Snake = forwardRef<GameHandle, SnakeProps>(({ onScoreUpdate, onComplete, t
     } else if (powerUpRef.current && head.x === powerUpRef.current.x && head.y === powerUpRef.current.y) {
       handlePowerUp(powerUpRef.current.type, head);
       newSnake = snakeRef.current.length > 0 ? [head, ...snakeRef.current] : [head];
-      grew = true;
       powerUpRef.current = null;
     } else {
       newSnake.pop();

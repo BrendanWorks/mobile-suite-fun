@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
 import { GameScore, getScoreLabel } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
@@ -43,9 +43,6 @@ export default function RoundResults({
   gameName,
   gameScore,
   gameId,
-  allRoundScores,
-  totalSessionScore,
-  maxSessionScore,
   onContinue,
   isLastRound
 }: RoundResultsProps) {
@@ -59,12 +56,6 @@ export default function RoundResults({
   const hideBonusesTimerRef = useRef<number | null>(null);
   const showButtonTimerRef = useRef<number | null>(null);
 
-  const totalPercentage = useMemo(
-    () => maxSessionScore > 0 ? (totalSessionScore / maxSessionScore) * 100 : 0,
-    [totalSessionScore, maxSessionScore]
-  );
-
-  const isTimedGame = gameScore.timeBonus !== undefined;
   const hasTimeBonus = !!gameScore.timeBonus && gameScore.timeBonus > 0;
   const timeBonus = gameScore.timeBonus || 0;
   const hasPerfectScoreBonus = !!gameScore.perfectScoreBonus && gameScore.perfectScoreBonus > 0;

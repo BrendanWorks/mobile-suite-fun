@@ -55,7 +55,6 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
   const itemHeightRef = useRef<number>(0);
 
   const MAX_HINTS = 3;
-  const HINT_PENALTY = 25;
   const FEEDBACK_DISPLAY_TIME = 3500; // Time to show feedback before completing
 
   // Keep refs in sync
@@ -286,7 +285,7 @@ const RankAndRoll = forwardRef<GameHandle, RankAndRollProps>((props, ref) => {
     e.preventDefault();
   };
 
-  const handleTouchMove = (e: React.TouchEvent, index: number) => {
+  const handleTouchMove = (e: React.TouchEvent, _index: number) => {
     if (gameState !== 'playing' || dragState.draggedItemIndex === null) return;
     
     const touch = e.touches[0];

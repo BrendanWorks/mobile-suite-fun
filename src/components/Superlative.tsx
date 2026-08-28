@@ -232,7 +232,6 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   puzzleId,
   onScoreUpdate,
   onComplete,
-  timeRemaining,
 }, ref) {
   const [comparisons, setComparisons] = useState<Comparison[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { RoundCountdown } from './RoundCountdown';
 import { audioManager } from '../lib/audioManager';
 
@@ -128,17 +128,16 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
   const [poppingLetters, setPoppingLetters] = useState<any[]>([]);
   const [selectedLetters, setSelectedLetters] = useState<any[]>([]);
   const [score, setScore] = useState(0);
-  const [level, setLevel] = useState(1);
+  const [, setLevel] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(1800);
   const [nextId, setNextId] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [wordsFound, setWordsFound] = useState<any[]>([]);
+  const [, setWordsFound] = useState<any[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
   const [scoreNotifications, setScoreNotifications] = useState<any[]>([]);
   const submissionInProgress = useRef(false);
   const audioContext = useRef<any>(null);
-  const audioBuffers = useRef(new Map());
   const audioInitialized = useRef(false);
   const roundEndTimeoutRef = useRef<any>(null);
   const onCompleteRef = useRef(props.onComplete);
@@ -563,21 +562,6 @@ const Pop = forwardRef<any, PopProps>((props, ref) => {
         }
       }
     }, 500);
-  };
-
-  const resetGame = () => {
-    setGameState('countdown');
-    setLetters([]);
-    setPoppingLetters([]);
-    setSelectedLetters([]);
-    setWordsFound([]);
-    setIsValidating(false);
-    setTimerStarted(false);
-    setScoreNotifications([]);
-    submissionInProgress.current = false;
-    if (roundEndTimeoutRef.current) {
-      clearTimeout(roundEndTimeoutRef.current);
-    }
   };
 
   const checkProfanity = async (word: string) => {

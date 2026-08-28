@@ -1,4 +1,3 @@
-import React from 'react';
 import GameWrapper from './GameWrapper';
 import OddManOut from './OddManOut';
 import PhotoMystery from './PhotoMystery.jsx';

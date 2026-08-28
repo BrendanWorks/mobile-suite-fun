@@ -76,11 +76,7 @@ interface CelebrationScreenProps {
 
 export default function CelebrationScreen({
   roundScores,
-  totalSessionScore,
-  maxSessionScore,
   onPlayAgain,
-  totalRounds,
-  levelName,
   levelNumber,
 }: CelebrationScreenProps) {
   const [visibleTiles, setVisibleTiles] = useState<number>(0);

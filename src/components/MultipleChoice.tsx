@@ -236,7 +236,6 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
   const {
     puzzles,
     currentPuzzle,
-    currentIndex,
     roundState,
     results,
     totalScore,

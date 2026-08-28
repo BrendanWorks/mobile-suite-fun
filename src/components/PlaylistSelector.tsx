@@ -2,7 +2,7 @@
  * PlaylistSelector.tsx - TEST COMPONENT
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Star } from 'lucide-react';
 

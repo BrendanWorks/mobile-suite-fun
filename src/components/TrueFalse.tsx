@@ -184,7 +184,6 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   const {
     puzzles,
     currentPuzzle,
-    currentIndex,
     roundState,
     results,
     totalScore,

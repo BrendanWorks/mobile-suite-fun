@@ -37,12 +37,6 @@ const POINTS = {
   THIRD: 25,
 };
 
-const ICON_STYLES = {
-  color: '#00ffff',
-  filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))',
-  strokeWidth: 2,
-};
-
 interface ButtonStateStyle {
   className: string;
   glow: React.CSSProperties;
@@ -112,8 +106,7 @@ const getPercentageTextColor = (
 const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   puzzleId,
   onScoreUpdate,
-  onComplete,
-  timeRemaining
+  onComplete
 }, ref) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
