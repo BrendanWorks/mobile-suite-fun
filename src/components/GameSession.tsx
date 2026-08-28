@@ -156,6 +156,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
+  // Synchronous mirror of gameState for re-entrancy guards: stale timers
+  // (a game's leftover setTimeout, the error boundary's delayed skip) can
+  // call the handlers below out of phase, and closure state can't stop them
+  const gameStateRef = useRef<'intro' | 'playing' | 'results' | 'complete'>('intro');
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
   const [currentGame, setCurrentGame] = useState<GameConfig | null>(null);
   const [roundScores, setRoundScores] = useState<RoundData[]>([]);
   const [playedGames, setPlayedGames] = useState<string[]>([]);
@@ -624,6 +629,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const startRound = () => {
     setCurrentGameScore({ score: 0, maxScore: 0 });
+    gameStateRef.current = 'playing';
     setGameState('playing');
     if (currentGame) {
       analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
@@ -635,6 +641,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, []);
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
+    // A round can only complete while it is being played. Anything else is a
+    // stale or duplicate completion (leftover timer, delayed error-boundary
+    // skip) and would append a phantom round score
+    if (gameStateRef.current !== 'playing') return;
+    gameStateRef.current = 'results';
     try {
     if (!currentGame) {
       handleNextRound();
@@ -865,6 +876,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, [gameState, roundScores.length]);
 
   const handleNextRound = () => {
+    // Advance only from the results phase ('results' in the ref covers the
+    // no-game completion path too). A double-tap on Continue or a stale
+    // caller in intro/complete must not advance the round again
+    if (gameStateRef.current !== 'results') return;
+
     // Track that user clicked continue on results screen
     const lastRoundScore = roundScores[roundScores.length - 1];
     if (lastRoundScore) {
@@ -879,6 +895,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
 
     if (currentRound >= totalRounds) {
+      gameStateRef.current = 'complete';
       setGameState('complete');
     } else {
       const nextRound = currentRound + 1;
@@ -896,8 +913,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
       if (playlistId && playlistRounds.length > 0) {
         loadRound(nextRound, playlistRounds);
+        gameStateRef.current = 'intro';
         setGameState('intro');
       } else {
+        gameStateRef.current = 'playing';
         setGameState('playing');
       }
     }
