@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Props {
@@ -37,6 +37,8 @@ async function logErrorBoundaryError(
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, error: null, logged: false };
 
+  private skipTimer: ReturnType<typeof setTimeout> | null = null;
+
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
@@ -60,20 +62,41 @@ export default class ErrorBoundary extends Component<Props, State> {
       logErrorBoundaryError(error, info.componentStack ?? null, this.props.context);
     }
 
-    if (this.props.onSkipRound) {
-      setTimeout(() => {
+    // One pending skip at most: repeated catches must not stack timeouts,
+    // each of which would report a phantom round completion
+    if (this.props.onSkipRound && this.skipTimer === null) {
+      this.skipTimer = setTimeout(() => {
+        this.skipTimer = null;
         this.setState({ hasError: false, error: null, logged: false });
         this.props.onSkipRound!();
       }, 1500);
     }
   }
 
+  componentWillUnmount() {
+    // A skip firing after unmount would hit a session state that has already
+    // moved on, appending a phantom round or double-advancing
+    if (this.skipTimer !== null) {
+      clearTimeout(this.skipTimer);
+      this.skipTimer = null;
+    }
+  }
+
+  private clearSkipTimer() {
+    if (this.skipTimer !== null) {
+      clearTimeout(this.skipTimer);
+      this.skipTimer = null;
+    }
+  }
+
   handleReset = () => {
+    this.clearSkipTimer();
     this.setState({ hasError: false, error: null, logged: false });
     this.props.onReset?.();
   };
 
   handleSkipRound = () => {
+    this.clearSkipTimer();
     this.setState({ hasError: false, error: null, logged: false });
     this.props.onSkipRound?.();
   };

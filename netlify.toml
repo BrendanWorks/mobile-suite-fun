@@ -3,8 +3,20 @@ command = "npx vite build"
 publish = "dist"
 
 [build.environment]
-NODE_VERSION = "18"
+NODE_VERSION = "20"
 SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY"
+
+# Vite emits content-hashed filenames under /assets, so they can be cached forever
+[[headers]]
+for = "/assets/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Sounds and images are stable static files — cache for a day, revalidate after
+[[headers]]
+for = "/sounds/*"
+[headers.values]
+Cache-Control = "public, max-age=86400"
 
 [[redirects]]
 from = "/*"

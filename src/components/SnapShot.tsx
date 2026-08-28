@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Camera } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { audioManager } from '../lib/audioManager';
@@ -6,7 +6,7 @@ import { audioManager } from '../lib/audioManager';
 const MAX_SCORE = 1000;
 
 const SnapShot = forwardRef((props: any, ref) => {
-  const { onComplete, timeRemaining, puzzleId, rankingPuzzleId } = props;
+  const { onComplete, timeRemaining, puzzleId } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
@@ -208,7 +208,7 @@ const SnapShot = forwardRef((props: any, ref) => {
       return;
     }
 
-    gameStateRef.current.draggablePieces.forEach((piece, index) => {
+    gameStateRef.current.draggablePieces.forEach((piece) => {
       const pieceCanvas = document.createElement('canvas');
       pieceCanvas.width = draggablePieceSize;
       pieceCanvas.height = draggablePieceSize;
@@ -306,31 +306,6 @@ const SnapShot = forwardRef((props: any, ref) => {
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
     }
-  };
-
-  const getMousePos = (e: any, targetCanvas: HTMLCanvasElement) => {
-    const rect = targetCanvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
-  };
-  
-  const getCanvasPos = (e: any) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
   };
 
   const handleStart = (e: any) => {
@@ -614,7 +589,7 @@ const SnapShot = forwardRef((props: any, ref) => {
       setIsImageLoaded(true);
     };
 
-    img.onerror = (err) => {
+    img.onerror = () => {
       const fallbackUrl = 'https://plus.unsplash.com/premium_photo-1754781493808-e575e4474ee9?q=80&w=2005&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
       if (img.src !== fallbackUrl) {
         img.crossOrigin = "anonymous";
@@ -764,8 +739,6 @@ const SnapShot = forwardRef((props: any, ref) => {
       </div>
     );
   }
-
-  const currentScore = Math.round((gameStateRef.current.completedSlots / gameStateRef.current.NUM_DRAGGABLE_PIECES) * MAX_SCORE);
 
   return (
     <div className="h-full bg-black flex flex-col p-2 sm:p-3" style={{ minHeight: 0 }}>

@@ -1,16 +1,6 @@
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { GameHandle } from '../lib/gameTypes';
 
-if (typeof window !== 'undefined') {
-  window.onerror = (msg, src, line, col, err) => {
-    console.error('GLOBAL ERROR:', msg, 'at', line + ':' + col, err);
-  };
-
-  window.onunhandledrejection = (e) => {
-    console.error('PROMISE ERROR:', e.reason);
-  };
-}
-
 interface Vec2 { x: number; y: number; }
 
 interface Rock {
@@ -256,7 +246,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   const lastShotHitRef = useRef(true);
   const multiplierRef = useRef(1.0);
   const missTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevMultiplierRef = useRef(1.0);
   const multPulseRef = useRef(0);
 
   const rocksTotalDestroyedRef = useRef(0);
@@ -442,14 +431,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
       musicRef.current.play().catch(() => {});
       musicPlayingRef.current = true;
     }
-
-    window.addEventListener('error', (e) => {
-      console.error('GLOBAL ERROR:', e.error);
-    });
-
-    window.addEventListener('unhandledrejection', (e) => {
-      console.error('PROMISE ERROR:', e.reason);
-    });
 
     function playSound(audio: HTMLAudioElement | null) {
       if (!audio) return;

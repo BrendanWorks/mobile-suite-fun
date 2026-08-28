@@ -3,7 +3,7 @@ import { GameId } from '../lib/gameTypes';
 import { analytics } from '../lib/analytics';
 import {
   Search, Camera, Triangle, Users, Check,
-  ChartBar, Shuffle, CircleX, Layers, BookOpen
+  ChartBar, CircleX, Layers, BookOpen
 } from 'lucide-react';
 
 interface GameMenuProps {

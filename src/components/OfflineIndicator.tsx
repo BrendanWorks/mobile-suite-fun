@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, RefreshCw, CircleCheck as CheckCircle } from 'lucide-react';
 import { useOffline } from '../context/OfflineContext';

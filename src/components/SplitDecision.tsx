@@ -46,7 +46,7 @@ interface SplitDecisionProps {
 const MAX_SCORE = 1000;
 const POINTS_PER_ITEM = Math.round(MAX_SCORE / 7); // ~143 points per item
 
-const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ userId, roundNumber = 1, onScoreUpdate, onTimerPause, onComplete, timeRemaining, duration, puzzleId, rankingPuzzleId }, ref) => {
+const SplitDecision = forwardRef<GameHandle, SplitDecisionProps>(({ onScoreUpdate, onComplete, timeRemaining, puzzleId }, ref) => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [score, setScore] = useState(0);

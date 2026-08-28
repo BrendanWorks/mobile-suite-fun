@@ -1,15 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
-
-interface UserProgress {
-  id: number;
-  user_id: string;
-  game_id: number;
-  puzzle_id?: number;
-  score: number;
-  completed_at: string;
-}
 
 interface GameStats {
   totalScore: number;

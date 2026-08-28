@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, Camera, Triangle, Square, Circle, Users, Check,
-  ChartBar, Shuffle, CircleX, Layers, BookOpen, Gamepad2,
+  Shuffle, CircleX, Layers, BookOpen, Gamepad2,
   ThumbsUp, Zap, ArrowUpDown
 } from 'lucide-react';
 import Leaderboard from './Leaderboard';

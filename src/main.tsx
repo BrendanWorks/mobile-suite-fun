@@ -6,6 +6,20 @@ import { logClientError } from './lib/errorLogger';
 import { OfflineProvider } from './context/OfflineContext.tsx';
 import { OfflineIndicator } from './components/OfflineIndicator.tsx';
 
+// Reload once for a stale chunk after a deploy, but never loop: if the last
+// reload was under 30s ago the failure is persistent, so let it surface.
+function reloadForStaleChunk(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem('stale-chunk-reload') ?? 0);
+    if (Date.now() - last < 30_000) return false;
+    sessionStorage.setItem('stale-chunk-reload', String(Date.now()));
+  } catch {
+    // sessionStorage unavailable — still reload, just without the guard
+  }
+  window.location.reload();
+  return true;
+}
+
 window.addEventListener('error', (event) => {
   const msg = event.message || event.error?.message || '';
   const isStaleChunk =
@@ -14,8 +28,7 @@ window.addEventListener('error', (event) => {
     msg.includes('Importing a module script failed') ||
     event.error?.name === 'ChunkLoadError';
 
-  if (isStaleChunk) {
-    window.location.reload();
+  if (isStaleChunk && reloadForStaleChunk()) {
     return;
   }
 
@@ -36,8 +49,7 @@ window.addEventListener('unhandledrejection', (event) => {
     msg.includes('Importing a module script failed') ||
     reason?.name === 'ChunkLoadError';
 
-  if (isStaleChunk) {
-    window.location.reload();
+  if (isStaleChunk && reloadForStaleChunk()) {
     return;
   }
 

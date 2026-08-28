@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Trophy, Star, Search, Camera, Triangle, Users, Check,
+  Star, Search, Camera, Users, Check,
   ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
   Gamepad2, Zap, ThumbsUp
 } from 'lucide-react';
@@ -156,6 +156,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   const [user, setUser] = useState<any>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results' | 'complete'>('intro');
+  // Synchronous mirror of gameState for re-entrancy guards: stale timers
+  // (a game's leftover setTimeout, the error boundary's delayed skip) can
+  // call the handlers below out of phase, and closure state can't stop them
+  const gameStateRef = useRef<'intro' | 'playing' | 'results' | 'complete'>('intro');
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
   const [currentGame, setCurrentGame] = useState<GameConfig | null>(null);
   const [roundScores, setRoundScores] = useState<RoundData[]>([]);
   const [playedGames, setPlayedGames] = useState<string[]>([]);
@@ -189,7 +194,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     [roundScores]
   );
 
+  const loadRoundTokenRef = useRef(0);
+
   const loadRound = useCallback(async (roundNumber: number, rounds: PlaylistRound[]) => {
+    // Token guards against a stale async completion (e.g. the fake-out
+    // prefetch resolving after the 8s watchdog already started the round)
+    // clobbering state that belongs to a newer round
+    const token = ++loadRoundTokenRef.current;
     setPlaylistLoading(true);
     try {
       const round = rounds.find(r => r.round_number === roundNumber);
@@ -228,8 +239,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
               .from('puzzles')
               .select('id, image_url, correct_answer, prompt, metadata')
               .in('id', ids);
+            if (token !== loadRoundTokenRef.current) return;
             setPrefetchedPuzzles(data && data.length > 0 ? data : null);
           } catch {
+            if (token !== loadRoundTokenRef.current) return;
             setPrefetchedPuzzles(null);
           }
         } else {
@@ -245,7 +258,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
     } catch {
     } finally {
-      setPlaylistLoading(false);
+      // A stale call must not flip loading off while a newer load is in flight
+      if (token === loadRoundTokenRef.current) {
+        setPlaylistLoading(false);
+      }
     }
   }, []);
 
@@ -276,7 +292,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       }
 
       setPlaylistName(playlist.name);
-      setLevelNumber(playlist.sequence_order);
+      // Level number = position in the actual play sequence, not the DB's
+      // sequence_order — the two can disagree (e.g. sequence_order 50 on the
+      // 4th playlist), which showed players "Level 3" jumping to "Level 50"
+      const seqIndex = anonymousSessionManager.getPlaylistSequence().indexOf(playlistId);
+      setLevelNumber(seqIndex >= 0 ? seqIndex + 1 : playlist.sequence_order);
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
@@ -387,7 +407,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           if (success && data) {
             const newSessionId = data.id;
 
-            const completeResult = await completeGameSession(
+            await completeGameSession(
               newSessionId,
               pendingSessionData.session.totalScore,
               pendingSessionData.session.maxPossible,
@@ -613,6 +633,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
   const startRound = () => {
     setCurrentGameScore({ score: 0, maxScore: 0 });
+    gameStateRef.current = 'playing';
     setGameState('playing');
     if (currentGame) {
       analytics.gameStarted(currentGame.name, getGameId(currentGame.id));
@@ -624,6 +645,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   }, []);
 
   const handleGameComplete = (rawScore: number, maxScore: number, timeRemaining: number = 0) => {
+    // A round can only complete while it is being played. Anything else is a
+    // stale or duplicate completion (leftover timer, delayed error-boundary
+    // skip) and would append a phantom round score
+    if (gameStateRef.current !== 'playing') return;
+    gameStateRef.current = 'results';
     try {
     if (!currentGame) {
       handleNextRound();
@@ -636,7 +662,6 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
 
     let normalizedScore: GameScore;
-    const percentage = (rawScore / maxScore) * 100;
 
     switch (currentGame.id) {
       case 'odd-man-out':
@@ -842,7 +867,24 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     };
   }, [debugMode]);
 
+  // Recovery: these states normally can't occur with an empty roundScores
+  // (only the error path of handleGameComplete gets here), but when they do,
+  // advance or exit from an effect — never as a side effect of rendering
+  useEffect(() => {
+    if (gameState === 'results' && roundScores.length === 0) {
+      handleNextRound();
+    } else if (gameState === 'complete' && roundScores.length === 0) {
+      onExit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, roundScores.length]);
+
   const handleNextRound = () => {
+    // Advance only from the results phase ('results' in the ref covers the
+    // no-game completion path too). A double-tap on Continue or a stale
+    // caller in intro/complete must not advance the round again
+    if (gameStateRef.current !== 'results') return;
+
     // Track that user clicked continue on results screen
     const lastRoundScore = roundScores[roundScores.length - 1];
     if (lastRoundScore) {
@@ -857,6 +899,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
 
     if (currentRound >= totalRounds) {
+      gameStateRef.current = 'complete';
       setGameState('complete');
     } else {
       const nextRound = currentRound + 1;
@@ -864,28 +907,22 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setCurrentGame(null);
       setCurrentGameSlug(null);
       setCurrentGameScore({ score: 0, maxScore: 0 });
+      // Clear puzzle state so a round whose loadRound bails early can't hand
+      // the previous round's puzzles to the next game
+      setCurrentPuzzleId(null);
+      setCurrentPuzzleIds(null);
+      setPrefetchedPuzzles(null);
+      setCurrentRankingPuzzleId(null);
+      setCurrentSuperlativePuzzleId(null);
 
       if (playlistId && playlistRounds.length > 0) {
         loadRound(nextRound, playlistRounds);
+        gameStateRef.current = 'intro';
         setGameState('intro');
       } else {
+        gameStateRef.current = 'playing';
         setGameState('playing');
       }
-    }
-  };
-
-  const handleSkipGame = () => {
-    if (currentGame) {
-      ReactGA.event({
-        category: 'Game',
-        action: 'game_skipped',
-        label: `${currentGame.name} - Round ${currentRound}`,
-        game_name: currentGame.name,
-        round_number: currentRound,
-        user_id: user?.id,
-      });
-
-      handleGameComplete(0, 100);
     }
   };
 
@@ -1094,7 +1131,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Results screen
   if (gameState === 'results') {
     if (roundScores.length === 0) {
-      handleNextRound();
+      // Recovery handled by an effect above — never call handleNextRound
+      // during render
       return null;
     }
 
@@ -1115,25 +1153,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
   }
 
-  const getGradeLabel = (score: number): string => {
-    if (score >= 100) return "Maxed Out!";
-    if (score >= 90) return "Amazeballs!";
-    if (score >= 80) return "Exceptional";
-    if (score >= 70) return "Very Good";
-    if (score >= 60) return "Well Done";
-    if (score >= 50) return "Above Average";
-    if (score >= 40) return "Pretty Good";
-    if (score >= 30) return "Needs Improvement";
-    if (score >= 20) return "Keep Trying";
-    if (score >= 10) return "Ouch!";
-    if (score > 0) return "Poor";
-    return "Didn't Even Try!";
-  };
-
   // Complete screen
   if (gameState === 'complete') {
     if (roundScores.length === 0) {
-      onExit();
+      // Recovery handled by an effect above — never call onExit during render
       return null;
     }
 

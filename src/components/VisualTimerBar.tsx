@@ -5,7 +5,6 @@
  * No color changes, no numbers. Minimalist neon aesthetic.
  */
 
-import React from 'react';
 
 interface VisualTimerBarProps {
   timeRemaining: number; // seconds
@@ -15,8 +14,7 @@ interface VisualTimerBarProps {
 
 export default function VisualTimerBar({ 
   timeRemaining, 
-  totalTime, 
-  onTimeUp 
+  totalTime 
 }: VisualTimerBarProps) {
   
   // Calculate percentage

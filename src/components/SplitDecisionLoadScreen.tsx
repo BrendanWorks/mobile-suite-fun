@@ -1,4 +1,3 @@
-import React from 'react';
 import { Layers, Play } from 'lucide-react';
 
 interface SplitDecisionLoadScreenProps {

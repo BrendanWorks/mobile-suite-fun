@@ -30,35 +30,11 @@ const COLORS = [
   { id: 'yellow', label: 'YELLOW', hex: '#FFD700' },
 ];
 
-const THEME = {
-  cyan: {
-    hex: '#00ffff',
-    textShadow: '0 0 10px #00ffff',
-    glow: 'rgba(0, 255, 255, 0.4)',
-    boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-  },
-  yellow: {
-    hex: '#fbbf24',
-    textShadow: '0 0 10px #fbbf24',
-  },
-  pink: {
-    hex: '#ec4899',
-    textShadow: '0 0 8px #ec4899',
-    boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
-  },
-  green: {
-    hex: '#22c55e',
-    boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)',
-  },
-} as const;
-
-const TOTAL_TIME        = 30;
 const CORRECT_PTS       = 100;
 const STREAK_EVERY      = 5;
 const MULTIPLIER        = 1.5;
 const INCONGRUENT_RATIO = 0.7;
 const MAX_SCORE         = 3000;
-const INSTRUCTION_DURATION = 1500; // 1.5 seconds
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -181,11 +157,11 @@ function hexToRgb(hex: string): [number, number, number] {
 const ColorClash = forwardRef<GameHandle, ColorClashProps>((props, ref) => {
   const [phase, setPhase] = useState<GamePhase>('idle');
   const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [, setStreak] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [stimulus, setStimulus] = useState(() => nextStimulus());
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [scorePop, setScorePop] = useState(false);
+  const [, setScorePop] = useState(false);
   const [wordKey, setWordKey] = useState(0);
   const [shake, setShake] = useState(false);
 
