@@ -135,7 +135,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
       className={`relative w-full rounded-xl transition-all duration-300 flex items-center justify-center touch-manipulation ${shakeClass}`}
       style={{
         ...stateStyles[state],
-        height: "clamp(100px, 22vw, 140px)",
+        height: "clamp(84px, 18vw, 112px)",
         cursor: isDisabled ? "default" : "pointer",
       }}
     >
@@ -158,7 +158,7 @@ function AnswerButton({ value, state, onClick }: AnswerButtonProps) {
       <span
         className="font-black select-none"
         style={{
-          fontSize: "clamp(2.8rem, 12vw, 4.5rem)",
+          fontSize: "clamp(1.8rem, 6vw, 2.6rem)",
           color: textColor,
           textShadow,
           letterSpacing: "-0.02em",
@@ -367,11 +367,14 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
               boxShadow: "0 0 15px rgba(0,255,255,0.08)",
             }}
           >
-            <div className="w-full aspect-[16/9] overflow-hidden">
+            <div
+              className="w-full flex items-center justify-center overflow-hidden"
+              style={{ height: "clamp(180px, 42vh, 360px)" }}
+            >
               <img
                 src={currentPuzzle.image_url}
                 alt=""
-                className="w-full h-full object-cover object-top"
+                className="block w-full h-full object-contain"
               />
             </div>
           </div>
@@ -406,7 +409,7 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
             <p
               className="w-full text-cyan-400/30 font-black text-center leading-none"
               style={{
-                fontSize: "clamp(1.8rem, 9vw, 2.6rem)",
+                fontSize: "clamp(1.4rem, 6vw, 2.1rem)",
                 letterSpacing: "-0.02em",
               }}
             >
