@@ -414,13 +414,6 @@ const Debris = forwardRef<GameHandle, DebrisProps>(({ onScoreUpdate, onComplete,
   }, []);
 
   useEffect(() => {
-    console.log('🎮 DEBRIS MOUNTED');
-    return () => {
-      console.warn('🚨 DEBRIS UNMOUNTED - doneRef:', doneRef.current, 'rafRef:', rafRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
     rocksRef.current = spawnWaveRocks(1, 1);
     waveStartRef.current = Date.now();
     invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
