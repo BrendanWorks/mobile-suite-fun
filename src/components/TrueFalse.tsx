@@ -308,7 +308,10 @@ const TrueFalse = forwardRef<GameHandle, GameProps>(function TrueFalse({
   const isTimedOut = roundState === "timeout-pulsing";
 
   return (
-    <div className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0">
+    <div
+      className="h-full bg-black overflow-y-auto flex items-start justify-center p-2 pt-0"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 7rem)" }}
+    >
       <div className="max-w-sm w-full text-white">
 
         {/* Timer bar */}
