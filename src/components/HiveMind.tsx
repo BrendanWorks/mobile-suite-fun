@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameHandle } from '../lib/gameTypes';
@@ -115,6 +115,19 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
   const [barsComplete, setBarsComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Synchronous guard: revealState updates async, so a double-tap would run
+  // handleGuess twice and schedule two advance timeouts, skipping a question
+  const guessLockRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  // A puzzle with no questions must end the round, not strand it on the
+  // loading screen until the wrapper timer expires
+  useEffect(() => {
+    if (loading || questions.length > 0) return;
+    const t = setTimeout(() => onCompleteRef.current(0, 0), 1200);
+    return () => clearTimeout(t);
+  }, [loading, questions.length]);
 
   useImperativeHandle(ref, () => ({
     getGameScore: () => ({ score: totalScore, maxScore: questions.length * 200 }),
@@ -153,7 +166,8 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
 
   // Logic for the Reveal Phase
   const handleGuess = (choiceText: string) => {
-    if (revealState) return;
+    if (revealState || guessLockRef.current) return;
+    guessLockRef.current = true;
 
     stopTimerCountdown();
     stopHurryUp();
@@ -189,7 +203,8 @@ const HiveMind = forwardRef<GameHandle, HiveMindProps>(({
         setRevealState(false);
         setBarsComplete(false);
         setSelectedChoice(null);
-        setCurrentIndex(prev => prev + 1);
+        setCurrentIndex(prev => Math.min(prev + 1, questions.length - 1));
+        guessLockRef.current = false;
       } else {
         onComplete(newScore, questions.length * 200);
       }

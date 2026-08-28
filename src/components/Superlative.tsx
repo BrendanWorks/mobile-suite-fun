@@ -320,6 +320,7 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           stopTimer();
+          roundStateRef.current = "timeout-pulsing";
           setRoundState("timeout-pulsing");
           return 0;
         }
@@ -358,6 +359,9 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
   const handleAnswer = useCallback(
     (side: "anchor" | "challenger") => {
       if (!currentComparison || roundState !== "playing") return;
+      // Synchronous guard: a double-tap fires this twice before React re-renders
+      if (roundStateRef.current !== "playing") return;
+      roundStateRef.current = "revealing";
       const chosen = side === "anchor" ? currentComparison.anchor.name : currentComparison.challenger.name;
       const isCorrect = chosen === currentComparison.correct_answer;
       const score = isCorrect ? MAX_SCORE_PER_COMPARISON : 0;
@@ -379,14 +383,19 @@ const Superlative = forwardRef<GameHandle, GameProps>(function Superlative({
 
   const onNext = useCallback(() => {
     if (roundState !== "revealing") return;
+    // Synchronous guard: a double-tap would advance the index twice and run
+    // past the last comparison, stranding the round on a blank screen
+    if (roundStateRef.current !== "revealing") return;
     if (isLastComparison) {
+      roundStateRef.current = "complete";
       finishRound();
     } else {
-      setCurrentIndex((i) => i + 1);
+      roundStateRef.current = "playing";
+      setCurrentIndex((i) => Math.min(i + 1, comparisons.length - 1));
       setSelectedSide(null);
       setRoundState("playing");
     }
-  }, [roundState, isLastComparison, finishRound]);
+  }, [roundState, isLastComparison, finishRound, comparisons.length]);
 
   const getCardState = (side: "anchor" | "challenger"): CardState => {
     if (isTimedOut) return "timeout";

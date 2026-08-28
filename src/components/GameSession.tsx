@@ -189,7 +189,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     [roundScores]
   );
 
+  const loadRoundTokenRef = useRef(0);
+
   const loadRound = useCallback(async (roundNumber: number, rounds: PlaylistRound[]) => {
+    // Token guards against a stale async completion (e.g. the fake-out
+    // prefetch resolving after the 8s watchdog already started the round)
+    // clobbering state that belongs to a newer round
+    const token = ++loadRoundTokenRef.current;
     setPlaylistLoading(true);
     try {
       const round = rounds.find(r => r.round_number === roundNumber);
@@ -228,8 +234,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
               .from('puzzles')
               .select('id, image_url, correct_answer, prompt, metadata')
               .in('id', ids);
+            if (token !== loadRoundTokenRef.current) return;
             setPrefetchedPuzzles(data && data.length > 0 ? data : null);
           } catch {
+            if (token !== loadRoundTokenRef.current) return;
             setPrefetchedPuzzles(null);
           }
         } else {
@@ -245,7 +253,10 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setCurrentSuperlativePuzzleId(round.superlative_puzzle_id ?? null);
     } catch {
     } finally {
-      setPlaylistLoading(false);
+      // A stale call must not flip loading off while a newer load is in flight
+      if (token === loadRoundTokenRef.current) {
+        setPlaylistLoading(false);
+      }
     }
   }, []);
 
@@ -841,6 +852,18 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     };
   }, [debugMode]);
 
+  // Recovery: these states normally can't occur with an empty roundScores
+  // (only the error path of handleGameComplete gets here), but when they do,
+  // advance or exit from an effect — never as a side effect of rendering
+  useEffect(() => {
+    if (gameState === 'results' && roundScores.length === 0) {
+      handleNextRound();
+    } else if (gameState === 'complete' && roundScores.length === 0) {
+      onExit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, roundScores.length]);
+
   const handleNextRound = () => {
     // Track that user clicked continue on results screen
     const lastRoundScore = roundScores[roundScores.length - 1];
@@ -863,6 +886,13 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       setCurrentGame(null);
       setCurrentGameSlug(null);
       setCurrentGameScore({ score: 0, maxScore: 0 });
+      // Clear puzzle state so a round whose loadRound bails early can't hand
+      // the previous round's puzzles to the next game
+      setCurrentPuzzleId(null);
+      setCurrentPuzzleIds(null);
+      setPrefetchedPuzzles(null);
+      setCurrentRankingPuzzleId(null);
+      setCurrentSuperlativePuzzleId(null);
 
       if (playlistId && playlistRounds.length > 0) {
         loadRound(nextRound, playlistRounds);
@@ -1078,7 +1108,8 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Results screen
   if (gameState === 'results') {
     if (roundScores.length === 0) {
-      handleNextRound();
+      // Recovery handled by an effect above — never call handleNextRound
+      // during render
       return null;
     }
 
@@ -1102,7 +1133,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Complete screen
   if (gameState === 'complete') {
     if (roundScores.length === 0) {
-      onExit();
+      // Recovery handled by an effect above — never call onExit during render
       return null;
     }
 

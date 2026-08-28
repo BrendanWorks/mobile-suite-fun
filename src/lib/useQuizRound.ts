@@ -102,6 +102,7 @@ export function useQuizRound<T>({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           stopTimer();
+          roundStateRef.current = "timeout-pulsing";
           setRoundState("timeout-pulsing");
           return 0;
         }
@@ -167,6 +168,10 @@ export function useQuizRound<T>({
   const recordAnswer = useCallback(
     (isCorrect: boolean, puzzleIdOverride?: number) => {
       if (!currentPuzzle) return;
+      // Synchronous guard: state updates are async, so a double-tap fires this
+      // twice in one frame — the ref flip rejects the second call immediately
+      if (roundStateRef.current !== "playing") return;
+      roundStateRef.current = "revealing";
 
       const score = isCorrect ? MAX_SCORE_PER_PUZZLE : 0;
 
@@ -192,19 +197,24 @@ export function useQuizRound<T>({
 
   const handleNext = useCallback(
     (onAdvance?: () => void) => {
+      // Synchronous guard: a double-tap on "Next" would otherwise advance the
+      // index twice and run past the end of the puzzle list
+      if (roundStateRef.current !== "revealing") return;
       if (isLastPuzzle) {
+        roundStateRef.current = "complete";
         stopTimer();
         if (completedRef.current) return;
         completedRef.current = true;
         setRoundState("complete");
         onCompleteRef.current?.(totalScoreRef.current, MAX_ROUND_SCORE, timeRemainingRef.current);
       } else {
-        setCurrentIndex((i) => i + 1);
+        roundStateRef.current = "playing";
+        setCurrentIndex((i) => Math.min(i + 1, puzzles.length - 1));
         onAdvance?.();
         setRoundState("playing");
       }
     },
-    [isLastPuzzle, stopTimer]
+    [isLastPuzzle, stopTimer, puzzles.length]
   );
 
   const getGameScore = useCallback(
