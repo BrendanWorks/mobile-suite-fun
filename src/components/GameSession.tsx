@@ -292,7 +292,11 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
       }
 
       setPlaylistName(playlist.name);
-      setLevelNumber(playlist.sequence_order);
+      // Level number = position in the actual play sequence, not the DB's
+      // sequence_order — the two can disagree (e.g. sequence_order 50 on the
+      // 4th playlist), which showed players "Level 3" jumping to "Level 50"
+      const seqIndex = anonymousSessionManager.getPlaylistSequence().indexOf(playlistId);
+      setLevelNumber(seqIndex >= 0 ? seqIndex + 1 : playlist.sequence_order);
 
       const { data: rounds, error: roundsError } = await supabase
         .from('playlist_rounds')
