@@ -137,6 +137,8 @@ const VOLATILE_COLOR_DIM = 'rgba(251,146,60,0.18)';
 const VOLATILE_BLAST_RADIUS = 95;
 const VOLATILE_CHAIN_DEPTH_CAP = 5;
 
+const MAX_PARTICLES = 260;
+
 const DASH_DISTANCE = 130;
 const DASH_IFRAME_MS = 350;
 const DASH_COOLDOWN_MS = 3200;
@@ -621,6 +623,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       hitstopUntilRef.current = Math.max(hitstopUntilRef.current, Date.now() + ms);
     }
 
+    function capParticles() {
+      const over = particlesRef.current.length - MAX_PARTICLES;
+      if (over > 0) particlesRef.current.splice(0, over);
+    }
+
     function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
       const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
       const count = Math.round((40 + Math.random() * 20) * sizeScale);
@@ -658,6 +665,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
       coreFlashesRef.current.push({ pos: { ...pos }, born: Date.now(), duration: 100 });
       playExplosion(rockSize === 'large' ? 0.55 : rockSize === 'medium' ? 0.45 : 0.35);
+      capParticles();
     }
 
     function spawnParticles(pos: Vec2, count: number, color: string, speed = 120) {
@@ -673,6 +681,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           size: 1.5 + Math.random() * 2,
         });
       }
+      capParticles();
     }
 
     function spawnScoreFloater(pos: Vec2, pts: number) {
@@ -1180,9 +1189,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             if (glowAlpha > 0) {
               ctx.shadowColor = rock.volatile ? VOLATILE_COLOR : '#00ffff';
               ctx.shadowBlur = 16 * glowAlpha;
-            } else {
+            } else if (rock.volatile) {
               ctx.shadowColor = strokeColor;
-              ctx.shadowBlur = rock.volatile ? 10 * volatilePulse : 8;
+              ctx.shadowBlur = 6 * volatilePulse;
+            } else {
+              ctx.shadowBlur = 0;
             }
 
             ctx.strokeStyle = strokeColor;
@@ -1291,10 +1302,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             ctx.beginPath();
             ctx.arc(b.pos.x, b.pos.y, 3, 0, Math.PI * 2);
             ctx.fillStyle = COLORS.pinkBright;
-            ctx.shadowColor = COLORS.pinkBright;
-            ctx.shadowBlur = 12;
             ctx.fill();
-            ctx.shadowBlur = 0;
           }
         } catch (e) {
           console.warn('Error drawing bullet:', e, b);
@@ -1328,10 +1336,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             ctx.beginPath();
             ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
             ctx.fillStyle = COLORS.ufoRed;
-            ctx.shadowColor = COLORS.ufoRed;
-            ctx.shadowBlur = 14;
             ctx.fill();
-            ctx.shadowBlur = 0;
           }
         } catch (e) {
           console.warn('Error drawing UFO bullet:', e, b);
@@ -1348,14 +1353,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             ctx.beginPath();
             ctx.arc(p.pos.x, p.pos.y, easedSize, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 4;
             ctx.fill();
           }
         } catch (e) {
           console.warn('Error drawing particle:', e, p);
         }
-        ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
 
