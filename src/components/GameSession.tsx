@@ -46,11 +46,10 @@ import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
 import GameplayHeader from './GameplayHeader';
 import { scoringSystem, calculateSessionScore, getSessionGrade, GameScore, applyTimeBonus, applyPerfectScoreBonus } from '../lib/scoringSystem';
-import { analytics } from '../lib/analytics';
+import { analytics, gaEvent } from '../lib/analytics';
 import { logClientError } from '../lib/errorLogger';
 import { audioManager } from '../lib/audioManager';
 import { getSavedSfxLevel, applySfxLevel } from './SfxVolumeControl';
-import ReactGA from 'react-ga4';
 
 const SPLIT_DECISION_POINTS_PER_ITEM = Math.round(1000 / 7);
 
@@ -888,14 +887,18 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // Track that user clicked continue on results screen
     const lastRoundScore = roundScores[roundScores.length - 1];
     if (lastRoundScore) {
-      ReactGA.event({
-        category: 'Game',
-        action: 'results_continued',
-        label: `${lastRoundScore.gameName} - Round ${currentRound}`,
-        game_name: lastRoundScore.gameName,
-        round_number: currentRound,
-        score: Math.round(lastRoundScore.normalizedScore.totalWithBonus || lastRoundScore.normalizedScore.normalizedScore),
-      });
+      gaEvent(
+        {
+          category: 'Game',
+          action: 'results_continued',
+          label: `${lastRoundScore.gameName} - Round ${currentRound}`,
+        },
+        {
+          game_name: lastRoundScore.gameName,
+          round_number: currentRound,
+          score: Math.round(lastRoundScore.normalizedScore.totalWithBonus || lastRoundScore.normalizedScore.normalizedScore),
+        }
+      );
     }
 
     if (currentRound >= totalRounds) {
@@ -941,17 +944,21 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
 
     // Additional tracking for quit with user info
-    ReactGA.event({
-      category: 'Game',
-      action: 'quit_and_save',
-      label: `${currentGame?.name || 'Unknown'} - Round ${currentRound}`,
-      game_name: currentGame?.name,
-      round_number: currentRound,
-      completed_rounds: completedRounds,
-      session_score: Math.round(currentSessionScore),
-      playtime_seconds: playtimeSeconds,
-      user_id: user?.id,
-    });
+    gaEvent(
+      {
+        category: 'Game',
+        action: 'quit_and_save',
+        label: `${currentGame?.name || 'Unknown'} - Round ${currentRound}`,
+      },
+      {
+        game_name: currentGame?.name,
+        round_number: currentRound,
+        completed_rounds: completedRounds,
+        session_score: Math.round(currentSessionScore),
+        playtime_seconds: playtimeSeconds,
+        user_id: user?.id,
+      }
+    );
 
     if (user?.id && sessionId) {
       try {
@@ -1207,7 +1214,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
           onPlayAgain={handleShowLeaderboard}
           totalRounds={totalRounds}
           levelName={playlistName}
-          levelNumber={levelNumber}
+          levelNumber={levelNumber ?? undefined}
         />
         <AuthModal
           isOpen={showAuthModal}

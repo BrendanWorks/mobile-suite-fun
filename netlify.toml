@@ -1,5 +1,7 @@
 [build]
-command = "npx vite build"
+# npm run build = `tsc -b && vite build`, so a type error fails the deploy
+# instead of shipping silently
+command = "npm run build"
 publish = "dist"
 
 [build.environment]
