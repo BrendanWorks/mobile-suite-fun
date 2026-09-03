@@ -10,6 +10,7 @@ const LEGEND: { color: string; label: string; desc: string }[] = [
   { color: '#ff6ec7', label: 'SPREAD SHOT', desc: 'triple shot' },
   { color: '#22d3ee', label: 'SHIELD', desc: 'blocks one hit' },
   { color: '#4ade80', label: 'EXTRA LIFE', desc: '+1 life' },
+  { color: '#fb923c', label: 'VOLATILE ROCK', desc: 'chain-detonates nearby rocks' },
 ];
 
 export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: TitleScreenProps) {
@@ -36,8 +37,10 @@ export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: 
           PLAY
         </button>
 
+        <p className="draft-note">Clear a sector, pick an upgrade. Ship gets stronger every wave.</p>
+
         <div className="legend-panel">
-          <p className="legend-title">POWER-UPS</p>
+          <p className="legend-title">POWER-UPS &amp; HAZARDS</p>
           <div className="legend-grid">
             {LEGEND.map((item) => (
               <div key={item.label} className="legend-item">
@@ -56,12 +59,12 @@ export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: 
             <p className="controls-heading">KEYBOARD</p>
             <p><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> rotate</p>
             <p><kbd>&uarr;</kbd> or <kbd>W</kbd> thrust</p>
-            <p><kbd>SPACE</kbd> fire</p>
+            <p><kbd>SPACE</kbd> fire &middot; <kbd>SHIFT</kbd> dash</p>
             <p><kbd>P</kbd> pause &middot; <kbd>M</kbd> mute</p>
           </div>
           <div className="controls-col">
             <p className="controls-heading">TOUCH</p>
-            <p>on-screen buttons to steer, thrust, and fire</p>
+            <p>on-screen buttons to steer, thrust, dash, and fire</p>
           </div>
         </div>
       </div>

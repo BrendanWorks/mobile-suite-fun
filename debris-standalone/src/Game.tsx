@@ -12,6 +12,7 @@ interface Rock {
   vertices: Vec2[];
   radius: number;
   spawnTime: number;
+  volatile: boolean;
 }
 
 interface Bullet {
@@ -20,6 +21,7 @@ interface Bullet {
   vel: Vec2;
   born: number;
   history: Vec2[];
+  pierce?: number;
 }
 
 interface Particle {
@@ -129,6 +131,19 @@ const POWERUP_BUFF_DURATION = 9000;
 const SHIELD_DURATION = 6000;
 const POWERUP_DROP_CHANCE = { large: 0.22, medium: 0.14, small: 0.05 };
 
+const VOLATILE_CHANCE = 0.15;
+const VOLATILE_COLOR = '#fb923c';
+const VOLATILE_COLOR_DIM = 'rgba(251,146,60,0.18)';
+const VOLATILE_BLAST_RADIUS = 95;
+const VOLATILE_CHAIN_DEPTH_CAP = 5;
+
+const DASH_DISTANCE = 130;
+const DASH_IFRAME_MS = 350;
+const DASH_COOLDOWN_MS = 3200;
+const DASH_KICK_SPEED = 60;
+
+const SHIELD_REGEN_KILLS = 20;
+
 const COLORS = {
   bg: '#000000',
   cyan: '#22d3ee',
@@ -158,6 +173,26 @@ const POWERUP_LABELS: Record<PowerUpType, string> = {
   shield: 'SHIELD',
   life: 'EXTRA LIFE',
 };
+
+type UpgradeId = 'turnRate' | 'engine' | 'reload' | 'pierce' | 'shieldRegen' | 'heal' | 'dashCooldown';
+
+interface UpgradeDef {
+  id: UpgradeId;
+  label: string;
+  desc: string;
+  color: string;
+  maxStacks: number;
+}
+
+const UPGRADE_DEFS: UpgradeDef[] = [
+  { id: 'turnRate', label: 'GYROSCOPE', desc: '+18% turn rate', color: COLORS.cyan, maxStacks: 3 },
+  { id: 'engine', label: 'ENGINE UPGRADE', desc: '+15% thrust & top speed', color: COLORS.pinkBright, maxStacks: 3 },
+  { id: 'reload', label: 'AUTOLOADER', desc: '-15% weapon cooldown', color: COLORS.yellow, maxStacks: 3 },
+  { id: 'pierce', label: 'PIERCING ROUNDS', desc: 'shots punch through +1 rock', color: '#a78bfa', maxStacks: 3 },
+  { id: 'shieldRegen', label: 'SHIELD CAPACITOR', desc: `auto-shield every ${SHIELD_REGEN_KILLS} kills`, color: COLORS.cyan, maxStacks: 1 },
+  { id: 'heal', label: 'HULL REPAIR', desc: '+1 life now', color: COLORS.green, maxStacks: 99 },
+  { id: 'dashCooldown', label: 'THRUSTER COOLING', desc: '-20% dash cooldown', color: COLORS.pinkBright, maxStacks: 3 },
+];
 
 let nextId = 1;
 
@@ -211,6 +246,7 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
     vertices: buildRockVertices(radius, vertCount),
     radius,
     spawnTime: Date.now(),
+    volatile: !pos && size === 'large' && Math.random() < VOLATILE_CHANCE,
   };
 }
 
@@ -259,6 +295,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [paused, setPaused] = useState(false);
+  const [draftOptions, setDraftOptions] = useState<UpgradeDef[] | null>(null);
 
   const scoreRef = useRef(0);
   const livesRef = useRef(TOTAL_LIVES);
@@ -266,6 +303,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     | { type: 'playing'; wave: number }
     | { type: 'ufo'; passesDone: number }
     | { type: 'transition'; nextWave: number }
+    | { type: 'draft'; nextWave: number; options: UpgradeDef[] }
     | { type: 'gameover' };
 
   const gameStateRef = useRef<GameState>({ type: 'playing', wave: 1 });
@@ -296,6 +334,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const rapidUntilRef = useRef(0);
   const spreadUntilRef = useRef(0);
   const shieldUntilRef = useRef(0);
+
+  const hitstopUntilRef = useRef(0);
+
+  const turnRateMultRef = useRef(1);
+  const engineMultRef = useRef(1);
+  const fireCooldownMultRef = useRef(1);
+  const pierceCountRef = useRef(0);
+  const shieldRegenOwnedRef = useRef(false);
+  const killsSinceShieldRef = useRef(0);
+  const dashCooldownMultRef = useRef(1);
+  const upgradeStacksRef = useRef<Partial<Record<UpgradeId, number>>>({});
+  const pickUpgradeRef = useRef<(id: UpgradeId) => void>(() => {});
+
+  const dashQueueRef = useRef(0);
+  const lastDashRef = useRef(-DASH_COOLDOWN_MS);
 
   const keysRef = useRef<Set<string>>(new Set());
   const fireQueueRef = useRef(0);
@@ -545,6 +598,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       hitFlashRef.current = { opacity: 0.4, endTime: Date.now() + 200 };
     }
 
+    function triggerHitstop(ms: number) {
+      hitstopUntilRef.current = Math.max(hitstopUntilRef.current, Date.now() + ms);
+    }
+
     function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
       const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
       const count = Math.round((40 + Math.random() * 20) * sizeScale);
@@ -658,7 +715,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       }
     }
 
-    function destroyRock(rock: Rock, rocks: Rock[]) {
+    function destroyRock(rock: Rock, rocks: Rock[], chainDepth = 0) {
       const idx = rocks.findIndex(r => r.id === rock.id);
       if (idx !== -1) rocks.splice(idx, 1);
 
@@ -687,6 +744,33 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       multiplierRef.current = newMult;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       lastShotHitRef.current = true;
+
+      const baseHitstop = rock.size === 'large' ? 45 : rock.size === 'medium' ? 25 : 10;
+
+      if (shieldRegenOwnedRef.current) {
+        killsSinceShieldRef.current++;
+        if (killsSinceShieldRef.current >= SHIELD_REGEN_KILLS) {
+          killsSinceShieldRef.current = 0;
+          shieldUntilRef.current = Math.max(shieldUntilRef.current, Date.now()) + SHIELD_DURATION;
+        }
+      }
+
+      if (rock.volatile) {
+        spawnParticles(rock.pos, 36, VOLATILE_COLOR, 300);
+        coreFlashesRef.current.push({ pos: { ...rock.pos }, born: Date.now(), duration: 160 });
+        triggerShake(chainDepth === 0 ? 20 : 10, 170);
+        triggerHitstop(Math.max(baseHitstop, chainDepth === 0 ? 55 : 30));
+        playExplosion(0.7);
+
+        if (chainDepth < VOLATILE_CHAIN_DEPTH_CAP) {
+          const nearby = rocks.filter(r => dist(r.pos, rock.pos) < VOLATILE_BLAST_RADIUS);
+          for (const nr of nearby) {
+            destroyRock(nr, rocks, chainDepth + 1);
+          }
+        }
+      } else {
+        triggerHitstop(baseHitstop);
+      }
     }
 
     function triggerUfoPhase(): boolean {
@@ -757,7 +841,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     function fire() {
       const now = Date.now();
-      const cooldown = now < rapidUntilRef.current ? RAPID_FIRE_COOLDOWN : FIRE_COOLDOWN;
+      const baseCooldown = now < rapidUntilRef.current ? RAPID_FIRE_COOLDOWN : FIRE_COOLDOWN;
+      const cooldown = baseCooldown * fireCooldownMultRef.current;
       if (now - lastFireRef.current < cooldown) return;
       lastFireRef.current = now;
 
@@ -779,6 +864,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           },
           born: now,
           history: [{ ...startPos }],
+          pierce: pierceCountRef.current,
         });
       }
 
@@ -792,6 +878,47 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           multiplierRef.current = 1.0;
         }
       }, 2200);
+    }
+
+    function tryDash() {
+      const now = Date.now();
+      const cooldown = DASH_COOLDOWN_MS * dashCooldownMultRef.current;
+      if (now - lastDashRef.current < cooldown) return;
+      if (gameStateRef.current.type !== 'playing' && gameStateRef.current.type !== 'ufo') return;
+      lastDashRef.current = now;
+
+      const angle = playerAngleRef.current;
+      spawnParticles(playerPosRef.current, 16, COLORS.pinkBright, 140);
+
+      const endPos = wrapPos({
+        x: playerPosRef.current.x + Math.cos(angle) * DASH_DISTANCE,
+        y: playerPosRef.current.y + Math.sin(angle) * DASH_DISTANCE,
+      });
+      playerPosRef.current = endPos;
+      playerVelRef.current.x += Math.cos(angle) * DASH_KICK_SPEED;
+      playerVelRef.current.y += Math.sin(angle) * DASH_KICK_SPEED;
+      invincibleUntilRef.current = Math.max(invincibleUntilRef.current, now + DASH_IFRAME_MS);
+
+      spawnParticles(endPos, 16, COLORS.pinkBright, 140);
+      triggerShake(6, 80);
+    }
+
+    function applyUpgrade(id: UpgradeId) {
+      upgradeStacksRef.current[id] = (upgradeStacksRef.current[id] || 0) + 1;
+      if (id === 'turnRate') turnRateMultRef.current *= 1.18;
+      else if (id === 'engine') engineMultRef.current *= 1.15;
+      else if (id === 'reload') fireCooldownMultRef.current *= 0.85;
+      else if (id === 'pierce') pierceCountRef.current += 1;
+      else if (id === 'shieldRegen') shieldRegenOwnedRef.current = true;
+      else if (id === 'heal') livesRef.current = Math.min(livesRef.current + 1, MAX_LIVES);
+      else if (id === 'dashCooldown') dashCooldownMultRef.current *= 0.8;
+    }
+
+    function rollUpgradeOptions(): UpgradeDef[] {
+      const eligible = UPGRADE_DEFS.filter(u => (upgradeStacksRef.current[u.id] || 0) < u.maxStacks);
+      const pool = eligible.length >= 3 ? eligible : UPGRADE_DEFS;
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, 3);
     }
 
     function drawUfo(ctx: CanvasRenderingContext2D, ufo: Ufo) {
@@ -932,6 +1059,32 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       ctx.restore();
     }
 
+    function drawDashIndicator(ctx: CanvasRenderingContext2D, now: number) {
+      const cooldown = DASH_COOLDOWN_MS * dashCooldownMultRef.current;
+      const elapsed = now - lastDashRef.current;
+      const ready = elapsed >= cooldown;
+      const frac = Math.max(0, Math.min(1, elapsed / cooldown));
+      const x = W - 16, y = H - 20;
+      const barW = 60, barH = 6;
+      const barX = x - barW;
+
+      ctx.save();
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = ready ? COLORS.pinkBright : 'rgba(255,110,199,0.4)';
+      ctx.shadowColor = COLORS.pinkBright;
+      ctx.shadowBlur = ready ? 6 : 0;
+      ctx.fillText(ready ? 'DASH READY' : 'DASH', x, y);
+      ctx.strokeStyle = COLORS.pinkBright;
+      ctx.globalAlpha = ready ? 1 : 0.5;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, y - 8, barW, barH);
+      ctx.fillStyle = COLORS.pinkBright;
+      ctx.globalAlpha = ready ? 0.9 : 0.5;
+      ctx.fillRect(barX, y - 8, barW * frac, barH);
+      ctx.restore();
+    }
+
     function draw() {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -1001,19 +1154,23 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             }
             ctx.closePath();
 
+            const volatilePulse = rock.volatile ? 0.7 + 0.3 * Math.sin(now / 160) : 1;
+            const strokeColor = rock.volatile ? VOLATILE_COLOR : COLORS.cyan;
+            const fillColor = rock.volatile ? VOLATILE_COLOR_DIM : COLORS.cyanDim;
+
             if (glowAlpha > 0) {
-              ctx.shadowColor = '#00ffff';
+              ctx.shadowColor = rock.volatile ? VOLATILE_COLOR : '#00ffff';
               ctx.shadowBlur = 16 * glowAlpha;
             } else {
-              ctx.shadowColor = COLORS.cyan;
-              ctx.shadowBlur = 8;
+              ctx.shadowColor = strokeColor;
+              ctx.shadowBlur = rock.volatile ? 10 * volatilePulse : 8;
             }
 
-            ctx.strokeStyle = COLORS.cyan;
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = rock.volatile ? 2 : 1.5;
             ctx.stroke();
             ctx.shadowBlur = 0;
-            ctx.fillStyle = COLORS.cyanDim;
+            ctx.fillStyle = fillColor;
             ctx.fill();
           }
           ctx.restore();
@@ -1399,6 +1556,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       if (now < spreadUntilRef.current) drawBuffBar(ctx, buffIndex++, 'spread', spreadUntilRef.current - now, POWERUP_BUFF_DURATION);
       if (now < shieldUntilRef.current) drawBuffBar(ctx, buffIndex++, 'shield', shieldUntilRef.current - now, SHIELD_DURATION);
 
+      drawDashIndicator(ctx, now);
+
       const hitFlash = hitFlashRef.current;
       if (hitFlash.opacity > 0) {
         const flashAge = hitFlash.endTime - now;
@@ -1460,14 +1619,18 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         }
       }
 
+      if (gameStateRef.current.type === 'draft') {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, W, H);
+      }
+
       if (pausedRef.current) {
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(0, 0, W, H);
       }
     }
 
-    function resetAfterUfoPhase() {
-      const nextWave = waveRef.current + 1;
+    function resetAfterUfoPhase(nextWave: number) {
       bulletsRef.current.length = 0;
       particlesRef.current.length = 0;
       scoreFloatersRef.current.length = 0;
@@ -1477,6 +1640,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       lastFrameRef.current = performance.now();
       setGameState({ type: 'playing', wave: nextWave });
     }
+
+    pickUpgradeRef.current = (id: UpgradeId) => {
+      const state = gameStateRef.current;
+      if (state.type !== 'draft') return;
+      applyUpgrade(id);
+      setDraftOptions(null);
+      resetAfterUfoPhase(state.nextWave);
+    };
 
     function gameLoop(ts: number) {
       if (doneRef.current) {
@@ -1496,6 +1667,13 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           return;
         }
 
+        if (Date.now() < hitstopUntilRef.current) {
+          lastFrameRef.current = ts;
+          safe('draw-hitstop', draw);
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
+        }
+
         const state = gameStateRef.current;
 
         if (state.type === 'transition') {
@@ -1506,10 +1684,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           const elapsedMs = Date.now() - transitionTimerRef.current;
           if (elapsedMs > 1200) {
             transitionTimerRef.current = null;
-            resetAfterUfoPhase();
+            sectorClearedRef.current = 0;
+            const nextWave = waveRef.current + 1;
+            const options = rollUpgradeOptions();
+            setDraftOptions(options);
+            setGameState({ type: 'draft', nextWave, options });
           }
 
           safe('draw-transition', draw);
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        if (state.type === 'draft') {
+          lastFrameRef.current = ts;
+          safe('draw-draft', draw);
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
         }
@@ -1529,13 +1718,13 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           if (star.x < -WRAP_MARGIN) star.x += W + WRAP_MARGIN * 2;
         }
 
-        if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * dt;
-        if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * dt;
+        if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * turnRateMultRef.current * dt;
+        if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * turnRateMultRef.current * dt;
 
         const thrusting = keys.has('ArrowUp') || keys.has('w');
         if (thrusting) {
-          playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * dt;
-          playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * dt;
+          playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
+          playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
           if (!boostSoundPlayingRef.current && boostSoundRef.current && !mutedRef.current) {
             boostSoundRef.current.currentTime = 0;
             boostSoundRef.current.play().catch(() => {});
@@ -1549,9 +1738,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           }
         }
 
+        const maxSpeed = PLAYER_MAX_SPEED * engineMultRef.current;
         const spd = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
-        if (spd > PLAYER_MAX_SPEED) {
-          const scale = PLAYER_MAX_SPEED / spd;
+        if (spd > maxSpeed) {
+          const scale = maxSpeed / spd;
           playerVelRef.current.x *= scale;
           playerVelRef.current.y *= scale;
         }
@@ -1565,6 +1755,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         while (fireQueueRef.current > 0) {
           fireQueueRef.current--;
           fire();
+        }
+        while (dashQueueRef.current > 0) {
+          dashQueueRef.current--;
+          tryDash();
         }
 
         if (state.type === 'playing') {
@@ -1709,7 +1903,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
               if (dist(b.pos, rock.pos) < rock.radius * 0.85) {
                 destroyRock(rock, rocksRef.current);
                 spawnParticles(b.pos, 5, COLORS.pinkBright, 80);
-                hit = true;
+                if ((b.pierce ?? 0) > 0) {
+                  b.pierce = (b.pierce ?? 0) - 1;
+                } else {
+                  hit = true;
+                }
                 break;
               }
             }
@@ -1810,17 +2008,30 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     const handleKey = (e: KeyboardEvent) => {
       if (doneRef.current) return;
-      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-        e.preventDefault();
-        togglePause();
-        return;
-      }
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         onToggleMuteRef.current?.();
         return;
       }
+      const state = gameStateRef.current;
+      if (state.type === 'draft') {
+        if (['1', '2', '3'].includes(e.key)) {
+          e.preventDefault();
+          const opt = state.options[parseInt(e.key, 10) - 1];
+          if (opt) pickUpgradeRef.current(opt.id);
+        }
+        return;
+      }
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        e.preventDefault();
+        togglePause();
+        return;
+      }
       if (pausedRef.current) return;
+      if (e.key === 'Shift' && !e.repeat) {
+        dashQueueRef.current++;
+        return;
+      }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's', ' '].includes(e.key)) {
         e.preventDefault();
       }
@@ -1883,6 +2094,9 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   function pointerThrust(active: boolean) {
     if (active) keysRef.current.add('ArrowUp'); else keysRef.current.delete('ArrowUp');
   }
+  function pointerDash() {
+    dashQueueRef.current++;
+  }
   const fireHoldRef = useRef<ReturnType<typeof setInterval> | null>(null);
   function pointerFireStart() {
     fireQueueRef.current++;
@@ -1920,6 +2134,32 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         </div>
       )}
 
+      {draftOptions && (
+        <div className="debris-draft-menu">
+          <h2 className="draft-heading">SECTOR CLEARED</h2>
+          <p className="draft-hint">Choose one upgrade</p>
+          <div className="draft-cards">
+            {draftOptions.map((opt, i) => {
+              const stacks = upgradeStacksRef.current[opt.id] || 0;
+              return (
+                <button
+                  key={opt.id}
+                  className="draft-card"
+                  style={{ borderColor: opt.color }}
+                  onClick={() => pickUpgradeRef.current(opt.id)}
+                >
+                  <span className="draft-card-key">{i + 1}</span>
+                  <span className="draft-card-label" style={{ color: opt.color }}>
+                    {opt.label}{stacks > 0 ? ` (${stacks}/${opt.maxStacks})` : ''}
+                  </span>
+                  <span className="draft-card-desc">{opt.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="debris-touch-controls">
         <div className="debris-touch-left">
           <button
@@ -1944,13 +2184,19 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             onPointerCancel={() => pointerRotate('right', false)}
           >▶</button>
         </div>
-        <button
-          className="debris-touch-fire"
-          onPointerDown={(e) => { e.preventDefault(); pointerFireStart(); }}
-          onPointerUp={pointerFireEnd}
-          onPointerLeave={pointerFireEnd}
-          onPointerCancel={pointerFireEnd}
-        >FIRE</button>
+        <div className="debris-touch-right">
+          <button
+            className="debris-touch-dash"
+            onPointerDown={(e) => { e.preventDefault(); pointerDash(); }}
+          >DASH</button>
+          <button
+            className="debris-touch-fire"
+            onPointerDown={(e) => { e.preventDefault(); pointerFireStart(); }}
+            onPointerUp={pointerFireEnd}
+            onPointerLeave={pointerFireEnd}
+            onPointerCancel={pointerFireEnd}
+          >FIRE</button>
+        </div>
       </div>
     </div>
   );
