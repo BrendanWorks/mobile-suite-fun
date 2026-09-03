@@ -476,72 +476,47 @@ kbd {
   text-align: center;
 }
 
-.debris-touch-controls {
-  position: absolute;
-  bottom: 18px;
-  left: 0;
-  right: 0;
-  display: none;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 0 18px;
-  z-index: 5;
-  pointer-events: none;
-}
-.debris-touch-left {
-  display: flex;
-  gap: 10px;
-  pointer-events: auto;
-}
-.debris-touch-right {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  pointer-events: auto;
-}
-.debris-touch-btn {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(34,211,238,0.45);
-  background: rgba(0,0,0,0.45);
-  color: #22d3ee;
-  font-size: 20px;
-  touch-action: none;
-  user-select: none;
-}
 .debris-touch-dash {
-  width: 52px;
-  height: 40px;
-  border-radius: 20px;
-  border: 1.5px solid rgba(255,110,199,0.5);
-  background: rgba(0,0,0,0.45);
+  display: none;
+  position: absolute;
+  bottom: 22px;
+  right: 22px;
+  width: 60px;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255,110,199,0.55);
+  background: rgba(0,0,0,0.5);
   color: #ff6ec7;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   touch-action: none;
   user-select: none;
+  z-index: 5;
+  box-shadow: 0 0 14px rgba(255,110,199,0.25);
 }
-.debris-touch-fire {
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,110,199,0.6);
-  background: rgba(255,110,199,0.12);
-  color: #ff6ec7;
-  font-weight: bold;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  touch-action: none;
-  user-select: none;
-  box-shadow: 0 0 16px rgba(255,110,199,0.25);
+.debris-touch-hint {
+  display: none;
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(34,211,238,0.5);
+  font-size: 11px;
+  font-family: monospace;
+  pointer-events: none;
+  z-index: 4;
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .debris-touch-controls {
+  .debris-touch-dash {
     display: flex;
+  }
+  .debris-touch-hint {
+    display: block;
   }
 }
 

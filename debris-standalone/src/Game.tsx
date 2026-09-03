@@ -396,7 +396,17 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   useEffect(() => { onGameOverRef.current = onGameOver; }, [onGameOver]);
   useEffect(() => { onQuitRef.current = onQuit; }, [onQuit]);
   useEffect(() => { onToggleMuteRef.current = onToggleMute; }, [onToggleMute]);
-  useEffect(() => { mutedRef.current = muted; }, [muted]);
+  useEffect(() => {
+    mutedRef.current = muted;
+    const audios = [
+      musicRef.current, ufoSoundRef.current, boostSoundRef.current,
+      shootSoundRef.current, disappearSoundRef.current, coinSoundRef.current,
+      pickupSoundRef.current, ...explosionPoolRef.current,
+    ];
+    for (const a of audios) {
+      if (a) a.muted = muted;
+    }
+  }, [muted]);
 
   function togglePause() {
     if (doneRef.current) return;
@@ -541,6 +551,15 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     if (pickupSoundRef.current) pickupSoundRef.current.volume = 0.55;
     if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
     if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
+
+    const allAudio = [
+      shootSoundRef.current, disappearSoundRef.current, ufoSoundRef.current, boostSoundRef.current,
+      coinSoundRef.current, pickupSoundRef.current, musicRef.current, ...explosionPoolRef.current,
+    ];
+    for (const a of allAudio) {
+      if (a) a.muted = mutedRef.current;
+    }
+
     return () => { stopUfoSound(); };
   }, []);
 
@@ -2087,32 +2106,96 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     return () => ro.disconnect();
   }, []);
 
-  function pointerRotate(dir: 'left' | 'right', active: boolean) {
-    const key = dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
-    if (active) keysRef.current.add(key); else keysRef.current.delete(key);
-  }
-  function pointerThrust(active: boolean) {
-    if (active) keysRef.current.add('ArrowUp'); else keysRef.current.delete('ArrowUp');
-  }
   function pointerDash() {
     dashQueueRef.current++;
   }
-  const fireHoldRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  function pointerFireStart() {
-    fireQueueRef.current++;
-    if (fireHoldRef.current) clearInterval(fireHoldRef.current);
-    fireHoldRef.current = setInterval(() => { fireQueueRef.current++; }, 60);
-  }
-  function pointerFireEnd() {
-    if (fireHoldRef.current) { clearInterval(fireHoldRef.current); fireHoldRef.current = null; }
-  }
+
+  const touchHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartTimeRef = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+
+    if (e.touches.length >= 2) {
+      if (touchHoldTimerRef.current) {
+        clearTimeout(touchHoldTimerRef.current);
+        touchHoldTimerRef.current = null;
+      }
+      fireQueueRef.current++;
+      return;
+    }
+
+    const t = e.touches[0];
+    touchStartTimeRef.current = Date.now();
+
+    const tx = t.clientX;
+    if (tx < cx - 40) {
+      keysRef.current.add('ArrowLeft');
+    } else if (tx > cx + 40) {
+      keysRef.current.add('ArrowRight');
+    }
+
+    touchHoldTimerRef.current = setTimeout(() => {
+      keysRef.current.add('ArrowUp');
+      touchHoldTimerRef.current = null;
+    }, 120);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      const holdDuration = Date.now() - touchStartTimeRef.current;
+      if (touchHoldTimerRef.current) {
+        clearTimeout(touchHoldTimerRef.current);
+        touchHoldTimerRef.current = null;
+        if (holdDuration < 200) {
+          fireQueueRef.current++;
+        }
+      }
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      keysRef.current.delete('ArrowUp');
+    } else if (e.touches.length === 1) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const tx = e.touches[0].clientX;
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      if (tx < cx - 40) keysRef.current.add('ArrowLeft');
+      else if (tx > cx + 40) keysRef.current.add('ArrowRight');
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const tx = e.touches[0].clientX;
+      keysRef.current.delete('ArrowLeft');
+      keysRef.current.delete('ArrowRight');
+      if (tx < cx - 40) keysRef.current.add('ArrowLeft');
+      else if (tx > cx + 40) keysRef.current.add('ArrowRight');
+    }
+  };
 
   return (
     <div ref={containerRef} className="debris-stage">
       <div className="debris-canvas-wrap">
         <canvas
           ref={canvasRef}
-          style={{ display: 'block', imageRendering: 'pixelated' }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+          style={{ display: 'block', imageRendering: 'pixelated', touchAction: 'none' }}
         />
       </div>
 
@@ -2160,44 +2243,12 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         </div>
       )}
 
-      <div className="debris-touch-controls">
-        <div className="debris-touch-left">
-          <button
-            className="debris-touch-btn"
-            onPointerDown={(e) => { e.preventDefault(); pointerRotate('left', true); }}
-            onPointerUp={() => pointerRotate('left', false)}
-            onPointerLeave={() => pointerRotate('left', false)}
-            onPointerCancel={() => pointerRotate('left', false)}
-          >◀</button>
-          <button
-            className="debris-touch-btn"
-            onPointerDown={(e) => { e.preventDefault(); pointerThrust(true); }}
-            onPointerUp={() => pointerThrust(false)}
-            onPointerLeave={() => pointerThrust(false)}
-            onPointerCancel={() => pointerThrust(false)}
-          >▲</button>
-          <button
-            className="debris-touch-btn"
-            onPointerDown={(e) => { e.preventDefault(); pointerRotate('right', true); }}
-            onPointerUp={() => pointerRotate('right', false)}
-            onPointerLeave={() => pointerRotate('right', false)}
-            onPointerCancel={() => pointerRotate('right', false)}
-          >▶</button>
-        </div>
-        <div className="debris-touch-right">
-          <button
-            className="debris-touch-dash"
-            onPointerDown={(e) => { e.preventDefault(); pointerDash(); }}
-          >DASH</button>
-          <button
-            className="debris-touch-fire"
-            onPointerDown={(e) => { e.preventDefault(); pointerFireStart(); }}
-            onPointerUp={pointerFireEnd}
-            onPointerLeave={pointerFireEnd}
-            onPointerCancel={pointerFireEnd}
-          >FIRE</button>
-        </div>
-      </div>
+      <button
+        className="debris-touch-dash"
+        onPointerDown={(e) => { e.preventDefault(); pointerDash(); }}
+      >DASH</button>
+
+      <div className="debris-touch-hint">HOLD = thrust &middot; TAP = fire &middot; 2 fingers = fire</div>
     </div>
   );
 }
