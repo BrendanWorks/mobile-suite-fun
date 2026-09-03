@@ -5,13 +5,34 @@ import { audioManager } from '../lib/audioManager';
 
 const MAX_SCORE = 1000;
 
+interface SnapShotPuzzle {
+  id: number;
+  image_url: string;
+  correct_answer: string;
+  difficulty: string;
+  prompt?: string;
+}
+
+interface PuzzlePiece {
+  id: number;
+  sourceX: number;
+  sourceY: number;
+  destX: number;
+  destY: number;
+  correctRow: number;
+  correctCol: number;
+  isMissing: boolean;
+  dragX?: number;
+  dragY?: number;
+}
+
 const SnapShot = forwardRef((props: any, ref) => {
   const { onComplete, timeRemaining, puzzleId } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggableContainerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [puzzles, setPuzzles] = useState([]);
+  const [puzzles, setPuzzles] = useState<SnapShotPuzzle[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -58,10 +79,10 @@ const SnapShot = forwardRef((props: any, ref) => {
     NUM_DRAGGABLE_PIECES: 4, // Only 4 pieces to place (5 pre-placed)
     IMAGE_URL: '',
     img: new Image(),
-    puzzlePieces: [],
-    draggablePieces: [],
-    emptySlots: [],
-    draggingPiece: null,
+    puzzlePieces: [] as PuzzlePiece[],
+    draggablePieces: [] as PuzzlePiece[],
+    emptySlots: [] as PuzzlePiece[],
+    draggingPiece: null as PuzzlePiece | null,
     dragOffsetX: 0,
     dragOffsetY: 0,
     isDragging: false,

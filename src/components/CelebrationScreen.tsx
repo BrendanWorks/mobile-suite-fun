@@ -4,7 +4,6 @@ import {
   ArrowUpDown, Shuffle, CircleX, Layers, BookOpen,
   Gamepad2, Zap, ThumbsUp, Lightbulb, Star
 } from 'lucide-react';
-import { GameScore } from '../lib/scoringSystem';
 import { audioManager } from '../lib/audioManager';
 import { ColorClashIcon } from './ColorClashIcon';
 
@@ -59,7 +58,12 @@ const getTextShadow = (color: string, blur: string) => `0 0 ${blur} ${color}`;
 interface ScoreTile {
   gameId: string;
   gameName: string;
-  score: GameScore;
+  score: {
+    normalizedScore?: number;
+    timeBonus?: number;
+    perfectScoreBonus?: number;
+    totalWithBonus?: number;
+  };
 }
 
 const AUTO_ADVANCE_DELAY_MS = 14000;
@@ -469,7 +473,7 @@ export default function CelebrationScreen({
                         style={{ textShadow: getTextShadow(COLORS.yellow, '8px') }}
                       >
                         {Math.round(
-                          tile.score.totalWithBonus || tile.score.normalizedScore
+                          tile.score.totalWithBonus || tile.score.normalizedScore || 0
                         )}
                       </div>
                     </div>

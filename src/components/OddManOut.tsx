@@ -22,17 +22,28 @@ interface OddManOutProps {
 
 const MAX_QUESTIONS = 4;
 
+interface OddManOutPuzzle {
+  id: number;
+  prompt: string;
+  correct_answer: string;
+  difficulty?: string | null;
+  metadata?: string | { logic?: string } | null;
+  [key: string]: unknown;
+}
+
+type OddManOutState = 'loading' | 'playing' | 'result' | 'error';
+
 const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [gameState, setGameState] = useState('loading');
+  const [questions, setQuestions] = useState<OddManOutPuzzle[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<OddManOutPuzzle | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [gameState, setGameState] = useState<OddManOutState>('loading');
   const [isCorrect, setIsCorrect] = useState(false);
   const [message, setMessage] = useState('');
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
-  const [usedQuestions, setUsedQuestions] = useState([]);
-  const [shuffledItems, setShuffledItems] = useState([]);
+  const [usedQuestions, setUsedQuestions] = useState<number[]>([]);
+  const [shuffledItems, setShuffledItems] = useState<string[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const autoAdvanceTimeoutRef = React.useRef<number | null>(null);
@@ -210,7 +221,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     }
   };
 
-  const shuffleArray = (array) => {
+  const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -219,7 +230,7 @@ const OddManOut = forwardRef<GameHandle, OddManOutProps>((props, ref) => {
     return shuffled;
   };
 
-  const handleItemClick = (item) => {
+  const handleItemClick = (item: string) => {
     if (gameState !== 'playing') return;
 
     audioManager.play('oddman-select');

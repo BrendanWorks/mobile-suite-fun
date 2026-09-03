@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy, ChevronRight, Search, Camera, Triangle, Users, Check, ArrowUpDown, Shuffle, CircleX, Layers, BookOpen, Gamepad2, Zap, ThumbsUp } from 'lucide-react';
 import { GameScore, getScoreLabel } from '../lib/scoringSystem';
 import { useCountUp } from '../hooks/useCountUp';
-import ReactGA from 'react-ga4';
+import { gaEvent } from '../lib/analytics';
 
 const GAME_ICONS: Record<string, React.ReactNode> = {
   'odd-man-out': <CircleX className="w-6 h-6 sm:w-7 sm:h-7" />,
@@ -72,15 +72,19 @@ export default function RoundResults({
 
   useEffect(() => {
     const finalScore = gameScore.totalWithBonus || gameScore.normalizedScore;
-    ReactGA.event({
-      category: 'Game',
-      action: 'results_shown',
-      label: `${gameName} - Round ${roundNumber}`,
-      game_name: gameName,
-      round_number: roundNumber,
-      score: Math.round(finalScore),
-      is_last_round: isLastRound,
-    });
+    gaEvent(
+      {
+        category: 'Game',
+        action: 'results_shown',
+        label: `${gameName} - Round ${roundNumber}`,
+      },
+      {
+        game_name: gameName,
+        round_number: roundNumber,
+        score: Math.round(finalScore),
+        is_last_round: isLastRound,
+      }
+    );
 
     showContentTimerRef.current = window.setTimeout(() => {
       setShowContent(true);
