@@ -73,6 +73,11 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
   const timeRemainingRef = useRef(timeRemaining);
   const completeCalledRef = useRef(false);
   const scoreRef = useRef(0);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     audioManager.loadSound('global-win', '/sounds/global/SmallWin.mp3', 2);
@@ -80,9 +85,32 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
     audioManager.loadSound('ranky-select', '/sounds/ranky/Select_Optimized.mp3', 3);
   }, []);
 
+  // Tracks whether the round timer has actually been running, so expiry is
+  // only ever detected as a fall from a positive value - never from the 0 the
+  // prop defaults to before a timer is wired up.
+  const timerStartedRef = useRef(false);
+
   useEffect(() => {
     timeRemainingRef.current = timeRemaining;
+    if (timeRemaining > 0) timerStartedRef.current = true;
   }, [timeRemaining]);
+
+  // Detect when time runs out. Without this the round never reports completion
+  // on expiry and the session stalls until GameWrapper's own timeout rescues
+  // it. (Mirrors the same effect in ColorClash.)
+  useEffect(() => {
+    if (!timerStartedRef.current) return;
+    if (gameState === 'loading' || gameState === 'complete') return;
+    if (timeRemaining > 0) return;
+    if (completeCalledRef.current) return;
+    completeCalledRef.current = true;
+    setGameState('complete');
+    onCompleteRef.current?.(
+      scoreRef.current,
+      Math.max(1, puzzles.length) * MAX_SCORE_PER_PUZZLE,
+      0
+    );
+  }, [timeRemaining, gameState, puzzles.length]);
 
   useEffect(() => {
     const load = async () => {
@@ -95,6 +123,7 @@ const Slot = forwardRef<GameHandle, GameProps>(function Slot(
         loaded = await loadRandomPuzzles(3);
       }
       setPuzzles(loaded);
+      completeCalledRef.current = false;
       setGameState('playing');
     };
     load();
