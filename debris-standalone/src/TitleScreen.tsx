@@ -64,7 +64,9 @@ export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: 
           </div>
           <div className="controls-col">
             <p className="controls-heading">TOUCH</p>
-            <p>on-screen buttons to steer, thrust, dash, and fire</p>
+            <p>hold either side to turn &amp; thrust</p>
+            <p>tap to fire &middot; 2 fingers to fire</p>
+            <p>DASH button for a phase-dash</p>
           </div>
         </div>
       </div>
