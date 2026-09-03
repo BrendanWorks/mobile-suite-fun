@@ -363,7 +363,7 @@ const MultipleChoice = forwardRef<GameHandle, GameProps>(function MultipleChoice
   ];
 
   return (
-    <div className="h-full bg-black flex justify-center overflow-hidden">
+    <div className="h-full bg-black flex justify-center overflow-y-auto">
       <div className="max-w-sm w-full text-white flex flex-col h-full px-2 py-2">
 
         {/* Timer bar */}

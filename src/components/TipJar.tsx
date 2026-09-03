@@ -178,7 +178,7 @@ export default function TipJar({ onClose }: TipJarProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex flex-col items-center screen-scroll p-4 bg-black/80 backdrop-blur-sm">
       <div
         className="relative w-full max-w-sm bg-black border-2 border-red-500/50 rounded-2xl overflow-hidden"
         style={{ boxShadow: '0 0 40px rgba(239,68,68,0.25), 0 0 80px rgba(239,68,68,0.1)' }}
