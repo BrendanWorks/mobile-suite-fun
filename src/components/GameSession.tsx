@@ -41,6 +41,9 @@ const Recall = React.lazy(() => import('./Recall'));
 const Slot = React.lazy(() => import('./Slot'));
 const Pivot = React.lazy(() => import('./Pivot'));
 const Debris = React.lazy(() => import('./Debris'));
+const ZenGravity = React.lazy(() => import('./ZenGravity'));
+const Pop = React.lazy(() => import('./Pop'));
+const UpYours = React.lazy(() => import('./UpYours'));
 import AuthModal from './AuthModal';
 import ErrorBoundary from './ErrorBoundary';
 import LeaderboardPostRound from './LeaderboardPostRound';
@@ -82,6 +85,12 @@ const GAME_REGISTRY: GameConfig[] = [
   { id: 'slot',            dbId: 25, name: 'Slot',             component: Slot,            duration: 90,  instructions: 'Tap the correct letters to fill in the blanks!' },
   { id: 'pivot',           dbId: 26, name: 'Pivot',            component: Pivot,           duration: 60,  instructions: 'Find the word that connects two phrases' },
   { id: 'debris',          dbId: 27, name: 'Debris',           component: Debris,          duration: 600000, instructions: 'Rotate, thrust, and shoot to destroy the rocks!' },
+  // Procedural games referenced by playlist_rounds metadata game_slug. These
+  // were missing from the registry, so those rounds fell through to a random
+  // game instead of the one the round specifies.
+  { id: 'zen-gravity',               name: 'Balls',            component: ZenGravity,      duration: 60,  instructions: 'Tilt and guide the ball - keep it alive!' },
+  { id: 'word-rescue',               name: 'Pop',              component: Pop,             duration: 60,  instructions: 'Pop the letters to build words before time runs out!' },
+  { id: 'up-yours',                  name: 'UpYours',          component: UpYours,         duration: 120, instructions: 'Keep it going up - do not let it drop!' },
 ];
 
 const AVAILABLE_GAMES = GAME_REGISTRY;
@@ -114,7 +123,9 @@ const GAME_ID_TO_SLUG: { [key: number]: string } = Object.fromEntries(
 
 const SLUG_ALIASES: { [key: string]: string } = {
   'balls': 'zen-gravity',
+  'gravity-ball': 'zen-gravity',
   'bounce': 'up-yours',
+  'pop': 'word-rescue',
   'kingsnake': 'snake',
   'ranky': 'rank-and-roll',
 };
@@ -617,6 +628,15 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
         setPlayedGames(prev => [...prev, nextGame.id]);
         return;
       }
+      // The round names a game the registry does not have. Falling through to a
+      // random pick keeps the session playable, but it silently replaces
+      // authored content, so make it visible instead of guessing quietly.
+      logClientError(new Error(`Unregistered game slug "${currentGameSlug}" - falling back to a random game`), {
+        source: 'selectRandomGame',
+        game_slug: currentGameSlug,
+        playlist_id: playlistId,
+        round: currentRound,
+      });
     }
 
     const availableGames = AVAILABLE_GAMES.filter(
@@ -628,7 +648,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     setCurrentGame(randomGame);
     setPlayedGames(prev => [...prev, randomGame.id]);
-  }, [playlistId, currentGameSlug, playedGames]);
+  }, [playlistId, currentGameSlug, playedGames, currentRound]);
 
   const startRound = () => {
     setCurrentGameScore({ score: 0, maxScore: 0 });

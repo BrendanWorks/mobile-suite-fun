@@ -15,9 +15,14 @@ interface AnonymousSession {
 const STORAGE_KEY = 'rowdy_anonymous_session';
 
 // Ordered playlist sequence - DO NOT MODIFY THIS ORDER!
-// 1=Wildly Inappropriate(22), 2=Junk Food(42), 3=Music(43), 4=Plot Twist(44),
+// 1=Wildly Inappropriate(22), 2=Junk Food(42), 3=Music(43), 4=Silver Screen(54),
 // 5=Booze(45), 6=Sports(46), 7=Money(47), 8=Hipsters(48), 9=Health(49), 10=Crazy World(52)
-const PLAYLIST_SEQUENCE = [22, 42, 43, 44, 45, 46, 47, 48, 49, 52];
+//
+// Level 4 was Plot Twist (44) until it was deactivated and swapped for Silver
+// Screen (54). This list was never updated, so the app kept serving playlist 44
+// - is_active = false - as level 4. Ids here must stay in sync with the active
+// playlists; a deactivated id will still load, since loadPlaylist fetches by id.
+const PLAYLIST_SEQUENCE = [22, 42, 43, 54, 45, 46, 47, 48, 49, 52];
 
 export const anonymousSessionManager = {
   get(): AnonymousSession | null {
