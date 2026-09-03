@@ -20,9 +20,14 @@
     background-color: #000;
   }
 
+  /* height/width 100% (not 100dvh/100vw) so #root fits inside body's content
+     box, which already carries the safe-area padding below. Using viewport
+     units here made #root taller than body, and since body is
+     position:fixed;overflow:hidden the excess was clipped with no way to
+     scroll to it. */
   #root {
-    height: 100dvh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
     overflow: hidden;
     background-color: #000;
   }
@@ -40,6 +45,34 @@
 @layer utilities {
   .touch-manipulation {
     touch-action: manipulation;
+  }
+
+  /* A full-height screen that centers its content vertically but never clips
+     it. Plain `justify-content: center` pushes overflow off BOTH ends, and the
+     part above the top edge is unreachable even in a scroll container - that is
+     what cut the ROWDY logo and round headers in half on short viewports.
+     The auto-margin pseudo-elements absorb free space when the content fits
+     (identical look to justify-center) and collapse to zero when it does not,
+     so the content starts at the top and the container simply scrolls. */
+  .screen-scroll {
+    /* height, not min-height: the box must be bounded by the viewport or it
+       just grows to fit its content and #root (overflow:hidden) clips the
+       excess instead of letting it scroll. */
+    height: 100%;
+    overflow-y: auto;
+    /* an auto overflow-y would otherwise compute overflow-x to auto too,
+       which can surface a stray horizontal scrollbar */
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .screen-scroll::before,
+  .screen-scroll::after {
+    content: '';
+    display: block;
+    flex: 0 0 auto;
+    margin: auto;
   }
 }
 

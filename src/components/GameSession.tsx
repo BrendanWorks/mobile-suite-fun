@@ -1034,7 +1034,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // Wait for game to be selected or playlist to load
     if (!currentGame || playlistLoading || loadError) {
       return (
-        <div className={`w-screen bg-black flex items-center justify-center${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
+        <div className={`w-full bg-black flex flex-col items-center screen-scroll${introExiting ? ' animate-intro-exit' : ''}`}>
           <div className="text-center">
             <Star className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
             {loadError
@@ -1051,7 +1051,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     // LEVEL INTRO SCREEN - Show only at start of playlist
     if (showLevelIntro && currentRound === 1 && playlistId && playlistName && levelNumber) {
       return (
-        <div className={`w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
+        <div className={`w-full bg-black flex flex-col items-center screen-scroll p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
           <div className="mb-6 sm:mb-12">
             <p className="text-5xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
               ROWDY
@@ -1077,7 +1077,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
 
     // ICON-FORWARD INTRO SCREEN
     return (
-      <div className={`w-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`} style={{ minHeight: '100dvh' }}>
+      <div className={`w-full bg-black flex flex-col items-center screen-scroll p-4 sm:p-6${introExiting ? ' animate-intro-exit' : ''}`}>
         {/* ROWDY BRANDING - TOP */}
         <div className="mb-6 sm:mb-12">
           <p className="text-5xl sm:text-8xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
@@ -1206,7 +1206,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     }
 
     return (
-      <div>
+      <div className="h-full">
         <CelebrationScreen
           roundScores={celebrationTiles}
           totalSessionScore={sessionTotal.totalScore}
@@ -1230,7 +1230,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
   // Loading screen between rounds
   if (gameState === 'playing' && !currentGame) {
     return (
-      <div className="w-screen bg-black flex items-center justify-center" style={{ minHeight: '100dvh' }}>
+      <div className="w-full bg-black flex flex-col items-center screen-scroll">
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 mb-4 mx-auto" style={{ boxShadow: '0 0 15px rgba(0, 255, 255, 0.5)' }}></div>
           <p className="text-cyan-400 text-base" style={{ textShadow: '0 0 10px #00ffff' }}>Loading Round {currentRound}...</p>
@@ -1254,7 +1254,7 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     };
 
     return (
-      <div className="w-screen bg-black flex flex-col" style={{ height: '100dvh' }}>
+      <div className="w-full bg-black flex flex-col" style={{ height: '100%' }}>
         <GameplayHeader
           gameName={currentGame.name}
           gameId={currentGame.id}
@@ -1311,5 +1311,5 @@ export default function GameSession({ onExit, totalRounds = 5, playlistId, onRou
     );
   }
 
-  return <div className="w-screen bg-black" style={{ height: '100dvh' }} />;
+  return <div className="w-full bg-black" style={{ height: '100%' }} />;
 }

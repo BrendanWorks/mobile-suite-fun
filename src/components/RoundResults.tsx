@@ -126,7 +126,7 @@ export default function RoundResults({
   }, [roundNumber]);
 
   return (
-    <div className="w-full bg-black flex flex-col items-center justify-center p-4 sm:p-6" style={{ minHeight: '100dvh' }}>
+    <div className="w-full bg-black flex flex-col items-center screen-scroll p-4 sm:p-6">
       {/* ROWDY BRANDING - TOP */}
       <div className="mb-4 sm:mb-8">
         <p className="text-4xl sm:text-6xl font-black text-red-500" style={{ textShadow: '0 0 40px #ef4444', letterSpacing: '0.12em' }}>
@@ -184,7 +184,9 @@ export default function RoundResults({
             </div>
           </div>
 
-          <div style={{ minHeight: (showSpeedBonus || showPerfectBonus) ? '140px' : '60px', transition: 'min-height 0.3s ease-out' }}>
+          {/* Space is reserved only while a bonus is showing, or is still to
+              come, so a round with no bonuses does not carry an empty band. */}
+          <div style={{ minHeight: (showSpeedBonus || showPerfectBonus) ? '140px' : (hasTimeBonus || hasPerfectScoreBonus) ? '60px' : '0px', transition: 'min-height 0.3s ease-out' }}>
             {showSpeedBonus && (
               <div className="mb-4 pb-4 border-b border-cyan-400/30">
                 <div className="text-center animate-slide-up">

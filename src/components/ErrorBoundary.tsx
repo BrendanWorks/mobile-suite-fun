@@ -108,7 +108,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     if (canSkip) {
       return (
-        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
+        <div className="w-full bg-black flex flex-col items-center screen-scroll p-6">
           <div className="max-w-md w-full text-center">
             <p
               className="text-5xl font-black text-red-500 mb-6"
@@ -131,7 +131,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     const msg = this.state.error?.message;
 
     return (
-      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-6">
+      <div className="w-full bg-black flex flex-col items-center screen-scroll p-6">
         <div className="max-w-md w-full text-center">
           <p
             className="text-5xl font-black text-red-500 mb-6"
