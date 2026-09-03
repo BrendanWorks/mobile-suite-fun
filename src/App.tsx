@@ -98,7 +98,7 @@ function ReturningUserScreen({
 
   return (
     <>
-      <div className="w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ minHeight: '100dvh' }}>
+      <div className="w-full bg-black flex flex-col items-center screen-scroll p-4 relative">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />
         <div className="absolute inset-0 bg-gradient-radial from-red-900/20 via-black to-black" />
 

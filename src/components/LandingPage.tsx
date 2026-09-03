@@ -113,7 +113,7 @@ export default function LandingPage({ onPlayNow, onSignIn, onDebugMode }: Landin
 
   return (
     <>
-    <div className="w-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ minHeight: '100dvh' }}>
+    <div className="w-full bg-black flex flex-col items-center screen-scroll p-4 relative">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"

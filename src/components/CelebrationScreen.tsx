@@ -297,7 +297,7 @@ export default function CelebrationScreen({
   const strokeDashoffset = circumference - (clampedDialFill / 100) * circumference;
 
   return (
-    <div className="w-screen bg-black flex flex-col items-center justify-between p-4" style={{ minHeight: '100dvh' }}>
+    <div className="w-full bg-black flex flex-col items-center justify-between p-4 overflow-y-auto" style={{ height: '100%' }}>
       {/* ROWDY BRANDING */}
       <div className="flex-shrink-0 pt-4 sm:pt-6">
         <p

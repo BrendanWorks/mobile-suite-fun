@@ -45,7 +45,7 @@ export default function PlaylistSelector({ onSelectPlaylist, onBack }: PlaylistS
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="w-full bg-black flex flex-col items-center screen-scroll">
         <Star className="w-16 h-16 text-cyan-400 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }} />
       </div>
     );
