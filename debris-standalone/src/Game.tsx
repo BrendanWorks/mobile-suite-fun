@@ -96,6 +96,13 @@ interface DebrisGameProps {
 
 const W = 800;
 const H = 600;
+
+const GRID_PATH = (() => {
+  const p = new Path2D();
+  for (let x = 0; x < W; x += 60) { p.moveTo(x, 0); p.lineTo(x, H); }
+  for (let y = 0; y < H; y += 60) { p.moveTo(0, y); p.lineTo(W, y); }
+  return p;
+})();
 const BULLET_SPEED = 480;
 const BULLET_LIFE = 3000;
 const FIRE_COOLDOWN = 80;
@@ -119,7 +126,7 @@ const UFO_TRIGGER_SECONDS = 60;
 
 const MUSIC_RATES: Record<number, number> = { 1: 1.0, 2: 1.08, 3: 1.16, 4: 1.25 };
 const MUSIC_RATE_MAX = 1.4;
-const BULLET_HISTORY_LEN = 6;
+const BULLET_HISTORY_LEN = 4;
 const ROCK_SPAWN_FADE_MS = 200;
 
 const ROCK_RADII = { large: 46, medium: 28, small: 14 };
@@ -137,7 +144,7 @@ const VOLATILE_COLOR_DIM = 'rgba(251,146,60,0.18)';
 const VOLATILE_BLAST_RADIUS = 95;
 const VOLATILE_CHAIN_DEPTH_CAP = 5;
 
-const MAX_PARTICLES = 260;
+const MAX_PARTICLES = 160;
 
 const DASH_DISTANCE = 130;
 const DASH_IFRAME_MS = 350;
@@ -276,7 +283,7 @@ function spawnWaveRocks(wave: number, boostFactor: number): Rock[] {
 
 function initStars(): Star[] {
   const stars: Star[] = [];
-  const count = 150;
+  const count = 90;
   for (let i = 0; i < count; i++) {
     const layer = Math.random() < 0.55 ? 0 : Math.random() < 0.85 ? 1 : 2;
     stars.push({
@@ -630,7 +637,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
       const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
-      const count = Math.round((40 + Math.random() * 20) * sizeScale);
+      const count = Math.round((28 + Math.random() * 14) * sizeScale);
       const minSpeed = 200 * sizeScale;
       const maxSpeed = 400 * sizeScale;
 
@@ -649,7 +656,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         });
       }
 
-      const sparkCount = Math.round(12 * sizeScale);
+      const sparkCount = Math.round(8 * sizeScale);
       for (let i = 0; i < sparkCount; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = 150 + Math.random() * 200;
@@ -979,15 +986,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       ctx.fillStyle = `rgba(255,180,180,${0.4 * pulse})`;
       ctx.fill();
 
+      ctx.shadowBlur = 0;
       for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
         ctx.arc(i * 8, 8, 3, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,80,80,${0.6 * pulse})`;
-        ctx.shadowBlur = 10;
         ctx.fill();
       }
 
-      ctx.shadowBlur = 0;
       ctx.restore();
     }
 
@@ -1017,6 +1023,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       ctx.stroke();
 
       ctx.save();
+      ctx.shadowBlur = 0;
       ctx.rotate(now / 900);
       ctx.beginPath();
       ctx.arc(0, 0, POWERUP_RADIUS + 4, 0, Math.PI * 1.3);
@@ -1148,12 +1155,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
       ctx.strokeStyle = 'rgba(34,211,238,0.04)';
       ctx.lineWidth = 1;
-      for (let x = 0; x < W; x += 60) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-      }
-      for (let y = 0; y < H; y += 60) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
+      ctx.stroke(GRID_PATH);
 
       for (const rock of rocksRef.current || []) {
         try {
@@ -1478,8 +1480,6 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#ffff00';
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 5;
           ctx.fillText(floater.text, 0, 0);
           ctx.restore();
         } catch (e) {
