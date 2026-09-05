@@ -259,14 +259,18 @@ function spawnRock(size: 'large' | 'medium' | 'small', pos?: Vec2, velocityBoost
   };
 }
 
-function wrapPos(pos: Vec2): Vec2 {
-  let { x, y } = pos;
+// Mutates in place rather than returning a new object. This runs every
+// frame for the player, every rock, every bullet, and every power-up --
+// allocating a fresh object each call was the single biggest steady-state
+// GC pressure source in the game (as opposed to the burst allocation from
+// explosions, which is a separate, already-fixed issue). Desktop GCs eat
+// that invisibly; mobile doesn't have the same headroom.
+function wrapPos(pos: Vec2): void {
   const M = WRAP_MARGIN;
-  if (x < -M) x += W + M * 2;
-  else if (x > W + M) x -= W + M * 2;
-  if (y < -M) y += H + M * 2;
-  else if (y > H + M) y -= H + M * 2;
-  return { x, y };
+  if (pos.x < -M) pos.x += W + M * 2;
+  else if (pos.x > W + M) pos.x -= W + M * 2;
+  if (pos.y < -M) pos.y += H + M * 2;
+  else if (pos.y > H + M) pos.y -= H + M * 2;
 }
 
 function dist(a: Vec2, b: Vec2) {
@@ -645,6 +649,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       hitstopUntilRef.current = Math.max(hitstopUntilRef.current, Date.now() + ms);
     }
 
+    // Reuses the oldest trail point instead of allocating a new {x,y} every
+    // frame for every alive bullet -- same steady-state GC concern as
+    // wrapPos, just for bullets instead of every entity.
+    function pushHistory(b: Bullet) {
+      if (!b.history) b.history = [];
+      if (b.history.length >= BULLET_HISTORY_LEN) {
+        const reused = b.history.shift()!;
+        reused.x = b.pos.x;
+        reused.y = b.pos.y;
+        b.history.push(reused);
+      } else {
+        b.history.push({ x: b.pos.x, y: b.pos.y });
+      }
+    }
+
     function allocParticle(): Particle {
       const arr = particlesRef.current;
       const p = arr[particleCursorRef.current];
@@ -940,10 +959,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       const angle = playerAngleRef.current;
       spawnParticles(playerPosRef.current, 16, COLORS.pinkBright, 140);
 
-      const endPos = wrapPos({
+      const endPos = {
         x: playerPosRef.current.x + Math.cos(angle) * DASH_DISTANCE,
         y: playerPosRef.current.y + Math.sin(angle) * DASH_DISTANCE,
-      });
+      };
+      wrapPos(endPos);
       playerPosRef.current = endPos;
       playerVelRef.current.x += Math.cos(angle) * DASH_KICK_SPEED;
       playerVelRef.current.y += Math.sin(angle) * DASH_KICK_SPEED;
@@ -1784,7 +1804,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         playerVelRef.current.y *= FRICTION;
         playerPosRef.current.x += playerVelRef.current.x * dt;
         playerPosRef.current.y += playerVelRef.current.y * dt;
-        playerPosRef.current = wrapPos(playerPosRef.current);
+        wrapPos(playerPosRef.current);
 
         while (fireQueueRef.current > 0) {
           fireQueueRef.current--;
@@ -1832,7 +1852,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
               if (!rock || !rock.pos || !rock.vel) continue;
               rock.pos.x += rock.vel.x * dt;
               rock.pos.y += rock.vel.y * dt;
-              rock.pos = wrapPos(rock.pos);
+              wrapPos(rock.pos);
               rock.angle += rock.angularVel * dt;
             }
           } catch (e) {
@@ -1898,11 +1918,9 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           if (!b.pos || !b.vel) continue;
           b.pos.x += b.vel.x * dt;
           b.pos.y += b.vel.y * dt;
-          b.pos = wrapPos(b.pos);
+          wrapPos(b.pos);
 
-          if (!b.history) b.history = [];
-          b.history.push({ ...b.pos });
-          if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+          pushHistory(b);
 
           let hit = false;
 
@@ -1958,11 +1976,9 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           if (!b.pos || !b.vel) continue;
           b.pos.x += b.vel.x * dt;
           b.pos.y += b.vel.y * dt;
-          b.pos = wrapPos(b.pos);
+          wrapPos(b.pos);
 
-          if (!b.history) b.history = [];
-          b.history.push({ ...b.pos });
-          if (b.history.length > BULLET_HISTORY_LEN) b.history.shift();
+          pushHistory(b);
 
           if (now >= invincibleUntilRef.current && dist(b.pos, playerPosRef.current) < 14) {
             handlePlayerHit();
@@ -2001,7 +2017,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             if (age > POWERUP_LIFETIME) continue;
             p.pos.x += p.vel.x * dt;
             p.pos.y += p.vel.y * dt;
-            p.pos = wrapPos(p.pos);
+            wrapPos(p.pos);
             if (dist(p.pos, playerPosRef.current) < POWERUP_RADIUS + 14) {
               collectPowerUp(p.type);
               continue;
