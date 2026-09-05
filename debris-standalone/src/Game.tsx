@@ -299,6 +299,20 @@ function initStars(): Star[] {
   return stars;
 }
 
+// Fixed-size ring buffer, not push/filter, so an explosion never triggers a
+// burst of object allocation or a per-frame array copy (both are real
+// stutter sources on mobile GC). Dead slots just have life <= 0.
+function initParticlePool(): Particle[] {
+  return Array.from({ length: MAX_PARTICLES }, () => ({
+    pos: { x: 0, y: 0 },
+    vel: { x: 0, y: 0 },
+    life: 0,
+    maxLife: 1,
+    color: '#000',
+    size: 1,
+  }));
+}
+
 export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: DebrisGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -325,7 +339,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
   const rocksRef = useRef<Rock[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
-  const particlesRef = useRef<Particle[]>([]);
+  const particlesRef = useRef<Particle[]>(initParticlePool());
+  const particleCursorRef = useRef(0);
   const scoreFloatersRef = useRef<ScoreFloater[]>([]);
   const coreFlashesRef = useRef<CoreFlash[]>([]);
   const shipChunksRef = useRef<ShipChunk[]>([]);
@@ -630,65 +645,65 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       hitstopUntilRef.current = Math.max(hitstopUntilRef.current, Date.now() + ms);
     }
 
-    function capParticles() {
-      const over = particlesRef.current.length - MAX_PARTICLES;
-      if (over > 0) particlesRef.current.splice(0, over);
+    function allocParticle(): Particle {
+      const arr = particlesRef.current;
+      const p = arr[particleCursorRef.current];
+      particleCursorRef.current = (particleCursorRef.current + 1) % arr.length;
+      return p;
+    }
+
+    function setParticle(p: Particle, pos: Vec2, vx: number, vy: number, maxLife: number, color: string, size: number) {
+      p.pos.x = pos.x;
+      p.pos.y = pos.y;
+      p.vel.x = vx;
+      p.vel.y = vy;
+      p.life = 1;
+      p.maxLife = maxLife;
+      p.color = color;
+      p.size = size;
     }
 
     function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
       const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
-      const count = Math.round((28 + Math.random() * 14) * sizeScale);
+      const count = Math.round((18 + Math.random() * 10) * sizeScale);
       const minSpeed = 200 * sizeScale;
       const maxSpeed = 400 * sizeScale;
 
       for (let i = 0; i < count; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = minSpeed + Math.random() * (maxSpeed - minSpeed);
-        const sz = 2 + Math.random() * 4;
-        const life = 0.15 + Math.random() * 0.25;
-        particlesRef.current.push({
-          pos: { ...pos },
-          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
-          life: 1,
-          maxLife: life,
-          color: '#00ffff',
-          size: sz,
-        });
+        setParticle(
+          allocParticle(), pos,
+          Math.cos(a) * s, Math.sin(a) * s,
+          0.15 + Math.random() * 0.25, '#00ffff', 2 + Math.random() * 4,
+        );
       }
 
-      const sparkCount = Math.round(8 * sizeScale);
+      const sparkCount = Math.round(5 * sizeScale);
       for (let i = 0; i < sparkCount; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = 150 + Math.random() * 200;
-        particlesRef.current.push({
-          pos: { ...pos },
-          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
-          life: 1,
-          maxLife: 0.4 + Math.random() * 0.3,
-          color: '#ffffff',
-          size: 1.5 + Math.random() * 2.5,
-        });
+        setParticle(
+          allocParticle(), pos,
+          Math.cos(a) * s, Math.sin(a) * s,
+          0.4 + Math.random() * 0.3, '#ffffff', 1.5 + Math.random() * 2.5,
+        );
       }
 
       coreFlashesRef.current.push({ pos: { ...pos }, born: Date.now(), duration: 100 });
       playExplosion(rockSize === 'large' ? 0.55 : rockSize === 'medium' ? 0.45 : 0.35);
-      capParticles();
     }
 
     function spawnParticles(pos: Vec2, count: number, color: string, speed = 120) {
       for (let i = 0; i < count; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = speed * (0.4 + Math.random() * 0.9);
-        particlesRef.current.push({
-          pos: { ...pos },
-          vel: { x: Math.cos(a) * s, y: Math.sin(a) * s },
-          life: 1,
-          maxLife: 0.6 + Math.random() * 0.6,
-          color,
-          size: 1.5 + Math.random() * 2,
-        });
+        setParticle(
+          allocParticle(), pos,
+          Math.cos(a) * s, Math.sin(a) * s,
+          0.6 + Math.random() * 0.6, color, 1.5 + Math.random() * 2,
+        );
       }
-      capParticles();
     }
 
     function spawnScoreFloater(pos: Vec2, pts: number) {
@@ -1222,15 +1237,16 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           const alpha = 1 - t;
           const radius = 30 + t * 20;
           ctx.save();
-          ctx.globalAlpha = alpha * 0.9;
+          ctx.globalAlpha = alpha * 0.55;
           if (typeof flash.pos.x === 'number' && typeof flash.pos.y === 'number' && isFinite(flash.pos.x) && isFinite(flash.pos.y)) {
-            const grad = ctx.createRadialGradient(flash.pos.x, flash.pos.y, 0, flash.pos.x, flash.pos.y, radius);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.3, 'rgba(0,255,255,0.8)');
-            grad.addColorStop(1, 'rgba(0,255,255,0)');
-            ctx.fillStyle = grad;
             ctx.beginPath();
             ctx.arc(flash.pos.x, flash.pos.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ffff';
+            ctx.fill();
+            ctx.globalAlpha = alpha * 0.9;
+            ctx.beginPath();
+            ctx.arc(flash.pos.x, flash.pos.y, radius * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
             ctx.fill();
           }
           ctx.restore();
@@ -1345,18 +1361,15 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         }
       }
 
-      for (const p of particlesRef.current || []) {
+      for (const p of particlesRef.current) {
+        if (p.life <= 0) continue;
         try {
-          if (!p || !p.pos || typeof p.life !== 'number' || !p.color || typeof p.size !== 'number') continue;
-          const lifeT = Math.max(0, p.life);
+          if (!isFinite(p.pos.x) || !isFinite(p.pos.y)) continue;
+          const lifeT = p.life;
           ctx.globalAlpha = lifeT;
           const easedSize = p.size * (0.5 + 0.5 * lifeT);
-          if (typeof p.pos.x === 'number' && typeof p.pos.y === 'number' && isFinite(p.pos.x) && isFinite(p.pos.y)) {
-            ctx.beginPath();
-            ctx.arc(p.pos.x, p.pos.y, easedSize, 0, Math.PI * 2);
-            ctx.fillStyle = p.color;
-            ctx.fill();
-          }
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.pos.x - easedSize / 2, p.pos.y - easedSize / 2, easedSize, easedSize);
         } catch (e) {
           console.warn('Error drawing particle:', e, p);
         }
@@ -1653,7 +1666,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     function resetAfterUfoPhase(nextWave: number) {
       bulletsRef.current.length = 0;
-      particlesRef.current.length = 0;
+      for (const p of particlesRef.current) p.life = 0;
       scoreFloatersRef.current.length = 0;
       coreFlashesRef.current.length = 0;
       lastUfoFireRef.current = 0;
@@ -1998,15 +2011,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           powerupsRef.current = alivePowerups;
         }
 
-        for (const p of particlesRef.current || []) {
-          if (!p || !p.pos || !p.vel || !p.maxLife || p.maxLife <= 0) continue;
+        for (const p of particlesRef.current) {
+          if (p.life <= 0) continue;
           p.pos.x += p.vel.x * dt;
           p.pos.y += p.vel.y * dt;
           p.vel.x *= 0.93;
           p.vel.y *= 0.93;
           p.life -= dt / p.maxLife;
         }
-        particlesRef.current = (particlesRef.current || []).filter(p => p && p.life > 0);
 
         for (const chunk of shipChunksRef.current || []) {
           if (!chunk || !chunk.pos || !chunk.vel || !chunk.maxLife || chunk.maxLife <= 0) continue;
