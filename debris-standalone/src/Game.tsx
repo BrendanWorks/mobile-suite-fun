@@ -103,6 +103,12 @@ const GRID_PATH = (() => {
   for (let y = 0; y < H; y += 60) { p.moveTo(0, y); p.lineTo(W, y); }
   return p;
 })();
+
+// Performance overlay, off by default. Open the game with ?debug=1 to show
+// live frame timing and entity counts on-canvas -- the point is to get real
+// numbers off a phone, where no dev tools are handy.
+const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
+const FRAME_SAMPLE_COUNT = 60;
 const BULLET_SPEED = 480;
 const BULLET_LIFE = 3000;
 const FIRE_COOLDOWN = 80;
@@ -382,6 +388,9 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const fireQueueRef = useRef(0);
   const lastFireRef = useRef(0);
   const lastFrameRef = useRef(0);
+  const frameTimesRef = useRef<Float32Array>(new Float32Array(FRAME_SAMPLE_COUNT));
+  const frameIdxRef = useRef(0);
+  const lastDbgTsRef = useRef(0);
   const rafRef = useRef(0);
 
   const waveRef = useRef(1);
@@ -1561,6 +1570,32 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         ctx.shadowBlur = 0;
       }
 
+      if (DEBUG) {
+        const times = frameTimesRef.current;
+        let sum = 0, max = 0, n = 0;
+        for (let i = 0; i < FRAME_SAMPLE_COUNT; i++) {
+          const t = times[i];
+          if (t <= 0) continue;
+          sum += t; n++;
+          if (t > max) max = t;
+        }
+        const avg = n ? sum / n : 0;
+        let liveParticles = 0;
+        for (const p of particlesRef.current) if (p.life > 0) liveParticles++;
+        const canvasEl = canvasRef.current;
+        const lines = [
+          `fps ${avg ? (1000 / avg).toFixed(0) : '--'}  avg ${avg.toFixed(1)}ms  worst ${max.toFixed(0)}ms`,
+          `rocks ${rocksRef.current.length}  bullets ${bulletsRef.current.length + ufoBulletsRef.current.length}  particles ${liveParticles}`,
+          `canvas ${canvasEl ? canvasEl.width + 'x' + canvasEl.height : '?'}  dpr ${window.devicePixelRatio}`,
+        ];
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = COLORS.yellow;
+        for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], 16, 80 + i * 14);
+        ctx.restore();
+      }
+
       ctx.textAlign = 'left';
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.cyanMid;
@@ -1711,6 +1746,16 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       if (!canvasRef.current) {
         rafRef.current = requestAnimationFrame(gameLoop);
         return;
+      }
+
+      if (DEBUG) {
+        // Always-on timing, independent of the physics dt (which gets reset by
+        // pause/hitstop), so stutter shows up here even when motion is frozen.
+        if (lastDbgTsRef.current > 0) {
+          frameTimesRef.current[frameIdxRef.current] = ts - lastDbgTsRef.current;
+          frameIdxRef.current = (frameIdxRef.current + 1) % FRAME_SAMPLE_COUNT;
+        }
+        lastDbgTsRef.current = ts;
       }
 
       try {
