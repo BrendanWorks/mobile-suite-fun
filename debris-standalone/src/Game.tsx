@@ -131,8 +131,11 @@ const UFO_BURST_COUNT = 3;
 const UFO_BURST_INTERVAL = 180;
 const UFO_TRIGGER_SECONDS = 60;
 
-const MUSIC_RATES: Record<number, number> = { 1: 1.0, 2: 1.08, 3: 1.16, 4: 1.25 };
 const MUSIC_RATE_MAX = 1.4;
+// Safety valve: rocks split on death, so a deep sector's reinforcements can
+// compound. Skip a reinforcement wave rather than let the entity count run
+// away on a phone.
+const MAX_ROCKS = 64;
 const BULLET_HISTORY_LEN = 6;
 const ROCK_SPAWN_FADE_MS = 200;
 
@@ -153,10 +156,26 @@ const VOLATILE_CHAIN_DEPTH_CAP = 5;
 
 const MAX_PARTICLES = 260;
 
+// Physical key positions (e.code), so a held Shift or CapsLock can't change
+// what a key reports between its keydown and its keyup.
+const MOVE_KEY_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS'];
+const DRAFT_KEY_CODES = ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'];
+const LEFT_CODES = ['ArrowLeft', 'KeyA'];
+const RIGHT_CODES = ['ArrowRight', 'KeyD'];
+const THRUST_CODES = ['ArrowUp', 'KeyW'];
+
+function anyHeld(keys: Set<string>, codes: string[]): boolean {
+  for (const c of codes) if (keys.has(c)) return true;
+  return false;
+}
+
 const DASH_DISTANCE = 130;
 const DASH_IFRAME_MS = 350;
 const DASH_COOLDOWN_MS = 3200;
 const DASH_KICK_SPEED = 60;
+
+const GAMEOVER_OVERLAY_DELAY_MS = 700;
+const GAMEOVER_OVERLAY_FADE_MS = 400;
 
 const SHIELD_REGEN_KILLS = 20;
 
@@ -292,6 +311,17 @@ function spawnWaveRocks(wave: number, boostFactor: number): Rock[] {
   return rocks;
 }
 
+// Mid-sector reinforcements. Sector 1 keeps the sizes it always had (4/5/6
+// rocks at the three escalation steps); deeper sectors add more, but stop
+// scaling at sector 5 so a long run can't spiral past the frame budget.
+function reinforcementSize(sector: number, intensity: number): number {
+  return (intensity - 1) + Math.min(sector - 1, 4);
+}
+
+function musicRateFor(sector: number, intensity: number): number {
+  return Math.min(1.0 + (sector - 1) * 0.04 + (intensity - 1) * 0.08, MUSIC_RATE_MAX);
+}
+
 function initStars(): Star[] {
   const stars: Star[] = [];
   const count = 150;
@@ -394,6 +424,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const rafRef = useRef(0);
 
   const waveRef = useRef(1);
+  // Escalation step *within* the current sector (1-4), tracked separately from
+  // the sector number. These used to share waveRef, which meant the ramp's
+  // "step up?" test could never fire once the sector number passed 4.
+  const intensityRef = useRef(1);
   const waveStartRef = useRef(Date.now());
   const comboRef = useRef(0);
   const lastShotHitRef = useRef(true);
@@ -410,6 +444,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const shakeRef = useRef({ offsetX: 0, offsetY: 0, endTime: 0, maxDisp: 0, duration: 0 });
   const hitFlashRef = useRef({ opacity: 0, endTime: 0 });
 
+  const gameOverAtRef = useRef(0);
   const pausedRef = useRef(false);
   const mutedRef = useRef(muted);
   const doneRef = useRef(false);
@@ -434,8 +469,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     sfx.setMuted(muted);
   }, [muted]);
 
+  // Only live gameplay is pausable. The game loop tests pausedRef *before* it
+  // dispatches on game state, so a pause taken during the sector-clear
+  // transition or the upgrade draft stranded the loop in its paused branch:
+  // the transition never reached the code that spawns the upgrade cards, and
+  // the frozen SECTOR CLEARED banner stayed on screen with the audio context
+  // suspended under it. Nothing is simulating in those states anyway, so
+  // there is nothing to pause. Unpausing is always allowed.
+  function canPause() {
+    const t = gameStateRef.current.type;
+    return t === 'playing' || t === 'ufo';
+  }
+
   function togglePause() {
-    if (doneRef.current) return;
+    if (doneRef.current || gameOverRef.current) return;
+    if (!pausedRef.current && !canPause()) return;
     const next = !pausedRef.current;
     pausedRef.current = next;
     setPaused(next);
@@ -487,7 +535,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     if (next.type === 'transition') {
-      stopAllSounds();
+      stopLoops();
       sectorClearedRef.current = Date.now();
     }
 
@@ -495,10 +543,11 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       ufoTriggeredRef.current = false;
       rocksRef.current = spawnWaveRocks(next.wave, 1.3);
       waveRef.current = next.wave;
+      intensityRef.current = 1;
       waveStartRef.current = Date.now();
 
       if (musicRef.current) {
-        musicRef.current.playbackRate = MUSIC_RATES[1];
+        musicRef.current.playbackRate = musicRateFor(next.wave, 1);
         if (!musicPlayingRef.current) {
           musicRef.current.currentTime = 0;
           if (!mutedRef.current) musicRef.current.play().catch(() => {});
@@ -508,9 +557,22 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     if (next.type === 'gameover') {
-      stopAllSounds();
-      cancelAnimationFrame(rafRef.current);
-      doneRef.current = true;
+      // Not stopAllSounds(): that pauses the music element on the spot, and a
+      // paused media source wired into a context that must keep running for
+      // the death sound is the exact state that stuttered for the length of
+      // the death animation. Stop the effect loops, but let the music fade
+      // out while its element keeps playing; the real teardown (pause,
+      // release, suspend) happens together at unmount, by which point the
+      // gain is already at zero.
+      stopLoops();
+      sfx.fadeMusicOut(1.5);
+      gameOverRef.current = true;
+      gameOverAtRef.current = Date.now();
+      // Deliberately leaves the loop running. The ship chunks, the death
+      // shake and the GAME OVER overlay all need frames to render, and
+      // cancelling here meant none of them ever did -- every run ended on a
+      // frozen frame. The loop stops when App switches screens and unmounts
+      // this component (see the cleanup in the main effect).
     }
 
     return true;
@@ -521,13 +583,27 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     ufoLoopRef.current = null;
   }
 
-  function stopAllSounds() {
+  // Stops the looping effects but deliberately leaves the music element
+  // alone. The routed music element is what holds iOS's audio session open
+  // (see the routeMusicElement comment in audio.ts), so pausing and seeking
+  // it at every sector boundary let the session go idle and re-establishing
+  // it glitched: the element fires a `waiting` re-buffer on the restart,
+  // audible as a stutter right as the sector clears. Music now plays
+  // continuously across the transition and the draft, and the new sector
+  // just changes its tempo.
+  function stopLoops() {
     stopUfoSound();
     boostLoopRef.current?.stop();
     boostLoopRef.current = null;
+  }
+
+  function stopAllSounds() {
+    stopLoops();
     if (musicRef.current) {
+      // No seek here: every game builds a fresh element, so rewinding one we
+      // are about to discard is pointless work, and seeking an element that
+      // feeds the Web Audio graph is exactly the operation that glitches.
       musicRef.current.pause();
-      musicRef.current.currentTime = 0;
       musicPlayingRef.current = false;
     }
   }
@@ -549,7 +625,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
 
     if (musicRef.current) {
-      musicRef.current.playbackRate = MUSIC_RATES[1];
+      musicRef.current.playbackRate = musicRateFor(1, 1);
       if (!mutedRef.current) musicRef.current.play().catch(() => {});
       musicPlayingRef.current = true;
     }
@@ -721,24 +797,27 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     function destroyRock(rock: Rock, rocks: Rock[], chainDepth = 0) {
+      // A volatile chain takes a snapshot of its neighbours and then recurses,
+      // so a rock can already have been destroyed by a deeper link by the time
+      // this loop reaches it. Bail rather than paying out its score, particles
+      // and fragments a second time.
       const idx = rocks.findIndex(r => r.id === rock.id);
-      if (idx !== -1) rocks.splice(idx, 1);
+      if (idx === -1) return;
+      rocks.splice(idx, 1);
 
       const pts = ROCK_POINTS[rock.size];
       addScore(pts);
       spawnExplosionParticles(rock.pos, rock.size);
       spawnScoreFloater(rock.pos, pts);
       maybeSpawnPowerUp(rock);
+      rocksTotalDestroyedRef.current++;
 
       if (rock.size === 'large') {
         rocks.push(spawnRock('medium', { ...rock.pos }));
         rocks.push(spawnRock('medium', { ...rock.pos }));
-        rocksTotalDestroyedRef.current++;
       } else if (rock.size === 'medium') {
         rocks.push(spawnRock('small', { ...rock.pos }));
         rocks.push(spawnRock('small', { ...rock.pos }));
-      } else {
-        rocksTotalDestroyedRef.current++;
       }
 
       comboRef.current++;
@@ -832,8 +911,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       playerVelRef.current = { x: 0, y: 0 };
       clearSafeZone();
 
-      if (livesRef.current <= 0 && !doneRef.current) {
-        gameOverRef.current = true;
+      if (livesRef.current <= 0 && !gameOverRef.current && !doneRef.current) {
         setGameState({ type: 'gameover' });
         setTimeout(() => {
           onGameOverRef.current?.(Math.round(scoreRef.current), {
@@ -1350,7 +1428,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           if (typeof px !== 'number' || typeof py !== 'number' || !isFinite(px) || !isFinite(py)) {
             // skip invalid state
           } else {
-            const thrusting = keysRef.current.has('ArrowUp') || keysRef.current.has('w');
+            const thrusting = anyHeld(keysRef.current, THRUST_CODES);
             const speed = Math.sqrt(playerVelRef.current.x ** 2 + playerVelRef.current.y ** 2);
             const velocityRatio = Math.min(speed / PLAYER_MAX_SPEED, 1);
 
@@ -1605,19 +1683,28 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         }
       }
 
+      // Hold the overlay back so the ship actually blows apart in the clear
+      // first, then fade the scrim in over the top of the settling debris.
       if (gameOverRef.current) {
-        ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        ctx.fillRect(0, 0, W, H);
-        ctx.font = 'bold 52px monospace';
-        ctx.fillStyle = COLORS.yellow;
-        ctx.textAlign = 'center';
-        ctx.shadowColor = COLORS.yellow;
-        ctx.shadowBlur = 30;
-        ctx.fillText('GAME OVER', W / 2, H / 2 - 20);
-        ctx.shadowBlur = 0;
-        ctx.font = '20px monospace';
-        ctx.fillStyle = COLORS.white;
-        ctx.fillText(`SCORE: ${score}`, W / 2, H / 2 + 24);
+        const sinceDeath = now - gameOverAtRef.current;
+        if (sinceDeath > GAMEOVER_OVERLAY_DELAY_MS) {
+          const fade = Math.min(1, (sinceDeath - GAMEOVER_OVERLAY_DELAY_MS) / GAMEOVER_OVERLAY_FADE_MS);
+          ctx.save();
+          ctx.globalAlpha = fade;
+          ctx.fillStyle = 'rgba(0,0,0,0.65)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.font = 'bold 52px monospace';
+          ctx.fillStyle = COLORS.yellow;
+          ctx.textAlign = 'center';
+          ctx.shadowColor = COLORS.yellow;
+          ctx.shadowBlur = 30;
+          ctx.fillText('GAME OVER', W / 2, H / 2 - 20);
+          ctx.shadowBlur = 0;
+          ctx.font = '20px monospace';
+          ctx.fillStyle = COLORS.white;
+          ctx.fillText(`SCORE: ${score}`, W / 2, H / 2 + 24);
+          ctx.restore();
+        }
       }
 
       if (sectorClearedRef.current > 0) {
@@ -1663,6 +1750,15 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       lastUfoFireRef.current = 0;
       transitionTimerRef.current = null;
       lastFrameRef.current = performance.now();
+      // Belt and braces alongside canPause(): a pause must never survive into
+      // the next sector, or the loop resumes straight back into its paused
+      // branch with no overlay left to clear it.
+      if (pausedRef.current) {
+        pausedRef.current = false;
+        setPaused(false);
+        sfx.resume();
+        if (!mutedRef.current && musicPlayingRef.current) musicRef.current?.play().catch(() => {});
+      }
       setGameState({ type: 'playing', wave: nextWave });
     }
 
@@ -1673,6 +1769,48 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       setDraftOptions(null);
       resetAfterUfoPhase(state.nextWave);
     };
+
+    function updateStars(dt: number) {
+      for (const star of starsRef.current) {
+        star.x -= star.drift * dt;
+        if (star.x < -WRAP_MARGIN) star.x += W + WRAP_MARGIN * 2;
+      }
+    }
+
+    function updateRockMotion(dt: number) {
+      for (let i = rocksRef.current.length - 1; i >= 0; i--) {
+        const rock = rocksRef.current[i];
+        if (!rock || !rock.pos || !rock.vel) continue;
+        rock.pos.x += rock.vel.x * dt;
+        rock.pos.y += rock.vel.y * dt;
+        wrapPos(rock.pos);
+        rock.angle += rock.angularVel * dt;
+      }
+    }
+
+    function updateParticles(dt: number) {
+      for (const p of particlesRef.current) {
+        if (p.life <= 0) continue;
+        p.pos.x += p.vel.x * dt;
+        p.pos.y += p.vel.y * dt;
+        p.vel.x *= 0.93;
+        p.vel.y *= 0.93;
+        p.life -= dt / p.maxLife;
+      }
+    }
+
+    function updateShipChunks(dt: number) {
+      for (const chunk of shipChunksRef.current || []) {
+        if (!chunk || !chunk.pos || !chunk.vel || !chunk.maxLife || chunk.maxLife <= 0) continue;
+        chunk.pos.x += chunk.vel.x * dt;
+        chunk.pos.y += chunk.vel.y * dt;
+        chunk.vel.x *= 0.88;
+        chunk.vel.y *= 0.88;
+        chunk.angle += chunk.angularVel * dt;
+        chunk.life -= dt / chunk.maxLife;
+      }
+      shipChunksRef.current = (shipChunksRef.current || []).filter(c => c && c.life > 0);
+    }
 
     function gameLoop(ts: number) {
       if (doneRef.current) {
@@ -1738,6 +1876,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           return;
         }
 
+        // The death animation: gameplay has stopped, but the world keeps
+        // drifting so the ship chunks fly apart, the shake plays out and the
+        // GAME OVER overlay is actually on screen for its 2.2 seconds.
+        if (state.type === 'gameover') {
+          const dtOver = Math.min((ts - (lastFrameRef.current || ts)) / 1000, 0.05);
+          lastFrameRef.current = ts;
+          updateStars(dtOver);
+          updateRockMotion(dtOver);
+          updateParticles(dtOver);
+          updateShipChunks(dtOver);
+          safe('draw-gameover', draw);
+          rafRef.current = requestAnimationFrame(gameLoop);
+          return;
+        }
+
         if (state.type !== 'playing' && state.type !== 'ufo') {
           rafRef.current = requestAnimationFrame(gameLoop);
           return;
@@ -1748,15 +1901,12 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         const keys = keysRef.current;
         const now = Date.now();
 
-        for (const star of starsRef.current) {
-          star.x -= star.drift * dt;
-          if (star.x < -WRAP_MARGIN) star.x += W + WRAP_MARGIN * 2;
-        }
+        updateStars(dt);
 
-        if (keys.has('ArrowLeft') || keys.has('a')) playerAngleRef.current -= ROTATE_SPEED * turnRateMultRef.current * dt;
-        if (keys.has('ArrowRight') || keys.has('d')) playerAngleRef.current += ROTATE_SPEED * turnRateMultRef.current * dt;
+        if (anyHeld(keys, LEFT_CODES)) playerAngleRef.current -= ROTATE_SPEED * turnRateMultRef.current * dt;
+        if (anyHeld(keys, RIGHT_CODES)) playerAngleRef.current += ROTATE_SPEED * turnRateMultRef.current * dt;
 
-        const thrusting = keys.has('ArrowUp') || keys.has('w');
+        const thrusting = anyHeld(keys, THRUST_CODES);
         if (thrusting) {
           playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
           playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
@@ -1799,13 +1949,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             else if (elapsed >= 40) velocityBoost = 1.25;
             else if (elapsed >= 20) velocityBoost = 1.1;
 
-            const targetWave = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
-            if (targetWave > waveRef.current) {
-              waveRef.current = targetWave;
-              rocksRef.current.push(...spawnWaveRocks(targetWave - 1, velocityBoost));
+            const targetIntensity = elapsed >= 60 ? 4 : elapsed >= 40 ? 3 : elapsed >= 20 ? 2 : 1;
+            if (targetIntensity > intensityRef.current) {
+              intensityRef.current = targetIntensity;
+              if (rocksRef.current.length < MAX_ROCKS) {
+                rocksRef.current.push(...spawnWaveRocks(reinforcementSize(waveRef.current, targetIntensity), velocityBoost));
+              }
               if (musicRef.current) {
-                const rate = MUSIC_RATES[targetWave] ?? Math.min(1.0 + (targetWave - 1) * 0.08, MUSIC_RATE_MAX);
-                musicRef.current.playbackRate = rate;
+                musicRef.current.playbackRate = musicRateFor(waveRef.current, targetIntensity);
               }
             }
 
@@ -1821,14 +1972,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
               }
             }
 
-            for (let i = rocksRef.current.length - 1; i >= 0; i--) {
-              const rock = rocksRef.current[i];
-              if (!rock || !rock.pos || !rock.vel) continue;
-              rock.pos.x += rock.vel.x * dt;
-              rock.pos.y += rock.vel.y * dt;
-              wrapPos(rock.pos);
-              rock.angle += rock.angularVel * dt;
-            }
+            updateRockMotion(dt);
           } catch (e) {
             console.error('CRASH IN PLAYING STATE:', e);
             setGameState({ type: 'playing', wave: waveRef.current });
@@ -1867,7 +2011,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             }
 
             const offScreen = (ufo.vel.x > 0 && ufo.pos.x > W + 70) || (ufo.vel.x < 0 && ufo.pos.x < -70);
-            if (offScreen && !doneRef.current) {
+            if (offScreen && !doneRef.current && !gameOverRef.current) {
               ufoPassesCompletedRef.current++;
               ufoRef.current = null;
               ufoBurstRef.current = null;
@@ -1878,7 +2022,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
                 return;
               } else if (ufoPassesCompletedRef.current < UFO_PASSES) {
                 setTimeout(() => {
-                  if (!doneRef.current) spawnUfo(ufoPassesCompletedRef.current);
+                  if (!doneRef.current && !gameOverRef.current) spawnUfo(ufoPassesCompletedRef.current);
                 }, 1800);
               }
             }
@@ -1916,7 +2060,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
               return;
             } else if (ufoPassesCompletedRef.current < UFO_PASSES) {
               setTimeout(() => {
-                if (!doneRef.current) spawnUfo(ufoPassesCompletedRef.current);
+                if (!doneRef.current && !gameOverRef.current) spawnUfo(ufoPassesCompletedRef.current);
               }, 1800);
             }
             hit = true;
@@ -2001,25 +2145,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           powerupsRef.current = alivePowerups;
         }
 
-        for (const p of particlesRef.current) {
-          if (p.life <= 0) continue;
-          p.pos.x += p.vel.x * dt;
-          p.pos.y += p.vel.y * dt;
-          p.vel.x *= 0.93;
-          p.vel.y *= 0.93;
-          p.life -= dt / p.maxLife;
-        }
-
-        for (const chunk of shipChunksRef.current || []) {
-          if (!chunk || !chunk.pos || !chunk.vel || !chunk.maxLife || chunk.maxLife <= 0) continue;
-          chunk.pos.x += chunk.vel.x * dt;
-          chunk.pos.y += chunk.vel.y * dt;
-          chunk.vel.x *= 0.88;
-          chunk.vel.y *= 0.88;
-          chunk.angle += chunk.angularVel * dt;
-          chunk.life -= dt / chunk.maxLife;
-        }
-        shipChunksRef.current = (shipChunksRef.current || []).filter(c => c && c.life > 0);
+        updateParticles(dt);
+        updateShipChunks(dt);
 
         safe('draw', draw);
         rafRef.current = requestAnimationFrame(gameLoop);
@@ -2031,49 +2158,60 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     const handleKey = (e: KeyboardEvent) => {
       sfx.unlock();
-      if (doneRef.current) return;
-      if (e.key === 'm' || e.key === 'M') {
+      if (doneRef.current || gameOverRef.current) return;
+      const code = e.code;
+      if (code === 'KeyM') {
         e.preventDefault();
         onToggleMuteRef.current?.();
         return;
       }
       const state = gameStateRef.current;
       if (state.type === 'draft') {
-        if (['1', '2', '3'].includes(e.key)) {
+        const slot = DRAFT_KEY_CODES.indexOf(code);
+        if (slot !== -1) {
           e.preventDefault();
-          const opt = state.options[parseInt(e.key, 10) - 1];
+          const opt = state.options[slot % 3];
           if (opt) pickUpgradeRef.current(opt.id);
         }
         return;
       }
-      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      if (code === 'KeyP' || code === 'Escape') {
         e.preventDefault();
         togglePause();
         return;
       }
       if (pausedRef.current) return;
-      if (e.key === 'Shift' && !e.repeat) {
+      if ((code === 'ShiftLeft' || code === 'ShiftRight') && !e.repeat) {
         dashQueueRef.current++;
         return;
       }
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's', ' '].includes(e.key)) {
+      if (MOVE_KEY_CODES.includes(code) || code === 'Space') {
         e.preventDefault();
       }
-      if ((e.key === ' ') && !e.repeat) {
+      if (code === 'Space' && !e.repeat) {
         fireQueueRef.current++;
         return;
       }
-      const k = e.key;
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd', 'w', 's'].includes(k)) {
-        keysRef.current.add(k);
+      if (MOVE_KEY_CODES.includes(code)) {
+        keysRef.current.add(code);
       }
     };
+    // Tracked by e.code, not e.key: with Shift held for a dash, e.key reports
+    // "W" while the keydown that started the thrust stored "w", so the keyup
+    // never cleared it and the ship thrusted forever.
     const handleKeyUp = (e: KeyboardEvent) => {
-      keysRef.current.delete(e.key);
+      keysRef.current.delete(e.code);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden && !pausedRef.current && !gameOverRef.current && !doneRef.current) {
+        togglePause();
+      }
     };
 
     window.addEventListener('keydown', handleKey);
     window.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(gameLoop);
@@ -2084,8 +2222,17 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       rafRef.current = 0;
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       stopAllSounds();
+      // Tear the graph down when the game screen goes away (game over, or quit
+      // to menu). Leaving the context running with a paused, discarded media
+      // element still wired to the destination gives the hardware a live graph
+      // with nothing feeding it. Suspending here rather than at the moment of
+      // death lets the death sound ring out first; the PLAY button's
+      // sfx.unlock() resumes it inside a real gesture on the next game.
+      sfx.releaseMusicElement();
+      sfx.suspend();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

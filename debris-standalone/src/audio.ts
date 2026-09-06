@@ -51,6 +51,9 @@ class SfxEngine {
   private muted = false;
   private preloadStarted = false;
   private musicRouted = false;
+  private musicSource: MediaElementAudioSourceNode | null = null;
+  private musicGain: GainNode | null = null;
+  private musicEl: HTMLAudioElement | null = null;
 
   private ensureContext(): AudioContext | null {
     if (this.ctx) return this.ctx;
@@ -96,18 +99,66 @@ class SfxEngine {
   // session) is what makes the whole context, sound effects included,
   // inherit that exemption. Call this once, right after creating the music
   // element; safe to call before any user gesture.
+  // Every new game builds a fresh music element, so this has to route each one
+  // rather than latch on the first. It used to guard on a single boolean,
+  // which meant game two onward was never routed (losing the mute-switch
+  // exemption above) while game one's node stayed wired to the graph for the
+  // life of the page, holding a discarded element as a live input.
   routeMusicElement(el: HTMLAudioElement): void {
-    if (this.musicRouted) return;
+    if (this.musicEl === el) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    this.releaseMusicElement();
     try {
       const source = ctx.createMediaElementSource(el);
-      source.connect(ctx.destination);
+      // Through a gain node rather than straight to the destination, so the
+      // music can be faded rather than only paused. See fadeMusicOut.
+      const gain = ctx.createGain();
+      gain.gain.value = 1;
+      source.connect(gain).connect(ctx.destination);
+      this.musicSource = source;
+      this.musicGain = gain;
+      this.musicEl = el;
       this.musicRouted = true;
     } catch {
       // Already connected elsewhere, or the browser doesn't support it --
       // the element still plays fine on its own, just without the benefit.
     }
+  }
+
+  // Ramps the routed music to silence while leaving the element *playing*.
+  // Used at the moment of death. Pausing the element there left a paused
+  // media source wired into a context that has to stay running for the
+  // death sound -- exactly the configuration that produced the game-over
+  // stutter, just bounded to the death animation once the graph started
+  // being torn down at unmount. Keeping the element playing, at a gain that
+  // ramps to zero, keeps the pipeline live until that teardown; and because
+  // the gain is already at zero by then, the eventual pause is silent too.
+  fadeMusicOut(seconds = 1.5): void {
+    const ctx = this.ctx;
+    const gain = this.musicGain;
+    if (!ctx || !gain) return;
+    try {
+      const now = ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + seconds);
+    } catch { /* ignore */ }
+  }
+
+  // Disconnects the retired element's node so a paused, discarded element is
+  // not left as the graph's only input.
+  releaseMusicElement(): void {
+    if (this.musicSource) {
+      try { this.musicSource.disconnect(); } catch { /* already gone */ }
+    }
+    if (this.musicGain) {
+      try { this.musicGain.disconnect(); } catch { /* already gone */ }
+    }
+    this.musicSource = null;
+    this.musicGain = null;
+    this.musicEl = null;
+    this.musicRouted = false;
   }
 
   // For the ?debug=1 overlay -- turns "no sound on phone" into numbers
@@ -191,11 +242,33 @@ class SfxEngine {
       src.start(0);
       let stopped = false;
       return {
+        // A loop is a continuous waveform, so it's almost never sitting at a
+        // zero-crossing at the instant something calls stop() -- cutting it
+        // off with a bare src.stop() leaves a sample-level discontinuity,
+        // which is exactly what a click/pop is. Most of the time that's
+        // masked by everything else going on, but stopAllSounds() calls this
+        // on both loops the instant the player dies, and if thrust or the
+        // UFO drone happened to be live at that exact moment, the click
+        // lands right as the death animation starts -- audible precisely
+        // because the game has otherwise gone quiet around it. A short
+        // linear ramp to silence before the scheduled stop removes the
+        // discontinuity.
         stop() {
           if (stopped) return;
           stopped = true;
-          try { src.stop(); } catch { /* already stopped */ }
-          try { src.disconnect(); gain.disconnect(); } catch { /* ignore */ }
+          const FADE = 0.03;
+          try {
+            const now = ctx.currentTime;
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setValueAtTime(gain.gain.value, now);
+            gain.gain.linearRampToValueAtTime(0, now + FADE);
+            src.stop(now + FADE);
+          } catch {
+            try { src.stop(); } catch { /* already stopped */ }
+          }
+          setTimeout(() => {
+            try { src.disconnect(); gain.disconnect(); } catch { /* already gone */ }
+          }, FADE * 1000 + 20);
         },
         setRate(r: number) {
           src.playbackRate.value = r;
