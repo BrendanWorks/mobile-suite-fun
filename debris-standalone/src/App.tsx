@@ -5,7 +5,7 @@ import TitleScreen from './TitleScreen';
 import GameOverScreen from './GameOverScreen';
 import InitialsEntry from './InitialsEntry';
 import LeaderboardScreen from './LeaderboardScreen';
-import { fetchLeaderboard, flushQueue, qualifies, submitScore, type LeaderboardEntry } from './leaderboard';
+import { fetchLeaderboard, flushQueue, qualifies, submitScore, padBoardIfNeeded, type LeaderboardEntry } from './leaderboard';
 
 const HIGH_SCORE_KEY = 'debris_high_score';
 const MUTED_KEY = 'debris_muted';
@@ -46,6 +46,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
+  const [submittedInitials, setSubmittedInitials] = useState<string | null>(null);
   const [submittingScore, setSubmittingScore] = useState(false);
 
   const toggleMute = useCallback(() => {
@@ -80,6 +81,7 @@ export default function App() {
     sfx.unlock();
     setResult(null);
     setGlobalRank(null);
+    setSubmittedInitials(null);
     setGameKey((k) => k + 1);
     setScreen('playing');
   }, []);
@@ -124,8 +126,10 @@ export default function App() {
       rocksDestroyed: result.stats.rocksDestroyed,
       durationMs: result.stats.durationMs,
     });
+    setSubmittedInitials(initials);
     if (outcome) {
-      setLeaderboard(outcome.list);
+      const paddedList = padBoardIfNeeded(outcome.list, outcome.rank);
+      setLeaderboard(paddedList);
       setGlobalRank(outcome.rank);
     } else {
       // Offline, or the function was unreachable -- submitScore already
@@ -144,7 +148,7 @@ export default function App() {
   return (
     <div className="app-root">
       {screen === 'title' && (
-        <TitleScreen highScore={highScore} muted={muted} onToggleMute={toggleMute} onPlay={startGame} onShowLeaderboard={showLeaderboard} />
+        <TitleScreen highScore={highScore} muted={muted} leaderboard={leaderboard} onToggleMute={toggleMute} onPlay={startGame} onShowLeaderboard={showLeaderboard} />
       )}
       {screen === 'playing' && (
         <DebrisGame
@@ -159,10 +163,10 @@ export default function App() {
         <InitialsEntry score={result.score} onSubmit={handleInitialsSubmit} onSkip={handleInitialsSkip} submitting={submittingScore} />
       )}
       {screen === 'gameover' && result && (
-        <GameOverScreen result={result} highScore={highScore} globalRank={globalRank} onPlayAgain={startGame} onMainMenu={goToTitle} />
+        <GameOverScreen result={result} highScore={highScore} globalRank={globalRank} submittedInitials={submittedInitials} onPlayAgain={startGame} onMainMenu={goToTitle} />
       )}
       {screen === 'leaderboard' && (
-        <LeaderboardScreen entries={leaderboard} loading={leaderboardLoading} onBack={goToTitle} />
+        <LeaderboardScreen entries={leaderboard} loading={leaderboardLoading} playerInitials={submittedInitials} onBack={goToTitle} />
       )}
     </div>
   );

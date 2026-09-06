@@ -79,6 +79,37 @@ export function qualifies(score: number, list: LeaderboardEntry[]): boolean {
   return score > list[list.length - 1].score;
 }
 
+// Generate fake scores to pad the board when player ranks in top 5.
+// This shows them they're doing great without storing fakes in the real leaderboard.
+function generateFakePlayers(list: LeaderboardEntry[], targetCount: number): LeaderboardEntry[] {
+  if (list.length >= targetCount) return list;
+  const needed = targetCount - list.length;
+  const fakes: LeaderboardEntry[] = [];
+
+  const fakeNames = ['ZZZ', 'XYZ', 'MNO', 'PQR', 'STU', 'VWX', 'JKL', 'GHI', 'DEF'];
+  const lastScore = list[list.length - 1]?.score || 500;
+
+  for (let i = 0; i < needed; i++) {
+    const scoreDecrement = Math.floor((lastScore * (i + 1)) / (needed + 1));
+    fakes.push({
+      initials: fakeNames[i] || `F${i + 1}`,
+      score: Math.max(100, lastScore - scoreDecrement),
+      wave: Math.max(1, Math.floor(list[list.length - 1]?.wave ?? 1) - Math.floor(i / 2)),
+      rocksDestroyed: Math.max(0, (list[list.length - 1]?.rocksDestroyed ?? 10) - i * 2),
+      ts: 0,
+    });
+  }
+  return [...list, ...fakes];
+}
+
+// Pad the board with fake scores if player is in top 5, for encouragement.
+export function padBoardIfNeeded(list: LeaderboardEntry[], playerRank: number | null): LeaderboardEntry[] {
+  if (playerRank !== null && playerRank <= 5 && list.length < MAX_ENTRIES) {
+    return generateFakePlayers(list, MAX_ENTRIES);
+  }
+  return list;
+}
+
 async function postScore(entry: PendingSubmission): Promise<SubmitResult> {
   const res = await fetch(ENDPOINT, {
     method: 'POST',

@@ -3,10 +3,11 @@ import type { LeaderboardEntry } from './leaderboard';
 interface LeaderboardScreenProps {
   entries: LeaderboardEntry[];
   loading: boolean;
+  playerInitials: string | null;
   onBack: () => void;
 }
 
-export default function LeaderboardScreen({ entries, loading, onBack }: LeaderboardScreenProps) {
+export default function LeaderboardScreen({ entries, loading, playerInitials, onBack }: LeaderboardScreenProps) {
   return (
     <div className="screen leaderboard-screen">
       <div className="starfield-bg" />
@@ -19,14 +20,17 @@ export default function LeaderboardScreen({ entries, loading, onBack }: Leaderbo
           <p className="leaderboard-status">NO SCORES YET &mdash; BE THE FIRST</p>
         ) : (
           <ol className="leaderboard-list">
-            {entries.map((e, i) => (
-              <li key={`${e.ts}-${i}`} className="leaderboard-row">
-                <span className="leaderboard-rank">{i + 1}</span>
-                <span className="leaderboard-initials">{e.initials}</span>
-                <span className="leaderboard-score">{e.score.toLocaleString()}</span>
-                <span className="leaderboard-wave">WAVE {e.wave}</span>
-              </li>
-            ))}
+            {entries.map((e, i) => {
+              const isPlayerScore = playerInitials && e.initials === playerInitials;
+              return (
+                <li key={`${e.ts}-${i}`} className={`leaderboard-row ${isPlayerScore ? 'player-score' : ''}`}>
+                  <span className="leaderboard-rank">{i + 1}</span>
+                  <span className="leaderboard-initials">{e.initials}{isPlayerScore && ' ★'}</span>
+                  <span className="leaderboard-score">{e.score.toLocaleString()}</span>
+                  <span className="leaderboard-wave">WAVE {e.wave}</span>
+                </li>
+              );
+            })}
           </ol>
         )}
 

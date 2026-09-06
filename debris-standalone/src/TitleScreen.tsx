@@ -1,6 +1,9 @@
+import type { LeaderboardEntry } from './leaderboard';
+
 interface TitleScreenProps {
   highScore: number;
   muted: boolean;
+  leaderboard: LeaderboardEntry[];
   onToggleMute: () => void;
   onPlay: () => void;
   onShowLeaderboard: () => void;
@@ -14,7 +17,7 @@ const LEGEND: { color: string; label: string; desc: string }[] = [
   { color: '#fb923c', label: 'VOLATILE ROCK', desc: 'chain-detonates nearby rocks' },
 ];
 
-export default function TitleScreen({ highScore, muted, onToggleMute, onPlay, onShowLeaderboard }: TitleScreenProps) {
+export default function TitleScreen({ highScore, muted, leaderboard, onToggleMute, onPlay, onShowLeaderboard }: TitleScreenProps) {
   return (
     <div className="screen title-screen">
       <div className="starfield-bg" />
@@ -41,6 +44,18 @@ export default function TitleScreen({ highScore, muted, onToggleMute, onPlay, on
         <button className="debris-btn debris-btn-text leaderboard-link" onClick={onShowLeaderboard}>
           HIGH SCORES
         </button>
+
+        {leaderboard.length > 0 && (
+          <ol className="title-leaderboard">
+            {leaderboard.map((e, i) => (
+              <li key={`${e.ts}-${i}`} className="title-leaderboard-row">
+                <span className="title-leaderboard-rank">{i + 1}</span>
+                <span className="title-leaderboard-initials">{e.initials}</span>
+                <span className="title-leaderboard-score">{e.score.toLocaleString()}</span>
+              </li>
+            ))}
+          </ol>
+        )}
 
         <p className="draft-note">Clear a sector, pick an upgrade. Ship gets stronger every wave.</p>
 
