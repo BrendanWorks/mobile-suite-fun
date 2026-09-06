@@ -557,7 +557,15 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     if (next.type === 'gameover') {
-      stopAllSounds();
+      // Not stopAllSounds(): that pauses the music element on the spot, and a
+      // paused media source wired into a context that must keep running for
+      // the death sound is the exact state that stuttered for the length of
+      // the death animation. Stop the effect loops, but let the music fade
+      // out while its element keeps playing; the real teardown (pause,
+      // release, suspend) happens together at unmount, by which point the
+      // gain is already at zero.
+      stopLoops();
+      sfx.fadeMusicOut(1.5);
       gameOverRef.current = true;
       gameOverAtRef.current = Date.now();
       // Deliberately leaves the loop running. The ship chunks, the death

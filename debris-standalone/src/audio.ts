@@ -52,6 +52,7 @@ class SfxEngine {
   private preloadStarted = false;
   private musicRouted = false;
   private musicSource: MediaElementAudioSourceNode | null = null;
+  private musicGain: GainNode | null = null;
   private musicEl: HTMLAudioElement | null = null;
 
   private ensureContext(): AudioContext | null {
@@ -110,8 +111,13 @@ class SfxEngine {
     this.releaseMusicElement();
     try {
       const source = ctx.createMediaElementSource(el);
-      source.connect(ctx.destination);
+      // Through a gain node rather than straight to the destination, so the
+      // music can be faded rather than only paused. See fadeMusicOut.
+      const gain = ctx.createGain();
+      gain.gain.value = 1;
+      source.connect(gain).connect(ctx.destination);
       this.musicSource = source;
+      this.musicGain = gain;
       this.musicEl = el;
       this.musicRouted = true;
     } catch {
@@ -120,13 +126,37 @@ class SfxEngine {
     }
   }
 
+  // Ramps the routed music to silence while leaving the element *playing*.
+  // Used at the moment of death. Pausing the element there left a paused
+  // media source wired into a context that has to stay running for the
+  // death sound -- exactly the configuration that produced the game-over
+  // stutter, just bounded to the death animation once the graph started
+  // being torn down at unmount. Keeping the element playing, at a gain that
+  // ramps to zero, keeps the pipeline live until that teardown; and because
+  // the gain is already at zero by then, the eventual pause is silent too.
+  fadeMusicOut(seconds = 1.5): void {
+    const ctx = this.ctx;
+    const gain = this.musicGain;
+    if (!ctx || !gain) return;
+    try {
+      const now = ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + seconds);
+    } catch { /* ignore */ }
+  }
+
   // Disconnects the retired element's node so a paused, discarded element is
   // not left as the graph's only input.
   releaseMusicElement(): void {
     if (this.musicSource) {
       try { this.musicSource.disconnect(); } catch { /* already gone */ }
     }
+    if (this.musicGain) {
+      try { this.musicGain.disconnect(); } catch { /* already gone */ }
+    }
     this.musicSource = null;
+    this.musicGain = null;
     this.musicEl = null;
     this.musicRouted = false;
   }
