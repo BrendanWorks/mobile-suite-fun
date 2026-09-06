@@ -95,8 +95,35 @@ interface DebrisGameProps {
   onQuit: () => void;
 }
 
-const W = 800;
-const H = 600;
+// Base logical resolution: a 4:3 box, matched to a typical desktop window.
+// Every other constant and position in this file (rock spawns, wrap margins,
+// HUD placement, star field) is expressed relative to W/H, so this is the
+// one place a device's actual shape gets applied. Phones are nowhere near
+// 4:3, so locking every device to this fixed box left big black bars above
+// and below the canvas on mobile.
+const BASE_W = 800;
+const BASE_H = 600;
+
+// Extends whichever side the base box is too cramped in for this device's
+// aspect ratio -- taller for a portrait phone, wider for a landscape window
+// -- computed once from the viewport at load. Deliberately not recomputed
+// per resize: rotating mid-run would otherwise reshuffle the coordinate
+// system under a live game (rocks, the player, wrap bounds all suddenly
+// meaning something different), which is worse than falling back to the
+// existing scale-to-fit letterboxing on a later resize. Clamped so an
+// extreme aspect ratio (an ultrawide monitor, a very elongated foldable)
+// can't dilute gameplay density into an empty corridor.
+function computeWorldSize(): { w: number; h: number } {
+  const baseAspect = BASE_W / BASE_H;
+  if (typeof window === 'undefined') return { w: BASE_W, h: BASE_H };
+  const aspect = (window.innerWidth || BASE_W) / (window.innerHeight || BASE_H);
+  if (aspect >= baseAspect) {
+    return { w: Math.min(BASE_W * 2, Math.round(BASE_H * aspect)), h: BASE_H };
+  }
+  return { w: BASE_W, h: Math.min(Math.round(BASE_H * 2.4), Math.round(BASE_W / aspect)) };
+}
+
+const { w: W, h: H } = computeWorldSize();
 
 const GRID_PATH = (() => {
   const p = new Path2D();
@@ -324,7 +351,11 @@ function musicRateFor(sector: number, intensity: number): number {
 
 function initStars(): Star[] {
   const stars: Star[] = [];
-  const count = 150;
+  // Scales with the arena's area so a taller (phone) or wider (ultrawide
+  // window) world doesn't thin the starfield out relative to the 150-star
+  // baseline; capped so an extreme aspect ratio doesn't add draw cost for
+  // stars a player is unlikely to notice past a point.
+  const count = Math.round(Math.min(400, Math.max(150, 150 * ((W * H) / (BASE_W * BASE_H)))));
   for (let i = 0; i < count; i++) {
     const layer = Math.random() < 0.55 ? 0 : Math.random() < 0.85 ? 1 : 2;
     stars.push({
