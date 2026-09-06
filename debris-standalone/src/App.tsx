@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DebrisGame, { type GameStats } from './Game';
+import { sfx } from './audio';
 import TitleScreen from './TitleScreen';
 import GameOverScreen from './GameOverScreen';
 
@@ -47,7 +48,13 @@ export default function App() {
     });
   }, []);
 
+  // Decode the sound effects while the title screen is up so they're ready
+  // for the first shot. Safe before any tap; the audio context just sits
+  // suspended until PLAY (a real gesture) unlocks it.
+  useEffect(() => { sfx.preload(); }, []);
+
   const startGame = useCallback(() => {
+    sfx.unlock();
     setResult(null);
     setGameKey((k) => k + 1);
     setScreen('playing');
