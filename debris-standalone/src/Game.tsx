@@ -133,7 +133,7 @@ const UFO_TRIGGER_SECONDS = 60;
 
 const MUSIC_RATES: Record<number, number> = { 1: 1.0, 2: 1.08, 3: 1.16, 4: 1.25 };
 const MUSIC_RATE_MAX = 1.4;
-const BULLET_HISTORY_LEN = 4;
+const BULLET_HISTORY_LEN = 6;
 const ROCK_SPAWN_FADE_MS = 200;
 
 const ROCK_RADII = { large: 46, medium: 28, small: 14 };
@@ -151,7 +151,7 @@ const VOLATILE_COLOR_DIM = 'rgba(251,146,60,0.18)';
 const VOLATILE_BLAST_RADIUS = 95;
 const VOLATILE_CHAIN_DEPTH_CAP = 5;
 
-const MAX_PARTICLES = 160;
+const MAX_PARTICLES = 260;
 
 const DASH_DISTANCE = 130;
 const DASH_IFRAME_MS = 350;
@@ -294,7 +294,7 @@ function spawnWaveRocks(wave: number, boostFactor: number): Rock[] {
 
 function initStars(): Star[] {
   const stars: Star[] = [];
-  const count = 90;
+  const count = 150;
   for (let i = 0; i < count; i++) {
     const layer = Math.random() < 0.55 ? 0 : Math.random() < 0.85 ? 1 : 2;
     stars.push({
@@ -620,7 +620,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
     function spawnExplosionParticles(pos: Vec2, rockSize: 'large' | 'medium' | 'small') {
       const sizeScale = rockSize === 'large' ? 1.0 : rockSize === 'medium' ? 0.8 : 0.6;
-      const count = Math.round((18 + Math.random() * 10) * sizeScale);
+      const count = Math.round((40 + Math.random() * 20) * sizeScale);
       const minSpeed = 200 * sizeScale;
       const maxSpeed = 400 * sizeScale;
 
@@ -634,7 +634,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         );
       }
 
-      const sparkCount = Math.round(5 * sizeScale);
+      const sparkCount = Math.round(12 * sizeScale);
       for (let i = 0; i < sparkCount; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = 150 + Math.random() * 200;
@@ -1166,7 +1166,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
               ctx.shadowColor = strokeColor;
               ctx.shadowBlur = 6 * volatilePulse;
             } else {
-              ctx.shadowBlur = 0;
+              ctx.shadowColor = COLORS.cyan;
+              ctx.shadowBlur = 8;
             }
 
             ctx.strokeStyle = strokeColor;
@@ -1276,7 +1277,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             ctx.beginPath();
             ctx.arc(b.pos.x, b.pos.y, 3, 0, Math.PI * 2);
             ctx.fillStyle = COLORS.pinkBright;
+            ctx.shadowColor = COLORS.pinkBright;
+            ctx.shadowBlur = 12;
             ctx.fill();
+            ctx.shadowBlur = 0;
           }
         } catch (e) {
           console.warn('Error drawing bullet:', e, b);
@@ -1310,7 +1314,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             ctx.beginPath();
             ctx.arc(b.pos.x, b.pos.y, 3.5, 0, Math.PI * 2);
             ctx.fillStyle = COLORS.ufoRed;
+            ctx.shadowColor = COLORS.ufoRed;
+            ctx.shadowBlur = 14;
             ctx.fill();
+            ctx.shadowBlur = 0;
           }
         } catch (e) {
           console.warn('Error drawing UFO bullet:', e, b);
