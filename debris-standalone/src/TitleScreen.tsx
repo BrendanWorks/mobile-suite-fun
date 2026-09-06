@@ -3,6 +3,7 @@ interface TitleScreenProps {
   muted: boolean;
   onToggleMute: () => void;
   onPlay: () => void;
+  onShowLeaderboard: () => void;
 }
 
 const LEGEND: { color: string; label: string; desc: string }[] = [
@@ -13,7 +14,7 @@ const LEGEND: { color: string; label: string; desc: string }[] = [
   { color: '#fb923c', label: 'VOLATILE ROCK', desc: 'chain-detonates nearby rocks' },
 ];
 
-export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: TitleScreenProps) {
+export default function TitleScreen({ highScore, muted, onToggleMute, onPlay, onShowLeaderboard }: TitleScreenProps) {
   return (
     <div className="screen title-screen">
       <div className="starfield-bg" />
@@ -35,6 +36,10 @@ export default function TitleScreen({ highScore, muted, onToggleMute, onPlay }: 
 
         <button className="debris-btn debris-btn-primary play-btn" onClick={onPlay}>
           PLAY
+        </button>
+
+        <button className="debris-btn debris-btn-text leaderboard-link" onClick={onShowLeaderboard}>
+          HIGH SCORES
         </button>
 
         <p className="draft-note">Clear a sector, pick an upgrade. Ship gets stronger every wave.</p>
