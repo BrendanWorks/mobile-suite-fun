@@ -10,11 +10,12 @@ interface GameOverScreenProps {
   result: GameOverResult;
   highScore: number;
   globalRank: number | null;
+  submittedInitials: string | null;
   onPlayAgain: () => void;
   onMainMenu: () => void;
 }
 
-export default function GameOverScreen({ result, highScore, globalRank, onPlayAgain, onMainMenu }: GameOverScreenProps) {
+export default function GameOverScreen({ result, highScore, globalRank, submittedInitials, onPlayAgain, onMainMenu }: GameOverScreenProps) {
   const { score, stats, isNewHigh } = result;
 
   return (
@@ -22,6 +23,10 @@ export default function GameOverScreen({ result, highScore, globalRank, onPlayAg
       <div className="starfield-bg" />
       <div className="gameover-content">
         <h2 className="gameover-heading">GAME OVER</h2>
+
+        {submittedInitials && (
+          <p className="submitted-initials">SCORE SUBMITTED: {submittedInitials}</p>
+        )}
 
         {globalRank != null
           ? <p className="new-high-banner">★ GLOBAL RANK #{globalRank} ★</p>

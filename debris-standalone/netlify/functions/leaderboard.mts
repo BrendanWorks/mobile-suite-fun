@@ -18,12 +18,28 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+const SEED_DATA: LeaderboardEntry[] = [
+  { initials: 'BDW', score: 12500, wave: 5, rocksDestroyed: 47, ts: 0 },
+  { initials: 'SWW', score: 11200, wave: 5, rocksDestroyed: 42, ts: 0 },
+  { initials: 'EVW', score: 9800, wave: 4, rocksDestroyed: 38, ts: 0 },
+  { initials: 'DJT', score: 8600, wave: 4, rocksDestroyed: 35, ts: 0 },
+  { initials: 'BHO', score: 7300, wave: 3, rocksDestroyed: 30, ts: 0 },
+  { initials: 'LMO', score: 6100, wave: 3, rocksDestroyed: 26, ts: 0 },
+  { initials: 'AAA', score: 4900, wave: 2, rocksDestroyed: 20, ts: 0 },
+  { initials: 'ABC', score: 3400, wave: 2, rocksDestroyed: 15, ts: 0 },
+  { initials: 'DAD', score: 2100, wave: 1, rocksDestroyed: 10, ts: 0 },
+];
+
 export default async (req: Request, context: Context): Promise<Response> => {
   const store = getStore({ name: 'leaderboard', consistency: 'strong' });
 
   if (req.method === 'GET') {
-    const list = (await store.get('top10', { type: 'json' })) as LeaderboardEntry[] | null;
-    return json(list ?? []);
+    let list = (await store.get('top10', { type: 'json' })) as LeaderboardEntry[] | null;
+    if (!list || list.length === 0) {
+      list = SEED_DATA;
+      await store.setJSON('top10', list);
+    }
+    return json(list);
   }
 
   if (req.method !== 'POST') {

@@ -46,6 +46,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
+  const [submittedInitials, setSubmittedInitials] = useState<string | null>(null);
   const [submittingScore, setSubmittingScore] = useState(false);
 
   const toggleMute = useCallback(() => {
@@ -80,6 +81,7 @@ export default function App() {
     sfx.unlock();
     setResult(null);
     setGlobalRank(null);
+    setSubmittedInitials(null);
     setGameKey((k) => k + 1);
     setScreen('playing');
   }, []);
@@ -124,6 +126,7 @@ export default function App() {
       rocksDestroyed: result.stats.rocksDestroyed,
       durationMs: result.stats.durationMs,
     });
+    setSubmittedInitials(initials);
     if (outcome) {
       setLeaderboard(outcome.list);
       setGlobalRank(outcome.rank);
@@ -159,10 +162,10 @@ export default function App() {
         <InitialsEntry score={result.score} onSubmit={handleInitialsSubmit} onSkip={handleInitialsSkip} submitting={submittingScore} />
       )}
       {screen === 'gameover' && result && (
-        <GameOverScreen result={result} highScore={highScore} globalRank={globalRank} onPlayAgain={startGame} onMainMenu={goToTitle} />
+        <GameOverScreen result={result} highScore={highScore} globalRank={globalRank} submittedInitials={submittedInitials} onPlayAgain={startGame} onMainMenu={goToTitle} />
       )}
       {screen === 'leaderboard' && (
-        <LeaderboardScreen entries={leaderboard} loading={leaderboardLoading} onBack={goToTitle} />
+        <LeaderboardScreen entries={leaderboard} loading={leaderboardLoading} playerInitials={submittedInitials} onBack={goToTitle} />
       )}
     </div>
   );

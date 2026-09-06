@@ -525,6 +525,17 @@ kbd {
   color: rgba(224,247,255,0.4);
   white-space: nowrap;
 }
+.leaderboard-row.player-score {
+  border-color: rgba(255,110,199,0.5);
+  background: rgba(255,110,199,0.08);
+}
+
+.submitted-initials {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(255,110,199,0.7);
+  margin: 0 0 8px;
+}
 
 /* ---------- gameplay stage ---------- */
 
