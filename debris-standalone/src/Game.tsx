@@ -535,7 +535,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     if (next.type === 'transition') {
-      stopAllSounds();
+      stopLoops();
       sectorClearedRef.current = Date.now();
     }
 
@@ -575,10 +575,22 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     ufoLoopRef.current = null;
   }
 
-  function stopAllSounds() {
+  // Stops the looping effects but deliberately leaves the music element
+  // alone. The routed music element is what holds iOS's audio session open
+  // (see the routeMusicElement comment in audio.ts), so pausing and seeking
+  // it at every sector boundary let the session go idle and re-establishing
+  // it glitched: the element fires a `waiting` re-buffer on the restart,
+  // audible as a stutter right as the sector clears. Music now plays
+  // continuously across the transition and the draft, and the new sector
+  // just changes its tempo.
+  function stopLoops() {
     stopUfoSound();
     boostLoopRef.current?.stop();
     boostLoopRef.current = null;
+  }
+
+  function stopAllSounds() {
+    stopLoops();
     if (musicRef.current) {
       musicRef.current.pause();
       musicRef.current.currentTime = 0;
