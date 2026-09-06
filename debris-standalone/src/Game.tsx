@@ -469,8 +469,21 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     sfx.setMuted(muted);
   }, [muted]);
 
+  // Only live gameplay is pausable. The game loop tests pausedRef *before* it
+  // dispatches on game state, so a pause taken during the sector-clear
+  // transition or the upgrade draft stranded the loop in its paused branch:
+  // the transition never reached the code that spawns the upgrade cards, and
+  // the frozen SECTOR CLEARED banner stayed on screen with the audio context
+  // suspended under it. Nothing is simulating in those states anyway, so
+  // there is nothing to pause. Unpausing is always allowed.
+  function canPause() {
+    const t = gameStateRef.current.type;
+    return t === 'playing' || t === 'ufo';
+  }
+
   function togglePause() {
     if (doneRef.current || gameOverRef.current) return;
+    if (!pausedRef.current && !canPause()) return;
     const next = !pausedRef.current;
     pausedRef.current = next;
     setPaused(next);
@@ -1715,6 +1728,15 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       lastUfoFireRef.current = 0;
       transitionTimerRef.current = null;
       lastFrameRef.current = performance.now();
+      // Belt and braces alongside canPause(): a pause must never survive into
+      // the next sector, or the loop resumes straight back into its paused
+      // branch with no overlay left to clear it.
+      if (pausedRef.current) {
+        pausedRef.current = false;
+        setPaused(false);
+        sfx.resume();
+        if (!mutedRef.current && musicPlayingRef.current) musicRef.current?.play().catch(() => {});
+      }
       setGameState({ type: 'playing', wave: nextWave });
     }
 
