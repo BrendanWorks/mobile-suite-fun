@@ -19,8 +19,11 @@ system, and local high-score tracking.
 - **Explosion sound** on every rock kill, with a small pool of voices so
   chained kills don't cut each other off.
 - **Local high score**, saved in your browser via `localStorage`.
-- **Visible on-screen touch controls** on mobile instead of hidden gesture
-  zones — rotate, thrust, and fire buttons you can actually see.
+- **Rogue-lite upgrades, phase-dash, and volatile rocks** — clear a sector
+  and pick one of three permanent upgrades; dash through danger with a
+  brief window of invincibility; watch out for the rocks that chain-detonate
+  their neighbors.
+- **Installable, works offline** — see below.
 - Removed a leftover debug "click here for a free life" hot zone from the
   original build.
 
@@ -28,11 +31,31 @@ system, and local high-score tracking.
 
 | Action | Keyboard | Touch |
 |---|---|---|
-| Rotate | `←` `→` or `A` `D` | left / right buttons |
-| Thrust | `↑` or `W` | up button |
-| Fire | `Space` | FIRE button |
+| Rotate | `←` `→` or `A` `D` | hold left/right side of the screen |
+| Thrust | `↑` or `W` | hold either side (after a beat) |
+| Fire | `Space` | tap, or two fingers |
+| Dash | `Shift` | DASH button |
 | Pause | `P` or `Esc` | pause icon |
 | Mute | `M` | speaker icon |
+
+Add `?debug=1` to the URL for an on-screen overlay of fps, frame time,
+entity counts, and audio engine state — useful for chasing down performance
+issues on a specific device.
+
+## Offline & installable
+
+The game is a Progressive Web App: after the first visit, a service worker
+has everything it needs cached (code, styles, and every sound) to run with
+no network connection at all. This happens automatically in the background
+— nothing blocks the first play, and there's no install prompt to dismiss.
+
+To actually install it (optional, and it works fine as a regular tab
+without this):
+- **iPhone (Safari)**: Share → Add to Home Screen
+- **Android (Chrome)**: menu → Install app / Add to Home Screen
+- **Desktop (Chrome/Edge)**: install icon in the address bar
+
+Installed or not, once you've loaded it once, it'll keep working offline.
 
 ## Running locally
 
