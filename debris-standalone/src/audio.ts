@@ -50,6 +50,7 @@ class SfxEngine {
   private buffers: Partial<Record<SoundName, AudioBuffer>> = {};
   private muted = false;
   private preloadStarted = false;
+  private musicRouted = false;
 
   private ensureContext(): AudioContext | null {
     if (this.ctx) return this.ctx;
@@ -84,6 +85,40 @@ class SfxEngine {
         .then((decoded) => { this.buffers[name] = decoded; })
         .catch(() => { /* sound just stays silent */ });
     }
+  }
+
+  // iOS silences plain Web Audio output (buffer sources straight to
+  // destination) whenever the hardware ringer switch is set to silent --
+  // but only for audio contexts that have never carried a real
+  // HTMLMediaElement. An <audio> tag playing normally is exempt from that
+  // mute switch. Piping the music element's output through this same
+  // AudioContext (instead of letting it play on its own, separate audio
+  // session) is what makes the whole context, sound effects included,
+  // inherit that exemption. Call this once, right after creating the music
+  // element; safe to call before any user gesture.
+  routeMusicElement(el: HTMLAudioElement): void {
+    if (this.musicRouted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    try {
+      const source = ctx.createMediaElementSource(el);
+      source.connect(ctx.destination);
+      this.musicRouted = true;
+    } catch {
+      // Already connected elsewhere, or the browser doesn't support it --
+      // the element still plays fine on its own, just without the benefit.
+    }
+  }
+
+  // For the ?debug=1 overlay -- turns "no sound on phone" into numbers
+  // instead of another guess.
+  getDebugInfo(): { ctxState: string; musicRouted: boolean; buffersReady: number; buffersTotal: number } {
+    return {
+      ctxState: this.ctx?.state ?? 'none',
+      musicRouted: this.musicRouted,
+      buffersReady: Object.keys(this.buffers).length,
+      buffersTotal: SFX_NAMES.length,
+    };
   }
 
   // Must be called from inside a user gesture (click, touch, key) at least

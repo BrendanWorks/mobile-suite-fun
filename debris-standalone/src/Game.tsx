@@ -539,6 +539,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     music.volume = 0.5;
     music.muted = mutedRef.current;
     musicRef.current = music;
+    sfx.routeMusicElement(music);
     return () => { stopUfoSound(); };
   }, []);
 
@@ -1509,10 +1510,12 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         let liveParticles = 0;
         for (const p of particlesRef.current) if (p.life > 0) liveParticles++;
         const canvasEl = canvasRef.current;
+        const audioInfo = sfx.getDebugInfo();
         const lines = [
           `fps ${avg ? (1000 / avg).toFixed(0) : '--'}  avg ${avg.toFixed(1)}ms  worst ${max.toFixed(0)}ms`,
           `rocks ${rocksRef.current.length}  bullets ${bulletsRef.current.length + ufoBulletsRef.current.length}  particles ${liveParticles}`,
           `canvas ${canvasEl ? canvasEl.width + 'x' + canvasEl.height : '?'}  dpr ${window.devicePixelRatio}`,
+          `audio ctx=${audioInfo.ctxState}  routed=${audioInfo.musicRouted}  sfx=${audioInfo.buffersReady}/${audioInfo.buffersTotal}`,
         ];
         ctx.save();
         ctx.font = 'bold 11px monospace';
