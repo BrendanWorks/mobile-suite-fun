@@ -51,6 +51,8 @@ class SfxEngine {
   private muted = false;
   private preloadStarted = false;
   private musicRouted = false;
+  private musicSource: MediaElementAudioSourceNode | null = null;
+  private musicEl: HTMLAudioElement | null = null;
 
   private ensureContext(): AudioContext | null {
     if (this.ctx) return this.ctx;
@@ -96,18 +98,37 @@ class SfxEngine {
   // session) is what makes the whole context, sound effects included,
   // inherit that exemption. Call this once, right after creating the music
   // element; safe to call before any user gesture.
+  // Every new game builds a fresh music element, so this has to route each one
+  // rather than latch on the first. It used to guard on a single boolean,
+  // which meant game two onward was never routed (losing the mute-switch
+  // exemption above) while game one's node stayed wired to the graph for the
+  // life of the page, holding a discarded element as a live input.
   routeMusicElement(el: HTMLAudioElement): void {
-    if (this.musicRouted) return;
+    if (this.musicEl === el) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    this.releaseMusicElement();
     try {
       const source = ctx.createMediaElementSource(el);
       source.connect(ctx.destination);
+      this.musicSource = source;
+      this.musicEl = el;
       this.musicRouted = true;
     } catch {
       // Already connected elsewhere, or the browser doesn't support it --
       // the element still plays fine on its own, just without the benefit.
     }
+  }
+
+  // Disconnects the retired element's node so a paused, discarded element is
+  // not left as the graph's only input.
+  releaseMusicElement(): void {
+    if (this.musicSource) {
+      try { this.musicSource.disconnect(); } catch { /* already gone */ }
+    }
+    this.musicSource = null;
+    this.musicEl = null;
+    this.musicRouted = false;
   }
 
   // For the ?debug=1 overlay -- turns "no sound on phone" into numbers

@@ -592,8 +592,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   function stopAllSounds() {
     stopLoops();
     if (musicRef.current) {
+      // No seek here: every game builds a fresh element, so rewinding one we
+      // are about to discard is pointless work, and seeking an element that
+      // feeds the Web Audio graph is exactly the operation that glitches.
       musicRef.current.pause();
-      musicRef.current.currentTime = 0;
       musicPlayingRef.current = false;
     }
   }
@@ -2215,6 +2217,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       document.removeEventListener('visibilitychange', handleVisibility);
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
       stopAllSounds();
+      // Tear the graph down when the game screen goes away (game over, or quit
+      // to menu). Leaving the context running with a paused, discarded media
+      // element still wired to the destination gives the hardware a live graph
+      // with nothing feeding it. Suspending here rather than at the moment of
+      // death lets the death sound ring out first; the PLAY button's
+      // sfx.unlock() resumes it inside a real gesture on the next game.
+      sfx.releaseMusicElement();
+      sfx.suspend();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
