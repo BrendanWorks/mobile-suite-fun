@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { sfx, SOUND_SRC, type LoopHandle } from './audio';
 
 interface Vec2 { x: number; y: number; }
 
@@ -103,6 +104,12 @@ const GRID_PATH = (() => {
   for (let y = 0; y < H; y += 60) { p.moveTo(0, y); p.lineTo(W, y); }
   return p;
 })();
+
+// Performance overlay, off by default. Open the game with ?debug=1 to show
+// live frame timing and entity counts on-canvas -- the point is to get real
+// numbers off a phone, where no dev tools are handy.
+const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
+const FRAME_SAMPLE_COUNT = 60;
 const BULLET_SPEED = 480;
 const BULLET_LIFE = 3000;
 const FIRE_COOLDOWN = 80;
@@ -352,7 +359,6 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const starsRef = useRef<Star[]>(initStars());
   const ufoRef = useRef<Ufo | null>(null);
   const ufoPassesCompletedRef = useRef(0);
-  const ufoSoundPlayingRef = useRef(false);
   const ufoTriggeredRef = useRef(false);
   const ufoBurstRef = useRef<{ count: number; lastShot: number } | null>(null);
 
@@ -382,6 +388,9 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const fireQueueRef = useRef(0);
   const lastFireRef = useRef(0);
   const lastFrameRef = useRef(0);
+  const frameTimesRef = useRef<Float32Array>(new Float32Array(FRAME_SAMPLE_COUNT));
+  const frameIdxRef = useRef(0);
+  const lastDbgTsRef = useRef(0);
   const rafRef = useRef(0);
 
   const waveRef = useRef(1);
@@ -406,17 +415,12 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const doneRef = useRef(false);
   const gameOverRef = useRef(false);
 
-  const shootSoundRef = useRef<HTMLAudioElement | null>(null);
-  const disappearSoundRef = useRef<HTMLAudioElement | null>(null);
-  const ufoSoundRef = useRef<HTMLAudioElement | null>(null);
-  const boostSoundRef = useRef<HTMLAudioElement | null>(null);
-  const coinSoundRef = useRef<HTMLAudioElement | null>(null);
-  const pickupSoundRef = useRef<HTMLAudioElement | null>(null);
-  const explosionPoolRef = useRef<HTMLAudioElement[]>([]);
-  const explosionPoolIdxRef = useRef(0);
+  // Music stays on an HTMLAudioElement (see audio.ts for why); every other
+  // sound goes through the Web Audio engine.
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const musicPlayingRef = useRef(false);
-  const boostSoundPlayingRef = useRef(false);
+  const ufoLoopRef = useRef<LoopHandle | null>(null);
+  const boostLoopRef = useRef<LoopHandle | null>(null);
 
   const onGameOverRef = useRef(onGameOver);
   const onQuitRef = useRef(onQuit);
@@ -426,14 +430,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   useEffect(() => { onToggleMuteRef.current = onToggleMute; }, [onToggleMute]);
   useEffect(() => {
     mutedRef.current = muted;
-    const audios = [
-      musicRef.current, ufoSoundRef.current, boostSoundRef.current,
-      shootSoundRef.current, disappearSoundRef.current, coinSoundRef.current,
-      pickupSoundRef.current, ...explosionPoolRef.current,
-    ];
-    for (const a of audios) {
-      if (a) a.muted = muted;
-    }
+    if (musicRef.current) musicRef.current.muted = muted;
+    sfx.setMuted(muted);
   }, [muted]);
 
   function togglePause() {
@@ -443,15 +441,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     setPaused(next);
     if (next) {
       musicRef.current?.pause();
-      ufoSoundRef.current?.pause();
-      boostSoundRef.current?.pause();
-      boostSoundPlayingRef.current = false;
+      boostLoopRef.current?.stop();
+      boostLoopRef.current = null;
+      sfx.suspend();
     } else {
       lastFrameRef.current = performance.now();
-      if (!mutedRef.current) {
-        if (musicPlayingRef.current) musicRef.current?.play().catch(() => {});
-        if (ufoSoundPlayingRef.current) ufoSoundRef.current?.play().catch(() => {});
-      }
+      sfx.unlock();
+      sfx.resume();
+      if (!mutedRef.current && musicPlayingRef.current) musicRef.current?.play().catch(() => {});
     }
   }
 
@@ -468,12 +465,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       startX: fromLeft ? -60 : W + 60,
       alive: true,
     };
-    if (!ufoSoundPlayingRef.current && ufoSoundRef.current && !mutedRef.current) {
-      ufoSoundRef.current.play().catch(() => {});
-      ufoSoundPlayingRef.current = true;
-    } else if (!ufoSoundPlayingRef.current) {
-      ufoSoundPlayingRef.current = true;
-    }
+    if (!ufoLoopRef.current) ufoLoopRef.current = sfx.loop('ufo', 0.6);
   }
 
   function setGameState(next: GameState): boolean {
@@ -525,28 +517,14 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   }
 
   function stopUfoSound() {
-    if (ufoSoundRef.current) {
-      ufoSoundRef.current.pause();
-      ufoSoundRef.current.currentTime = 0;
-      ufoSoundPlayingRef.current = false;
-    }
+    ufoLoopRef.current?.stop();
+    ufoLoopRef.current = null;
   }
 
   function stopAllSounds() {
     stopUfoSound();
-    if (boostSoundRef.current) {
-      boostSoundRef.current.pause();
-      boostSoundRef.current.currentTime = 0;
-      boostSoundPlayingRef.current = false;
-    }
-    if (shootSoundRef.current) {
-      shootSoundRef.current.pause();
-      shootSoundRef.current.currentTime = 0;
-    }
-    if (disappearSoundRef.current) {
-      disappearSoundRef.current.pause();
-      disappearSoundRef.current.currentTime = 0;
-    }
+    boostLoopRef.current?.stop();
+    boostLoopRef.current = null;
     if (musicRef.current) {
       musicRef.current.pause();
       musicRef.current.currentTime = 0;
@@ -555,39 +533,12 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   }
 
   useEffect(() => {
-    shootSoundRef.current = new Audio('/sounds/global/SoundShootRegularOptimized.mp3');
-    disappearSoundRef.current = new Audio('/sounds/global/disappear_Normalized.mp3');
-    ufoSoundRef.current = new Audio('/sounds/global/ufo_normalized.mp3');
-    boostSoundRef.current = new Audio('/sounds/global/BoostNormalized.mp3');
-    if (ufoSoundRef.current) {
-      ufoSoundRef.current.loop = true;
-      ufoSoundRef.current.volume = 0.6;
-    }
-    if (boostSoundRef.current) {
-      boostSoundRef.current.loop = true;
-      boostSoundRef.current.volume = 0.35;
-    }
-    coinSoundRef.current = new Audio('/sounds/global/SoundCoin.mp3');
-    pickupSoundRef.current = new Audio('/sounds/global/SoundCoin.mp3');
-    explosionPoolRef.current = Array.from({ length: 5 }, () => new Audio('/sounds/debris/Explosion_Normalized.mp3'));
-    musicRef.current = new Audio('/sounds/global/debris_music.mp3');
-    if (musicRef.current) {
-      musicRef.current.loop = true;
-      musicRef.current.volume = 0.5;
-    }
-    if (coinSoundRef.current) coinSoundRef.current.volume = 0.7;
-    if (pickupSoundRef.current) pickupSoundRef.current.volume = 0.55;
-    if (shootSoundRef.current) shootSoundRef.current.volume = 0.45;
-    if (disappearSoundRef.current) disappearSoundRef.current.volume = 0.7;
-
-    const allAudio = [
-      shootSoundRef.current, disappearSoundRef.current, ufoSoundRef.current, boostSoundRef.current,
-      coinSoundRef.current, pickupSoundRef.current, musicRef.current, ...explosionPoolRef.current,
-    ];
-    for (const a of allAudio) {
-      if (a) a.muted = mutedRef.current;
-    }
-
+    sfx.preload();
+    const music = new Audio(SOUND_SRC.music);
+    music.loop = true;
+    music.volume = 0.5;
+    music.muted = mutedRef.current;
+    musicRef.current = music;
     return () => { stopUfoSound(); };
   }, []);
 
@@ -602,24 +553,8 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       musicPlayingRef.current = true;
     }
 
-    function playSound(audio: HTMLAudioElement | null) {
-      if (!audio || mutedRef.current) return;
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    }
-
     function playExplosion(volume: number) {
-      if (mutedRef.current) return;
-      const pool = explosionPoolRef.current;
-      if (!pool.length) return;
-      const a = pool[explosionPoolIdxRef.current];
-      explosionPoolIdxRef.current = (explosionPoolIdxRef.current + 1) % pool.length;
-      try {
-        a.currentTime = 0;
-        a.volume = volume;
-        a.playbackRate = 0.9 + Math.random() * 0.25;
-        a.play().catch(() => {});
-      } catch { /* ignore */ }
+      sfx.play('explosion', volume, 0.9 + Math.random() * 0.25);
     }
 
     function safe(label: string, fn: () => void) {
@@ -772,7 +707,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     function collectPowerUp(type: PowerUpType) {
       const now = Date.now();
       spawnParticles(playerPosRef.current, 18, POWERUP_COLORS[type], 170);
-      playSound(pickupSoundRef.current);
+      sfx.play('coin', 0.55);
       if (type === 'rapid') {
         rapidUntilRef.current = Math.max(rapidUntilRef.current, now) + POWERUP_BUFF_DURATION;
       } else if (type === 'spread') {
@@ -881,7 +816,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       livesRef.current--;
       playerVisibleRef.current = false;
       spawnShipChunks(playerPosRef.current);
-      playSound(disappearSoundRef.current);
+      sfx.play('disappear', 0.7);
       invincibleUntilRef.current = Date.now() + INVINCIBLE_MS;
       comboRef.current = 0;
       multiplierRef.current = 1.0;
@@ -937,7 +872,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         });
       }
 
-      playSound(shootSoundRef.current);
+      sfx.play('shoot', 0.45);
 
       lastShotHitRef.current = false;
       if (missTimerRef.current) clearTimeout(missTimerRef.current);
@@ -1561,6 +1496,32 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         ctx.shadowBlur = 0;
       }
 
+      if (DEBUG) {
+        const times = frameTimesRef.current;
+        let sum = 0, max = 0, n = 0;
+        for (let i = 0; i < FRAME_SAMPLE_COUNT; i++) {
+          const t = times[i];
+          if (t <= 0) continue;
+          sum += t; n++;
+          if (t > max) max = t;
+        }
+        const avg = n ? sum / n : 0;
+        let liveParticles = 0;
+        for (const p of particlesRef.current) if (p.life > 0) liveParticles++;
+        const canvasEl = canvasRef.current;
+        const lines = [
+          `fps ${avg ? (1000 / avg).toFixed(0) : '--'}  avg ${avg.toFixed(1)}ms  worst ${max.toFixed(0)}ms`,
+          `rocks ${rocksRef.current.length}  bullets ${bulletsRef.current.length + ufoBulletsRef.current.length}  particles ${liveParticles}`,
+          `canvas ${canvasEl ? canvasEl.width + 'x' + canvasEl.height : '?'}  dpr ${window.devicePixelRatio}`,
+        ];
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = COLORS.yellow;
+        for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], 16, 80 + i * 14);
+        ctx.restore();
+      }
+
       ctx.textAlign = 'left';
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.cyanMid;
@@ -1713,6 +1674,16 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         return;
       }
 
+      if (DEBUG) {
+        // Always-on timing, independent of the physics dt (which gets reset by
+        // pause/hitstop), so stutter shows up here even when motion is frozen.
+        if (lastDbgTsRef.current > 0) {
+          frameTimesRef.current[frameIdxRef.current] = ts - lastDbgTsRef.current;
+          frameIdxRef.current = (frameIdxRef.current + 1) % FRAME_SAMPLE_COUNT;
+        }
+        lastDbgTsRef.current = ts;
+      }
+
       try {
         if (pausedRef.current) {
           lastFrameRef.current = ts;
@@ -1779,17 +1750,10 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
         if (thrusting) {
           playerVelRef.current.x += Math.cos(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
           playerVelRef.current.y += Math.sin(playerAngleRef.current) * THRUST_ACCEL * engineMultRef.current * dt;
-          if (!boostSoundPlayingRef.current && boostSoundRef.current && !mutedRef.current) {
-            boostSoundRef.current.currentTime = 0;
-            boostSoundRef.current.play().catch(() => {});
-            boostSoundPlayingRef.current = true;
-          }
-        } else {
-          if (boostSoundPlayingRef.current && boostSoundRef.current) {
-            boostSoundRef.current.pause();
-            boostSoundRef.current.currentTime = 0;
-            boostSoundPlayingRef.current = false;
-          }
+          if (!boostLoopRef.current) boostLoopRef.current = sfx.loop('boost', 0.35);
+        } else if (boostLoopRef.current) {
+          boostLoopRef.current.stop();
+          boostLoopRef.current = null;
         }
 
         const maxSpeed = PLAYER_MAX_SPEED * engineMultRef.current;
@@ -2056,6 +2020,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     }
 
     const handleKey = (e: KeyboardEvent) => {
+      sfx.unlock();
       if (doneRef.current) return;
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
@@ -2145,6 +2110,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
+    sfx.unlock();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
