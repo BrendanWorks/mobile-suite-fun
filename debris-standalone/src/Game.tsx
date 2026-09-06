@@ -95,15 +95,57 @@ interface DebrisGameProps {
   onQuit: () => void;
 }
 
-const W = 800;
-const H = 600;
+// Base logical resolution: a 4:3 box, matched to a typical desktop window.
+// Every other constant and position in this file (rock spawns, wrap margins,
+// HUD placement, star field) is expressed relative to W/H, so this is the
+// one place a device's actual shape gets applied. Phones are nowhere near
+// 4:3, so locking every device to this fixed box left big black bars above
+// and below the canvas on mobile.
+const BASE_W = 800;
+const BASE_H = 600;
 
-const GRID_PATH = (() => {
+// Extends whichever side the base box is too cramped in for this device's
+// aspect ratio -- taller for a portrait phone, wider for a landscape window
+// -- and leaves an already-close-to-4:3 screen alone. Clamped so an extreme
+// aspect ratio (an ultrawide monitor, a very elongated foldable) can't
+// dilute gameplay density into an empty corridor.
+function computeWorldSizeFor(vw: number, vh: number): { w: number; h: number } {
+  const baseAspect = BASE_W / BASE_H;
+  const aspect = (vw || BASE_W) / (vh || BASE_H);
+  if (aspect >= baseAspect) {
+    return { w: Math.min(BASE_W * 2, Math.round(BASE_H * aspect)), h: BASE_H };
+  }
+  return { w: BASE_W, h: Math.min(Math.round(BASE_H * 2.4), Math.round(BASE_W / aspect)) };
+}
+
+function computeInitialWorldSize(): { w: number; h: number } {
+  if (typeof window === 'undefined') return { w: BASE_W, h: BASE_H };
+  return computeWorldSizeFor(window.innerWidth, window.innerHeight);
+}
+
+// Mutable rather than const: rotating a phone mid-session has to reshape
+// this, not just rescale the same shape into a differently-shaped box (see
+// the resize effect below, which is what actually changes these).
+const initialSize = computeInitialWorldSize();
+let W = initialSize.w;
+let H = initialSize.h;
+
+function buildGridPath(): Path2D {
   const p = new Path2D();
   for (let x = 0; x < W; x += 60) { p.moveTo(x, 0); p.lineTo(x, H); }
   for (let y = 0; y < H; y += 60) { p.moveTo(0, y); p.lineTo(W, y); }
   return p;
-})();
+}
+
+let GRID_PATH = buildGridPath();
+
+// Mirrors the `@media (hover: none) and (pointer: coarse)` query in
+// index.css that shows the physical on-screen DASH button and touch hint.
+// Read once: a mid-session input-mode switch (a Bluetooth mouse connecting
+// to a tablet, say) repositioning the on-canvas dash readout is not worth
+// tracking live.
+const IS_COARSE_POINTER = typeof window !== 'undefined' && !!window.matchMedia
+  && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 // Performance overlay, off by default. Open the game with ?debug=1 to show
 // live frame timing and entity counts on-canvas -- the point is to get real
@@ -324,7 +366,11 @@ function musicRateFor(sector: number, intensity: number): number {
 
 function initStars(): Star[] {
   const stars: Star[] = [];
-  const count = 150;
+  // Scales with the arena's area so a taller (phone) or wider (ultrawide
+  // window) world doesn't thin the starfield out relative to the 150-star
+  // baseline; capped so an extreme aspect ratio doesn't add draw cost for
+  // stars a player is unlikely to notice past a point.
+  const count = Math.round(Math.min(400, Math.max(150, 150 * ((W * H) / (BASE_W * BASE_H)))));
   for (let i = 0; i < count; i++) {
     const layer = Math.random() < 0.55 ? 0 : Math.random() < 0.85 ? 1 : 2;
     stars.push({
@@ -1143,12 +1189,22 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       ctx.restore();
     }
 
-    function drawDashIndicator(ctx: CanvasRenderingContext2D, now: number) {
+    function drawDashIndicator(ctx: CanvasRenderingContext2D, now: number, scale: number) {
       const cooldown = DASH_COOLDOWN_MS * dashCooldownMultRef.current;
       const elapsed = now - lastDashRef.current;
       const ready = elapsed >= cooldown;
       const frac = Math.max(0, Math.min(1, elapsed / cooldown));
-      const x = W - 16, y = H - 20;
+      // On a touch device the physical DASH button (60px circle, 22px inset
+      // from the corner -- .debris-touch-dash in index.css) sits in real
+      // screen pixels over this same corner. On the old fixed 4:3 canvas
+      // that corner usually landed in the letterboxed black bar, so the two
+      // never met; filling the actual viewport means the canvas now often
+      // reaches that real corner too, and this label+bar was drawn right
+      // under the button. Lifting it by the button's real-pixel footprint,
+      // converted to world units via the current canvas scale, clears it on
+      // every device regardless of how much the arena is scaled.
+      const y = IS_COARSE_POINTER ? H - Math.min(H * 0.35, 95 / scale) : H - 20;
+      const x = W - 16;
       const barW = 60, barH = 6;
       const barX = x - barW;
 
@@ -1433,69 +1489,95 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
             const velocityRatio = Math.min(speed / PLAYER_MAX_SPEED, 1);
 
             if (!invincible || Math.floor(now / 120) % 2 === 0) {
-              ctx.save();
-              ctx.translate(px, py);
-              ctx.rotate(pa);
-
-              if (shielded) {
-                const shieldPulse = 0.8 + 0.2 * Math.sin(now / 120);
+              // The ship wraps at the world edge like everything else, but
+              // wrapPos only snaps it back once it's WRAP_MARGIN past the
+              // edge -- meaning for however long it takes to cross that gap
+              // (a quarter to half a second at normal thrust speeds) it sits
+              // at a coordinate outside [0,W]x[0,H] and simply isn't drawn:
+              // the ship goes fully invisible mid-wrap. Asteroids-style games
+              // solve this by drawing a second copy offset by the wrap
+              // distance whenever the ship is within that margin of an edge,
+              // so it's always visible somewhere -- sliding off one side
+              // while already visible peeking in on the other, rather than
+              // vanishing for that gap. Collision still only ever uses the
+              // one real (playerPosRef) position; this is rendering only.
+              const drawShipAt = (ox: number, oy: number) => {
                 ctx.save();
-                ctx.rotate(-pa);
-                ctx.beginPath();
-                ctx.arc(0, 0, 22 * shieldPulse, 0, Math.PI * 2);
-                ctx.strokeStyle = COLORS.cyan;
-                ctx.lineWidth = 1.5;
-                ctx.shadowColor = COLORS.cyan;
-                ctx.shadowBlur = 12;
-                ctx.globalAlpha = 0.7;
-                ctx.stroke();
-                ctx.restore();
-              }
+                ctx.translate(ox, oy);
+                ctx.rotate(pa);
 
-              if (thrusting && velocityRatio > 0) {
-                const thrustAlpha = 0.4 + velocityRatio * 0.6;
-                const thrustRadius = 18 + velocityRatio * 14;
-                const r = Math.round(0 + velocityRatio * 255);
-                const g = Math.round(255 - velocityRatio * 100);
-                const glowGrad = ctx.createRadialGradient(-8, 0, 0, -8, 0, thrustRadius);
-                glowGrad.addColorStop(0, `rgba(${r},${g},255,${thrustAlpha})`);
-                glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.beginPath();
-                ctx.arc(-8, 0, thrustRadius, 0, Math.PI * 2);
-                ctx.fillStyle = glowGrad;
-                ctx.fill();
-              }
+                if (shielded) {
+                  const shieldPulse = 0.8 + 0.2 * Math.sin(now / 120);
+                  ctx.save();
+                  ctx.rotate(-pa);
+                  ctx.beginPath();
+                  ctx.arc(0, 0, 22 * shieldPulse, 0, Math.PI * 2);
+                  ctx.strokeStyle = COLORS.cyan;
+                  ctx.lineWidth = 1.5;
+                  ctx.shadowColor = COLORS.cyan;
+                  ctx.shadowBlur = 12;
+                  ctx.globalAlpha = 0.7;
+                  ctx.stroke();
+                  ctx.restore();
+                }
 
-              const shipColor = invincible ? COLORS.yellow : COLORS.magenta;
-              ctx.shadowColor = shipColor;
-              ctx.shadowBlur = invincible ? 20 : 16;
-              ctx.strokeStyle = shipColor;
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(18, 0);
-              ctx.lineTo(-12, -10);
-              ctx.lineTo(-6, 0);
-              ctx.lineTo(-12, 10);
-              ctx.closePath();
-              ctx.stroke();
+                if (thrusting && velocityRatio > 0) {
+                  const thrustAlpha = 0.4 + velocityRatio * 0.6;
+                  const thrustRadius = 18 + velocityRatio * 14;
+                  const r = Math.round(0 + velocityRatio * 255);
+                  const g = Math.round(255 - velocityRatio * 100);
+                  const glowGrad = ctx.createRadialGradient(-8, 0, 0, -8, 0, thrustRadius);
+                  glowGrad.addColorStop(0, `rgba(${r},${g},255,${thrustAlpha})`);
+                  glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                  ctx.beginPath();
+                  ctx.arc(-8, 0, thrustRadius, 0, Math.PI * 2);
+                  ctx.fillStyle = glowGrad;
+                  ctx.fill();
+                }
 
-              if (thrusting) {
-                const r2 = Math.round(velocityRatio * 255);
-                const g2 = Math.round(255 - velocityRatio * 100);
-                const thrustColor = `rgb(${r2},${g2},255)`;
-                ctx.strokeStyle = thrustColor;
+                const shipColor = invincible ? COLORS.yellow : COLORS.magenta;
+                ctx.shadowColor = shipColor;
+                ctx.shadowBlur = invincible ? 20 : 16;
+                ctx.strokeStyle = shipColor;
                 ctx.lineWidth = 2;
-                ctx.shadowColor = thrustColor;
-                ctx.shadowBlur = 16 + velocityRatio * 12;
                 ctx.beginPath();
-                const fl = 8 + Math.random() * 12 + velocityRatio * 8;
-                ctx.moveTo(-6, -4);
-                ctx.lineTo(-6 - fl, 0);
-                ctx.lineTo(-6, 4);
+                ctx.moveTo(18, 0);
+                ctx.lineTo(-12, -10);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(-12, 10);
+                ctx.closePath();
                 ctx.stroke();
-              }
 
-              ctx.restore();
+                if (thrusting) {
+                  const r2 = Math.round(velocityRatio * 255);
+                  const g2 = Math.round(255 - velocityRatio * 100);
+                  const thrustColor = `rgb(${r2},${g2},255)`;
+                  ctx.strokeStyle = thrustColor;
+                  ctx.lineWidth = 2;
+                  ctx.shadowColor = thrustColor;
+                  ctx.shadowBlur = 16 + velocityRatio * 12;
+                  ctx.beginPath();
+                  const fl = 8 + Math.random() * 12 + velocityRatio * 8;
+                  ctx.moveTo(-6, -4);
+                  ctx.lineTo(-6 - fl, 0);
+                  ctx.lineTo(-6, 4);
+                  ctx.stroke();
+                }
+
+                ctx.restore();
+              };
+
+              const nearLeft = px < WRAP_MARGIN;
+              const nearRight = px > W - WRAP_MARGIN;
+              const nearTop = py < WRAP_MARGIN;
+              const nearBottom = py > H - WRAP_MARGIN;
+              const dx = nearLeft ? W : nearRight ? -W : 0;
+              const dy = nearTop ? H : nearBottom ? -H : 0;
+
+              drawShipAt(px, py);
+              if (dx) drawShipAt(px + dx, py);
+              if (dy) drawShipAt(px, py + dy);
+              if (dx && dy) drawShipAt(px + dx, py + dy);
             }
           }
         } catch (e) {
@@ -1659,7 +1741,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
       if (now < spreadUntilRef.current) drawBuffBar(ctx, buffIndex++, 'spread', spreadUntilRef.current - now, POWERUP_BUFF_DURATION);
       if (now < shieldUntilRef.current) drawBuffBar(ctx, buffIndex++, 'shield', shieldUntilRef.current - now, SHIELD_DURATION);
 
-      drawDashIndicator(ctx, now);
+      drawDashIndicator(ctx, now, s);
 
       const hitFlash = hitFlashRef.current;
       if (hitFlash.opacity > 0) {
@@ -2237,6 +2319,40 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Multiplies every live entity's position by (sx, sy) when the arena
+  // reshapes (see resize() below) -- e.g. a rock at 50% across the old
+  // world stays at 50% across the new one, instead of ending up outside
+  // the new bounds or bunched in whatever corner its old absolute
+  // coordinates happen to land in. Purely-cosmetic, short-lived effects
+  // (particles, ship chunks, core flashes, score floaters) are cleared
+  // instead of rescaled -- they're gone within a second regardless, and a
+  // device rotation is rare enough that losing a few of them is invisible.
+  function rescaleWorld(sx: number, sy: number) {
+    const pos = playerPosRef.current;
+    pos.x *= sx; pos.y *= sy;
+
+    for (const r of rocksRef.current) { r.pos.x *= sx; r.pos.y *= sy; }
+    for (const p of powerupsRef.current) { p.pos.x *= sx; p.pos.y *= sy; }
+    for (const b of [...bulletsRef.current, ...ufoBulletsRef.current]) {
+      b.pos.x *= sx; b.pos.y *= sy;
+      for (const h of b.history) { h.x *= sx; h.y *= sy; }
+    }
+    for (const s of starsRef.current) { s.x *= sx; s.y *= sy; }
+
+    const ufo = ufoRef.current;
+    if (ufo) {
+      ufo.pos.x *= sx; ufo.pos.y *= sy;
+      ufo.baseY *= sy;
+      ufo.startX *= sx;
+      ufo.amplitude *= sy;
+    }
+
+    for (const p of particlesRef.current) p.life = 0;
+    shipChunksRef.current = [];
+    coreFlashesRef.current = [];
+    scoreFloatersRef.current = [];
+  }
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -2244,6 +2360,22 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
     const resize = () => {
       const cw = container.clientWidth;
       const ch = container.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+
+      // Reshape the arena itself when the container's shape genuinely
+      // changes (a phone rotating, a window resized to a very different
+      // aspect), rather than just re-fitting the OLD shape into the new
+      // box: that fit is constrained by whichever axis is now the tight
+      // one, and a landscape-sized world squeezed into a portrait box
+      // renders as a tiny sliver -- reported after rotating mid-session.
+      const next = computeWorldSizeFor(cw, ch);
+      if (next.w !== W || next.h !== H) {
+        rescaleWorld(next.w / W, next.h / H);
+        W = next.w;
+        H = next.h;
+        GRID_PATH = buildGridPath();
+      }
+
       const s = Math.min(cw / W, ch / H);
       scaleRef.current = s;
       if (canvasRef.current) {
