@@ -3,4 +3,5 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # @netlify/blobs and @netlify/functions (leaderboard backend) require Node >=22.12.
+  NODE_VERSION = "22"

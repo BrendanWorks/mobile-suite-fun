@@ -86,6 +86,7 @@ interface Star {
 export interface GameStats {
   wave: number;
   rocksDestroyed: number;
+  durationMs: number;
 }
 
 interface DebrisGameProps {
@@ -482,6 +483,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
   const multPulseRef = useRef(0);
 
   const rocksTotalDestroyedRef = useRef(0);
+  const runStartRef = useRef(Date.now());
   const sectorClearedRef = useRef(0);
   const transitionTimerRef = useRef<number | null>(null);
 
@@ -963,6 +965,7 @@ export default function DebrisGame({ muted, onToggleMute, onGameOver, onQuit }: 
           onGameOverRef.current?.(Math.round(scoreRef.current), {
             wave: waveRef.current,
             rocksDestroyed: rocksTotalDestroyedRef.current,
+            durationMs: Date.now() - runStartRef.current,
           });
         }, 2200);
       }
