@@ -212,11 +212,33 @@ class SfxEngine {
       src.start(0);
       let stopped = false;
       return {
+        // A loop is a continuous waveform, so it's almost never sitting at a
+        // zero-crossing at the instant something calls stop() -- cutting it
+        // off with a bare src.stop() leaves a sample-level discontinuity,
+        // which is exactly what a click/pop is. Most of the time that's
+        // masked by everything else going on, but stopAllSounds() calls this
+        // on both loops the instant the player dies, and if thrust or the
+        // UFO drone happened to be live at that exact moment, the click
+        // lands right as the death animation starts -- audible precisely
+        // because the game has otherwise gone quiet around it. A short
+        // linear ramp to silence before the scheduled stop removes the
+        // discontinuity.
         stop() {
           if (stopped) return;
           stopped = true;
-          try { src.stop(); } catch { /* already stopped */ }
-          try { src.disconnect(); gain.disconnect(); } catch { /* ignore */ }
+          const FADE = 0.03;
+          try {
+            const now = ctx.currentTime;
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setValueAtTime(gain.gain.value, now);
+            gain.gain.linearRampToValueAtTime(0, now + FADE);
+            src.stop(now + FADE);
+          } catch {
+            try { src.stop(); } catch { /* already stopped */ }
+          }
+          setTimeout(() => {
+            try { src.disconnect(); gain.disconnect(); } catch { /* already gone */ }
+          }, FADE * 1000 + 20);
         },
         setRate(r: number) {
           src.playbackRate.value = r;
