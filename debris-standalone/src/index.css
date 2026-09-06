@@ -271,6 +271,47 @@ kbd {
   background: rgba(224,247,255,0.05);
 }
 
+.title-leaderboard {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.title-leaderboard-row {
+  display: grid;
+  grid-template-columns: 22px 40px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid rgba(224,247,255,0.1);
+  border-radius: 6px;
+  background: rgba(34,211,238,0.02);
+  font-size: 11px;
+}
+.title-leaderboard-rank {
+  font-weight: bold;
+  color: rgba(224,247,255,0.4);
+  text-align: right;
+}
+.title-leaderboard-initials {
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  color: #ff6ec7;
+}
+.title-leaderboard-score {
+  color: #22d3ee;
+  text-align: right;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .controls-panel {
+    display: none;
+  }
+}
+
 /* ---------- game over screen ---------- */
 
 .gameover-screen { z-index: 1; }
@@ -622,7 +663,7 @@ kbd {
 }
 .draft-cards {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
   max-width: 720px;
@@ -632,11 +673,11 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 190px;
-  padding: 18px 14px;
+  gap: 4px;
+  width: 160px;
+  padding: 12px 10px;
   border: 2px solid;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(0,0,0,0.55);
   color: inherit;
   transition: transform 150ms ease, background-color 150ms ease;

@@ -5,7 +5,7 @@ import TitleScreen from './TitleScreen';
 import GameOverScreen from './GameOverScreen';
 import InitialsEntry from './InitialsEntry';
 import LeaderboardScreen from './LeaderboardScreen';
-import { fetchLeaderboard, flushQueue, qualifies, submitScore, type LeaderboardEntry } from './leaderboard';
+import { fetchLeaderboard, flushQueue, qualifies, submitScore, padBoardIfNeeded, type LeaderboardEntry } from './leaderboard';
 
 const HIGH_SCORE_KEY = 'debris_high_score';
 const MUTED_KEY = 'debris_muted';
@@ -128,7 +128,8 @@ export default function App() {
     });
     setSubmittedInitials(initials);
     if (outcome) {
-      setLeaderboard(outcome.list);
+      const paddedList = padBoardIfNeeded(outcome.list, outcome.rank);
+      setLeaderboard(paddedList);
       setGlobalRank(outcome.rank);
     } else {
       // Offline, or the function was unreachable -- submitScore already
@@ -147,7 +148,7 @@ export default function App() {
   return (
     <div className="app-root">
       {screen === 'title' && (
-        <TitleScreen highScore={highScore} muted={muted} onToggleMute={toggleMute} onPlay={startGame} onShowLeaderboard={showLeaderboard} />
+        <TitleScreen highScore={highScore} muted={muted} leaderboard={leaderboard} onToggleMute={toggleMute} onPlay={startGame} onShowLeaderboard={showLeaderboard} />
       )}
       {screen === 'playing' && (
         <DebrisGame
