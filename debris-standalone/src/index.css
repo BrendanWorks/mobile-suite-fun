@@ -271,6 +271,10 @@ kbd {
   background: rgba(224,247,255,0.05);
 }
 
+.title-leaderboard-container {
+  width: 100%;
+}
+
 .title-leaderboard {
   list-style: none;
   padding: 0;
@@ -279,6 +283,8 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 .title-leaderboard-row {
   display: grid;
@@ -309,6 +315,30 @@ kbd {
 @media (hover: none) and (pointer: coarse) {
   .controls-panel {
     display: none;
+  }
+  .title-leaderboard {
+    max-height: none;
+  }
+  .legend-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .legend-item {
+    gap: 6px;
+  }
+  .legend-text {
+    font-size: 10px;
+  }
+  .legend-desc {
+    font-size: 9px;
+  }
+  .legend-panel {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .legend-title {
+    font-size: 10px;
+    margin: 0 0 8px;
   }
 }
 
@@ -401,7 +431,11 @@ kbd {
   color: rgba(224,247,255,0.75);
 }
 .leaderboard-link {
-  margin-bottom: 16px;
+  margin-bottom: 0;
+}
+.leaderboard-details-link {
+  margin-top: 8px;
+  font-size: 11px;
 }
 
 /* ---------- initials entry ---------- */

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { LeaderboardEntry } from './leaderboard';
 
 interface TitleScreenProps {
@@ -18,6 +19,7 @@ const LEGEND: { color: string; label: string; desc: string }[] = [
 ];
 
 export default function TitleScreen({ highScore, muted, leaderboard, onToggleMute, onPlay, onShowLeaderboard }: TitleScreenProps) {
+  const [showLeaderboardMobile, setShowLeaderboardMobile] = useState(false);
   return (
     <div className="screen title-screen">
       <div className="starfield-bg" />
@@ -41,21 +43,28 @@ export default function TitleScreen({ highScore, muted, leaderboard, onToggleMut
           PLAY
         </button>
 
-        <button className="debris-btn debris-btn-text leaderboard-link" onClick={onShowLeaderboard}>
-          HIGH SCORES
-        </button>
+        <div className="title-leaderboard-container">
+          <button className="debris-btn debris-btn-text leaderboard-link" onClick={() => setShowLeaderboardMobile(!showLeaderboardMobile)}>
+            HIGH SCORES {showLeaderboardMobile ? '▼' : '▶'}
+          </button>
 
-        {leaderboard.length > 0 && (
-          <ol className="title-leaderboard">
-            {leaderboard.map((e, i) => (
-              <li key={`${e.ts}-${i}`} className="title-leaderboard-row">
-                <span className="title-leaderboard-rank">{i + 1}</span>
-                <span className="title-leaderboard-initials">{e.initials}</span>
-                <span className="title-leaderboard-score">{e.score.toLocaleString()}</span>
-              </li>
-            ))}
-          </ol>
-        )}
+          {leaderboard.length > 0 && showLeaderboardMobile && (
+            <>
+              <ol className="title-leaderboard">
+                {leaderboard.map((e, i) => (
+                  <li key={`${e.ts}-${i}`} className="title-leaderboard-row">
+                    <span className="title-leaderboard-rank">{i + 1}</span>
+                    <span className="title-leaderboard-initials">{e.initials}</span>
+                    <span className="title-leaderboard-score">{e.score.toLocaleString()}</span>
+                  </li>
+                ))}
+              </ol>
+              <button className="debris-btn debris-btn-text leaderboard-details-link" onClick={onShowLeaderboard}>
+                VIEW FULL LEADERBOARD
+              </button>
+            </>
+          )}
+        </div>
 
         <p className="draft-note">Clear a sector, pick an upgrade. Ship gets stronger every wave.</p>
 
